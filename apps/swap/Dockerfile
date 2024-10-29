@@ -37,4 +37,4 @@ RUN bun install --production
 COPY --from=development /usr/src/app/dist ./dist
 COPY --from=development /usr/src/app/proto ./proto
 
-CMD ["sh", "-c", "bun prisma migarate deploy && bun dist/apps/swap/main.js"]
+CMD ["sh", "-c", "bun prisma migrate deploy && bun dist/apps/swap/main.js"]
