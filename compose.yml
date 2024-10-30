@@ -24,11 +24,10 @@ services:
       context: .
       dockerfile: ./apps/swap/Dockerfile
       target: development
-    command: sh -c "bun prisma migrate deploy --schema apps/swap/prisma/schema.prisma && bun prisma generate --schema apps/swap/prisma/schema.prisma && bun dev swap"
     command: [
         "sh",
         "-c",
-        "bun prisma generate --schema apps/swap/prisma/schema.prisma && bun prisma migrate deploy --schema apps/swap/prisma/schema.prisma && bun dev swap"
+        "bun prisma migrate deploy --schema apps/swap/prisma/schema.prisma && bun dev swap"
       ]
     restart: always
     depends_on:

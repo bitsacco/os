@@ -1,6 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { MpesaOnrampSwap, SwapTransactionState } from '.prisma/client';
+import { MpesaOnrampSwap, SwapTransactionState } from '../../prisma/client';
 import { FedimintClient, LightningPayResponse } from './fmts';
 
 @Injectable()

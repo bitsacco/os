@@ -1,0 +1,52 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "./client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model MpesaOnrampSwap {
+  /// Unique identifier for the swap
+  id         String               @id @default(uuid())
+  /// Tracks progress of the swap
+  state      SwapTransactionState
+  /// References the user who made the transaction.
+  userId     String
+  /// References the onramp Mpesa transaction ID.
+  mpesaId    String               @unique
+  /// Lightning invoice to pay.
+  lightning  String
+  /// Fx Rate
+  rate       String
+  /// Retry count tracker
+  retryCount Int
+  /// Timestamps
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+}
+
+enum SwapTransactionState {
+  PENDING
+  PROCESSING
+  FAILED
+  COMPLETE
+  RETRY
+}
+
+model IntasendMpesaTransaction {
+  id         String               @id @default(uuid())
+  state      SwapTransactionState
+  apiRef     String
+  value      String
+  charges    String
+  netAmount  String
+  currency   String
+  account    String
+  retryCount Int
+  createdAt  String
+  updatedAt  String
+}

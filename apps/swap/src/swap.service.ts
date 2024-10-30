@@ -10,9 +10,9 @@ import { v4 as uuidv4 } from 'uuid';
 import type { Cache } from 'cache-manager';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { SwapTransactionState } from '../prisma/client';
 import { FxService } from './fx/fx.service';
 import { PrismaService } from './prisma.service';
-import { SwapTransactionState } from '.prisma/client';
 import { IntasendService } from './intasend/intasend.service';
 import {
   CreateOnrampSwapDto,
