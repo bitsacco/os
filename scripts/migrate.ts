@@ -16,7 +16,7 @@ function findPackagesWithMigrations(dir: string): string[] {
       const packageJsonPath = path.join(fullPath, 'package.json');
       if (fs.existsSync(packageJsonPath)) {
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-        if (packageJson.scripts && packageJson.scripts.migrate) {
+        if (packageJson.scripts && packageJson.scripts["migrate:dev"]) {
           packages.push(fullPath);
         }
       }
@@ -34,7 +34,7 @@ function runMigrations(): void {
   for (const packagePath of packagesWithMigrations) {
     try {
       execSync('bun install', { cwd: packagePath, stdio: 'inherit' });
-      execSync('bun run migrate', { cwd: packagePath, stdio: 'inherit' });
+      execSync('bun run migrate:dev', { cwd: packagePath, stdio: 'inherit' });
     } catch (error) {
       console.error(`Error running migrations for ${packagePath}:`, error);
     }
