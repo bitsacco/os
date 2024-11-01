@@ -2,8 +2,8 @@ import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CACHE_MANAGER, CacheModule, CacheStore } from '@nestjs/cache-manager';
 import { LoggerModule } from '@bitsacco/common';
-import { CacheModule } from '@nestjs/cache-manager';
 import { SwapController } from './swap.controller';
 import { SwapService } from './swap.service';
 import { FxService } from './fx/fx.service';
@@ -11,6 +11,7 @@ import { PrismaService } from './prisma.service';
 import { IntasendService } from './intasend/intasend.service';
 import { EventsController } from './events.controller';
 import { FedimintService } from './fedimint/fedimint.service';
+import { RedisStore, redisStore } from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -34,11 +35,53 @@ import { FedimintService } from './fedimint/fedimint.service';
     }),
     LoggerModule,
     HttpModule,
-    CacheModule.register(),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => {
+        const store = await redisStore({
+          socket: {
+            host: configService.getOrThrow<string>('REDIS_HOST'),
+            port: configService.getOrThrow<number>('REDIS_PORT'),
+          },
+          ttl: 60 * 60 * 5, // 5 hours
+        });
+
+        return {
+          store: store as unknown as CacheStore,
+          ttl: 60 * 60 * 5, // 5 hours
+        };
+      },
+      inject: [ConfigService],
+    }),
   ],
   controllers: [SwapController, EventsController],
   providers: [
-    SwapService,
+    {
+      provide: SwapService,
+      useFactory: (
+        fxService: FxService,
+        intasendService: IntasendService,
+        fedimintService: FedimintService,
+        prismaService: PrismaService,
+        cacheManager: RedisStore,
+      ) => {
+        return new SwapService(
+          fxService,
+          intasendService,
+          fedimintService,
+          prismaService,
+          cacheManager,
+        );
+      },
+      inject: [
+        FxService,
+        IntasendService,
+        FedimintService,
+        PrismaService,
+        CACHE_MANAGER,
+      ],
+    },
     FxService,
     PrismaService,
     IntasendService,

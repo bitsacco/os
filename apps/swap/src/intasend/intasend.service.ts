@@ -45,7 +45,7 @@ export class IntasendService {
     const resp = await this.intasend.collection().mpesaStkPush(payload);
 
     return {
-      ...resp,
+      id: resp.invoice.invoice_id,
       state: MpesaTractactionState.Pending,
     };
   }

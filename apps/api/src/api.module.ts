@@ -32,7 +32,7 @@ import { SwapController, SwapService } from './swap';
           options: {
             package: SWAP_PACKAGE_NAME,
             protoPath: join(__dirname, '../../../proto/swap.proto'),
-            url: configService.getOrThrow('SWAP_GRPC_URL'),
+            url: configService.getOrThrow<string>('SWAP_GRPC_URL'),
           },
         }),
         inject: [ConfigService],
