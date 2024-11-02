@@ -1,10 +1,10 @@
+import { AxiosError } from 'axios';
 import { firstValueFrom, catchError } from 'rxjs';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import type { Cache } from 'cache-manager';
-import { AxiosError } from 'axios';
+import { CustomStore } from '@bitsacco/common';
 
 interface CurrencyApiResponse {
   meta: {
@@ -27,13 +27,15 @@ export class FxService {
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Inject(CACHE_MANAGER) private cacheManager: CustomStore,
   ) {
     this.logger.log('FxService initialized');
   }
 
   private async getCurrencyApiRates() {
-    const cachedData = await this.cacheManager.get(this.CACHE_KEY);
+    const cachedData = await this.cacheManager.get<{
+      btcToKesRate: string;
+    } | void>(this.CACHE_KEY);
     if (cachedData) {
       this.logger.log('Returning cached currency rates');
       return cachedData;

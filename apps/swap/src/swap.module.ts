@@ -1,9 +1,10 @@
 import * as Joi from 'joi';
+import { redisStore } from 'cache-manager-redis-store';
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { CACHE_MANAGER, CacheModule, CacheStore } from '@nestjs/cache-manager';
-import { LoggerModule } from '@bitsacco/common';
+import { CACHE_MANAGER, CacheModule } from '@nestjs/cache-manager';
+import { CustomStore, LoggerModule } from '@bitsacco/common';
 import { SwapController } from './swap.controller';
 import { SwapService } from './swap.service';
 import { FxService } from './fx/fx.service';
@@ -11,7 +12,6 @@ import { PrismaService } from './prisma.service';
 import { IntasendService } from './intasend/intasend.service';
 import { EventsController } from './events.controller';
 import { FedimintService } from './fedimint/fedimint.service';
-import { RedisStore, redisStore } from 'cache-manager-redis-store';
 
 @Module({
   imports: [
@@ -48,7 +48,7 @@ import { RedisStore, redisStore } from 'cache-manager-redis-store';
         });
 
         return {
-          store: store as unknown as CacheStore,
+          store: new CustomStore(store, undefined /* TODO: inject logger */),
           ttl: 60 * 60 * 5, // 5 hours
         };
       },
@@ -64,7 +64,7 @@ import { RedisStore, redisStore } from 'cache-manager-redis-store';
         intasendService: IntasendService,
         fedimintService: FedimintService,
         prismaService: PrismaService,
-        cacheManager: RedisStore,
+        cacheManager: CustomStore,
       ) => {
         return new SwapService(
           fxService,

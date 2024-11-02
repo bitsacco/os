@@ -10,15 +10,15 @@ bun install
 
 ## Compile and run the project
 
-```bash
-# development with docker
-$ bun start
-```
+### docker dev
 
-## Compile and run individual services
+- `bun start` to start all the services in a docker compose environment
+- `bun stop` to shutdown all the services run via docker compose
+
+## individual services
 
 ```bash
-# development with docker
+# general pattern to run an app
 $ bun dev <app>
 
 # for example, to run the swap microservice
@@ -33,6 +33,13 @@ $ bun dev api
 ```bash
 # unit tests
 $ bun test
+
+# target a specific test
+$ bun test <test-name-or-file-path>
+
+# watch for changes and re-run tests
+$ bun test:watch
+$ bun test:watch <test-name-or-file-path>
 
 # e2e tests
 $ bun test:e2e

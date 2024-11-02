@@ -18,7 +18,7 @@ describe('EventsController', () => {
         {
           provide: SwapService,
           useValue: {
-            processSwapUpdate: jest.fn(), //.mockImplementation((data: MpesaTransactionUpdateDto) => {}),
+            processSwapUpdate: jest.fn(),
           },
         },
       ],

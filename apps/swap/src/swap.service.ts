@@ -9,8 +9,7 @@ import {
   SwapStatus,
   CreateOnrampSwapDto,
   FindSwapDto,
-  cacheSetOrThrow,
-  cacheGetOrThrow,
+  CustomStore,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -22,7 +21,6 @@ import { IntasendService } from './intasend/intasend.service';
 import { MpesaTransactionUpdateDto } from './dto';
 import { MpesaTractactionState } from './intasend/intasend.types';
 import { FedimintService } from './fedimint/fedimint.service';
-import { RedisStore } from 'cache-manager-redis-store';
 
 @Injectable()
 export class SwapService {
@@ -34,7 +32,7 @@ export class SwapService {
     private readonly intasendService: IntasendService,
     private readonly fedimintService: FedimintService,
     private readonly prismaService: PrismaService,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: RedisStore,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: CustomStore,
   ) {
     this.logger.log('SwapService initialized');
   }
@@ -60,13 +58,7 @@ export class SwapService {
         expiry: expiry.toString(),
       };
 
-      await cacheSetOrThrow(
-        quote.id,
-        quote,
-        this.CACHE_TTL_SECS,
-        this.cacheManager,
-        this.logger,
-      );
+      await this.cacheManager.set(quote.id, quote, this.CACHE_TTL_SECS);
 
       return quote;
     } catch (error) {
@@ -83,8 +75,7 @@ export class SwapService {
     lightning,
   }: CreateOnrampSwapDto): Promise<OnrampSwapResponse> {
     let currentQuote: QuoteResponse | undefined =
-      quote &&
-      (await cacheGetOrThrow(quote.id, this.cacheManager, this.logger));
+      quote && (await this.cacheManager.get<QuoteResponse>(quote.id));
 
     if (
       !currentQuote ||
@@ -108,7 +99,7 @@ export class SwapService {
     // We record stk push response to a temporary cache
     // so we can track status of the swap later
     // NOTE: we use mpesa ids as cache keys
-    await cacheSetOrThrow(
+    this.cacheManager.set(
       mpesa.id,
       {
         lightning,
@@ -119,8 +110,6 @@ export class SwapService {
         ref,
       },
       this.CACHE_TTL_SECS,
-      this.cacheManager,
-      this.logger,
     );
 
     const swap = await this.prismaService.mpesaOnrampSwap.create({
@@ -165,11 +154,7 @@ export class SwapService {
       // FIXME!
       // Look up stk push response in cache
       // NOTE: we use mpesa ids as cache keys
-      const stk: STKPushCache = await cacheGetOrThrow(
-        id,
-        this.cacheManager,
-        this.logger,
-      );
+      const stk: STKPushCache = await this.cacheManager.get<STKPushCache>(id);
 
       resp = {
         id,
@@ -226,10 +211,8 @@ export class SwapService {
       });
     } catch {
       // look up mpesa tx in cache
-      const stk: STKPushCache = await cacheGetOrThrow(
+      const stk: STKPushCache = await this.cacheManager.get<STKPushCache>(
         mpesa.id,
-        this.cacheManager,
-        this.logger,
       );
 
       // record a new swap in db

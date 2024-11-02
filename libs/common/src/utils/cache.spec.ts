@@ -1,6 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { RedisStore } from 'cache-manager-redis-store';
-import { cacheGetOrThrow, cacheSetOrThrow } from './cache';
+import { cacheGetOrThrow, cacheSetOrThrow, RedisStore } from './cache';
 
 describe('Cache Utils', () => {
   let mockCache: jest.Mocked<RedisStore>;

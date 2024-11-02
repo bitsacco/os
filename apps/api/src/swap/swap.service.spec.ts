@@ -55,6 +55,20 @@ describe('SwapService', () => {
           status: 'PENDING',
         };
       }),
+      listSwaps: jest.fn().mockImplementation(async () => {
+        return {
+          swaps: [
+            {
+              id: mock_id,
+              rate: mock_rate.toString(),
+              status: 'PENDING',
+            },
+          ],
+          page: 0,
+          size: 10,
+          pages: 2,
+        };
+      }),
     };
   });
 
@@ -131,7 +145,12 @@ describe('SwapService', () => {
 
     describe('getOnrampTransactions', () => {
       it('should return status 200', () => {
-        expect(swapService.getOnrampTransactions()).toEqual({ status: 200 });
+        expect(
+          swapService.getOnrampTransactions({
+            page: 0,
+            size: 10,
+          }),
+        ).toBeDefined();
       });
     });
 

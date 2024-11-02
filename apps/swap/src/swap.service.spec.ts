@@ -1,5 +1,6 @@
 import {
   btcFromKes,
+  CreateOnrampSwapDto,
   createTestingModuleWithValidation,
   Currency,
   SwapStatus,
@@ -11,8 +12,8 @@ import { FxService } from './fx/fx.service';
 import { SwapService } from './swap.service';
 import { IntasendService } from './intasend/intasend.service';
 import { MpesaTractactionState } from './intasend/intasend.types';
-import { CreateOnrampSwapDto, MpesaTransactionUpdateDto } from './dto';
 import { FedimintService } from './fedimint/fedimint.service';
+import { MpesaTransactionUpdateDto } from './dto';
 
 const mock_rate = 8708520.117232416;
 
@@ -24,13 +25,11 @@ describe('SwapService', () => {
   let mockCacheManager: {
     get: jest.Mock;
     set: jest.Mock;
-    getOrThrow: jest.Mock;
   };
 
   beforeEach(async () => {
     mockCacheManager = {
       get: jest.fn(),
-      getOrThrow: jest.fn(),
       set: jest.fn(),
     };
 
@@ -154,7 +153,7 @@ describe('SwapService', () => {
         ref: 'test-onramp-swap',
       };
 
-      (mockCacheManager.getOrThrow as jest.Mock).mockImplementation(
+      (mockCacheManager.get as jest.Mock).mockImplementation(
         (_key: string) => cache,
       );
 
@@ -215,7 +214,7 @@ describe('SwapService', () => {
         state: MpesaTractactionState.Pending,
       };
 
-      (mockCacheManager.getOrThrow as jest.Mock).mockImplementation(
+      (mockCacheManager.get as jest.Mock).mockImplementation(
         (_key: string) => cache,
       );
 
@@ -226,7 +225,7 @@ describe('SwapService', () => {
       expect(swap).toBeDefined();
       expect(swap.rate).toEqual(cache.rate);
       expect(swap.status).toEqual(SwapStatus.PENDING);
-      expect(mockCacheManager.getOrThrow).toHaveBeenCalled();
+      expect(mockCacheManager.get).toHaveBeenCalled();
     });
   });
 
@@ -255,7 +254,7 @@ describe('SwapService', () => {
     };
 
     it('creates a new swap tx if there was none recorded before', async () => {
-      (mockCacheManager.getOrThrow as jest.Mock).mockImplementation(
+      (mockCacheManager.get as jest.Mock).mockImplementation(
         (_key: string) => ({
           lightning: 'lnbtcexampleinvoicee',
           phone: '0700000000',
