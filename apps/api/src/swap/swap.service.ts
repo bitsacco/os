@@ -32,12 +32,12 @@ export class SwapService implements OnModuleInit {
     return this.client.createOnrampSwap(req);
   }
 
-  getOnrampTransactions(req: ListSwapsDto) {
-    return this.client.listOnrampSwaps(req);
-  }
-
   findOnrampTransaction(req: FindSwapRequest) {
     return this.client.findOnrampSwap(req);
+  }
+
+  getOnrampTransactions(req: ListSwapsDto) {
+    return this.client.listOnrampSwaps(req);
   }
 
   getOfframpQuote(req: {
@@ -52,11 +52,11 @@ export class SwapService implements OnModuleInit {
     return this.client.createOfframpSwap(req);
   }
 
-  getOfframpTransactions() {
-    return { status: 200 };
+  findOfframpTransaction(req: FindSwapRequest) {
+    return this.client.findOfframpSwap(req);
   }
 
-  findOfframpTransaction() {
+  getOfframpTransactions() {
     return { status: 200 };
   }
 }

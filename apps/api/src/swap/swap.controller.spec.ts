@@ -80,17 +80,17 @@ describe('SwapController', () => {
     });
   });
 
-  describe('getOnrampTransactions', () => {
-    it('should call swapService.getOnrampTransactions', () => {
-      controller.getOnrampTransactions();
-      expect(swapService.getOnrampTransactions).toHaveBeenCalled();
-    });
-  });
-
   describe('findOnrampTransaction', () => {
     it('should call swapService.findOnrampTransaction', () => {
       controller.findOnrampTransaction('swap_id');
       expect(swapService.findOnrampTransaction).toHaveBeenCalled();
+    });
+  });
+
+  describe('getOnrampTransactions', () => {
+    it('should call swapService.getOnrampTransactions', () => {
+      controller.getOnrampTransactions();
+      expect(swapService.getOnrampTransactions).toHaveBeenCalled();
     });
   });
 
@@ -126,17 +126,17 @@ describe('SwapController', () => {
     });
   });
 
-  describe('findOfframpTransaction', () => {
-    it('should call swapService.findOfframpTransaction', () => {
-      controller.findOfframpTransaction();
-      expect(swapService.findOfframpTransaction).toHaveBeenCalled();
-    });
-  });
-
   describe('postSwapUpdate', () => {
     it('should call swapService.postSwapUpdate', () => {
       controller.postSwapUpdate({});
       expect(serviceBus.emit).toHaveBeenCalled();
+    });
+  });
+
+  describe('findOfframpTransaction', () => {
+    it('should call swapService.findOfframpTransaction', () => {
+      controller.findOfframpTransaction('swap_id');
+      expect(swapService.findOfframpTransaction).toHaveBeenCalled();
     });
   });
 });

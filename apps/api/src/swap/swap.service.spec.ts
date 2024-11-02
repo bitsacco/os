@@ -76,6 +76,13 @@ describe('SwapService', () => {
           status: 'PENDING',
         };
       }),
+      findOfframpSwap: jest.fn().mockImplementation(async () => {
+        return {
+          id: mock_id,
+          rate: (1 / mock_btc_kes).toString(),
+          status: 'PENDING',
+        };
+      }),
     };
   });
 
@@ -107,6 +114,8 @@ describe('SwapService', () => {
   it('should be defined', () => {
     expect(swapService).toBeDefined();
   });
+
+  // Onramp tests
 
   describe('getOnrampQuote', () => {
     it('can request quote', () => {
@@ -170,6 +179,8 @@ describe('SwapService', () => {
     });
   });
 
+  // Offramp tests
+
   describe('getOfframpQuote', () => {
     it('can request quote', () => {
       const quote = swapService.getOfframpQuote({
@@ -219,15 +230,19 @@ describe('SwapService', () => {
     });
   });
 
-  describe('getOfframpTransactions', () => {
-    it('should return status 200', () => {
-      expect(swapService.getOfframpTransactions()).toEqual({ status: 200 });
+  describe('findOfframpTransaction', () => {
+    it('can look up offramp swap tx given id', () => {
+      const swap = swapService.findOfframpTransaction({
+        id: mock_id,
+      });
+      expect(swap).toBeDefined();
+      expect(mockSwapServiceClient.findOfframpSwap).toHaveBeenCalled();
     });
   });
 
-  describe('findOfframpTransaction', () => {
+  describe('getOfframpTransactions', () => {
     it('should return status 200', () => {
-      expect(swapService.findOfframpTransaction()).toEqual({ status: 200 });
+      expect(swapService.getOfframpTransactions()).toEqual({ status: 200 });
     });
   });
 });

@@ -128,14 +128,16 @@ export class SwapController {
     return this.swapService.postOfframpTransaction(req);
   }
 
+  @Get('offramp/find/:id')
+  @ApiOperation({ summary: 'Find offramp transaction by ID' })
+  @ApiParam({ name: 'id', type: 'string', description: 'Transaction ID' })
+  findOfframpTransaction(@Param('id') id: string) {
+    return this.swapService.findOfframpTransaction({ id });
+  }
+
   @Get('offramp/all')
   getOfframpTransactions() {
     return this.swapService.getOfframpTransactions();
-  }
-
-  @Get('offramp/find/:id')
-  findOfframpTransaction() {
-    return this.swapService.findOfframpTransaction();
   }
 
   @Post('webhook')
