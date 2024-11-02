@@ -83,6 +83,20 @@ describe('SwapService', () => {
           status: 'PENDING',
         };
       }),
+      listOfframpSwaps: jest.fn().mockImplementation(async () => {
+        return {
+          swaps: [
+            {
+              id: mock_id,
+              rate: (1 / mock_btc_kes).toString(),
+              status: 'PENDING',
+            },
+          ],
+          page: 0,
+          size: 10,
+          pages: 2,
+        };
+      }),
     };
   });
 
@@ -169,7 +183,7 @@ describe('SwapService', () => {
   });
 
   describe('getOnrampTransactions', () => {
-    it('should return status 200', () => {
+    it('can get a paginated list of onramp swaps', () => {
       expect(
         swapService.getOnrampTransactions({
           page: 0,
@@ -241,8 +255,13 @@ describe('SwapService', () => {
   });
 
   describe('getOfframpTransactions', () => {
-    it('should return status 200', () => {
-      expect(swapService.getOfframpTransactions()).toEqual({ status: 200 });
+    it('can get a paginated list of offramp swaps', () => {
+      expect(
+        swapService.getOfframpTransactions({
+          page: 0,
+          size: 10,
+        }),
+      ).toBeDefined();
     });
   });
 });

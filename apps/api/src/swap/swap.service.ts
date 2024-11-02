@@ -56,7 +56,7 @@ export class SwapService implements OnModuleInit {
     return this.client.findOfframpSwap(req);
   }
 
-  getOfframpTransactions() {
-    return { status: 200 };
+  getOfframpTransactions(req: ListSwapsDto) {
+    return this.client.listOfframpSwaps(req);
   }
 }

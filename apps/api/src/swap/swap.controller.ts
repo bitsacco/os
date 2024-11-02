@@ -136,8 +136,27 @@ export class SwapController {
   }
 
   @Get('offramp/all')
-  getOfframpTransactions() {
-    return this.swapService.getOfframpTransactions();
+  @ApiOperation({ summary: 'List offramp swaps' })
+  @ApiQuery({
+    name: 'page',
+    example: '?page=0',
+    type: ListSwapsDto['page'],
+    required: false,
+  })
+  @ApiQuery({
+    name: 'size',
+    example: '?size=100',
+    type: ListSwapsDto['size'],
+    required: false,
+  })
+  getOfframpTransactions(
+    @Query('page') page: number = 0,
+    @Query('size') size: number = 100,
+  ) {
+    return this.swapService.getOfframpTransactions({
+      page,
+      size,
+    });
   }
 
   @Post('webhook')

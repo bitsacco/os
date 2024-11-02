@@ -139,4 +139,11 @@ describe('SwapController', () => {
       expect(swapService.findOfframpTransaction).toHaveBeenCalled();
     });
   });
+
+  describe('getOfframpTransactions', () => {
+    it('should call swapService.getOfframpTransactions', () => {
+      controller.getOfframpTransactions();
+      expect(swapService.getOfframpTransactions).toHaveBeenCalled();
+    });
+  });
 });
