@@ -32,7 +32,7 @@ export class SwapService implements OnModuleInit {
   }
 
   getOnrampTransactions(req: ListSwapsDto) {
-    return this.client.listSwaps(req);
+    return this.client.listOnrampSwaps(req);
   }
 
   findOnrampTransaction(req: FindSwapRequest) {

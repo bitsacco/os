@@ -7,6 +7,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
+    "prisma:gen": "bun run prisma generate",
     "migrate:dev": "dotenv -e .env.local -- bun prisma migrate dev",
     "migrate:reset": "dotenv -e .env.local -- bun prisma migrate reset"
   },

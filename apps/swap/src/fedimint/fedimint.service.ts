@@ -4,15 +4,13 @@ import { MpesaOnrampSwap, SwapTransactionState } from '../../prisma/client';
 import { FedimintClient, LightningPayResponse } from './fmts';
 
 @Injectable()
-export class FedimintService implements OnModuleInit {
+export class FedimintService {
   private readonly logger = new Logger(FedimintService.name);
   private fedimint: FedimintClient;
 
   constructor(private readonly configService: ConfigService) {
     this.logger.log('FedimintService initialized');
-  }
 
-  onModuleInit() {
     const baseUrl = this.configService.getOrThrow<string>(
       'FEDIMINT_CLIENTD_BASE_URL',
     );
@@ -40,6 +38,7 @@ export class FedimintService implements OnModuleInit {
     swap: MpesaOnrampSwap,
   ): Promise<{ state: SwapTransactionState; operationId: string }> {
     this.logger.log('Swapping to BTC');
+    this.logger.log('Swap', swap);
 
     if (
       swap.state === SwapTransactionState.COMPLETE ||

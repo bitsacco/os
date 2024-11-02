@@ -170,6 +170,8 @@ describe('SwapService', () => {
         id: 'dadad-bdjada-dadad',
         rate: mock_rate.toString(),
         state: SwapTransactionState.PENDING,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       }));
 
       const req: CreateOnrampSwapDto = {
@@ -198,34 +200,10 @@ describe('SwapService', () => {
         swapService.findOnrampSwap({
           id: 'dadad-bdjada-dadad',
         }),
-      ).rejects.toThrow('Swap not found in db or cache');
+      ).rejects.toThrow('Swap not found in db');
       expect(
         mockPrismaService.mpesaOnrampSwap.findUniqueOrThrow,
       ).toHaveBeenCalled();
-    });
-
-    it('should look up swap in cache if swap is not in db', async () => {
-      const cache = {
-        lightning: 'lnbtcexampleinvoicee',
-        phone: '0700000000',
-        amount: '100',
-        rate: mock_rate.toString(),
-        ref: 'test-onramp-swap',
-        state: MpesaTractactionState.Pending,
-      };
-
-      (mockCacheManager.get as jest.Mock).mockImplementation(
-        (_key: string) => cache,
-      );
-
-      const swap = await swapService.findOnrampSwap({
-        id: 'dadad-bdjada-dadad',
-      });
-
-      expect(swap).toBeDefined();
-      expect(swap.rate).toEqual(cache.rate);
-      expect(swap.status).toEqual(SwapStatus.PENDING);
-      expect(mockCacheManager.get).toHaveBeenCalled();
     });
   });
 
@@ -383,7 +361,7 @@ describe('SwapService', () => {
     });
   });
 
-  describe('listSwaps', () => {
+  describe('listOnrampSwaps', () => {
     it('should return a paginated list of swaps', async () => {
       (
         mockPrismaService.mpesaOnrampSwap.findMany as jest.Mock
@@ -400,7 +378,7 @@ describe('SwapService', () => {
         ];
       });
 
-      const resp = await swapService.listSwaps({
+      const resp = await swapService.listOnrampSwaps({
         page: 0,
         size: 1,
       });

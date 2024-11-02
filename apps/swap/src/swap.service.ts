@@ -2,7 +2,7 @@ import {
   btcFromKes,
   Currency,
   OnrampSwapResponse,
-  PaginatedSwapResponse,
+  PaginatedOnrampSwapResponse,
   PaginatedRequest,
   QuoteRequest,
   QuoteResponse,
@@ -124,14 +124,14 @@ export class SwapService {
     });
 
     return {
-      id: swap.id,
-      rate: swap.rate,
+      ...swap,
       status: mapSwapTxStateToSwapStatus(swap.state),
+      createdAt: swap.createdAt.toDateString(),
+      updatedAt: swap.updatedAt.toDateString(),
     };
   }
 
   async findOnrampSwap({ id }: FindSwapDto): Promise<OnrampSwapResponse> {
-    let resp: OnrampSwapResponse;
     try {
       // Look up swap in db
       const swap = await this.prismaService.mpesaOnrampSwap.findUniqueOrThrow({
@@ -141,41 +141,23 @@ export class SwapService {
         },
       });
 
-      resp = {
-        id,
-        rate: swap.rate,
+      return {
+        ...swap,
         status: mapSwapTxStateToSwapStatus(swap.state),
+        retryCount: swap.retryCount,
+        createdAt: swap.createdAt.toDateString(),
+        updatedAt: swap.updatedAt.toDateString(),
       };
-    } catch (_error) {
-      this.logger.warn(`Swap not found in DB : ${id}`);
+    } catch (e) {
+      this.logger.error(e);
+      throw new Error('Swap not found in db');
     }
-
-    try {
-      // FIXME!
-      // Look up stk push response in cache
-      // NOTE: we use mpesa ids as cache keys
-      const stk: STKPushCache = await this.cacheManager.get<STKPushCache>(id);
-
-      resp = {
-        id,
-        rate: stk.rate,
-        status: mapMpesaTxStateToSwapStatus(stk.state),
-      };
-    } catch (_error) {
-      this.logger.warn(`Swap not found in cache : ${id}`);
-    }
-
-    if (!resp) {
-      throw new Error('Swap not found in db or cache');
-    }
-
-    return resp;
   }
 
-  async listSwaps({
+  async listOnrampSwaps({
     page,
     size,
-  }: PaginatedRequest): Promise<PaginatedSwapResponse> {
+  }: PaginatedRequest): Promise<PaginatedOnrampSwapResponse> {
     const onramps = await this.prismaService.mpesaOnrampSwap.findMany();
     const pages = Math.ceil(onramps.length / size);
 
@@ -188,6 +170,12 @@ export class SwapService {
         id: swap.mpesaId,
         rate: swap.rate,
         status: mapSwapTxStateToSwapStatus(swap.state),
+        userId: swap.userId,
+        mpesaId: swap.mpesaId,
+        lightning: swap.lightning,
+        retryCount: swap.retryCount,
+        createdAt: swap.createdAt.toDateString(),
+        updatedAt: swap.updatedAt.toDateString(),
       }));
 
     return {

@@ -55,7 +55,7 @@ describe('SwapService', () => {
           status: 'PENDING',
         };
       }),
-      listSwaps: jest.fn().mockImplementation(async () => {
+      listOnrampSwaps: jest.fn().mockImplementation(async () => {
         return {
           swaps: [
             {
@@ -84,9 +84,7 @@ describe('SwapService', () => {
         {
           provide: SwapService,
           useFactory: () => {
-            const real = new SwapService(serviceGenerator);
-            real.onModuleInit();
-            return real;
+            return new SwapService(serviceGenerator);
           },
         },
         {

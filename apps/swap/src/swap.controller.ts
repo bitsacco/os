@@ -9,6 +9,7 @@ import {
   SwapServiceControllerMethods,
 } from '@bitsacco/common';
 import { SwapService } from './swap.service';
+import { Observable } from 'rxjs';
 
 @Controller()
 @SwapServiceControllerMethods()
@@ -31,7 +32,7 @@ export class SwapController implements SwapServiceController {
   }
 
   @GrpcMethod()
-  listSwaps(request: PaginatedRequest) {
-    return this.swapService.listSwaps(request);
+  listOnrampSwaps(request: PaginatedRequest) {
+    return this.swapService.listOnrampSwaps(request);
   }
 }

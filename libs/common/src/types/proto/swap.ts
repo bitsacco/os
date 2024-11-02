@@ -108,6 +108,12 @@ export interface OnrampSwapResponse {
   rate: string;
   /** Current status of the swap */
   status: SwapStatus;
+  userId: string;
+  mpesaId: string;
+  lightning: string;
+  retryCount: number;
+  createdAt: string;
+  updatedAt?: string | undefined;
 }
 
 /** FindSwapRequest: Represents a request to find a swap. */
@@ -123,25 +129,15 @@ export interface PaginatedRequest {
   size: number;
 }
 
-export interface PaginatedSwapResponse {
+export interface PaginatedOnrampSwapResponse {
   /** List of onramp swaps */
-  swaps: SwapResponse[];
+  swaps: OnrampSwapResponse[];
   /** Current page offset */
   page: number;
   /** Number of items return per page */
   size: number;
   /** Number of pages given the current page size */
   pages: number;
-}
-
-/** SwapResponse: Represents the response for an onramp swap. */
-export interface SwapResponse {
-  /** Unique identifier for the swap */
-  id: string;
-  /** Exchange rate used for the swap */
-  rate: string;
-  /** Current status of the swap */
-  status: SwapStatus;
 }
 
 export const SWAP_PACKAGE_NAME = 'swap';
@@ -161,7 +157,9 @@ export interface SwapServiceClient {
 
   findOnrampSwap(request: FindSwapRequest): Observable<OnrampSwapResponse>;
 
-  listSwaps(request: PaginatedRequest): Observable<PaginatedSwapResponse>;
+  listOnrampSwaps(
+    request: PaginatedRequest,
+  ): Observable<PaginatedOnrampSwapResponse>;
 }
 
 /** SwapService: Defines the main service for handling swap operations. */
@@ -191,12 +189,12 @@ export interface SwapServiceController {
     | Observable<OnrampSwapResponse>
     | OnrampSwapResponse;
 
-  listSwaps(
+  listOnrampSwaps(
     request: PaginatedRequest,
   ):
-    | Promise<PaginatedSwapResponse>
-    | Observable<PaginatedSwapResponse>
-    | PaginatedSwapResponse;
+    | Promise<PaginatedOnrampSwapResponse>
+    | Observable<PaginatedOnrampSwapResponse>
+    | PaginatedOnrampSwapResponse;
 }
 
 export function SwapServiceControllerMethods() {
@@ -205,7 +203,7 @@ export function SwapServiceControllerMethods() {
       'getQuote',
       'createOnrampSwap',
       'findOnrampSwap',
-      'listSwaps',
+      'listOnrampSwaps',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(

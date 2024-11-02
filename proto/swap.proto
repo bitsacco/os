@@ -13,7 +13,7 @@ service SwapService {
   // FindOnrampSwap: Finds and returns a single onramp swap.
   rpc FindOnrampSwap (FindSwapRequest) returns (OnrampSwapResponse) {}
 
-  rpc ListSwaps (PaginatedRequest) returns (PaginatedSwapResponse) {}
+  rpc listOnrampSwaps (PaginatedRequest) returns (PaginatedOnrampSwapResponse) {}
 }
 
 // Empty: Represents an empty message.
@@ -103,6 +103,18 @@ message OnrampSwapResponse {
   string rate = 2;
   // Current status of the swap
   SwapStatus status = 3;
+
+  string userId = 4;
+
+  string mpesaId = 5;
+
+  string lightning = 6;
+
+  int32 retryCount = 7;
+
+  string createdAt = 8;
+
+  optional string updatedAt = 9;
 }
 
 // FindSwapRequest: Represents a request to find a swap.
@@ -132,23 +144,13 @@ message PaginatedRequest {
   int32 size = 1;
 }
 
-message PaginatedSwapResponse {
+message PaginatedOnrampSwapResponse {
   // List of onramp swaps
-  repeated SwapResponse swaps = 1;
+  repeated OnrampSwapResponse swaps = 1;
   // Current page offset
   int32 page = 2;
   // Number of items return per page
   int32 size = 3;
   // Number of pages given the current page size
   int32 pages = 4;
-}
-
-// SwapResponse: Represents the response for an onramp swap.
-message SwapResponse {
-  // Unique identifier for the swap
-  string id = 1;
-  // Exchange rate used for the swap
-  string rate = 2;
-  // Current status of the swap
-  SwapStatus status = 3;
 }
