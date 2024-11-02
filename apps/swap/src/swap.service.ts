@@ -10,6 +10,9 @@ import {
   CreateOnrampSwapDto,
   FindSwapDto,
   CustomStore,
+  PaginatedOfframpSwapResponse,
+  OfframpSwapResponse,
+  CreateOfframpSwapDto,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -184,6 +187,23 @@ export class SwapService {
       size,
       pages,
     };
+  }
+
+  async createOfframpSwap(
+    req: CreateOfframpSwapDto,
+  ): Promise<OfframpSwapResponse> {
+    throw new Error('Method not implemented.');
+  }
+
+  async findOfframpSwap({ id }: FindSwapDto): Promise<OfframpSwapResponse> {
+    throw new Error('Method not implemented.');
+  }
+
+  async listOfframpSwaps({
+    page,
+    size,
+  }: PaginatedRequest): Promise<PaginatedOfframpSwapResponse> {
+    throw new Error('Method not implemented.');
   }
 
   async processSwapUpdate(data: MpesaTransactionUpdateDto) {

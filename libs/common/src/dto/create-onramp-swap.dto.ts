@@ -1,19 +1,8 @@
 import { Type } from 'class-transformer';
 import { IsString, IsOptional, IsNotEmpty, Validate } from 'class-validator';
-import {
-  OnrampSwapRequest,
-  Quote,
-  IsStringifiedNumberConstraint,
-} from '../types';
 import { ApiProperty } from '@nestjs/swagger';
-
-class QuoteDto {
-  @ApiProperty()
-  id: string;
-
-  @ApiProperty()
-  refreshIfExpired: boolean;
-}
+import { OnrampSwapRequest, IsStringifiedNumberConstraint } from '../types';
+import { QuoteDto } from './quote.dto';
 
 export class CreateOnrampSwapDto implements OnrampSwapRequest {
   @IsOptional()

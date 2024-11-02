@@ -116,6 +116,51 @@ export interface OnrampSwapResponse {
   updatedAt?: string | undefined;
 }
 
+export interface OfframpSwapRequest {
+  /**
+   * Optional reference to a quote.
+   * If not specified, the service will create a new quote for the swap
+   */
+  quote?: Quote | undefined;
+  /**
+   * Amount to swap
+   * Any transaction fees will be deducted from this amount
+   */
+  amount: string;
+  /** Target of the swap */
+  target: OfframpSwapTarget | undefined;
+}
+
+export interface OfframpSwapTarget {
+  /** Currency code for the target currency */
+  currency: Currency;
+  /** Mobile money destination */
+  mobileMoney?: MobileMoney | undefined;
+}
+
+export interface MobileMoney {
+  /** Phone number for the mobile money offramp */
+  phone: string;
+}
+
+export interface OfframpSwapResponse {
+  /**
+   * Unique identifier for the swap
+   * You can use this to track the status on both sides of the swap
+   */
+  id: string;
+  /** Exchange rate to be used for the swap */
+  rate: string;
+  /** lightning invoice to be paid before swap can proceed */
+  lightning: string;
+  /** Current status of the swap */
+  status: SwapStatus;
+  /** Optional reference to a user */
+  userId?: string | undefined;
+  createdAt: string;
+  updatedAt?: string | undefined;
+}
+
 /** FindSwapRequest: Represents a request to find a swap. */
 export interface FindSwapRequest {
   /** Unique identifier for the swap */
@@ -132,6 +177,17 @@ export interface PaginatedRequest {
 export interface PaginatedOnrampSwapResponse {
   /** List of onramp swaps */
   swaps: OnrampSwapResponse[];
+  /** Current page offset */
+  page: number;
+  /** Number of items return per page */
+  size: number;
+  /** Number of pages given the current page size */
+  pages: number;
+}
+
+export interface PaginatedOfframpSwapResponse {
+  /** List of offramp swaps */
+  swaps: OfframpSwapResponse[];
   /** Current page offset */
   page: number;
   /** Number of items return per page */
@@ -157,9 +213,27 @@ export interface SwapServiceClient {
 
   findOnrampSwap(request: FindSwapRequest): Observable<OnrampSwapResponse>;
 
+  /** ListOnrampSwaps: Lists all onramp swaps, with pagination. */
+
   listOnrampSwaps(
     request: PaginatedRequest,
   ): Observable<PaginatedOnrampSwapResponse>;
+
+  /** CreateOfframpSwap: Initiates an offramp swap transaction. */
+
+  createOfframpSwap(
+    request: OfframpSwapRequest,
+  ): Observable<OfframpSwapResponse>;
+
+  /** FindOfframpSwap: Finds and returns a single offramp swap. */
+
+  findOfframpSwap(request: FindSwapRequest): Observable<OfframpSwapResponse>;
+
+  /** ListOfframpSwaps: Lists all offramp swaps, with pagination. */
+
+  listOfframpSwaps(
+    request: PaginatedRequest,
+  ): Observable<PaginatedOfframpSwapResponse>;
 }
 
 /** SwapService: Defines the main service for handling swap operations. */
@@ -189,12 +263,41 @@ export interface SwapServiceController {
     | Observable<OnrampSwapResponse>
     | OnrampSwapResponse;
 
+  /** ListOnrampSwaps: Lists all onramp swaps, with pagination. */
+
   listOnrampSwaps(
     request: PaginatedRequest,
   ):
     | Promise<PaginatedOnrampSwapResponse>
     | Observable<PaginatedOnrampSwapResponse>
     | PaginatedOnrampSwapResponse;
+
+  /** CreateOfframpSwap: Initiates an offramp swap transaction. */
+
+  createOfframpSwap(
+    request: OfframpSwapRequest,
+  ):
+    | Promise<OfframpSwapResponse>
+    | Observable<OfframpSwapResponse>
+    | OfframpSwapResponse;
+
+  /** FindOfframpSwap: Finds and returns a single offramp swap. */
+
+  findOfframpSwap(
+    request: FindSwapRequest,
+  ):
+    | Promise<OfframpSwapResponse>
+    | Observable<OfframpSwapResponse>
+    | OfframpSwapResponse;
+
+  /** ListOfframpSwaps: Lists all offramp swaps, with pagination. */
+
+  listOfframpSwaps(
+    request: PaginatedRequest,
+  ):
+    | Promise<PaginatedOfframpSwapResponse>
+    | Observable<PaginatedOfframpSwapResponse>
+    | PaginatedOfframpSwapResponse;
 }
 
 export function SwapServiceControllerMethods() {
@@ -204,6 +307,9 @@ export function SwapServiceControllerMethods() {
       'createOnrampSwap',
       'findOnrampSwap',
       'listOnrampSwaps',
+      'createOfframpSwap',
+      'findOfframpSwap',
+      'listOfframpSwaps',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(

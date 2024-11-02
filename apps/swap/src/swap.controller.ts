@@ -2,6 +2,7 @@ import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   CreateOnrampSwapDto,
+  CreateOfframpSwapDto,
   type FindSwapRequest,
   type PaginatedRequest,
   type QuoteRequest,
@@ -9,7 +10,6 @@ import {
   SwapServiceControllerMethods,
 } from '@bitsacco/common';
 import { SwapService } from './swap.service';
-import { Observable } from 'rxjs';
 
 @Controller()
 @SwapServiceControllerMethods()
@@ -34,5 +34,20 @@ export class SwapController implements SwapServiceController {
   @GrpcMethod()
   listOnrampSwaps(request: PaginatedRequest) {
     return this.swapService.listOnrampSwaps(request);
+  }
+
+  @GrpcMethod()
+  createOfframpSwap(request: CreateOfframpSwapDto) {
+    return this.swapService.createOfframpSwap(request);
+  }
+
+  @GrpcMethod()
+  findOfframpSwap(request: FindSwapRequest) {
+    return this.swapService.findOfframpSwap(request);
+  }
+
+  @GrpcMethod()
+  listOfframpSwaps(request: PaginatedRequest) {
+    return this.swapService.listOfframpSwaps(request);
   }
 }

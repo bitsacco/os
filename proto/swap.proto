@@ -13,7 +13,17 @@ service SwapService {
   // FindOnrampSwap: Finds and returns a single onramp swap.
   rpc FindOnrampSwap (FindSwapRequest) returns (OnrampSwapResponse) {}
 
-  rpc listOnrampSwaps (PaginatedRequest) returns (PaginatedOnrampSwapResponse) {}
+  // ListOnrampSwaps: Lists all onramp swaps, with pagination.
+  rpc ListOnrampSwaps (PaginatedRequest) returns (PaginatedOnrampSwapResponse) {}
+
+  // CreateOfframpSwap: Initiates an offramp swap transaction.
+  rpc CreateOfframpSwap (OfframpSwapRequest) returns (OfframpSwapResponse) {}
+
+  // FindOfframpSwap: Finds and returns a single offramp swap.
+  rpc FindOfframpSwap (FindSwapRequest) returns (OfframpSwapResponse) {}
+
+  // ListOfframpSwaps: Lists all offramp swaps, with pagination.
+  rpc ListOfframpSwaps (PaginatedRequest) returns (PaginatedOfframpSwapResponse) {}
 }
 
 // Empty: Represents an empty message.
@@ -117,6 +127,56 @@ message OnrampSwapResponse {
   optional string updatedAt = 9;
 }
 
+message OfframpSwapRequest {
+  // Optional reference to a quote.
+  // If not specified, the service will create a new quote for the swap
+  optional Quote quote = 1;
+
+  // Amount to swap
+  // Any transaction fees will be deducted from this amount
+  string amount = 2;
+
+  // Target of the swap
+  OfframpSwapTarget target = 3;
+}
+
+message OfframpSwapTarget {
+  // Currency code for the target currency
+  Currency currency = 1;
+
+  // Target destination
+  oneof destination {
+    // Mobile money destination
+    MobileMoney mobile_money = 2;
+  }
+}
+
+message MobileMoney {
+  // Phone number for the mobile money offramp
+  string phone = 1;
+}
+
+message OfframpSwapResponse {
+  // Unique identifier for the swap
+  // You can use this to track the status on both sides of the swap
+  string id = 1;
+
+  // Exchange rate to be used for the swap
+  string rate = 2;
+
+  // lightning invoice to be paid before swap can proceed
+  string lightning = 3;
+
+  // Current status of the swap
+  SwapStatus status = 4;
+
+  // Optional reference to a user
+  optional string userId = 5;
+
+  string createdAt = 7;
+  optional string updatedAt = 8;
+}
+
 // FindSwapRequest: Represents a request to find a swap.
 message FindSwapRequest {
   // Unique identifier for the swap
@@ -147,6 +207,17 @@ message PaginatedRequest {
 message PaginatedOnrampSwapResponse {
   // List of onramp swaps
   repeated OnrampSwapResponse swaps = 1;
+  // Current page offset
+  int32 page = 2;
+  // Number of items return per page
+  int32 size = 3;
+  // Number of pages given the current page size
+  int32 pages = 4;
+}
+
+message PaginatedOfframpSwapResponse {
+  // List of offramp swaps
+  repeated OfframpSwapResponse swaps = 1;
   // Current page offset
   int32 page = 2;
   // Number of items return per page
