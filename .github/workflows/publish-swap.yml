@@ -14,13 +14,37 @@ jobs:
   wait-for-tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Wait for unit tests to succeed
-        uses: lewagon/wait-on-check-action@v1.3.1
+      - uses: actions/github-script@v6
         with:
-          ref: ${{ github.ref }}
-          check-name: 'run-unit-tests'
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          wait-interval: 10
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const { owner, repo } = context.repo;
+            const ref = context.sha;
+
+            while (true) {
+              const { data: checks } = await github.rest.checks.listForRef({
+                owner,
+                repo,
+                ref,
+                check_name: 'run-unit-tests'
+              });
+
+              if (checks.check_runs.length > 0) {
+                const status = checks.check_runs[0].status;
+                const conclusion = checks.check_runs[0].conclusion;
+
+                if (status === 'completed') {
+                  if (conclusion === 'success') {
+                    console.log('Tests passed!');
+                    break;
+                  } else {
+                    throw new Error('Tests failed!');
+                  }
+                }
+              }
+
+              await new Promise(r => setTimeout(r, 10000));
+            }
 
   docker:
     needs: wait-for-tests
