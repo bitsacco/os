@@ -18,7 +18,7 @@ describe('SwapService', () => {
   let mockSwapServiceClient: Partial<SwapServiceClient>;
 
   const mock_id = '6f7f6d3f-c54e-4a34-a80d-a9e3c023abf3';
-  const mock_rate = 8708520.117232416; // BTC to KES
+  const mock_btc_kes = 8708520.117232416; // BTC to KES
 
   beforeAll(() => {
     // gRpc client that actually talks to the microservice
@@ -34,24 +34,24 @@ describe('SwapService', () => {
               to,
               amount: btcFromKes({
                 amountKes: Number(amount),
-                btcToKesRate: mock_rate,
+                btcToKesRate: mock_btc_kes,
               }).toString(),
               expiry: (Math.floor(Date.now() / 1000) + 30 * 60).toString(),
-              rate: mock_rate.toString(),
+              rate: mock_btc_kes.toString(),
             };
           },
         ),
       createOnrampSwap: jest.fn().mockImplementation(async () => {
         return {
           id: mock_id,
-          rate: mock_rate.toString(),
+          rate: mock_btc_kes.toString(),
           status: 'PENDING',
         };
       }),
       findOnrampSwap: jest.fn().mockImplementation(async () => {
         return {
           id: mock_id,
-          rate: mock_rate.toString(),
+          rate: mock_btc_kes.toString(),
           status: 'PENDING',
         };
       }),
@@ -60,13 +60,20 @@ describe('SwapService', () => {
           swaps: [
             {
               id: mock_id,
-              rate: mock_rate.toString(),
+              rate: mock_btc_kes.toString(),
               status: 'PENDING',
             },
           ],
           page: 0,
           size: 10,
           pages: 2,
+        };
+      }),
+      createOfframpSwap: jest.fn().mockImplementation(async () => {
+        return {
+          id: mock_id,
+          rate: (1 / mock_btc_kes).toString(),
+          status: 'PENDING',
         };
       }),
     };
@@ -140,56 +147,87 @@ describe('SwapService', () => {
       expect(swap).toBeDefined();
       expect(mockSwapServiceClient.createOnrampSwap).toHaveBeenCalled();
     });
+  });
 
-    describe('getOnrampTransactions', () => {
-      it('should return status 200', () => {
-        expect(
-          swapService.getOnrampTransactions({
-            page: 0,
-            size: 10,
-          }),
-        ).toBeDefined();
+  describe('findOnrampTransaction', () => {
+    it('can look up onramp swap tx given id', () => {
+      const swap = swapService.findOnrampTransaction({
+        id: mock_id,
       });
+      expect(swap).toBeDefined();
+      expect(mockSwapServiceClient.findOnrampSwap).toHaveBeenCalled();
+    });
+  });
+
+  describe('getOnrampTransactions', () => {
+    it('should return status 200', () => {
+      expect(
+        swapService.getOnrampTransactions({
+          page: 0,
+          size: 10,
+        }),
+      ).toBeDefined();
+    });
+  });
+
+  describe('getOfframpQuote', () => {
+    it('can request quote', () => {
+      const quote = swapService.getOfframpQuote({
+        from: Currency.BTC,
+        to: Currency.KES,
+        amount: '1',
+      });
+      expect(quote).toBeDefined();
+      expect(mockSwapServiceClient.getQuote).toHaveBeenCalled();
+    });
+  });
+
+  describe('postOfframpTransaction', () => {
+    it('can initiate an offramp swap without a quote', () => {
+      const swap = swapService.postOfframpTransaction({
+        quote: undefined,
+        ref: '1234',
+        amount: '100',
+        target: {
+          currency: Currency.KES,
+          destination: {
+            phone: '0700000000',
+          },
+        },
+      });
+      expect(swap).toBeDefined();
+      expect(mockSwapServiceClient.createOfframpSwap).toHaveBeenCalled();
     });
 
-    describe('findOnrampTransaction', () => {
-      it('can look up onramp swap tx given id', () => {
-        const swap = swapService.findOnrampTransaction({
+    it('can initiate an offramp swap with a quote', () => {
+      const swap = swapService.postOfframpTransaction({
+        ref: '1234',
+        amount: '100',
+        target: {
+          currency: Currency.KES,
+          destination: {
+            phone: '0700000000',
+          },
+        },
+        quote: {
           id: mock_id,
-        });
-        expect(swap).toBeDefined();
-        expect(mockSwapServiceClient.findOnrampSwap).toHaveBeenCalled();
+          refreshIfExpired: true,
+        },
       });
+      expect(swap).toBeDefined();
+      expect(mockSwapServiceClient.createOfframpSwap).toHaveBeenCalled();
     });
+  });
 
-    describe('getOfframpQuote', () => {
-      it('can request quote', () => {
-        const quote = swapService.getOfframpQuote({
-          from: Currency.BTC,
-          to: Currency.KES,
-          amount: '1',
-        });
-        expect(quote).toBeDefined();
-        expect(mockSwapServiceClient.getQuote).toHaveBeenCalled();
-      });
+  describe('getOfframpTransactions', () => {
+    it('should return status 200', () => {
+      expect(swapService.getOfframpTransactions()).toEqual({ status: 200 });
     });
+  });
 
-    describe('postOfframpTransaction', () => {
-      it('should return status 200', () => {
-        expect(swapService.postOfframpTransaction()).toEqual({ status: 200 });
-      });
-    });
-
-    describe('getOfframpTransactions', () => {
-      it('should return status 200', () => {
-        expect(swapService.getOfframpTransactions()).toEqual({ status: 200 });
-      });
-    });
-
-    describe('findOfframpTransaction', () => {
-      it('should return status 200', () => {
-        expect(swapService.findOfframpTransaction()).toEqual({ status: 200 });
-      });
+  describe('findOfframpTransaction', () => {
+    it('should return status 200', () => {
+      expect(swapService.findOfframpTransaction()).toEqual({ status: 200 });
     });
   });
 });

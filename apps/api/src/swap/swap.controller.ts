@@ -20,6 +20,7 @@ import {
   EVENTS_SERVICE_BUS,
   CreateOnrampSwapDto,
   ListSwapsDto,
+  CreateOfframpSwapDto,
 } from '@bitsacco/common';
 import { SwapService } from './swap.service';
 
@@ -61,16 +62,8 @@ export class SwapController {
   @ApiBody({
     type: CreateOnrampSwapDto,
   })
-  postOnrampTransaction(
-    @Body() { quote, ref, amount, phone, lightning }: CreateOnrampSwapDto,
-  ) {
-    return this.swapService.postOnrampTransaction({
-      quote,
-      ref,
-      amount,
-      phone,
-      lightning,
-    });
+  postOnrampTransaction(@Body() req: CreateOnrampSwapDto) {
+    return this.swapService.postOnrampTransaction(req);
   }
 
   @Get('onramp/find/:id')
@@ -127,8 +120,12 @@ export class SwapController {
   }
 
   @Post('offramp')
-  postOfframpTransaction() {
-    return this.swapService.postOfframpTransaction();
+  @ApiOperation({ summary: 'Post offramp transaction' })
+  @ApiBody({
+    type: CreateOfframpSwapDto,
+  })
+  postOfframpTransaction(@Body() req: CreateOfframpSwapDto) {
+    return this.swapService.postOfframpTransaction(req);
   }
 
   @Get('offramp/all')

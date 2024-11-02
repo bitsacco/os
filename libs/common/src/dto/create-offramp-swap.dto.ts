@@ -55,10 +55,4 @@ export class CreateOfframpSwapDto implements OfframpSwapRequest {
   @IsNotEmpty()
   @ApiProperty({ type: OfframpSwapTargetDto })
   target: OfframpSwapTargetDto;
-
-  @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty()
-  lightning: string;
 }

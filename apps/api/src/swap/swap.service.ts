@@ -1,4 +1,5 @@
 import {
+  CreateOfframpSwapDto,
   CreateOnrampSwapDto,
   Currency,
   FindSwapRequest,
@@ -47,8 +48,8 @@ export class SwapService implements OnModuleInit {
     return this.client.getQuote(req);
   }
 
-  postOfframpTransaction() {
-    return { status: 200 };
+  postOfframpTransaction(req: CreateOfframpSwapDto) {
+    return this.client.createOfframpSwap(req);
   }
 
   getOfframpTransactions() {

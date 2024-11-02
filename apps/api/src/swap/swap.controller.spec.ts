@@ -103,7 +103,18 @@ describe('SwapController', () => {
 
   describe('postOfframpTransaction', () => {
     it('should call swapService.postOfframpTransaction', () => {
-      controller.postOfframpTransaction();
+      const req = {
+        quote: undefined,
+        ref: 'ref',
+        amount: '100',
+        target: {
+          currency: SupportedCurrencies.KES,
+          destination: {
+            phone: '07000000000',
+          },
+        },
+      };
+      controller.postOfframpTransaction(req);
       expect(swapService.postOfframpTransaction).toHaveBeenCalled();
     });
   });

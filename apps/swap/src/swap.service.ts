@@ -54,7 +54,7 @@ export class SwapService {
         const btcToKesRate = await this.fxService.getBtcToKesRate();
         const amountBtc =
           amount && btcFromKes({ amountKes: Number(amount), btcToKesRate });
-        convertedAmount = amountBtc?.toString()
+        convertedAmount = amountBtc?.toString();
         fxRate = btcToKesRate.toString();
       }
 
@@ -62,7 +62,7 @@ export class SwapService {
         const kesToBtcRate = await this.fxService.getKesToBtcRate();
         const amountKes =
           amount && kesFromBtc({ amountBtc: Number(amount), kesToBtcRate });
-        convertedAmount = amountKes?.toString()
+        convertedAmount = amountKes?.toString();
         fxRate = kesToBtcRate.toString();
       }
 
