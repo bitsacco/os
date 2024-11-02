@@ -11,7 +11,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  wait-for-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for unit tests to succeed
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.ref }}
+          check-name: 'run-unit-tests'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+
   docker:
+    needs: wait-for-tests
     runs-on: ubuntu-latest
     steps:
       - name: Set up QEMU
