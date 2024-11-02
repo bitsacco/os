@@ -33,9 +33,11 @@ export class FxService {
   }
 
   private async getCurrencyApiRates() {
-    const cachedData = await this.cacheManager.get<{
-      btcToKesRate: string;
-    } | void>(this.CACHE_KEY);
+    const cachedData = await this.cacheManager
+      .get<{
+        btcToKesRate: string;
+      }>(this.CACHE_KEY)
+      .catch((_) => undefined);
     if (cachedData) {
       this.logger.log('Returning cached currency rates');
       return cachedData;

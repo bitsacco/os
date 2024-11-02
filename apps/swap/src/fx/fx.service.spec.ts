@@ -1,6 +1,9 @@
 import { TestingModule } from '@nestjs/testing';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { createTestingModuleWithValidation } from '@bitsacco/common';
+import {
+  createTestingModuleWithValidation,
+  CustomStore,
+} from '@bitsacco/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { HttpModule } from '@nestjs/axios';
 import { FxService } from './fx.service';
@@ -10,7 +13,7 @@ const mock_rate = 8708520.117232416;
 describe('FxService', () => {
   let fxService: FxService;
   let mockCfg: { get: jest.Mock };
-  let mockCacheManager: any;
+  let mockCacheManager: CustomStore;
 
   beforeEach(async () => {
     mockCfg = {
@@ -18,9 +21,13 @@ describe('FxService', () => {
     };
 
     mockCacheManager = {
-      get: jest.fn(),
+      get: jest.fn().mockImplementation((key: string) => {
+        return Promise.resolve({
+          btcToKesRate: mock_rate,
+        });
+      }),
       set: jest.fn(),
-    };
+    } as unknown as CustomStore;
 
     const module: TestingModule = await createTestingModuleWithValidation({
       imports: [ConfigModule, HttpModule, CacheModule.register()],
@@ -69,6 +76,10 @@ describe('FxService', () => {
       }
     });
 
+    (mockCacheManager.get as jest.Mock).mockImplementation(() => {
+      return Promise.reject(new Error('cache miss'));
+    });
+
     await expect(fxService.getBtcToKesRate()).rejects.toThrow(
       'Either CURRENCY_API_KEY or MOCK_BTC_KES_RATE must be configured',
     );
@@ -97,6 +108,10 @@ describe('FxService', () => {
         default:
           return undefined;
       }
+    });
+
+    (mockCacheManager.get as jest.Mock).mockImplementation(() => {
+      return Promise.reject(new Error('cache miss'));
     });
 
     await expect(fxService.getBtcToKesRate()).rejects.toThrow(
