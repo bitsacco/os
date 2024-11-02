@@ -18,7 +18,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { SwapTransactionState } from '../prisma/client';
+import { MpesaOnrampSwap, SwapTransactionState } from '../prisma/client';
 import { FxService } from './fx/fx.service';
 import { PrismaService } from './prisma.service';
 import { IntasendService } from './intasend/intasend.service';
@@ -259,7 +259,7 @@ export class SwapService {
     let updates: { state: SwapTransactionState };
     switch (mpesa.state) {
       case MpesaTractactionState.Complete:
-        const { state } = await this.fedimintService.swapToBtc(swap);
+        const { state } = await this.swapToBtc(swap);
         updates = { state };
         break;
       case MpesaTractactionState.Processing:
@@ -283,6 +283,34 @@ export class SwapService {
 
     this.logger.log('Swap Updated');
     return;
+  }
+
+  private async swapToBtc(
+    swap: MpesaOnrampSwap,
+  ): Promise<{ state: SwapTransactionState; operationId: string }> {
+    this.logger.log('Swapping to BTC');
+    this.logger.log('Swap', swap);
+
+    if (
+      swap.state === SwapTransactionState.COMPLETE ||
+      swap.state === SwapTransactionState.FAILED
+    ) {
+      throw new Error('Swap transaction alread finalized');
+    }
+
+    if (swap.state === SwapTransactionState.PROCESSING) {
+      this.logger.log(`Attempting to pay : ${swap.lightning}`);
+
+      const { operationId } = await this.fedimintService.pay(swap.lightning);
+      this.logger.log('Completed Onramp Swap', swap.id, operationId);
+
+      return {
+        state: SwapTransactionState.COMPLETE,
+        operationId,
+      };
+    }
+
+    throw new Error('Attempted swap to btc while mpesa is still pending');
   }
 }
 

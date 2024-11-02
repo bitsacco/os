@@ -49,7 +49,7 @@ describe('SwapService', () => {
     } as unknown as IntasendService;
 
     mockFedimintService = {
-      swapToBtc: jest.fn().mockImplementation(() => {
+      pay: jest.fn().mockImplementation(() => {
         return {
           state: SwapTransactionState.COMPLETE,
           operationId: '123456789',
@@ -348,7 +348,7 @@ describe('SwapService', () => {
       expect(
         mockPrismaService.mpesaOnrampSwap.findUniqueOrThrow,
       ).toHaveBeenCalled();
-      expect(mockFedimintService.swapToBtc).toHaveBeenCalled();
+      expect(mockFedimintService.pay).toHaveBeenCalled();
       expect(mockPrismaService.mpesaOnrampSwap.update).toHaveBeenCalled();
       expect(mockPrismaService.mpesaOnrampSwap.update).toHaveBeenCalledWith({
         where: {
