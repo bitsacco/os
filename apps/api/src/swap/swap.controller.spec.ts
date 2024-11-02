@@ -96,7 +96,7 @@ describe('SwapController', () => {
 
   describe('getOfframpQuote', () => {
     it('should call swapService.getOfframpQuote', () => {
-      controller.getOfframpQuote();
+      controller.getOfframpQuote(SupportedCurrencies.KES);
       expect(swapService.getOfframpQuote).toHaveBeenCalled();
     });
   });

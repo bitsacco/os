@@ -39,8 +39,12 @@ export class SwapService implements OnModuleInit {
     return this.client.findOnrampSwap(req);
   }
 
-  getOfframpQuote() {
-    return { status: 200 };
+  getOfframpQuote(req: {
+    from: Currency.BTC;
+    to: Currency.KES;
+    amount?: string;
+  }) {
+    return this.client.getQuote(req);
   }
 
   postOfframpTransaction() {

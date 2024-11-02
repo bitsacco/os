@@ -163,8 +163,14 @@ describe('SwapService', () => {
     });
 
     describe('getOfframpQuote', () => {
-      it('should return status 200', () => {
-        expect(swapService.getOfframpQuote()).toEqual({ status: 200 });
+      it('can request quote', () => {
+        const quote = swapService.getOfframpQuote({
+          from: Currency.BTC,
+          to: Currency.KES,
+          amount: '1',
+        });
+        expect(quote).toBeDefined();
+        expect(mockSwapServiceClient.getQuote).toHaveBeenCalled();
       });
     });
 

@@ -30,3 +30,13 @@ export function btcFromKes({
 }): string {
   return (amountKes / btcToKesRate).toFixed(9);
 }
+
+export function kesFromBtc({
+  amountBtc,
+  kesToBtcRate,
+}: {
+  amountBtc: number;
+  kesToBtcRate: number;
+}): string {
+  return (amountBtc * kesToBtcRate).toFixed(9);
+}

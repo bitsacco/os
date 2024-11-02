@@ -13,6 +13,7 @@ import {
   PaginatedOfframpSwapResponse,
   OfframpSwapResponse,
   CreateOfframpSwapDto,
+  kesFromBtc,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -42,22 +43,37 @@ export class SwapService {
 
   async getQuote({ from, to, amount }: QuoteRequest): Promise<QuoteResponse> {
     try {
-      const btcToKesRate = await this.fxService.getBtcToKesRate();
-
       if (amount && isNaN(Number(amount))) {
         throw new Error('Amount must be a number');
       }
 
-      const amountBtc =
-        amount && btcFromKes({ amountKes: Number(amount), btcToKesRate });
+      let convertedAmount: string | undefined;
+      let fxRate: string;
+
+      if (from === Currency.KES && to === Currency.BTC) {
+        const btcToKesRate = await this.fxService.getBtcToKesRate();
+        const amountBtc =
+          amount && btcFromKes({ amountKes: Number(amount), btcToKesRate });
+        convertedAmount = amountBtc?.toString()
+        fxRate = btcToKesRate.toString();
+      }
+
+      if (from === Currency.BTC && to === Currency.KES) {
+        const kesToBtcRate = await this.fxService.getKesToBtcRate();
+        const amountKes =
+          amount && kesFromBtc({ amountBtc: Number(amount), kesToBtcRate });
+        convertedAmount = amountKes?.toString()
+        fxRate = kesToBtcRate.toString();
+      }
+
       const expiry = Math.floor(Date.now() / 1000) + 30 * 60; // 30 mins from now
 
       const quote: QuoteResponse = {
         id: uuidv4(),
         from,
         to,
-        rate: btcToKesRate.toString(),
-        amount: amountBtc?.toString(),
+        rate: fxRate,
+        amount: convertedAmount,
         expiry: expiry.toString(),
       };
 

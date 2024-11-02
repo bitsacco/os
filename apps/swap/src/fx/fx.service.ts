@@ -93,4 +93,9 @@ export class FxService {
     const { btcToKesRate } = await this.getCurrencyApiRates();
     return btcToKesRate;
   }
+
+  async getKesToBtcRate() {
+    const { btcToKesRate } = await this.getCurrencyApiRates();
+    return 1 / btcToKesRate;
+  }
 }

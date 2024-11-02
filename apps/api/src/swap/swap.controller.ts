@@ -105,8 +105,25 @@ export class SwapController {
   }
 
   @Get('offramp/quote')
-  getOfframpQuote() {
-    return this.swapService.getOfframpQuote();
+  @ApiOperation({ summary: 'Get onramp quote' })
+  @ApiQuery({ name: 'currency', enum: SupportedCurrencies, required: true })
+  @ApiQuery({ name: 'amount', type: Number, required: false })
+  getOfframpQuote(
+    @Query('currency') currency: SupportedCurrencyType,
+    @Query('amount') amount?: number,
+  ) {
+    const to = mapToCurrency(currency);
+    if (to !== Currency.KES) {
+      const es = 'Invalid currency. Only KES is supported';
+      this.logger.error(es);
+      throw new BadRequestException(es);
+    }
+
+    return this.swapService.getOfframpQuote({
+      to,
+      from: Currency.BTC,
+      amount: amount?.toString(),
+    });
   }
 
   @Post('offramp')
