@@ -201,7 +201,7 @@ export class SwapService {
       };
     } catch (e) {
       this.logger.error(e);
-      throw new Error('Swap not found in db');
+      throw new Error('onramp swap not found in db');
     }
   }
 
@@ -279,7 +279,25 @@ export class SwapService {
   }
 
   async findOfframpSwap({ id }: FindSwapDto): Promise<OfframpSwapResponse> {
-    throw new Error('Method not implemented.');
+    try {
+      // Look up swap in db
+      const swap = await this.prismaService.mpesaOfframpSwap.findUniqueOrThrow({
+        where: {
+          id,
+        },
+      });
+
+      return {
+        ...swap,
+        status: mapSwapTxStateToSwapStatus(swap.state),
+        retryCount: swap.retryCount,
+        createdAt: swap.createdAt.toDateString(),
+        updatedAt: swap.updatedAt.toDateString(),
+      };
+    } catch (e) {
+      this.logger.error(e);
+      throw new Error('offramp swap not found in db');
+    }
   }
 
   async listOfframpSwaps({
