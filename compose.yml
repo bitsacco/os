@@ -10,7 +10,6 @@ services:
     restart: always
     depends_on:
       - postgres
-      - swap
     env_file:
       - ./apps/api/.env
     ports:
