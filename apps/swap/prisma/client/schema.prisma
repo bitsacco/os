@@ -29,6 +29,26 @@ model MpesaOnrampSwap {
   updatedAt  DateTime             @updatedAt
 }
 
+model MpesaOfframpSwap {
+  /// Unique identifier for the swap
+  id         String               @id
+  /// Tracks progress of the swap
+  state      SwapTransactionState
+  /// References the user who made the transaction.
+  userId     String
+  /// References the offramp Mpesa transaction ID.
+  mpesaId    String?              @unique
+  /// Lightning invoice to be paid before invoice can proceed.
+  lightning  String
+  /// Fx Rate
+  rate       String
+  /// Retry count tracker
+  retryCount Int
+  /// Timestamps
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+}
+
 enum SwapTransactionState {
   PENDING
   PROCESSING

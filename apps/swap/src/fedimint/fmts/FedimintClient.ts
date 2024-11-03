@@ -218,11 +218,15 @@ export class FedimintClient {
       );
     }
 
-    return this.post<T>(endpoint, {
+    const payload = {
       ...body,
       federationId: effectiveFederationId,
       gatewayId: effectiveGatewayId,
-    });
+    };
+
+    console.log(payload);
+
+    return this.post<T>(endpoint, payload);
   }
 
   /**

@@ -18,6 +18,12 @@ export type PrismaPromise<T> = $Public.PrismaPromise<T>;
 export type MpesaOnrampSwap =
   $Result.DefaultSelection<Prisma.$MpesaOnrampSwapPayload>;
 /**
+ * Model MpesaOfframpSwap
+ *
+ */
+export type MpesaOfframpSwap =
+  $Result.DefaultSelection<Prisma.$MpesaOfframpSwapPayload>;
+/**
  * Model IntasendMpesaTransaction
  *
  */
@@ -209,6 +215,16 @@ export class PrismaClient<
    * ```
    */
   get mpesaOnrampSwap(): Prisma.MpesaOnrampSwapDelegate<ExtArgs>;
+
+  /**
+   * `prisma.mpesaOfframpSwap`: Exposes CRUD operations for the **MpesaOfframpSwap** model.
+   * Example usage:
+   * ```ts
+   * // Fetch zero or more MpesaOfframpSwaps
+   * const mpesaOfframpSwaps = await prisma.mpesaOfframpSwap.findMany()
+   * ```
+   */
+  get mpesaOfframpSwap(): Prisma.MpesaOfframpSwapDelegate<ExtArgs>;
 
   /**
    * `prisma.intasendMpesaTransaction`: Exposes CRUD operations for the **IntasendMpesaTransaction** model.
@@ -679,6 +695,7 @@ export namespace Prisma {
 
   export const ModelName: {
     MpesaOnrampSwap: 'MpesaOnrampSwap';
+    MpesaOfframpSwap: 'MpesaOfframpSwap';
     IntasendMpesaTransaction: 'IntasendMpesaTransaction';
   };
 
@@ -704,7 +721,10 @@ export namespace Prisma {
     ClientOptions = {},
   > = {
     meta: {
-      modelProps: 'mpesaOnrampSwap' | 'intasendMpesaTransaction';
+      modelProps:
+        | 'mpesaOnrampSwap'
+        | 'mpesaOfframpSwap'
+        | 'intasendMpesaTransaction';
       txIsolationLevel: Prisma.TransactionIsolationLevel;
     };
     model: {
@@ -776,6 +796,78 @@ export namespace Prisma {
             args: Prisma.MpesaOnrampSwapCountArgs<ExtArgs>;
             result:
               | $Utils.Optional<MpesaOnrampSwapCountAggregateOutputType>
+              | number;
+          };
+        };
+      };
+      MpesaOfframpSwap: {
+        payload: Prisma.$MpesaOfframpSwapPayload<ExtArgs>;
+        fields: Prisma.MpesaOfframpSwapFieldRefs;
+        operations: {
+          findUnique: {
+            args: Prisma.MpesaOfframpSwapFindUniqueArgs<ExtArgs>;
+            result: $Utils.PayloadToResult<Prisma.$MpesaOfframpSwapPayload> | null;
+          };
+          findUniqueOrThrow: {
+            args: Prisma.MpesaOfframpSwapFindUniqueOrThrowArgs<ExtArgs>;
+            result: $Utils.PayloadToResult<Prisma.$MpesaOfframpSwapPayload>;
+          };
+          findFirst: {
+            args: Prisma.MpesaOfframpSwapFindFirstArgs<ExtArgs>;
+            result: $Utils.PayloadToResult<Prisma.$MpesaOfframpSwapPayload> | null;
+          };
+          findFirstOrThrow: {
+            args: Prisma.MpesaOfframpSwapFindFirstOrThrowArgs<ExtArgs>;
+            result: $Utils.PayloadToResult<Prisma.$MpesaOfframpSwapPayload>;
+          };
+          findMany: {
+            args: Prisma.MpesaOfframpSwapFindManyArgs<ExtArgs>;
+            result: $Utils.PayloadToResult<Prisma.$MpesaOfframpSwapPayload>[];
+          };
+          create: {
+            args: Prisma.MpesaOfframpSwapCreateArgs<ExtArgs>;
+            result: $Utils.PayloadToResult<Prisma.$MpesaOfframpSwapPayload>;
+          };
+          createMany: {
+            args: Prisma.MpesaOfframpSwapCreateManyArgs<ExtArgs>;
+            result: BatchPayload;
+          };
+          createManyAndReturn: {
+            args: Prisma.MpesaOfframpSwapCreateManyAndReturnArgs<ExtArgs>;
+            result: $Utils.PayloadToResult<Prisma.$MpesaOfframpSwapPayload>[];
+          };
+          delete: {
+            args: Prisma.MpesaOfframpSwapDeleteArgs<ExtArgs>;
+            result: $Utils.PayloadToResult<Prisma.$MpesaOfframpSwapPayload>;
+          };
+          update: {
+            args: Prisma.MpesaOfframpSwapUpdateArgs<ExtArgs>;
+            result: $Utils.PayloadToResult<Prisma.$MpesaOfframpSwapPayload>;
+          };
+          deleteMany: {
+            args: Prisma.MpesaOfframpSwapDeleteManyArgs<ExtArgs>;
+            result: BatchPayload;
+          };
+          updateMany: {
+            args: Prisma.MpesaOfframpSwapUpdateManyArgs<ExtArgs>;
+            result: BatchPayload;
+          };
+          upsert: {
+            args: Prisma.MpesaOfframpSwapUpsertArgs<ExtArgs>;
+            result: $Utils.PayloadToResult<Prisma.$MpesaOfframpSwapPayload>;
+          };
+          aggregate: {
+            args: Prisma.MpesaOfframpSwapAggregateArgs<ExtArgs>;
+            result: $Utils.Optional<AggregateMpesaOfframpSwap>;
+          };
+          groupBy: {
+            args: Prisma.MpesaOfframpSwapGroupByArgs<ExtArgs>;
+            result: $Utils.Optional<MpesaOfframpSwapGroupByOutputType>[];
+          };
+          count: {
+            args: Prisma.MpesaOfframpSwapCountArgs<ExtArgs>;
+            result:
+              | $Utils.Optional<MpesaOfframpSwapCountAggregateOutputType>
               | number;
           };
         };
@@ -2195,6 +2287,1179 @@ export namespace Prisma {
   };
 
   /**
+   * Model MpesaOfframpSwap
+   */
+
+  export type AggregateMpesaOfframpSwap = {
+    _count: MpesaOfframpSwapCountAggregateOutputType | null;
+    _avg: MpesaOfframpSwapAvgAggregateOutputType | null;
+    _sum: MpesaOfframpSwapSumAggregateOutputType | null;
+    _min: MpesaOfframpSwapMinAggregateOutputType | null;
+    _max: MpesaOfframpSwapMaxAggregateOutputType | null;
+  };
+
+  export type MpesaOfframpSwapAvgAggregateOutputType = {
+    retryCount: number | null;
+  };
+
+  export type MpesaOfframpSwapSumAggregateOutputType = {
+    retryCount: number | null;
+  };
+
+  export type MpesaOfframpSwapMinAggregateOutputType = {
+    id: string | null;
+    state: $Enums.SwapTransactionState | null;
+    userId: string | null;
+    mpesaId: string | null;
+    lightning: string | null;
+    rate: string | null;
+    retryCount: number | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+  };
+
+  export type MpesaOfframpSwapMaxAggregateOutputType = {
+    id: string | null;
+    state: $Enums.SwapTransactionState | null;
+    userId: string | null;
+    mpesaId: string | null;
+    lightning: string | null;
+    rate: string | null;
+    retryCount: number | null;
+    createdAt: Date | null;
+    updatedAt: Date | null;
+  };
+
+  export type MpesaOfframpSwapCountAggregateOutputType = {
+    id: number;
+    state: number;
+    userId: number;
+    mpesaId: number;
+    lightning: number;
+    rate: number;
+    retryCount: number;
+    createdAt: number;
+    updatedAt: number;
+    _all: number;
+  };
+
+  export type MpesaOfframpSwapAvgAggregateInputType = {
+    retryCount?: true;
+  };
+
+  export type MpesaOfframpSwapSumAggregateInputType = {
+    retryCount?: true;
+  };
+
+  export type MpesaOfframpSwapMinAggregateInputType = {
+    id?: true;
+    state?: true;
+    userId?: true;
+    mpesaId?: true;
+    lightning?: true;
+    rate?: true;
+    retryCount?: true;
+    createdAt?: true;
+    updatedAt?: true;
+  };
+
+  export type MpesaOfframpSwapMaxAggregateInputType = {
+    id?: true;
+    state?: true;
+    userId?: true;
+    mpesaId?: true;
+    lightning?: true;
+    rate?: true;
+    retryCount?: true;
+    createdAt?: true;
+    updatedAt?: true;
+  };
+
+  export type MpesaOfframpSwapCountAggregateInputType = {
+    id?: true;
+    state?: true;
+    userId?: true;
+    mpesaId?: true;
+    lightning?: true;
+    rate?: true;
+    retryCount?: true;
+    createdAt?: true;
+    updatedAt?: true;
+    _all?: true;
+  };
+
+  export type MpesaOfframpSwapAggregateArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Filter which MpesaOfframpSwap to aggregate.
+     */
+    where?: MpesaOfframpSwapWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of MpesaOfframpSwaps to fetch.
+     */
+    orderBy?:
+      | MpesaOfframpSwapOrderByWithRelationInput
+      | MpesaOfframpSwapOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the start position
+     */
+    cursor?: MpesaOfframpSwapWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` MpesaOfframpSwaps from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` MpesaOfframpSwaps.
+     */
+    skip?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Count returned MpesaOfframpSwaps
+     **/
+    _count?: true | MpesaOfframpSwapCountAggregateInputType;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to average
+     **/
+    _avg?: MpesaOfframpSwapAvgAggregateInputType;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to sum
+     **/
+    _sum?: MpesaOfframpSwapSumAggregateInputType;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the minimum value
+     **/
+    _min?: MpesaOfframpSwapMinAggregateInputType;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     *
+     * Select which fields to find the maximum value
+     **/
+    _max?: MpesaOfframpSwapMaxAggregateInputType;
+  };
+
+  export type GetMpesaOfframpSwapAggregateType<
+    T extends MpesaOfframpSwapAggregateArgs,
+  > = {
+    [P in keyof T & keyof AggregateMpesaOfframpSwap]: P extends
+      | '_count'
+      | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateMpesaOfframpSwap[P]>
+      : GetScalarType<T[P], AggregateMpesaOfframpSwap[P]>;
+  };
+
+  export type MpesaOfframpSwapGroupByArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    where?: MpesaOfframpSwapWhereInput;
+    orderBy?:
+      | MpesaOfframpSwapOrderByWithAggregationInput
+      | MpesaOfframpSwapOrderByWithAggregationInput[];
+    by: MpesaOfframpSwapScalarFieldEnum[] | MpesaOfframpSwapScalarFieldEnum;
+    having?: MpesaOfframpSwapScalarWhereWithAggregatesInput;
+    take?: number;
+    skip?: number;
+    _count?: MpesaOfframpSwapCountAggregateInputType | true;
+    _avg?: MpesaOfframpSwapAvgAggregateInputType;
+    _sum?: MpesaOfframpSwapSumAggregateInputType;
+    _min?: MpesaOfframpSwapMinAggregateInputType;
+    _max?: MpesaOfframpSwapMaxAggregateInputType;
+  };
+
+  export type MpesaOfframpSwapGroupByOutputType = {
+    id: string;
+    state: $Enums.SwapTransactionState;
+    userId: string;
+    mpesaId: string | null;
+    lightning: string;
+    rate: string;
+    retryCount: number;
+    createdAt: Date;
+    updatedAt: Date;
+    _count: MpesaOfframpSwapCountAggregateOutputType | null;
+    _avg: MpesaOfframpSwapAvgAggregateOutputType | null;
+    _sum: MpesaOfframpSwapSumAggregateOutputType | null;
+    _min: MpesaOfframpSwapMinAggregateOutputType | null;
+    _max: MpesaOfframpSwapMaxAggregateOutputType | null;
+  };
+
+  type GetMpesaOfframpSwapGroupByPayload<
+    T extends MpesaOfframpSwapGroupByArgs,
+  > = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<MpesaOfframpSwapGroupByOutputType, T['by']> & {
+        [P in keyof T &
+          keyof MpesaOfframpSwapGroupByOutputType]: P extends '_count'
+          ? T[P] extends boolean
+            ? number
+            : GetScalarType<T[P], MpesaOfframpSwapGroupByOutputType[P]>
+          : GetScalarType<T[P], MpesaOfframpSwapGroupByOutputType[P]>;
+      }
+    >
+  >;
+
+  export type MpesaOfframpSwapSelect<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = $Extensions.GetSelect<
+    {
+      id?: boolean;
+      state?: boolean;
+      userId?: boolean;
+      mpesaId?: boolean;
+      lightning?: boolean;
+      rate?: boolean;
+      retryCount?: boolean;
+      createdAt?: boolean;
+      updatedAt?: boolean;
+    },
+    ExtArgs['result']['mpesaOfframpSwap']
+  >;
+
+  export type MpesaOfframpSwapSelectCreateManyAndReturn<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = $Extensions.GetSelect<
+    {
+      id?: boolean;
+      state?: boolean;
+      userId?: boolean;
+      mpesaId?: boolean;
+      lightning?: boolean;
+      rate?: boolean;
+      retryCount?: boolean;
+      createdAt?: boolean;
+      updatedAt?: boolean;
+    },
+    ExtArgs['result']['mpesaOfframpSwap']
+  >;
+
+  export type MpesaOfframpSwapSelectScalar = {
+    id?: boolean;
+    state?: boolean;
+    userId?: boolean;
+    mpesaId?: boolean;
+    lightning?: boolean;
+    rate?: boolean;
+    retryCount?: boolean;
+    createdAt?: boolean;
+    updatedAt?: boolean;
+  };
+
+  export type $MpesaOfframpSwapPayload<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    name: 'MpesaOfframpSwap';
+    objects: {};
+    scalars: $Extensions.GetPayloadResult<
+      {
+        /**
+         * Unique identifier for the swap
+         */
+        id: string;
+        /**
+         * Tracks progress of the swap
+         */
+        state: $Enums.SwapTransactionState;
+        /**
+         * References the user who made the transaction.
+         */
+        userId: string;
+        /**
+         * References the offramp Mpesa transaction ID.
+         */
+        mpesaId: string | null;
+        /**
+         * Lightning invoice to be paid before invoice can proceed.
+         */
+        lightning: string;
+        /**
+         * Fx Rate
+         */
+        rate: string;
+        /**
+         * Retry count tracker
+         */
+        retryCount: number;
+        /**
+         * Timestamps
+         */
+        createdAt: Date;
+        updatedAt: Date;
+      },
+      ExtArgs['result']['mpesaOfframpSwap']
+    >;
+    composites: {};
+  };
+
+  type MpesaOfframpSwapGetPayload<
+    S extends boolean | null | undefined | MpesaOfframpSwapDefaultArgs,
+  > = $Result.GetResult<Prisma.$MpesaOfframpSwapPayload, S>;
+
+  type MpesaOfframpSwapCountArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = Omit<MpesaOfframpSwapFindManyArgs, 'select' | 'include' | 'distinct'> & {
+    select?: MpesaOfframpSwapCountAggregateInputType | true;
+  };
+
+  export interface MpesaOfframpSwapDelegate<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > {
+    [K: symbol]: {
+      types: Prisma.TypeMap<ExtArgs>['model']['MpesaOfframpSwap'];
+      meta: { name: 'MpesaOfframpSwap' };
+    };
+    /**
+     * Find zero or one MpesaOfframpSwap that matches the filter.
+     * @param {MpesaOfframpSwapFindUniqueArgs} args - Arguments to find a MpesaOfframpSwap
+     * @example
+     * // Get one MpesaOfframpSwap
+     * const mpesaOfframpSwap = await prisma.mpesaOfframpSwap.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends MpesaOfframpSwapFindUniqueArgs>(
+      args: SelectSubset<T, MpesaOfframpSwapFindUniqueArgs<ExtArgs>>,
+    ): Prisma__MpesaOfframpSwapClient<
+      $Result.GetResult<
+        Prisma.$MpesaOfframpSwapPayload<ExtArgs>,
+        T,
+        'findUnique'
+      > | null,
+      null,
+      ExtArgs
+    >;
+
+    /**
+     * Find one MpesaOfframpSwap that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {MpesaOfframpSwapFindUniqueOrThrowArgs} args - Arguments to find a MpesaOfframpSwap
+     * @example
+     * // Get one MpesaOfframpSwap
+     * const mpesaOfframpSwap = await prisma.mpesaOfframpSwap.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends MpesaOfframpSwapFindUniqueOrThrowArgs>(
+      args: SelectSubset<T, MpesaOfframpSwapFindUniqueOrThrowArgs<ExtArgs>>,
+    ): Prisma__MpesaOfframpSwapClient<
+      $Result.GetResult<
+        Prisma.$MpesaOfframpSwapPayload<ExtArgs>,
+        T,
+        'findUniqueOrThrow'
+      >,
+      never,
+      ExtArgs
+    >;
+
+    /**
+     * Find the first MpesaOfframpSwap that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MpesaOfframpSwapFindFirstArgs} args - Arguments to find a MpesaOfframpSwap
+     * @example
+     * // Get one MpesaOfframpSwap
+     * const mpesaOfframpSwap = await prisma.mpesaOfframpSwap.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends MpesaOfframpSwapFindFirstArgs>(
+      args?: SelectSubset<T, MpesaOfframpSwapFindFirstArgs<ExtArgs>>,
+    ): Prisma__MpesaOfframpSwapClient<
+      $Result.GetResult<
+        Prisma.$MpesaOfframpSwapPayload<ExtArgs>,
+        T,
+        'findFirst'
+      > | null,
+      null,
+      ExtArgs
+    >;
+
+    /**
+     * Find the first MpesaOfframpSwap that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MpesaOfframpSwapFindFirstOrThrowArgs} args - Arguments to find a MpesaOfframpSwap
+     * @example
+     * // Get one MpesaOfframpSwap
+     * const mpesaOfframpSwap = await prisma.mpesaOfframpSwap.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends MpesaOfframpSwapFindFirstOrThrowArgs>(
+      args?: SelectSubset<T, MpesaOfframpSwapFindFirstOrThrowArgs<ExtArgs>>,
+    ): Prisma__MpesaOfframpSwapClient<
+      $Result.GetResult<
+        Prisma.$MpesaOfframpSwapPayload<ExtArgs>,
+        T,
+        'findFirstOrThrow'
+      >,
+      never,
+      ExtArgs
+    >;
+
+    /**
+     * Find zero or more MpesaOfframpSwaps that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MpesaOfframpSwapFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all MpesaOfframpSwaps
+     * const mpesaOfframpSwaps = await prisma.mpesaOfframpSwap.findMany()
+     *
+     * // Get first 10 MpesaOfframpSwaps
+     * const mpesaOfframpSwaps = await prisma.mpesaOfframpSwap.findMany({ take: 10 })
+     *
+     * // Only select the `id`
+     * const mpesaOfframpSwapWithIdOnly = await prisma.mpesaOfframpSwap.findMany({ select: { id: true } })
+     *
+     */
+    findMany<T extends MpesaOfframpSwapFindManyArgs>(
+      args?: SelectSubset<T, MpesaOfframpSwapFindManyArgs<ExtArgs>>,
+    ): Prisma.PrismaPromise<
+      $Result.GetResult<Prisma.$MpesaOfframpSwapPayload<ExtArgs>, T, 'findMany'>
+    >;
+
+    /**
+     * Create a MpesaOfframpSwap.
+     * @param {MpesaOfframpSwapCreateArgs} args - Arguments to create a MpesaOfframpSwap.
+     * @example
+     * // Create one MpesaOfframpSwap
+     * const MpesaOfframpSwap = await prisma.mpesaOfframpSwap.create({
+     *   data: {
+     *     // ... data to create a MpesaOfframpSwap
+     *   }
+     * })
+     *
+     */
+    create<T extends MpesaOfframpSwapCreateArgs>(
+      args: SelectSubset<T, MpesaOfframpSwapCreateArgs<ExtArgs>>,
+    ): Prisma__MpesaOfframpSwapClient<
+      $Result.GetResult<Prisma.$MpesaOfframpSwapPayload<ExtArgs>, T, 'create'>,
+      never,
+      ExtArgs
+    >;
+
+    /**
+     * Create many MpesaOfframpSwaps.
+     * @param {MpesaOfframpSwapCreateManyArgs} args - Arguments to create many MpesaOfframpSwaps.
+     * @example
+     * // Create many MpesaOfframpSwaps
+     * const mpesaOfframpSwap = await prisma.mpesaOfframpSwap.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     */
+    createMany<T extends MpesaOfframpSwapCreateManyArgs>(
+      args?: SelectSubset<T, MpesaOfframpSwapCreateManyArgs<ExtArgs>>,
+    ): Prisma.PrismaPromise<BatchPayload>;
+
+    /**
+     * Create many MpesaOfframpSwaps and returns the data saved in the database.
+     * @param {MpesaOfframpSwapCreateManyAndReturnArgs} args - Arguments to create many MpesaOfframpSwaps.
+     * @example
+     * // Create many MpesaOfframpSwaps
+     * const mpesaOfframpSwap = await prisma.mpesaOfframpSwap.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *
+     * // Create many MpesaOfframpSwaps and only return the `id`
+     * const mpesaOfframpSwapWithIdOnly = await prisma.mpesaOfframpSwap.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     *
+     */
+    createManyAndReturn<T extends MpesaOfframpSwapCreateManyAndReturnArgs>(
+      args?: SelectSubset<T, MpesaOfframpSwapCreateManyAndReturnArgs<ExtArgs>>,
+    ): Prisma.PrismaPromise<
+      $Result.GetResult<
+        Prisma.$MpesaOfframpSwapPayload<ExtArgs>,
+        T,
+        'createManyAndReturn'
+      >
+    >;
+
+    /**
+     * Delete a MpesaOfframpSwap.
+     * @param {MpesaOfframpSwapDeleteArgs} args - Arguments to delete one MpesaOfframpSwap.
+     * @example
+     * // Delete one MpesaOfframpSwap
+     * const MpesaOfframpSwap = await prisma.mpesaOfframpSwap.delete({
+     *   where: {
+     *     // ... filter to delete one MpesaOfframpSwap
+     *   }
+     * })
+     *
+     */
+    delete<T extends MpesaOfframpSwapDeleteArgs>(
+      args: SelectSubset<T, MpesaOfframpSwapDeleteArgs<ExtArgs>>,
+    ): Prisma__MpesaOfframpSwapClient<
+      $Result.GetResult<Prisma.$MpesaOfframpSwapPayload<ExtArgs>, T, 'delete'>,
+      never,
+      ExtArgs
+    >;
+
+    /**
+     * Update one MpesaOfframpSwap.
+     * @param {MpesaOfframpSwapUpdateArgs} args - Arguments to update one MpesaOfframpSwap.
+     * @example
+     * // Update one MpesaOfframpSwap
+     * const mpesaOfframpSwap = await prisma.mpesaOfframpSwap.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    update<T extends MpesaOfframpSwapUpdateArgs>(
+      args: SelectSubset<T, MpesaOfframpSwapUpdateArgs<ExtArgs>>,
+    ): Prisma__MpesaOfframpSwapClient<
+      $Result.GetResult<Prisma.$MpesaOfframpSwapPayload<ExtArgs>, T, 'update'>,
+      never,
+      ExtArgs
+    >;
+
+    /**
+     * Delete zero or more MpesaOfframpSwaps.
+     * @param {MpesaOfframpSwapDeleteManyArgs} args - Arguments to filter MpesaOfframpSwaps to delete.
+     * @example
+     * // Delete a few MpesaOfframpSwaps
+     * const { count } = await prisma.mpesaOfframpSwap.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     *
+     */
+    deleteMany<T extends MpesaOfframpSwapDeleteManyArgs>(
+      args?: SelectSubset<T, MpesaOfframpSwapDeleteManyArgs<ExtArgs>>,
+    ): Prisma.PrismaPromise<BatchPayload>;
+
+    /**
+     * Update zero or more MpesaOfframpSwaps.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MpesaOfframpSwapUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many MpesaOfframpSwaps
+     * const mpesaOfframpSwap = await prisma.mpesaOfframpSwap.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     *
+     */
+    updateMany<T extends MpesaOfframpSwapUpdateManyArgs>(
+      args: SelectSubset<T, MpesaOfframpSwapUpdateManyArgs<ExtArgs>>,
+    ): Prisma.PrismaPromise<BatchPayload>;
+
+    /**
+     * Create or update one MpesaOfframpSwap.
+     * @param {MpesaOfframpSwapUpsertArgs} args - Arguments to update or create a MpesaOfframpSwap.
+     * @example
+     * // Update or create a MpesaOfframpSwap
+     * const mpesaOfframpSwap = await prisma.mpesaOfframpSwap.upsert({
+     *   create: {
+     *     // ... data to create a MpesaOfframpSwap
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the MpesaOfframpSwap we want to update
+     *   }
+     * })
+     */
+    upsert<T extends MpesaOfframpSwapUpsertArgs>(
+      args: SelectSubset<T, MpesaOfframpSwapUpsertArgs<ExtArgs>>,
+    ): Prisma__MpesaOfframpSwapClient<
+      $Result.GetResult<Prisma.$MpesaOfframpSwapPayload<ExtArgs>, T, 'upsert'>,
+      never,
+      ExtArgs
+    >;
+
+    /**
+     * Count the number of MpesaOfframpSwaps.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MpesaOfframpSwapCountArgs} args - Arguments to filter MpesaOfframpSwaps to count.
+     * @example
+     * // Count the number of MpesaOfframpSwaps
+     * const count = await prisma.mpesaOfframpSwap.count({
+     *   where: {
+     *     // ... the filter for the MpesaOfframpSwaps we want to count
+     *   }
+     * })
+     **/
+    count<T extends MpesaOfframpSwapCountArgs>(
+      args?: Subset<T, MpesaOfframpSwapCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], MpesaOfframpSwapCountAggregateOutputType>
+        : number
+    >;
+
+    /**
+     * Allows you to perform aggregations operations on a MpesaOfframpSwap.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MpesaOfframpSwapAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+     **/
+    aggregate<T extends MpesaOfframpSwapAggregateArgs>(
+      args: Subset<T, MpesaOfframpSwapAggregateArgs>,
+    ): Prisma.PrismaPromise<GetMpesaOfframpSwapAggregateType<T>>;
+
+    /**
+     * Group by MpesaOfframpSwap.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MpesaOfframpSwapGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     *
+     **/
+    groupBy<
+      T extends MpesaOfframpSwapGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: MpesaOfframpSwapGroupByArgs['orderBy'] }
+        : { orderBy?: MpesaOfframpSwapGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<
+        Keys<MaybeTupleToUnion<T['orderBy']>>
+      >,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+        ? `Error: "by" must not be empty.`
+        : HavingValid extends False
+          ? {
+              [P in HavingFields]: P extends ByFields
+                ? never
+                : P extends string
+                  ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+                  : [
+                      Error,
+                      'Field ',
+                      P,
+                      ` in "having" needs to be provided in "by"`,
+                    ];
+            }[HavingFields]
+          : 'take' extends Keys<T>
+            ? 'orderBy' extends Keys<T>
+              ? ByValid extends True
+                ? {}
+                : {
+                    [P in OrderFields]: P extends ByFields
+                      ? never
+                      : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+                  }[OrderFields]
+              : 'Error: If you provide "take", you also need to provide "orderBy"'
+            : 'skip' extends Keys<T>
+              ? 'orderBy' extends Keys<T>
+                ? ByValid extends True
+                  ? {}
+                  : {
+                      [P in OrderFields]: P extends ByFields
+                        ? never
+                        : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+                    }[OrderFields]
+                : 'Error: If you provide "skip", you also need to provide "orderBy"'
+              : ByValid extends True
+                ? {}
+                : {
+                    [P in OrderFields]: P extends ByFields
+                      ? never
+                      : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
+                  }[OrderFields],
+    >(
+      args: SubsetIntersection<T, MpesaOfframpSwapGroupByArgs, OrderByArg> &
+        InputErrors,
+    ): {} extends InputErrors
+      ? GetMpesaOfframpSwapGroupByPayload<T>
+      : Prisma.PrismaPromise<InputErrors>;
+    /**
+     * Fields of the MpesaOfframpSwap model
+     */
+    readonly fields: MpesaOfframpSwapFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for MpesaOfframpSwap.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__MpesaOfframpSwapClient<
+    T,
+    Null = never,
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: 'PrismaPromise';
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(
+      onfulfilled?:
+        | ((value: T) => TResult1 | PromiseLike<TResult1>)
+        | undefined
+        | null,
+      onrejected?:
+        | ((reason: any) => TResult2 | PromiseLike<TResult2>)
+        | undefined
+        | null,
+    ): $Utils.JsPromise<TResult1 | TResult2>;
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(
+      onrejected?:
+        | ((reason: any) => TResult | PromiseLike<TResult>)
+        | undefined
+        | null,
+    ): $Utils.JsPromise<T | TResult>;
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>;
+  }
+
+  /**
+   * Fields of the MpesaOfframpSwap model
+   */
+  interface MpesaOfframpSwapFieldRefs {
+    readonly id: FieldRef<'MpesaOfframpSwap', 'String'>;
+    readonly state: FieldRef<'MpesaOfframpSwap', 'SwapTransactionState'>;
+    readonly userId: FieldRef<'MpesaOfframpSwap', 'String'>;
+    readonly mpesaId: FieldRef<'MpesaOfframpSwap', 'String'>;
+    readonly lightning: FieldRef<'MpesaOfframpSwap', 'String'>;
+    readonly rate: FieldRef<'MpesaOfframpSwap', 'String'>;
+    readonly retryCount: FieldRef<'MpesaOfframpSwap', 'Int'>;
+    readonly createdAt: FieldRef<'MpesaOfframpSwap', 'DateTime'>;
+    readonly updatedAt: FieldRef<'MpesaOfframpSwap', 'DateTime'>;
+  }
+
+  // Custom InputTypes
+  /**
+   * MpesaOfframpSwap findUnique
+   */
+  export type MpesaOfframpSwapFindUniqueArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelect<ExtArgs> | null;
+    /**
+     * Filter, which MpesaOfframpSwap to fetch.
+     */
+    where: MpesaOfframpSwapWhereUniqueInput;
+  };
+
+  /**
+   * MpesaOfframpSwap findUniqueOrThrow
+   */
+  export type MpesaOfframpSwapFindUniqueOrThrowArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelect<ExtArgs> | null;
+    /**
+     * Filter, which MpesaOfframpSwap to fetch.
+     */
+    where: MpesaOfframpSwapWhereUniqueInput;
+  };
+
+  /**
+   * MpesaOfframpSwap findFirst
+   */
+  export type MpesaOfframpSwapFindFirstArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelect<ExtArgs> | null;
+    /**
+     * Filter, which MpesaOfframpSwap to fetch.
+     */
+    where?: MpesaOfframpSwapWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of MpesaOfframpSwaps to fetch.
+     */
+    orderBy?:
+      | MpesaOfframpSwapOrderByWithRelationInput
+      | MpesaOfframpSwapOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for MpesaOfframpSwaps.
+     */
+    cursor?: MpesaOfframpSwapWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` MpesaOfframpSwaps from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` MpesaOfframpSwaps.
+     */
+    skip?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of MpesaOfframpSwaps.
+     */
+    distinct?:
+      | MpesaOfframpSwapScalarFieldEnum
+      | MpesaOfframpSwapScalarFieldEnum[];
+  };
+
+  /**
+   * MpesaOfframpSwap findFirstOrThrow
+   */
+  export type MpesaOfframpSwapFindFirstOrThrowArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelect<ExtArgs> | null;
+    /**
+     * Filter, which MpesaOfframpSwap to fetch.
+     */
+    where?: MpesaOfframpSwapWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of MpesaOfframpSwaps to fetch.
+     */
+    orderBy?:
+      | MpesaOfframpSwapOrderByWithRelationInput
+      | MpesaOfframpSwapOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for searching for MpesaOfframpSwaps.
+     */
+    cursor?: MpesaOfframpSwapWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` MpesaOfframpSwaps from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` MpesaOfframpSwaps.
+     */
+    skip?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     *
+     * Filter by unique combinations of MpesaOfframpSwaps.
+     */
+    distinct?:
+      | MpesaOfframpSwapScalarFieldEnum
+      | MpesaOfframpSwapScalarFieldEnum[];
+  };
+
+  /**
+   * MpesaOfframpSwap findMany
+   */
+  export type MpesaOfframpSwapFindManyArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelect<ExtArgs> | null;
+    /**
+     * Filter, which MpesaOfframpSwaps to fetch.
+     */
+    where?: MpesaOfframpSwapWhereInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     *
+     * Determine the order of MpesaOfframpSwaps to fetch.
+     */
+    orderBy?:
+      | MpesaOfframpSwapOrderByWithRelationInput
+      | MpesaOfframpSwapOrderByWithRelationInput[];
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     *
+     * Sets the position for listing MpesaOfframpSwaps.
+     */
+    cursor?: MpesaOfframpSwapWhereUniqueInput;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Take `±n` MpesaOfframpSwaps from the position of the cursor.
+     */
+    take?: number;
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     *
+     * Skip the first `n` MpesaOfframpSwaps.
+     */
+    skip?: number;
+    distinct?:
+      | MpesaOfframpSwapScalarFieldEnum
+      | MpesaOfframpSwapScalarFieldEnum[];
+  };
+
+  /**
+   * MpesaOfframpSwap create
+   */
+  export type MpesaOfframpSwapCreateArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelect<ExtArgs> | null;
+    /**
+     * The data needed to create a MpesaOfframpSwap.
+     */
+    data: XOR<
+      MpesaOfframpSwapCreateInput,
+      MpesaOfframpSwapUncheckedCreateInput
+    >;
+  };
+
+  /**
+   * MpesaOfframpSwap createMany
+   */
+  export type MpesaOfframpSwapCreateManyArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * The data used to create many MpesaOfframpSwaps.
+     */
+    data: MpesaOfframpSwapCreateManyInput | MpesaOfframpSwapCreateManyInput[];
+    skipDuplicates?: boolean;
+  };
+
+  /**
+   * MpesaOfframpSwap createManyAndReturn
+   */
+  export type MpesaOfframpSwapCreateManyAndReturnArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelectCreateManyAndReturn<ExtArgs> | null;
+    /**
+     * The data used to create many MpesaOfframpSwaps.
+     */
+    data: MpesaOfframpSwapCreateManyInput | MpesaOfframpSwapCreateManyInput[];
+    skipDuplicates?: boolean;
+  };
+
+  /**
+   * MpesaOfframpSwap update
+   */
+  export type MpesaOfframpSwapUpdateArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelect<ExtArgs> | null;
+    /**
+     * The data needed to update a MpesaOfframpSwap.
+     */
+    data: XOR<
+      MpesaOfframpSwapUpdateInput,
+      MpesaOfframpSwapUncheckedUpdateInput
+    >;
+    /**
+     * Choose, which MpesaOfframpSwap to update.
+     */
+    where: MpesaOfframpSwapWhereUniqueInput;
+  };
+
+  /**
+   * MpesaOfframpSwap updateMany
+   */
+  export type MpesaOfframpSwapUpdateManyArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * The data used to update MpesaOfframpSwaps.
+     */
+    data: XOR<
+      MpesaOfframpSwapUpdateManyMutationInput,
+      MpesaOfframpSwapUncheckedUpdateManyInput
+    >;
+    /**
+     * Filter which MpesaOfframpSwaps to update
+     */
+    where?: MpesaOfframpSwapWhereInput;
+  };
+
+  /**
+   * MpesaOfframpSwap upsert
+   */
+  export type MpesaOfframpSwapUpsertArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelect<ExtArgs> | null;
+    /**
+     * The filter to search for the MpesaOfframpSwap to update in case it exists.
+     */
+    where: MpesaOfframpSwapWhereUniqueInput;
+    /**
+     * In case the MpesaOfframpSwap found by the `where` argument doesn't exist, create a new MpesaOfframpSwap with this data.
+     */
+    create: XOR<
+      MpesaOfframpSwapCreateInput,
+      MpesaOfframpSwapUncheckedCreateInput
+    >;
+    /**
+     * In case the MpesaOfframpSwap was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<
+      MpesaOfframpSwapUpdateInput,
+      MpesaOfframpSwapUncheckedUpdateInput
+    >;
+  };
+
+  /**
+   * MpesaOfframpSwap delete
+   */
+  export type MpesaOfframpSwapDeleteArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelect<ExtArgs> | null;
+    /**
+     * Filter which MpesaOfframpSwap to delete.
+     */
+    where: MpesaOfframpSwapWhereUniqueInput;
+  };
+
+  /**
+   * MpesaOfframpSwap deleteMany
+   */
+  export type MpesaOfframpSwapDeleteManyArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Filter which MpesaOfframpSwaps to delete
+     */
+    where?: MpesaOfframpSwapWhereInput;
+  };
+
+  /**
+   * MpesaOfframpSwap without action
+   */
+  export type MpesaOfframpSwapDefaultArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = {
+    /**
+     * Select specific fields to fetch from the MpesaOfframpSwap
+     */
+    select?: MpesaOfframpSwapSelect<ExtArgs> | null;
+  };
+
+  /**
    * Model IntasendMpesaTransaction
    */
 
@@ -3446,6 +4711,21 @@ export namespace Prisma {
   export type MpesaOnrampSwapScalarFieldEnum =
     (typeof MpesaOnrampSwapScalarFieldEnum)[keyof typeof MpesaOnrampSwapScalarFieldEnum];
 
+  export const MpesaOfframpSwapScalarFieldEnum: {
+    id: 'id';
+    state: 'state';
+    userId: 'userId';
+    mpesaId: 'mpesaId';
+    lightning: 'lightning';
+    rate: 'rate';
+    retryCount: 'retryCount';
+    createdAt: 'createdAt';
+    updatedAt: 'updatedAt';
+  };
+
+  export type MpesaOfframpSwapScalarFieldEnum =
+    (typeof MpesaOfframpSwapScalarFieldEnum)[keyof typeof MpesaOfframpSwapScalarFieldEnum];
+
   export const IntasendMpesaTransactionScalarFieldEnum: {
     id: 'id';
     state: 'state';
@@ -3476,6 +4756,13 @@ export namespace Prisma {
   };
 
   export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode];
+
+  export const NullsOrder: {
+    first: 'first';
+    last: 'last';
+  };
+
+  export type NullsOrder = (typeof NullsOrder)[keyof typeof NullsOrder];
 
   /**
    * Field references
@@ -3646,6 +4933,102 @@ export namespace Prisma {
     retryCount?: IntWithAggregatesFilter<'MpesaOnrampSwap'> | number;
     createdAt?: DateTimeWithAggregatesFilter<'MpesaOnrampSwap'> | Date | string;
     updatedAt?: DateTimeWithAggregatesFilter<'MpesaOnrampSwap'> | Date | string;
+  };
+
+  export type MpesaOfframpSwapWhereInput = {
+    AND?: MpesaOfframpSwapWhereInput | MpesaOfframpSwapWhereInput[];
+    OR?: MpesaOfframpSwapWhereInput[];
+    NOT?: MpesaOfframpSwapWhereInput | MpesaOfframpSwapWhereInput[];
+    id?: StringFilter<'MpesaOfframpSwap'> | string;
+    state?:
+      | EnumSwapTransactionStateFilter<'MpesaOfframpSwap'>
+      | $Enums.SwapTransactionState;
+    userId?: StringFilter<'MpesaOfframpSwap'> | string;
+    mpesaId?: StringNullableFilter<'MpesaOfframpSwap'> | string | null;
+    lightning?: StringFilter<'MpesaOfframpSwap'> | string;
+    rate?: StringFilter<'MpesaOfframpSwap'> | string;
+    retryCount?: IntFilter<'MpesaOfframpSwap'> | number;
+    createdAt?: DateTimeFilter<'MpesaOfframpSwap'> | Date | string;
+    updatedAt?: DateTimeFilter<'MpesaOfframpSwap'> | Date | string;
+  };
+
+  export type MpesaOfframpSwapOrderByWithRelationInput = {
+    id?: SortOrder;
+    state?: SortOrder;
+    userId?: SortOrder;
+    mpesaId?: SortOrderInput | SortOrder;
+    lightning?: SortOrder;
+    rate?: SortOrder;
+    retryCount?: SortOrder;
+    createdAt?: SortOrder;
+    updatedAt?: SortOrder;
+  };
+
+  export type MpesaOfframpSwapWhereUniqueInput = Prisma.AtLeast<
+    {
+      id?: string;
+      mpesaId?: string;
+      AND?: MpesaOfframpSwapWhereInput | MpesaOfframpSwapWhereInput[];
+      OR?: MpesaOfframpSwapWhereInput[];
+      NOT?: MpesaOfframpSwapWhereInput | MpesaOfframpSwapWhereInput[];
+      state?:
+        | EnumSwapTransactionStateFilter<'MpesaOfframpSwap'>
+        | $Enums.SwapTransactionState;
+      userId?: StringFilter<'MpesaOfframpSwap'> | string;
+      lightning?: StringFilter<'MpesaOfframpSwap'> | string;
+      rate?: StringFilter<'MpesaOfframpSwap'> | string;
+      retryCount?: IntFilter<'MpesaOfframpSwap'> | number;
+      createdAt?: DateTimeFilter<'MpesaOfframpSwap'> | Date | string;
+      updatedAt?: DateTimeFilter<'MpesaOfframpSwap'> | Date | string;
+    },
+    'id' | 'mpesaId'
+  >;
+
+  export type MpesaOfframpSwapOrderByWithAggregationInput = {
+    id?: SortOrder;
+    state?: SortOrder;
+    userId?: SortOrder;
+    mpesaId?: SortOrderInput | SortOrder;
+    lightning?: SortOrder;
+    rate?: SortOrder;
+    retryCount?: SortOrder;
+    createdAt?: SortOrder;
+    updatedAt?: SortOrder;
+    _count?: MpesaOfframpSwapCountOrderByAggregateInput;
+    _avg?: MpesaOfframpSwapAvgOrderByAggregateInput;
+    _max?: MpesaOfframpSwapMaxOrderByAggregateInput;
+    _min?: MpesaOfframpSwapMinOrderByAggregateInput;
+    _sum?: MpesaOfframpSwapSumOrderByAggregateInput;
+  };
+
+  export type MpesaOfframpSwapScalarWhereWithAggregatesInput = {
+    AND?:
+      | MpesaOfframpSwapScalarWhereWithAggregatesInput
+      | MpesaOfframpSwapScalarWhereWithAggregatesInput[];
+    OR?: MpesaOfframpSwapScalarWhereWithAggregatesInput[];
+    NOT?:
+      | MpesaOfframpSwapScalarWhereWithAggregatesInput
+      | MpesaOfframpSwapScalarWhereWithAggregatesInput[];
+    id?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
+    state?:
+      | EnumSwapTransactionStateWithAggregatesFilter<'MpesaOfframpSwap'>
+      | $Enums.SwapTransactionState;
+    userId?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
+    mpesaId?:
+      | StringNullableWithAggregatesFilter<'MpesaOfframpSwap'>
+      | string
+      | null;
+    lightning?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
+    rate?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
+    retryCount?: IntWithAggregatesFilter<'MpesaOfframpSwap'> | number;
+    createdAt?:
+      | DateTimeWithAggregatesFilter<'MpesaOfframpSwap'>
+      | Date
+      | string;
+    updatedAt?:
+      | DateTimeWithAggregatesFilter<'MpesaOfframpSwap'>
+      | Date
+      | string;
   };
 
   export type IntasendMpesaTransactionWhereInput = {
@@ -3838,6 +5221,98 @@ export namespace Prisma {
       | $Enums.SwapTransactionState;
     userId?: StringFieldUpdateOperationsInput | string;
     mpesaId?: StringFieldUpdateOperationsInput | string;
+    lightning?: StringFieldUpdateOperationsInput | string;
+    rate?: StringFieldUpdateOperationsInput | string;
+    retryCount?: IntFieldUpdateOperationsInput | number;
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+  };
+
+  export type MpesaOfframpSwapCreateInput = {
+    id: string;
+    state: $Enums.SwapTransactionState;
+    userId: string;
+    mpesaId?: string | null;
+    lightning: string;
+    rate: string;
+    retryCount: number;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+  };
+
+  export type MpesaOfframpSwapUncheckedCreateInput = {
+    id: string;
+    state: $Enums.SwapTransactionState;
+    userId: string;
+    mpesaId?: string | null;
+    lightning: string;
+    rate: string;
+    retryCount: number;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+  };
+
+  export type MpesaOfframpSwapUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string;
+    state?:
+      | EnumSwapTransactionStateFieldUpdateOperationsInput
+      | $Enums.SwapTransactionState;
+    userId?: StringFieldUpdateOperationsInput | string;
+    mpesaId?: NullableStringFieldUpdateOperationsInput | string | null;
+    lightning?: StringFieldUpdateOperationsInput | string;
+    rate?: StringFieldUpdateOperationsInput | string;
+    retryCount?: IntFieldUpdateOperationsInput | number;
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+  };
+
+  export type MpesaOfframpSwapUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string;
+    state?:
+      | EnumSwapTransactionStateFieldUpdateOperationsInput
+      | $Enums.SwapTransactionState;
+    userId?: StringFieldUpdateOperationsInput | string;
+    mpesaId?: NullableStringFieldUpdateOperationsInput | string | null;
+    lightning?: StringFieldUpdateOperationsInput | string;
+    rate?: StringFieldUpdateOperationsInput | string;
+    retryCount?: IntFieldUpdateOperationsInput | number;
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+  };
+
+  export type MpesaOfframpSwapCreateManyInput = {
+    id: string;
+    state: $Enums.SwapTransactionState;
+    userId: string;
+    mpesaId?: string | null;
+    lightning: string;
+    rate: string;
+    retryCount: number;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+  };
+
+  export type MpesaOfframpSwapUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string;
+    state?:
+      | EnumSwapTransactionStateFieldUpdateOperationsInput
+      | $Enums.SwapTransactionState;
+    userId?: StringFieldUpdateOperationsInput | string;
+    mpesaId?: NullableStringFieldUpdateOperationsInput | string | null;
+    lightning?: StringFieldUpdateOperationsInput | string;
+    rate?: StringFieldUpdateOperationsInput | string;
+    retryCount?: IntFieldUpdateOperationsInput | number;
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
+  };
+
+  export type MpesaOfframpSwapUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string;
+    state?:
+      | EnumSwapTransactionStateFieldUpdateOperationsInput
+      | $Enums.SwapTransactionState;
+    userId?: StringFieldUpdateOperationsInput | string;
+    mpesaId?: NullableStringFieldUpdateOperationsInput | string | null;
     lightning?: StringFieldUpdateOperationsInput | string;
     rate?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
@@ -4115,6 +5590,91 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>;
   };
 
+  export type StringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null;
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    lt?: string | StringFieldRefInput<$PrismaModel>;
+    lte?: string | StringFieldRefInput<$PrismaModel>;
+    gt?: string | StringFieldRefInput<$PrismaModel>;
+    gte?: string | StringFieldRefInput<$PrismaModel>;
+    contains?: string | StringFieldRefInput<$PrismaModel>;
+    startsWith?: string | StringFieldRefInput<$PrismaModel>;
+    endsWith?: string | StringFieldRefInput<$PrismaModel>;
+    mode?: QueryMode;
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null;
+  };
+
+  export type SortOrderInput = {
+    sort: SortOrder;
+    nulls?: NullsOrder;
+  };
+
+  export type MpesaOfframpSwapCountOrderByAggregateInput = {
+    id?: SortOrder;
+    state?: SortOrder;
+    userId?: SortOrder;
+    mpesaId?: SortOrder;
+    lightning?: SortOrder;
+    rate?: SortOrder;
+    retryCount?: SortOrder;
+    createdAt?: SortOrder;
+    updatedAt?: SortOrder;
+  };
+
+  export type MpesaOfframpSwapAvgOrderByAggregateInput = {
+    retryCount?: SortOrder;
+  };
+
+  export type MpesaOfframpSwapMaxOrderByAggregateInput = {
+    id?: SortOrder;
+    state?: SortOrder;
+    userId?: SortOrder;
+    mpesaId?: SortOrder;
+    lightning?: SortOrder;
+    rate?: SortOrder;
+    retryCount?: SortOrder;
+    createdAt?: SortOrder;
+    updatedAt?: SortOrder;
+  };
+
+  export type MpesaOfframpSwapMinOrderByAggregateInput = {
+    id?: SortOrder;
+    state?: SortOrder;
+    userId?: SortOrder;
+    mpesaId?: SortOrder;
+    lightning?: SortOrder;
+    rate?: SortOrder;
+    retryCount?: SortOrder;
+    createdAt?: SortOrder;
+    updatedAt?: SortOrder;
+  };
+
+  export type MpesaOfframpSwapSumOrderByAggregateInput = {
+    retryCount?: SortOrder;
+  };
+
+  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null;
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    lt?: string | StringFieldRefInput<$PrismaModel>;
+    lte?: string | StringFieldRefInput<$PrismaModel>;
+    gt?: string | StringFieldRefInput<$PrismaModel>;
+    gte?: string | StringFieldRefInput<$PrismaModel>;
+    contains?: string | StringFieldRefInput<$PrismaModel>;
+    startsWith?: string | StringFieldRefInput<$PrismaModel>;
+    endsWith?: string | StringFieldRefInput<$PrismaModel>;
+    mode?: QueryMode;
+    not?:
+      | NestedStringNullableWithAggregatesFilter<$PrismaModel>
+      | string
+      | null;
+    _count?: NestedIntNullableFilter<$PrismaModel>;
+    _min?: NestedStringNullableFilter<$PrismaModel>;
+    _max?: NestedStringNullableFilter<$PrismaModel>;
+  };
+
   export type IntasendMpesaTransactionCountOrderByAggregateInput = {
     id?: SortOrder;
     state?: SortOrder;
@@ -4183,6 +5743,10 @@ export namespace Prisma {
 
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string;
+  };
+
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null;
   };
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -4314,6 +5878,51 @@ export namespace Prisma {
     _max?: NestedDateTimeFilter<$PrismaModel>;
   };
 
+  export type NestedStringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null;
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    lt?: string | StringFieldRefInput<$PrismaModel>;
+    lte?: string | StringFieldRefInput<$PrismaModel>;
+    gt?: string | StringFieldRefInput<$PrismaModel>;
+    gte?: string | StringFieldRefInput<$PrismaModel>;
+    contains?: string | StringFieldRefInput<$PrismaModel>;
+    startsWith?: string | StringFieldRefInput<$PrismaModel>;
+    endsWith?: string | StringFieldRefInput<$PrismaModel>;
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null;
+  };
+
+  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null;
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    lt?: string | StringFieldRefInput<$PrismaModel>;
+    lte?: string | StringFieldRefInput<$PrismaModel>;
+    gt?: string | StringFieldRefInput<$PrismaModel>;
+    gte?: string | StringFieldRefInput<$PrismaModel>;
+    contains?: string | StringFieldRefInput<$PrismaModel>;
+    startsWith?: string | StringFieldRefInput<$PrismaModel>;
+    endsWith?: string | StringFieldRefInput<$PrismaModel>;
+    not?:
+      | NestedStringNullableWithAggregatesFilter<$PrismaModel>
+      | string
+      | null;
+    _count?: NestedIntNullableFilter<$PrismaModel>;
+    _min?: NestedStringNullableFilter<$PrismaModel>;
+    _max?: NestedStringNullableFilter<$PrismaModel>;
+  };
+
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null;
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null;
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null;
+    lt?: number | IntFieldRefInput<$PrismaModel>;
+    lte?: number | IntFieldRefInput<$PrismaModel>;
+    gt?: number | IntFieldRefInput<$PrismaModel>;
+    gte?: number | IntFieldRefInput<$PrismaModel>;
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null;
+  };
+
   /**
    * Aliases for legacy arg types
    */
@@ -4323,6 +5932,12 @@ export namespace Prisma {
   export type MpesaOnrampSwapArgs<
     ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
   > = MpesaOnrampSwapDefaultArgs<ExtArgs>;
+  /**
+   * @deprecated Use MpesaOfframpSwapDefaultArgs instead
+   */
+  export type MpesaOfframpSwapArgs<
+    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
+  > = MpesaOfframpSwapDefaultArgs<ExtArgs>;
   /**
    * @deprecated Use IntasendMpesaTransactionDefaultArgs instead
    */

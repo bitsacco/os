@@ -14,8 +14,10 @@ import {
   OfframpSwapResponse,
   CreateOfframpSwapDto,
   kesFromBtc,
+  QuoteDto,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { MpesaOnrampSwap, SwapTransactionState } from '../prisma/client';
@@ -24,7 +26,14 @@ import { PrismaService } from './prisma.service';
 import { IntasendService } from './intasend/intasend.service';
 import { MpesaTransactionUpdateDto } from './dto';
 import { MpesaTractactionState } from './intasend/intasend.types';
-import { FedimintService } from './fedimint/fedimint.service';
+import {
+  fedimint_receive_failure,
+  fedimint_receive_success,
+  FedimintService,
+  ReceiveContext,
+  ReceivePaymentFailureEvent,
+  ReceivePaymentSuccessEvent,
+} from './fedimint/fedimint.service';
 
 @Injectable()
 export class SwapService {
@@ -36,8 +45,18 @@ export class SwapService {
     private readonly intasendService: IntasendService,
     private readonly fedimintService: FedimintService,
     private readonly prismaService: PrismaService,
+    private readonly eventEmitter: EventEmitter2,
     @Inject(CACHE_MANAGER) private readonly cacheManager: CustomStore,
   ) {
+    this.logger.log('SwapService initialized');
+    this.eventEmitter.on(
+      fedimint_receive_success,
+      this.handleSuccessfulReceive.bind(this),
+    );
+    this.eventEmitter.on(
+      fedimint_receive_failure,
+      this.handleFailedReceive.bind(this),
+    );
     this.logger.log('SwapService initialized');
   }
 
@@ -86,13 +105,14 @@ export class SwapService {
     }
   }
 
-  async createOnrampSwap({
-    quote,
-    ref,
-    amount,
-    phone,
-    lightning,
-  }: CreateOnrampSwapDto): Promise<OnrampSwapResponse> {
+  private async getRate(
+    quote: QuoteDto,
+    req: {
+      amount: string;
+      from: Currency;
+      to: Currency;
+    },
+  ): Promise<string> {
     let currentQuote: QuoteResponse | undefined =
       quote && (await this.cacheManager.get<QuoteResponse>(quote.id));
 
@@ -102,12 +122,24 @@ export class SwapService {
         quote.refreshIfExpired)
     ) {
       // create or refresh quote
-      currentQuote = await this.getQuote({
-        from: Currency.KES,
-        to: Currency.BTC,
-        amount,
-      });
+      currentQuote = await this.getQuote(req);
     }
+
+    return currentQuote.rate;
+  }
+
+  async createOnrampSwap({
+    quote,
+    ref,
+    amount,
+    phone,
+    lightning,
+  }: CreateOnrampSwapDto): Promise<OnrampSwapResponse> {
+    const rate = await this.getRate(quote, {
+      amount,
+      from: Currency.KES,
+      to: Currency.BTC,
+    });
 
     const mpesa = await this.intasendService.sendMpesaStkPush({
       amount: Number(amount),
@@ -124,7 +156,7 @@ export class SwapService {
         lightning,
         phone,
         amount,
-        rate: currentQuote.rate,
+        rate,
         state: mpesa.state,
         ref,
       },
@@ -137,7 +169,7 @@ export class SwapService {
         userId: phone,
         mpesaId: mpesa.id,
         lightning,
-        rate: currentQuote.rate,
+        rate,
         retryCount: 0,
       },
     });
@@ -205,10 +237,45 @@ export class SwapService {
     };
   }
 
-  async createOfframpSwap(
-    req: CreateOfframpSwapDto,
-  ): Promise<OfframpSwapResponse> {
-    throw new Error('Method not implemented.');
+  async createOfframpSwap({
+    quote,
+    amount,
+    ref,
+    target,
+  }: CreateOfframpSwapDto): Promise<OfframpSwapResponse> {
+    const rate = await this.getRate(quote, {
+      amount,
+      from: Currency.BTC,
+      to: target.currency,
+    });
+    const amountMsat = Number(amount) * 1000;
+
+    this.logger.log('Creating offramp swap with ref : ', ref);
+
+    const { invoice: lightning, operationId: id } =
+      await this.fedimintService.invoice(amountMsat, ref || 'offramp');
+
+    const swap = await this.prismaService.mpesaOfframpSwap.create({
+      data: {
+        id,
+        state: SwapTransactionState.PENDING,
+        rate,
+        userId: '254708083339', //target.destination.phone,
+        lightning,
+        retryCount: 0,
+      },
+    });
+
+    // listen for payment
+    this.fedimintService.receive(ReceiveContext.OFFRAMP, id);
+
+    return {
+      ...swap,
+      lightning,
+      status: mapSwapTxStateToSwapStatus(swap.state),
+      createdAt: swap.createdAt.toDateString(),
+      updatedAt: swap.updatedAt.toDateString(),
+    };
   }
 
   async findOfframpSwap({ id }: FindSwapDto): Promise<OfframpSwapResponse> {
@@ -312,19 +379,23 @@ export class SwapService {
 
     throw new Error('Attempted swap to btc while mpesa is still pending');
   }
-}
 
-function mapMpesaTxStateToSwapStatus(state: MpesaTractactionState): SwapStatus {
-  switch (state) {
-    case MpesaTractactionState.Pending:
-      return SwapStatus.PENDING;
-    case MpesaTractactionState.Failed:
-      return SwapStatus.FAILED;
-    case MpesaTractactionState.Complete:
-      return SwapStatus.COMPLETE;
-    case MpesaTractactionState.Retry:
-    case MpesaTractactionState.Processing:
-      return SwapStatus.PROCESSING;
+  @OnEvent(fedimint_receive_success)
+  private async handleSuccessfulReceive({
+    context,
+    operationId,
+  }: ReceivePaymentSuccessEvent) {
+    this.logger.log('Successfully received payment');
+    this.logger.log(`Context : ${context}, OperationId: ${operationId}`);
+  }
+
+  @OnEvent(fedimint_receive_failure)
+  private async handleFailedReceive({
+    context,
+    operationId,
+  }: ReceivePaymentFailureEvent) {
+    this.logger.log('Failed to receive payment');
+    this.logger.log(`Context : ${context}, OperationId: ${operationId}`);
   }
 }
 

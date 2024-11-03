@@ -2,6 +2,7 @@ import * as Joi from 'joi';
 import { redisStore } from 'cache-manager-redis-store';
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
+import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CACHE_MANAGER, CacheModule } from '@nestjs/cache-manager';
 import { CustomStore, LoggerModule } from '@bitsacco/common';
@@ -54,6 +55,11 @@ import { FedimintService } from './fedimint/fedimint.service';
       },
       inject: [ConfigService],
     }),
+    EventEmitterModule.forRoot({
+      global: true,
+      delimiter: '.',
+      verboseMemoryLeak: true,
+    }),
   ],
   controllers: [SwapController, EventsController],
   providers: [
@@ -64,6 +70,7 @@ import { FedimintService } from './fedimint/fedimint.service';
         intasendService: IntasendService,
         fedimintService: FedimintService,
         prismaService: PrismaService,
+        eventEmitter: EventEmitter2,
         cacheManager: CustomStore,
       ) => {
         return new SwapService(
@@ -71,6 +78,7 @@ import { FedimintService } from './fedimint/fedimint.service';
           intasendService,
           fedimintService,
           prismaService,
+          eventEmitter,
           cacheManager,
         );
       },
@@ -79,6 +87,7 @@ import { FedimintService } from './fedimint/fedimint.service';
         IntasendService,
         FedimintService,
         PrismaService,
+        EventEmitter2,
         CACHE_MANAGER,
       ],
     },

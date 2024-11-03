@@ -157,6 +157,7 @@ export interface OfframpSwapResponse {
   status: SwapStatus;
   /** Optional reference to a user */
   userId?: string | undefined;
+  retryCount: number;
   createdAt: string;
   updatedAt?: string | undefined;
 }

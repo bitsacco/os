@@ -134,6 +134,18 @@ exports.Prisma.MpesaOnrampSwapScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.MpesaOfframpSwapScalarFieldEnum = {
+  id: 'id',
+  state: 'state',
+  userId: 'userId',
+  mpesaId: 'mpesaId',
+  lightning: 'lightning',
+  rate: 'rate',
+  retryCount: 'retryCount',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.IntasendMpesaTransactionScalarFieldEnum = {
   id: 'id',
   state: 'state',
@@ -157,6 +169,11 @@ exports.Prisma.QueryMode = {
   default: 'default',
   insensitive: 'insensitive'
 };
+
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
 exports.SwapTransactionState = exports.$Enums.SwapTransactionState = {
   PENDING: 'PENDING',
   PROCESSING: 'PROCESSING',
@@ -167,6 +184,7 @@ exports.SwapTransactionState = exports.$Enums.SwapTransactionState = {
 
 exports.Prisma.ModelName = {
   MpesaOnrampSwap: 'MpesaOnrampSwap',
+  MpesaOfframpSwap: 'MpesaOfframpSwap',
   IntasendMpesaTransaction: 'IntasendMpesaTransaction'
 };
 

@@ -173,7 +173,10 @@ message OfframpSwapResponse {
   // Optional reference to a user
   optional string userId = 5;
 
+  int32 retryCount = 6;
+
   string createdAt = 7;
+
   optional string updatedAt = 8;
 }
 
