@@ -304,7 +304,32 @@ export class SwapService {
     page,
     size,
   }: PaginatedRequest): Promise<PaginatedOfframpSwapResponse> {
-    throw new Error('Method not implemented.');
+    const offramps = await this.prismaService.mpesaOfframpSwap.findMany();
+    const pages = Math.ceil(offramps.length / size);
+
+    // select the last page if requested page exceeds total pages possible
+    const selectPage = page > pages ? pages - 1 : page;
+
+    const swaps = offramps
+      .slice(selectPage * size, (selectPage + 1) * size + size)
+      .map((swap) => ({
+        id: swap.mpesaId,
+        rate: swap.rate,
+        status: mapSwapTxStateToSwapStatus(swap.state),
+        userId: swap.userId,
+        mpesaId: swap.mpesaId,
+        lightning: swap.lightning,
+        retryCount: swap.retryCount,
+        createdAt: swap.createdAt.toDateString(),
+        updatedAt: swap.updatedAt.toDateString(),
+      }));
+
+    return {
+      swaps,
+      page: selectPage,
+      size,
+      pages,
+    };
   }
 
   async processSwapUpdate(data: MpesaTransactionUpdateDto) {
