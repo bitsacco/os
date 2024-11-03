@@ -100,22 +100,6 @@ export interface OnrampSwapRequest {
   lightning?: string | undefined;
 }
 
-/** OnrampSwapResponse: Represents the response for an onramp swap. */
-export interface OnrampSwapResponse {
-  /** Unique identifier for the swap */
-  id: string;
-  /** Exchange rate used for the swap */
-  rate: string;
-  /** Current status of the swap */
-  status: SwapStatus;
-  userId: string;
-  mpesaId: string;
-  lightning: string;
-  retryCount: number;
-  createdAt: string;
-  updatedAt?: string | undefined;
-}
-
 export interface OfframpSwapRequest {
   /**
    * Optional reference to a quote.
@@ -143,25 +127,6 @@ export interface MobileMoney {
   phone: string;
 }
 
-export interface OfframpSwapResponse {
-  /**
-   * Unique identifier for the swap
-   * You can use this to track the status on both sides of the swap
-   */
-  id: string;
-  /** Exchange rate to be used for the swap */
-  rate: string;
-  /** lightning invoice to be paid before swap can proceed */
-  lightning: string;
-  /** Current status of the swap */
-  status: SwapStatus;
-  /** Optional reference to a user */
-  userId?: string | undefined;
-  retryCount: number;
-  createdAt: string;
-  updatedAt?: string | undefined;
-}
-
 /** FindSwapRequest: Represents a request to find a swap. */
 export interface FindSwapRequest {
   /** Unique identifier for the swap */
@@ -175,9 +140,9 @@ export interface PaginatedRequest {
   size: number;
 }
 
-export interface PaginatedOnrampSwapResponse {
+export interface PaginatedSwapResponse {
   /** List of onramp swaps */
-  swaps: OnrampSwapResponse[];
+  swaps: SwapResponse[];
   /** Current page offset */
   page: number;
   /** Number of items return per page */
@@ -186,15 +151,23 @@ export interface PaginatedOnrampSwapResponse {
   pages: number;
 }
 
-export interface PaginatedOfframpSwapResponse {
-  /** List of offramp swaps */
-  swaps: OfframpSwapResponse[];
-  /** Current page offset */
-  page: number;
-  /** Number of items return per page */
-  size: number;
-  /** Number of pages given the current page size */
-  pages: number;
+export interface SwapResponse {
+  /**
+   * Unique identifier for the swap
+   * You can use this to track the status on both sides of the swap
+   */
+  id: string;
+  /** Exchange rate to be used for the swap */
+  rate: string;
+  /** lightning invoice to be paid for swap */
+  lightning: string;
+  /** Current status of the swap */
+  status: SwapStatus;
+  /** Optional reference to a user */
+  userId?: string | undefined;
+  retryCount: number;
+  createdAt: string;
+  updatedAt?: string | undefined;
 }
 
 export const SWAP_PACKAGE_NAME = 'swap';
@@ -208,33 +181,29 @@ export interface SwapServiceClient {
 
   /** CreateOnrampSwap: Initiates an onramp swap transaction. */
 
-  createOnrampSwap(request: OnrampSwapRequest): Observable<OnrampSwapResponse>;
+  createOnrampSwap(request: OnrampSwapRequest): Observable<SwapResponse>;
 
   /** FindOnrampSwap: Finds and returns a single onramp swap. */
 
-  findOnrampSwap(request: FindSwapRequest): Observable<OnrampSwapResponse>;
+  findOnrampSwap(request: FindSwapRequest): Observable<SwapResponse>;
 
   /** ListOnrampSwaps: Lists all onramp swaps, with pagination. */
 
-  listOnrampSwaps(
-    request: PaginatedRequest,
-  ): Observable<PaginatedOnrampSwapResponse>;
+  listOnrampSwaps(request: PaginatedRequest): Observable<PaginatedSwapResponse>;
 
   /** CreateOfframpSwap: Initiates an offramp swap transaction. */
 
-  createOfframpSwap(
-    request: OfframpSwapRequest,
-  ): Observable<OfframpSwapResponse>;
+  createOfframpSwap(request: OfframpSwapRequest): Observable<SwapResponse>;
 
   /** FindOfframpSwap: Finds and returns a single offramp swap. */
 
-  findOfframpSwap(request: FindSwapRequest): Observable<OfframpSwapResponse>;
+  findOfframpSwap(request: FindSwapRequest): Observable<SwapResponse>;
 
   /** ListOfframpSwaps: Lists all offramp swaps, with pagination. */
 
   listOfframpSwaps(
     request: PaginatedRequest,
-  ): Observable<PaginatedOfframpSwapResponse>;
+  ): Observable<PaginatedSwapResponse>;
 }
 
 /** SwapService: Defines the main service for handling swap operations. */
@@ -250,55 +219,43 @@ export interface SwapServiceController {
 
   createOnrampSwap(
     request: OnrampSwapRequest,
-  ):
-    | Promise<OnrampSwapResponse>
-    | Observable<OnrampSwapResponse>
-    | OnrampSwapResponse;
+  ): Promise<SwapResponse> | Observable<SwapResponse> | SwapResponse;
 
   /** FindOnrampSwap: Finds and returns a single onramp swap. */
 
   findOnrampSwap(
     request: FindSwapRequest,
-  ):
-    | Promise<OnrampSwapResponse>
-    | Observable<OnrampSwapResponse>
-    | OnrampSwapResponse;
+  ): Promise<SwapResponse> | Observable<SwapResponse> | SwapResponse;
 
   /** ListOnrampSwaps: Lists all onramp swaps, with pagination. */
 
   listOnrampSwaps(
     request: PaginatedRequest,
   ):
-    | Promise<PaginatedOnrampSwapResponse>
-    | Observable<PaginatedOnrampSwapResponse>
-    | PaginatedOnrampSwapResponse;
+    | Promise<PaginatedSwapResponse>
+    | Observable<PaginatedSwapResponse>
+    | PaginatedSwapResponse;
 
   /** CreateOfframpSwap: Initiates an offramp swap transaction. */
 
   createOfframpSwap(
     request: OfframpSwapRequest,
-  ):
-    | Promise<OfframpSwapResponse>
-    | Observable<OfframpSwapResponse>
-    | OfframpSwapResponse;
+  ): Promise<SwapResponse> | Observable<SwapResponse> | SwapResponse;
 
   /** FindOfframpSwap: Finds and returns a single offramp swap. */
 
   findOfframpSwap(
     request: FindSwapRequest,
-  ):
-    | Promise<OfframpSwapResponse>
-    | Observable<OfframpSwapResponse>
-    | OfframpSwapResponse;
+  ): Promise<SwapResponse> | Observable<SwapResponse> | SwapResponse;
 
   /** ListOfframpSwaps: Lists all offramp swaps, with pagination. */
 
   listOfframpSwaps(
     request: PaginatedRequest,
   ):
-    | Promise<PaginatedOfframpSwapResponse>
-    | Observable<PaginatedOfframpSwapResponse>
-    | PaginatedOfframpSwapResponse;
+    | Promise<PaginatedSwapResponse>
+    | Observable<PaginatedSwapResponse>
+    | PaginatedSwapResponse;
 }
 
 export function SwapServiceControllerMethods() {

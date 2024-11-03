@@ -1,8 +1,6 @@
 import {
   btcFromKes,
   Currency,
-  OnrampSwapResponse,
-  PaginatedOnrampSwapResponse,
   PaginatedRequest,
   QuoteRequest,
   QuoteResponse,
@@ -10,8 +8,8 @@ import {
   CreateOnrampSwapDto,
   FindSwapDto,
   CustomStore,
-  PaginatedOfframpSwapResponse,
-  OfframpSwapResponse,
+  PaginatedSwapResponse,
+  SwapResponse,
   CreateOfframpSwapDto,
   kesFromBtc,
   QuoteDto,
@@ -134,7 +132,7 @@ export class SwapService {
     amount,
     phone,
     lightning,
-  }: CreateOnrampSwapDto): Promise<OnrampSwapResponse> {
+  }: CreateOnrampSwapDto): Promise<SwapResponse> {
     const rate = await this.getRate(quote, {
       amount,
       from: Currency.KES,
@@ -182,7 +180,7 @@ export class SwapService {
     };
   }
 
-  async findOnrampSwap({ id }: FindSwapDto): Promise<OnrampSwapResponse> {
+  async findOnrampSwap({ id }: FindSwapDto): Promise<SwapResponse> {
     try {
       // Look up swap in db
       const swap = await this.prismaService.mpesaOnrampSwap.findUniqueOrThrow({
@@ -208,7 +206,7 @@ export class SwapService {
   async listOnrampSwaps({
     page,
     size,
-  }: PaginatedRequest): Promise<PaginatedOnrampSwapResponse> {
+  }: PaginatedRequest): Promise<PaginatedSwapResponse> {
     const onramps = await this.prismaService.mpesaOnrampSwap.findMany();
     const pages = Math.ceil(onramps.length / size);
 
@@ -242,7 +240,7 @@ export class SwapService {
     amount,
     ref,
     target,
-  }: CreateOfframpSwapDto): Promise<OfframpSwapResponse> {
+  }: CreateOfframpSwapDto): Promise<SwapResponse> {
     const rate = await this.getRate(quote, {
       amount,
       from: Currency.BTC,
@@ -278,7 +276,7 @@ export class SwapService {
     };
   }
 
-  async findOfframpSwap({ id }: FindSwapDto): Promise<OfframpSwapResponse> {
+  async findOfframpSwap({ id }: FindSwapDto): Promise<SwapResponse> {
     try {
       // Look up swap in db
       const swap = await this.prismaService.mpesaOfframpSwap.findUniqueOrThrow({
@@ -303,7 +301,7 @@ export class SwapService {
   async listOfframpSwaps({
     page,
     size,
-  }: PaginatedRequest): Promise<PaginatedOfframpSwapResponse> {
+  }: PaginatedRequest): Promise<PaginatedSwapResponse> {
     const offramps = await this.prismaService.mpesaOfframpSwap.findMany();
     const pages = Math.ceil(offramps.length / size);
 

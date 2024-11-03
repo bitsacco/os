@@ -8,22 +8,22 @@ service SwapService {
   rpc GetQuote (QuoteRequest) returns (QuoteResponse) {}
 
   // CreateOnrampSwap: Initiates an onramp swap transaction.
-  rpc CreateOnrampSwap (OnrampSwapRequest) returns (OnrampSwapResponse) {}
+  rpc CreateOnrampSwap (OnrampSwapRequest) returns (SwapResponse) {}
 
   // FindOnrampSwap: Finds and returns a single onramp swap.
-  rpc FindOnrampSwap (FindSwapRequest) returns (OnrampSwapResponse) {}
+  rpc FindOnrampSwap (FindSwapRequest) returns (SwapResponse) {}
 
   // ListOnrampSwaps: Lists all onramp swaps, with pagination.
-  rpc ListOnrampSwaps (PaginatedRequest) returns (PaginatedOnrampSwapResponse) {}
+  rpc ListOnrampSwaps (PaginatedRequest) returns (PaginatedSwapResponse) {}
 
   // CreateOfframpSwap: Initiates an offramp swap transaction.
-  rpc CreateOfframpSwap (OfframpSwapRequest) returns (OfframpSwapResponse) {}
+  rpc CreateOfframpSwap (OfframpSwapRequest) returns (SwapResponse) {}
 
   // FindOfframpSwap: Finds and returns a single offramp swap.
-  rpc FindOfframpSwap (FindSwapRequest) returns (OfframpSwapResponse) {}
+  rpc FindOfframpSwap (FindSwapRequest) returns (SwapResponse) {}
 
   // ListOfframpSwaps: Lists all offramp swaps, with pagination.
-  rpc ListOfframpSwaps (PaginatedRequest) returns (PaginatedOfframpSwapResponse) {}
+  rpc ListOfframpSwaps (PaginatedRequest) returns (PaginatedSwapResponse) {}
 }
 
 // Empty: Represents an empty message.
@@ -105,27 +105,6 @@ message OnrampSwapRequest {
   }
 }
 
-// OnrampSwapResponse: Represents the response for an onramp swap.
-message OnrampSwapResponse {
-  // Unique identifier for the swap
-  string id = 1;
-  // Exchange rate used for the swap
-  string rate = 2;
-  // Current status of the swap
-  SwapStatus status = 3;
-
-  string userId = 4;
-
-  string mpesaId = 5;
-
-  string lightning = 6;
-
-  int32 retryCount = 7;
-
-  string createdAt = 8;
-
-  optional string updatedAt = 9;
-}
 
 message OfframpSwapRequest {
   // Optional reference to a quote.
@@ -156,30 +135,6 @@ message MobileMoney {
   string phone = 1;
 }
 
-message OfframpSwapResponse {
-  // Unique identifier for the swap
-  // You can use this to track the status on both sides of the swap
-  string id = 1;
-
-  // Exchange rate to be used for the swap
-  string rate = 2;
-
-  // lightning invoice to be paid before swap can proceed
-  string lightning = 3;
-
-  // Current status of the swap
-  SwapStatus status = 4;
-
-  // Optional reference to a user
-  optional string userId = 5;
-
-  int32 retryCount = 6;
-
-  string createdAt = 7;
-
-  optional string updatedAt = 8;
-}
-
 // FindSwapRequest: Represents a request to find a swap.
 message FindSwapRequest {
   // Unique identifier for the swap
@@ -207,9 +162,9 @@ message PaginatedRequest {
   int32 size = 1;
 }
 
-message PaginatedOnrampSwapResponse {
+message PaginatedSwapResponse {
   // List of onramp swaps
-  repeated OnrampSwapResponse swaps = 1;
+  repeated SwapResponse swaps = 1;
   // Current page offset
   int32 page = 2;
   // Number of items return per page
@@ -218,13 +173,26 @@ message PaginatedOnrampSwapResponse {
   int32 pages = 4;
 }
 
-message PaginatedOfframpSwapResponse {
-  // List of offramp swaps
-  repeated OfframpSwapResponse swaps = 1;
-  // Current page offset
-  int32 page = 2;
-  // Number of items return per page
-  int32 size = 3;
-  // Number of pages given the current page size
-  int32 pages = 4;
+message SwapResponse {
+  // Unique identifier for the swap
+  // You can use this to track the status on both sides of the swap
+  string id = 1;
+
+  // Exchange rate to be used for the swap
+  string rate = 2;
+
+  // lightning invoice to be paid for swap
+  string lightning = 3;
+
+  // Current status of the swap
+  SwapStatus status = 4;
+
+  // Optional reference to a user
+  optional string userId = 5;
+
+  int32 retryCount = 6;
+
+  string createdAt = 7;
+
+  optional string updatedAt = 8;
 }
