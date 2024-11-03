@@ -1,8 +1,8 @@
 # compiled output
 /dist
-/node_modules
-/**/node_modules
 /build
+**/node_modules
+**/prisma/client
 
 # Logs
 logs
