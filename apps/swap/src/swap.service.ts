@@ -24,14 +24,14 @@ import { PrismaService } from './prisma.service';
 import { IntasendService } from './intasend/intasend.service';
 import { MpesaTransactionUpdateDto } from './dto';
 import { MpesaTractactionState } from './intasend/intasend.types';
+import { FedimintService } from './fedimint/fedimint.service';
 import {
-  fedimint_receive_failure,
   fedimint_receive_success,
-  FedimintService,
+  fedimint_receive_failure,
   ReceiveContext,
-  ReceivePaymentFailureEvent,
   ReceivePaymentSuccessEvent,
-} from './fedimint/fedimint.service';
+  ReceivePaymentFailureEvent,
+} from './fedimint/fedimint.types';
 
 @Injectable()
 export class SwapService {

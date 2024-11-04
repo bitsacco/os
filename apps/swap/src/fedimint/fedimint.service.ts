@@ -1,66 +1,71 @@
+import { AxiosError } from 'axios';
+import { catchError, firstValueFrom, map } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  FedimintClient,
-  LightningInvoiceResponse,
-  LightningPaymentResponse,
-  LightningPayResponse,
-  LnReceiveState,
-} from './fmts';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-
-export const fedimint_receive_success = 'fedimint.receive.success';
-export const fedimint_receive_failure = 'fedimint.receive.failure';
-
-// Scenarios in which onramp swap can receive payment
-export enum ReceiveContext {
-  FUNDING,
-  OFFRAMP,
-}
-
-interface ReceivePaymentEvent {
-  operationId: string;
-  context: ReceiveContext;
-}
-
-export interface ReceivePaymentSuccessEvent extends ReceivePaymentEvent {}
-
-export interface ReceivePaymentFailureEvent extends ReceivePaymentEvent {
-  error: string;
-}
+import { HttpService } from '@nestjs/axios';
+import {
+  WithFederationId,
+  WithGatewayId,
+  ReceiveContext,
+  fedimint_receive_success,
+  fedimint_receive_failure,
+  LightningInvoiceResponse,
+  LightningPayResponse,
+} from './fedimint.types';
 
 @Injectable()
 export class FedimintService {
   private readonly logger = new Logger(FedimintService.name);
-  private fedimint: FedimintClient;
+
+  private baseUrl: string;
+  private password: string;
+  private federationId: string;
+  private gatewayId: string;
 
   constructor(
     private readonly configService: ConfigService,
+    private readonly httpService: HttpService,
     private readonly eventEmitter: EventEmitter2,
   ) {
-    this.logger.log('FedimintService initialized');
+    this.logger.log('FedimintService created');
 
-    const baseUrl = this.configService.getOrThrow<string>(
+    this.baseUrl = `${this.configService.getOrThrow<string>(
       'FEDIMINT_CLIENTD_BASE_URL',
-    );
-    const password = this.configService.getOrThrow<string>(
+    )}`;
+    this.password = this.configService.getOrThrow<string>(
       'FEDIMINT_CLIENTD_PASSWORD',
     );
-    const federationId = this.configService.getOrThrow<string>(
+    this.federationId = this.configService.getOrThrow<string>(
       'FEDIMINT_FEDERATION_ID',
     );
-    const gatewayId = this.configService.getOrThrow<string>(
+    this.gatewayId = this.configService.getOrThrow<string>(
       'FEDIMINT_GATEWAY_ID',
     );
 
-    this.fedimint = new FedimintClient(
-      baseUrl,
-      password,
-      federationId,
-      gatewayId,
-    );
-
     this.logger.log('FedimintService initialized');
+  }
+
+  private async post<S, T>(endpoint: string, data: S): Promise<T> {
+    const url = `${this.baseUrl}/v2${endpoint}`;
+    this.logger.log(`POST ${url} : ${JSON.stringify(data)}`);
+
+    return firstValueFrom(
+      this.httpService
+        .post<T>(url, data, {
+          headers: {
+            Authorization: `Bearer ${this.password}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        .pipe(map((resp) => resp.data))
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.error(error);
+            throw error;
+          }),
+        ),
+    );
   }
 
   async invoice(
@@ -72,11 +77,19 @@ export class FedimintService {
   }> {
     this.logger.log('Generating invoice');
 
-    const { invoice, operationId }: LightningInvoiceResponse =
-      await this.fedimint.lightning.createInvoice({
-        amountMsat,
-        description,
-      });
+    const { invoice, operationId }: LightningInvoiceResponse = await this.post<
+      {
+        amountMsat: number;
+        description: string;
+      } & WithFederationId &
+        WithGatewayId,
+      LightningInvoiceResponse
+    >('/ln/invoice', {
+      amountMsat,
+      description,
+      federationId: this.federationId,
+      gatewayId: this.gatewayId,
+    });
 
     this.logger.log('Invoice : ', invoice);
     return {
@@ -89,10 +102,14 @@ export class FedimintService {
     this.logger.log('Paying invoice');
     this.logger.log('Invoice', invoice);
 
-    const { operationId, fee }: LightningPayResponse =
-      await this.fedimint.lightning.pay({
-        paymentInfo: invoice,
-      });
+    const { operationId, fee }: LightningPayResponse = await this.post<
+      { paymentInfo: string } & WithFederationId & WithGatewayId,
+      LightningPayResponse
+    >('/ln/pay', {
+      paymentInfo: invoice,
+      federationId: this.federationId,
+      gatewayId: this.gatewayId,
+    });
 
     this.logger.log('Paid Invoice : ', operationId);
     return {
@@ -104,19 +121,27 @@ export class FedimintService {
   receive(context: ReceiveContext, operationId: string): void {
     this.logger.log(`Receiving payment : ${operationId}`);
 
-    this.fedimint.lightning
-      .awaitInvoice(operationId)
-      .then(({ state }: LightningPaymentResponse) => {
-        this.logger.log(`Update : ${state} : ${operationId}`);
-        switch (state) {
-          case LnReceiveState.Created:
-          case LnReceiveState.WaitingForPayment:
+    this.post<{ operationId: string } & WithFederationId, any>(
+      '/ln/await-invoice',
+      {
+        operationId,
+        federationId: this.federationId,
+      },
+    )
+      .then((resp) => {
+        this.logger.log(
+          `Update : ${JSON.stringify(resp)} for : ${operationId}`,
+        );
+
+        switch (resp.status) {
+          case 'created':
+          case 'waiting-for-payment':
             // this is a recursive call to continue waiting.
             this.receive(context, operationId);
             break;
-          case LnReceiveState.Funded:
-          case LnReceiveState.AwaitingFunds:
-          case LnReceiveState.Claimed:
+          case 'funded':
+          case 'awaiting-funds':
+          case 'claimed':
             this.eventEmitter.emit(fedimint_receive_success, {
               context,
               operationId,
