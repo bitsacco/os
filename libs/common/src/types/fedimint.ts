@@ -1,20 +1,15 @@
-export const fedimint_receive_success = 'fedimint.receive.success';
-export const fedimint_receive_failure = 'fedimint.receive.failure';
-
 // Scenarios in which onramp swap can receive payment
 export enum ReceiveContext {
   FUNDING,
   OFFRAMP,
 }
 
-interface ReceivePaymentEvent {
+export interface ReceivePaymentSuccessEvent {
   operationId: string;
   context: ReceiveContext;
 }
 
-export interface ReceivePaymentSuccessEvent extends ReceivePaymentEvent {}
-
-export interface ReceivePaymentFailureEvent extends ReceivePaymentEvent {
+export interface ReceivePaymentFailureEvent extends ReceivePaymentSuccessEvent {
   error: string;
 }
 

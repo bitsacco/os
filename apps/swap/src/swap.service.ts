@@ -13,6 +13,9 @@ import {
   CreateOfframpSwapDto,
   kesFromBtc,
   QuoteDto,
+  ReceiveContext,
+  type ReceivePaymentFailureEvent,
+  type ReceivePaymentSuccessEvent,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -28,10 +31,7 @@ import { FedimintService } from './fedimint/fedimint.service';
 import {
   fedimint_receive_success,
   fedimint_receive_failure,
-  ReceiveContext,
-  ReceivePaymentSuccessEvent,
-  ReceivePaymentFailureEvent,
-} from './fedimint/fedimint.types';
+} from './fedimint/fedimint.const';
 
 @Injectable()
 export class SwapService {

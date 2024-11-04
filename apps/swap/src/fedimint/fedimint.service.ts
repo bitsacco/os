@@ -5,14 +5,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { HttpService } from '@nestjs/axios';
 import {
-  WithFederationId,
-  WithGatewayId,
-  ReceiveContext,
   fedimint_receive_success,
   fedimint_receive_failure,
+} from './fedimint.const';
+import {
   LightningInvoiceResponse,
   LightningPayResponse,
-} from './fedimint.types';
+  ReceiveContext,
+  WithFederationId,
+  WithGatewayId,
+} from '@bitsacco/common';
 
 @Injectable()
 export class FedimintService {
