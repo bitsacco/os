@@ -1,11 +1,13 @@
 import {
   btcFromKes,
+  CreateOfframpSwapDto,
   CreateOnrampSwapDto,
   createTestingModuleWithValidation,
   Currency,
   SwapStatus,
 } from '@bitsacco/common';
 import { TestingModule } from '@nestjs/testing';
+import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 import { SwapTransactionState } from '../prisma/client';
 import { PrismaService } from './prisma.service';
 import { FxService } from './fx/fx.service';
@@ -41,6 +43,12 @@ describe('SwapService', () => {
         findUniqueOrThrow: jest.fn(),
         findMany: jest.fn(),
       },
+      mpesaOfframpSwap: {
+        create: jest.fn(),
+        update: jest.fn(),
+        findUniqueOrThrow: jest.fn(),
+        findMany: jest.fn(),
+      },
     } as unknown as PrismaService;
 
     mockIntasendService = {
@@ -55,10 +63,17 @@ describe('SwapService', () => {
           operationId: '123456789',
         };
       }),
+      invoice: jest.fn().mockImplementation(() => {
+        return {
+          invoice: 'lnbtcexampleinvoicee',
+          operationId: '123456789',
+        };
+      }),
+      receive: jest.fn(),
     } as unknown as FedimintService;
 
     const app: TestingModule = await createTestingModuleWithValidation({
-      imports: [],
+      imports: [EventEmitterModule.forRoot()],
       controllers: [],
       providers: [
         SwapService,
@@ -66,6 +81,7 @@ describe('SwapService', () => {
           provide: FxService,
           useValue: {
             getBtcToKesRate: jest.fn().mockResolvedValue(mock_rate),
+            getKesToBtcRate: jest.fn().mockResolvedValue(1 / mock_rate),
           },
         },
         {
@@ -80,6 +96,7 @@ describe('SwapService', () => {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
+        EventEmitter2,
         {
           provide: 'CACHE_MANAGER',
           useValue: mockCacheManager,
@@ -143,6 +160,8 @@ describe('SwapService', () => {
     });
   });
 
+  // Onramp swap tests
+
   describe('createOnrampSwap', () => {
     it('should create an onramp swap with expected fx rate', async () => {
       const cache = {
@@ -200,10 +219,41 @@ describe('SwapService', () => {
         swapService.findOnrampSwap({
           id: 'dadad-bdjada-dadad',
         }),
-      ).rejects.toThrow('Swap not found in db');
+      ).rejects.toThrow('onramp swap not found in db');
       expect(
         mockPrismaService.mpesaOnrampSwap.findUniqueOrThrow,
       ).toHaveBeenCalled();
+    });
+  });
+
+  describe('listOnrampSwaps', () => {
+    it('should return a paginated list of swaps', async () => {
+      (
+        mockPrismaService.mpesaOnrampSwap.findMany as jest.Mock
+      ).mockImplementation(() => {
+        return [
+          {
+            mpesaId: 'dadad-bdjada-dadad',
+            rate: mock_rate.toString(),
+            amount: '100',
+            state: SwapTransactionState.PENDING,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ];
+      });
+
+      const resp = await swapService.listOnrampSwaps({
+        page: 0,
+        size: 1,
+      });
+
+      expect(mockPrismaService.mpesaOnrampSwap.findMany).toHaveBeenCalled();
+      expect(resp).toBeDefined();
+      expect(resp.swaps).toHaveLength(1);
+      expect(resp.page).toEqual(0);
+      expect(resp.size).toEqual(1);
+      expect(resp.pages).toEqual(1);
     });
   });
 
@@ -361,10 +411,60 @@ describe('SwapService', () => {
     });
   });
 
-  describe('listOnrampSwaps', () => {
-    it('should return a paginated list of swaps', async () => {
+  // Offramp swap tests
+  describe('createOfframpSwap', () => {
+    it('should create an onramp swap with expected fx rate', async () => {
       (
-        mockPrismaService.mpesaOnrampSwap.findMany as jest.Mock
+        mockPrismaService.mpesaOfframpSwap.create as jest.Mock
+      ).mockImplementation(() => ({
+        id: 'dadad-bdjada-dadad',
+        rate: mock_rate.toString(),
+        state: SwapTransactionState.PENDING,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+
+      const req: CreateOfframpSwapDto = {
+        quote: {
+          id: 'dadad-bdjada-dadad',
+          refreshIfExpired: false,
+        },
+        ref: 'test-onramp-swap',
+        amount: '100',
+        target: {
+          currency: Currency.KES,
+          destination: {
+            phone: '0700000000',
+          },
+        },
+      };
+
+      const swap = await swapService.createOfframpSwap(req);
+
+      expect(swap).toBeDefined();
+      expect(swap.rate).toEqual(mock_rate.toString());
+      expect(swap.status).toEqual(SwapStatus.PENDING);
+      expect(mockCacheManager.set).toHaveBeenCalled();
+    });
+  });
+
+  describe('findOfframpSwap', () => {
+    it('should lookup a swap in db', async () => {
+      expect(
+        swapService.findOfframpSwap({
+          id: 'dadad-bdjada-dadad',
+        }),
+      ).rejects.toThrow('offramp swap not found in db');
+      expect(
+        mockPrismaService.mpesaOfframpSwap.findUniqueOrThrow,
+      ).toHaveBeenCalled();
+    });
+  });
+
+  describe('listOfframpSwaps', () => {
+    it('should return a paginated list of offramp swaps', async () => {
+      (
+        mockPrismaService.mpesaOfframpSwap.findMany as jest.Mock
       ).mockImplementation(() => {
         return [
           {
@@ -378,12 +478,12 @@ describe('SwapService', () => {
         ];
       });
 
-      const resp = await swapService.listOnrampSwaps({
+      const resp = await swapService.listOfframpSwaps({
         page: 0,
         size: 1,
       });
 
-      expect(mockPrismaService.mpesaOnrampSwap.findMany).toHaveBeenCalled();
+      expect(mockPrismaService.mpesaOfframpSwap.findMany).toHaveBeenCalled();
       expect(resp).toBeDefined();
       expect(resp.swaps).toHaveLength(1);
       expect(resp.page).toEqual(0);
