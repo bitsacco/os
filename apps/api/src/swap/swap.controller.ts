@@ -125,17 +125,7 @@ export class SwapController {
     type: CreateOfframpSwapDto,
   })
   postOfframpTransaction(@Body() req: CreateOfframpSwapDto) {
-    return this.swapService.postOfframpTransaction({
-      quote: req.quote,
-      amount: req.amount,
-      ref: req.ref,
-      target: {
-        currency: req.target.currency,
-        destination: {
-          phone: req.target.destination.phone,
-        },
-      },
-    });
+    return this.swapService.postOfframpTransaction(req);
   }
 
   @Get('offramp/find/:id')

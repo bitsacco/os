@@ -1,5 +1,6 @@
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { IsNotEmpty, IsNumber, IsString, Length, Min } from 'class-validator';
+import { NormalizePhoneNumber } from './utils';
 
 export class SendSTKPushDto {
   @IsNumber()
@@ -16,29 +17,4 @@ export class SendSTKPushDto {
   @IsString()
   @Type(() => String)
   api_ref: string;
-}
-
-function NormalizePhoneNumber() {
-  return Transform((params) => {
-    const { value } = params;
-    if (typeof value !== 'string') {
-      return value;
-    }
-
-    let normalized = value.replace(/\D/g, '');
-
-    if (normalized.length === 9) {
-      normalized = '254' + normalized;
-    } else if (normalized.startsWith('0')) {
-      normalized = '254' + normalized.slice(1);
-    } else if (!normalized.startsWith('254')) {
-      normalized = '254' + normalized;
-    }
-
-    if (normalized.length !== 12) {
-      throw new Error('Invalid phone number format');
-    }
-
-    return normalized;
-  });
 }

@@ -23,12 +23,6 @@ export type MpesaOnrampSwap =
  */
 export type MpesaOfframpSwap =
   $Result.DefaultSelection<Prisma.$MpesaOfframpSwapPayload>;
-/**
- * Model IntasendMpesaTransaction
- *
- */
-export type IntasendMpesaTransaction =
-  $Result.DefaultSelection<Prisma.$IntasendMpesaTransactionPayload>;
 
 /**
  * Enums
@@ -225,16 +219,6 @@ export class PrismaClient<
    * ```
    */
   get mpesaOfframpSwap(): Prisma.MpesaOfframpSwapDelegate<ExtArgs>;
-
-  /**
-   * `prisma.intasendMpesaTransaction`: Exposes CRUD operations for the **IntasendMpesaTransaction** model.
-   * Example usage:
-   * ```ts
-   * // Fetch zero or more IntasendMpesaTransactions
-   * const intasendMpesaTransactions = await prisma.intasendMpesaTransaction.findMany()
-   * ```
-   */
-  get intasendMpesaTransaction(): Prisma.IntasendMpesaTransactionDelegate<ExtArgs>;
 }
 
 export namespace Prisma {
@@ -696,7 +680,6 @@ export namespace Prisma {
   export const ModelName: {
     MpesaOnrampSwap: 'MpesaOnrampSwap';
     MpesaOfframpSwap: 'MpesaOfframpSwap';
-    IntasendMpesaTransaction: 'IntasendMpesaTransaction';
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName];
@@ -721,10 +704,7 @@ export namespace Prisma {
     ClientOptions = {},
   > = {
     meta: {
-      modelProps:
-        | 'mpesaOnrampSwap'
-        | 'mpesaOfframpSwap'
-        | 'intasendMpesaTransaction';
+      modelProps: 'mpesaOnrampSwap' | 'mpesaOfframpSwap';
       txIsolationLevel: Prisma.TransactionIsolationLevel;
     };
     model: {
@@ -868,78 +848,6 @@ export namespace Prisma {
             args: Prisma.MpesaOfframpSwapCountArgs<ExtArgs>;
             result:
               | $Utils.Optional<MpesaOfframpSwapCountAggregateOutputType>
-              | number;
-          };
-        };
-      };
-      IntasendMpesaTransaction: {
-        payload: Prisma.$IntasendMpesaTransactionPayload<ExtArgs>;
-        fields: Prisma.IntasendMpesaTransactionFieldRefs;
-        operations: {
-          findUnique: {
-            args: Prisma.IntasendMpesaTransactionFindUniqueArgs<ExtArgs>;
-            result: $Utils.PayloadToResult<Prisma.$IntasendMpesaTransactionPayload> | null;
-          };
-          findUniqueOrThrow: {
-            args: Prisma.IntasendMpesaTransactionFindUniqueOrThrowArgs<ExtArgs>;
-            result: $Utils.PayloadToResult<Prisma.$IntasendMpesaTransactionPayload>;
-          };
-          findFirst: {
-            args: Prisma.IntasendMpesaTransactionFindFirstArgs<ExtArgs>;
-            result: $Utils.PayloadToResult<Prisma.$IntasendMpesaTransactionPayload> | null;
-          };
-          findFirstOrThrow: {
-            args: Prisma.IntasendMpesaTransactionFindFirstOrThrowArgs<ExtArgs>;
-            result: $Utils.PayloadToResult<Prisma.$IntasendMpesaTransactionPayload>;
-          };
-          findMany: {
-            args: Prisma.IntasendMpesaTransactionFindManyArgs<ExtArgs>;
-            result: $Utils.PayloadToResult<Prisma.$IntasendMpesaTransactionPayload>[];
-          };
-          create: {
-            args: Prisma.IntasendMpesaTransactionCreateArgs<ExtArgs>;
-            result: $Utils.PayloadToResult<Prisma.$IntasendMpesaTransactionPayload>;
-          };
-          createMany: {
-            args: Prisma.IntasendMpesaTransactionCreateManyArgs<ExtArgs>;
-            result: BatchPayload;
-          };
-          createManyAndReturn: {
-            args: Prisma.IntasendMpesaTransactionCreateManyAndReturnArgs<ExtArgs>;
-            result: $Utils.PayloadToResult<Prisma.$IntasendMpesaTransactionPayload>[];
-          };
-          delete: {
-            args: Prisma.IntasendMpesaTransactionDeleteArgs<ExtArgs>;
-            result: $Utils.PayloadToResult<Prisma.$IntasendMpesaTransactionPayload>;
-          };
-          update: {
-            args: Prisma.IntasendMpesaTransactionUpdateArgs<ExtArgs>;
-            result: $Utils.PayloadToResult<Prisma.$IntasendMpesaTransactionPayload>;
-          };
-          deleteMany: {
-            args: Prisma.IntasendMpesaTransactionDeleteManyArgs<ExtArgs>;
-            result: BatchPayload;
-          };
-          updateMany: {
-            args: Prisma.IntasendMpesaTransactionUpdateManyArgs<ExtArgs>;
-            result: BatchPayload;
-          };
-          upsert: {
-            args: Prisma.IntasendMpesaTransactionUpsertArgs<ExtArgs>;
-            result: $Utils.PayloadToResult<Prisma.$IntasendMpesaTransactionPayload>;
-          };
-          aggregate: {
-            args: Prisma.IntasendMpesaTransactionAggregateArgs<ExtArgs>;
-            result: $Utils.Optional<AggregateIntasendMpesaTransaction>;
-          };
-          groupBy: {
-            args: Prisma.IntasendMpesaTransactionGroupByArgs<ExtArgs>;
-            result: $Utils.Optional<IntasendMpesaTransactionGroupByOutputType>[];
-          };
-          count: {
-            args: Prisma.IntasendMpesaTransactionCountArgs<ExtArgs>;
-            result:
-              | $Utils.Optional<IntasendMpesaTransactionCountAggregateOutputType>
               | number;
           };
         };
@@ -1143,10 +1051,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapMinAggregateOutputType = {
     id: string | null;
     state: $Enums.SwapTransactionState | null;
-    userId: string | null;
-    mpesaId: string | null;
+    reference: string | null;
     lightning: string | null;
+    collectionTracker: string | null;
     rate: string | null;
+    amountSats: string | null;
     retryCount: number | null;
     createdAt: Date | null;
     updatedAt: Date | null;
@@ -1155,10 +1064,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapMaxAggregateOutputType = {
     id: string | null;
     state: $Enums.SwapTransactionState | null;
-    userId: string | null;
-    mpesaId: string | null;
+    reference: string | null;
     lightning: string | null;
+    collectionTracker: string | null;
     rate: string | null;
+    amountSats: string | null;
     retryCount: number | null;
     createdAt: Date | null;
     updatedAt: Date | null;
@@ -1167,10 +1077,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapCountAggregateOutputType = {
     id: number;
     state: number;
-    userId: number;
-    mpesaId: number;
+    reference: number;
     lightning: number;
+    collectionTracker: number;
     rate: number;
+    amountSats: number;
     retryCount: number;
     createdAt: number;
     updatedAt: number;
@@ -1188,10 +1099,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapMinAggregateInputType = {
     id?: true;
     state?: true;
-    userId?: true;
-    mpesaId?: true;
+    reference?: true;
     lightning?: true;
+    collectionTracker?: true;
     rate?: true;
+    amountSats?: true;
     retryCount?: true;
     createdAt?: true;
     updatedAt?: true;
@@ -1200,10 +1112,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapMaxAggregateInputType = {
     id?: true;
     state?: true;
-    userId?: true;
-    mpesaId?: true;
+    reference?: true;
     lightning?: true;
+    collectionTracker?: true;
     rate?: true;
+    amountSats?: true;
     retryCount?: true;
     createdAt?: true;
     updatedAt?: true;
@@ -1212,10 +1125,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapCountAggregateInputType = {
     id?: true;
     state?: true;
-    userId?: true;
-    mpesaId?: true;
+    reference?: true;
     lightning?: true;
+    collectionTracker?: true;
     rate?: true;
+    amountSats?: true;
     retryCount?: true;
     createdAt?: true;
     updatedAt?: true;
@@ -1320,10 +1234,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapGroupByOutputType = {
     id: string;
     state: $Enums.SwapTransactionState;
-    userId: string;
-    mpesaId: string;
+    reference: string;
     lightning: string;
+    collectionTracker: string;
     rate: string;
+    amountSats: string;
     retryCount: number;
     createdAt: Date;
     updatedAt: Date;
@@ -1354,10 +1269,11 @@ export namespace Prisma {
     {
       id?: boolean;
       state?: boolean;
-      userId?: boolean;
-      mpesaId?: boolean;
+      reference?: boolean;
       lightning?: boolean;
+      collectionTracker?: boolean;
       rate?: boolean;
+      amountSats?: boolean;
       retryCount?: boolean;
       createdAt?: boolean;
       updatedAt?: boolean;
@@ -1371,10 +1287,11 @@ export namespace Prisma {
     {
       id?: boolean;
       state?: boolean;
-      userId?: boolean;
-      mpesaId?: boolean;
+      reference?: boolean;
       lightning?: boolean;
+      collectionTracker?: boolean;
       rate?: boolean;
+      amountSats?: boolean;
       retryCount?: boolean;
       createdAt?: boolean;
       updatedAt?: boolean;
@@ -1385,10 +1302,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapSelectScalar = {
     id?: boolean;
     state?: boolean;
-    userId?: boolean;
-    mpesaId?: boolean;
+    reference?: boolean;
     lightning?: boolean;
+    collectionTracker?: boolean;
     rate?: boolean;
+    amountSats?: boolean;
     retryCount?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
@@ -1410,21 +1328,25 @@ export namespace Prisma {
          */
         state: $Enums.SwapTransactionState;
         /**
-         * References the user who made the transaction.
+         * References the user who made the transaction
          */
-        userId: string;
-        /**
-         * References the onramp Mpesa transaction ID.
-         */
-        mpesaId: string;
+        reference: string;
         /**
          * Lightning invoice to pay.
          */
         lightning: string;
         /**
-         * Fx Rate
+         * References the fiat onramp collection ID
+         */
+        collectionTracker: string;
+        /**
+         * Fx Rate from
          */
         rate: string;
+        /**
+         * Amount in satoshi
+         */
+        amountSats: string;
         /**
          * Retry count tracker
          */
@@ -1944,10 +1866,11 @@ export namespace Prisma {
   interface MpesaOnrampSwapFieldRefs {
     readonly id: FieldRef<'MpesaOnrampSwap', 'String'>;
     readonly state: FieldRef<'MpesaOnrampSwap', 'SwapTransactionState'>;
-    readonly userId: FieldRef<'MpesaOnrampSwap', 'String'>;
-    readonly mpesaId: FieldRef<'MpesaOnrampSwap', 'String'>;
+    readonly reference: FieldRef<'MpesaOnrampSwap', 'String'>;
     readonly lightning: FieldRef<'MpesaOnrampSwap', 'String'>;
+    readonly collectionTracker: FieldRef<'MpesaOnrampSwap', 'String'>;
     readonly rate: FieldRef<'MpesaOnrampSwap', 'String'>;
+    readonly amountSats: FieldRef<'MpesaOnrampSwap', 'String'>;
     readonly retryCount: FieldRef<'MpesaOnrampSwap', 'Int'>;
     readonly createdAt: FieldRef<'MpesaOnrampSwap', 'DateTime'>;
     readonly updatedAt: FieldRef<'MpesaOnrampSwap', 'DateTime'>;
@@ -2309,10 +2232,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapMinAggregateOutputType = {
     id: string | null;
     state: $Enums.SwapTransactionState | null;
-    userId: string | null;
-    mpesaId: string | null;
+    reference: string | null;
     lightning: string | null;
+    phone: string | null;
+    paymentTracker: string | null;
     rate: string | null;
+    amountSats: string | null;
     retryCount: number | null;
     createdAt: Date | null;
     updatedAt: Date | null;
@@ -2321,10 +2246,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapMaxAggregateOutputType = {
     id: string | null;
     state: $Enums.SwapTransactionState | null;
-    userId: string | null;
-    mpesaId: string | null;
+    reference: string | null;
     lightning: string | null;
+    phone: string | null;
+    paymentTracker: string | null;
     rate: string | null;
+    amountSats: string | null;
     retryCount: number | null;
     createdAt: Date | null;
     updatedAt: Date | null;
@@ -2333,10 +2260,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapCountAggregateOutputType = {
     id: number;
     state: number;
-    userId: number;
-    mpesaId: number;
+    reference: number;
     lightning: number;
+    phone: number;
+    paymentTracker: number;
     rate: number;
+    amountSats: number;
     retryCount: number;
     createdAt: number;
     updatedAt: number;
@@ -2354,10 +2283,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapMinAggregateInputType = {
     id?: true;
     state?: true;
-    userId?: true;
-    mpesaId?: true;
+    reference?: true;
     lightning?: true;
+    phone?: true;
+    paymentTracker?: true;
     rate?: true;
+    amountSats?: true;
     retryCount?: true;
     createdAt?: true;
     updatedAt?: true;
@@ -2366,10 +2297,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapMaxAggregateInputType = {
     id?: true;
     state?: true;
-    userId?: true;
-    mpesaId?: true;
+    reference?: true;
     lightning?: true;
+    phone?: true;
+    paymentTracker?: true;
     rate?: true;
+    amountSats?: true;
     retryCount?: true;
     createdAt?: true;
     updatedAt?: true;
@@ -2378,10 +2311,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapCountAggregateInputType = {
     id?: true;
     state?: true;
-    userId?: true;
-    mpesaId?: true;
+    reference?: true;
     lightning?: true;
+    phone?: true;
+    paymentTracker?: true;
     rate?: true;
+    amountSats?: true;
     retryCount?: true;
     createdAt?: true;
     updatedAt?: true;
@@ -2486,10 +2421,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapGroupByOutputType = {
     id: string;
     state: $Enums.SwapTransactionState;
-    userId: string;
-    mpesaId: string | null;
+    reference: string;
     lightning: string;
+    phone: string;
+    paymentTracker: string | null;
     rate: string;
+    amountSats: string;
     retryCount: number;
     createdAt: Date;
     updatedAt: Date;
@@ -2521,10 +2458,12 @@ export namespace Prisma {
     {
       id?: boolean;
       state?: boolean;
-      userId?: boolean;
-      mpesaId?: boolean;
+      reference?: boolean;
       lightning?: boolean;
+      phone?: boolean;
+      paymentTracker?: boolean;
       rate?: boolean;
+      amountSats?: boolean;
       retryCount?: boolean;
       createdAt?: boolean;
       updatedAt?: boolean;
@@ -2538,10 +2477,12 @@ export namespace Prisma {
     {
       id?: boolean;
       state?: boolean;
-      userId?: boolean;
-      mpesaId?: boolean;
+      reference?: boolean;
       lightning?: boolean;
+      phone?: boolean;
+      paymentTracker?: boolean;
       rate?: boolean;
+      amountSats?: boolean;
       retryCount?: boolean;
       createdAt?: boolean;
       updatedAt?: boolean;
@@ -2552,10 +2493,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapSelectScalar = {
     id?: boolean;
     state?: boolean;
-    userId?: boolean;
-    mpesaId?: boolean;
+    reference?: boolean;
     lightning?: boolean;
+    phone?: boolean;
+    paymentTracker?: boolean;
     rate?: boolean;
+    amountSats?: boolean;
     retryCount?: boolean;
     createdAt?: boolean;
     updatedAt?: boolean;
@@ -2577,21 +2520,29 @@ export namespace Prisma {
          */
         state: $Enums.SwapTransactionState;
         /**
-         * References the user who made the transaction.
+         * References the user who made the transaction
          */
-        userId: string;
+        reference: string;
         /**
-         * References the offramp Mpesa transaction ID.
-         */
-        mpesaId: string | null;
-        /**
-         * Lightning invoice to be paid before invoice can proceed.
+         * Lightning invoice to be paid before offramp can proceed
          */
         lightning: string;
+        /**
+         * Phone number to send mpesa the payment
+         */
+        phone: string;
+        /**
+         * References the fiat offramp payment ID
+         */
+        paymentTracker: string | null;
         /**
          * Fx Rate
          */
         rate: string;
+        /**
+         * Amount in satoshi
+         */
+        amountSats: string;
         /**
          * Retry count tracker
          */
@@ -3111,10 +3062,12 @@ export namespace Prisma {
   interface MpesaOfframpSwapFieldRefs {
     readonly id: FieldRef<'MpesaOfframpSwap', 'String'>;
     readonly state: FieldRef<'MpesaOfframpSwap', 'SwapTransactionState'>;
-    readonly userId: FieldRef<'MpesaOfframpSwap', 'String'>;
-    readonly mpesaId: FieldRef<'MpesaOfframpSwap', 'String'>;
+    readonly reference: FieldRef<'MpesaOfframpSwap', 'String'>;
     readonly lightning: FieldRef<'MpesaOfframpSwap', 'String'>;
+    readonly phone: FieldRef<'MpesaOfframpSwap', 'String'>;
+    readonly paymentTracker: FieldRef<'MpesaOfframpSwap', 'String'>;
     readonly rate: FieldRef<'MpesaOfframpSwap', 'String'>;
+    readonly amountSats: FieldRef<'MpesaOfframpSwap', 'String'>;
     readonly retryCount: FieldRef<'MpesaOfframpSwap', 'Int'>;
     readonly createdAt: FieldRef<'MpesaOfframpSwap', 'DateTime'>;
     readonly updatedAt: FieldRef<'MpesaOfframpSwap', 'DateTime'>;
@@ -3460,1229 +3413,6 @@ export namespace Prisma {
   };
 
   /**
-   * Model IntasendMpesaTransaction
-   */
-
-  export type AggregateIntasendMpesaTransaction = {
-    _count: IntasendMpesaTransactionCountAggregateOutputType | null;
-    _avg: IntasendMpesaTransactionAvgAggregateOutputType | null;
-    _sum: IntasendMpesaTransactionSumAggregateOutputType | null;
-    _min: IntasendMpesaTransactionMinAggregateOutputType | null;
-    _max: IntasendMpesaTransactionMaxAggregateOutputType | null;
-  };
-
-  export type IntasendMpesaTransactionAvgAggregateOutputType = {
-    retryCount: number | null;
-  };
-
-  export type IntasendMpesaTransactionSumAggregateOutputType = {
-    retryCount: number | null;
-  };
-
-  export type IntasendMpesaTransactionMinAggregateOutputType = {
-    id: string | null;
-    state: $Enums.SwapTransactionState | null;
-    apiRef: string | null;
-    value: string | null;
-    charges: string | null;
-    netAmount: string | null;
-    currency: string | null;
-    account: string | null;
-    retryCount: number | null;
-    createdAt: string | null;
-    updatedAt: string | null;
-  };
-
-  export type IntasendMpesaTransactionMaxAggregateOutputType = {
-    id: string | null;
-    state: $Enums.SwapTransactionState | null;
-    apiRef: string | null;
-    value: string | null;
-    charges: string | null;
-    netAmount: string | null;
-    currency: string | null;
-    account: string | null;
-    retryCount: number | null;
-    createdAt: string | null;
-    updatedAt: string | null;
-  };
-
-  export type IntasendMpesaTransactionCountAggregateOutputType = {
-    id: number;
-    state: number;
-    apiRef: number;
-    value: number;
-    charges: number;
-    netAmount: number;
-    currency: number;
-    account: number;
-    retryCount: number;
-    createdAt: number;
-    updatedAt: number;
-    _all: number;
-  };
-
-  export type IntasendMpesaTransactionAvgAggregateInputType = {
-    retryCount?: true;
-  };
-
-  export type IntasendMpesaTransactionSumAggregateInputType = {
-    retryCount?: true;
-  };
-
-  export type IntasendMpesaTransactionMinAggregateInputType = {
-    id?: true;
-    state?: true;
-    apiRef?: true;
-    value?: true;
-    charges?: true;
-    netAmount?: true;
-    currency?: true;
-    account?: true;
-    retryCount?: true;
-    createdAt?: true;
-    updatedAt?: true;
-  };
-
-  export type IntasendMpesaTransactionMaxAggregateInputType = {
-    id?: true;
-    state?: true;
-    apiRef?: true;
-    value?: true;
-    charges?: true;
-    netAmount?: true;
-    currency?: true;
-    account?: true;
-    retryCount?: true;
-    createdAt?: true;
-    updatedAt?: true;
-  };
-
-  export type IntasendMpesaTransactionCountAggregateInputType = {
-    id?: true;
-    state?: true;
-    apiRef?: true;
-    value?: true;
-    charges?: true;
-    netAmount?: true;
-    currency?: true;
-    account?: true;
-    retryCount?: true;
-    createdAt?: true;
-    updatedAt?: true;
-    _all?: true;
-  };
-
-  export type IntasendMpesaTransactionAggregateArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Filter which IntasendMpesaTransaction to aggregate.
-     */
-    where?: IntasendMpesaTransactionWhereInput;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     *
-     * Determine the order of IntasendMpesaTransactions to fetch.
-     */
-    orderBy?:
-      | IntasendMpesaTransactionOrderByWithRelationInput
-      | IntasendMpesaTransactionOrderByWithRelationInput[];
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     *
-     * Sets the start position
-     */
-    cursor?: IntasendMpesaTransactionWhereUniqueInput;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     *
-     * Take `±n` IntasendMpesaTransactions from the position of the cursor.
-     */
-    take?: number;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     *
-     * Skip the first `n` IntasendMpesaTransactions.
-     */
-    skip?: number;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     *
-     * Count returned IntasendMpesaTransactions
-     **/
-    _count?: true | IntasendMpesaTransactionCountAggregateInputType;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     *
-     * Select which fields to average
-     **/
-    _avg?: IntasendMpesaTransactionAvgAggregateInputType;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     *
-     * Select which fields to sum
-     **/
-    _sum?: IntasendMpesaTransactionSumAggregateInputType;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     *
-     * Select which fields to find the minimum value
-     **/
-    _min?: IntasendMpesaTransactionMinAggregateInputType;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     *
-     * Select which fields to find the maximum value
-     **/
-    _max?: IntasendMpesaTransactionMaxAggregateInputType;
-  };
-
-  export type GetIntasendMpesaTransactionAggregateType<
-    T extends IntasendMpesaTransactionAggregateArgs,
-  > = {
-    [P in keyof T & keyof AggregateIntasendMpesaTransaction]: P extends
-      | '_count'
-      | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateIntasendMpesaTransaction[P]>
-      : GetScalarType<T[P], AggregateIntasendMpesaTransaction[P]>;
-  };
-
-  export type IntasendMpesaTransactionGroupByArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    where?: IntasendMpesaTransactionWhereInput;
-    orderBy?:
-      | IntasendMpesaTransactionOrderByWithAggregationInput
-      | IntasendMpesaTransactionOrderByWithAggregationInput[];
-    by:
-      | IntasendMpesaTransactionScalarFieldEnum[]
-      | IntasendMpesaTransactionScalarFieldEnum;
-    having?: IntasendMpesaTransactionScalarWhereWithAggregatesInput;
-    take?: number;
-    skip?: number;
-    _count?: IntasendMpesaTransactionCountAggregateInputType | true;
-    _avg?: IntasendMpesaTransactionAvgAggregateInputType;
-    _sum?: IntasendMpesaTransactionSumAggregateInputType;
-    _min?: IntasendMpesaTransactionMinAggregateInputType;
-    _max?: IntasendMpesaTransactionMaxAggregateInputType;
-  };
-
-  export type IntasendMpesaTransactionGroupByOutputType = {
-    id: string;
-    state: $Enums.SwapTransactionState;
-    apiRef: string;
-    value: string;
-    charges: string;
-    netAmount: string;
-    currency: string;
-    account: string;
-    retryCount: number;
-    createdAt: string;
-    updatedAt: string;
-    _count: IntasendMpesaTransactionCountAggregateOutputType | null;
-    _avg: IntasendMpesaTransactionAvgAggregateOutputType | null;
-    _sum: IntasendMpesaTransactionSumAggregateOutputType | null;
-    _min: IntasendMpesaTransactionMinAggregateOutputType | null;
-    _max: IntasendMpesaTransactionMaxAggregateOutputType | null;
-  };
-
-  type GetIntasendMpesaTransactionGroupByPayload<
-    T extends IntasendMpesaTransactionGroupByArgs,
-  > = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<IntasendMpesaTransactionGroupByOutputType, T['by']> & {
-        [P in keyof T &
-          keyof IntasendMpesaTransactionGroupByOutputType]: P extends '_count'
-          ? T[P] extends boolean
-            ? number
-            : GetScalarType<T[P], IntasendMpesaTransactionGroupByOutputType[P]>
-          : GetScalarType<T[P], IntasendMpesaTransactionGroupByOutputType[P]>;
-      }
-    >
-  >;
-
-  export type IntasendMpesaTransactionSelect<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = $Extensions.GetSelect<
-    {
-      id?: boolean;
-      state?: boolean;
-      apiRef?: boolean;
-      value?: boolean;
-      charges?: boolean;
-      netAmount?: boolean;
-      currency?: boolean;
-      account?: boolean;
-      retryCount?: boolean;
-      createdAt?: boolean;
-      updatedAt?: boolean;
-    },
-    ExtArgs['result']['intasendMpesaTransaction']
-  >;
-
-  export type IntasendMpesaTransactionSelectCreateManyAndReturn<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = $Extensions.GetSelect<
-    {
-      id?: boolean;
-      state?: boolean;
-      apiRef?: boolean;
-      value?: boolean;
-      charges?: boolean;
-      netAmount?: boolean;
-      currency?: boolean;
-      account?: boolean;
-      retryCount?: boolean;
-      createdAt?: boolean;
-      updatedAt?: boolean;
-    },
-    ExtArgs['result']['intasendMpesaTransaction']
-  >;
-
-  export type IntasendMpesaTransactionSelectScalar = {
-    id?: boolean;
-    state?: boolean;
-    apiRef?: boolean;
-    value?: boolean;
-    charges?: boolean;
-    netAmount?: boolean;
-    currency?: boolean;
-    account?: boolean;
-    retryCount?: boolean;
-    createdAt?: boolean;
-    updatedAt?: boolean;
-  };
-
-  export type $IntasendMpesaTransactionPayload<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    name: 'IntasendMpesaTransaction';
-    objects: {};
-    scalars: $Extensions.GetPayloadResult<
-      {
-        id: string;
-        state: $Enums.SwapTransactionState;
-        apiRef: string;
-        value: string;
-        charges: string;
-        netAmount: string;
-        currency: string;
-        account: string;
-        retryCount: number;
-        createdAt: string;
-        updatedAt: string;
-      },
-      ExtArgs['result']['intasendMpesaTransaction']
-    >;
-    composites: {};
-  };
-
-  type IntasendMpesaTransactionGetPayload<
-    S extends boolean | null | undefined | IntasendMpesaTransactionDefaultArgs,
-  > = $Result.GetResult<Prisma.$IntasendMpesaTransactionPayload, S>;
-
-  type IntasendMpesaTransactionCountArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = Omit<
-    IntasendMpesaTransactionFindManyArgs,
-    'select' | 'include' | 'distinct'
-  > & {
-    select?: IntasendMpesaTransactionCountAggregateInputType | true;
-  };
-
-  export interface IntasendMpesaTransactionDelegate<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > {
-    [K: symbol]: {
-      types: Prisma.TypeMap<ExtArgs>['model']['IntasendMpesaTransaction'];
-      meta: { name: 'IntasendMpesaTransaction' };
-    };
-    /**
-     * Find zero or one IntasendMpesaTransaction that matches the filter.
-     * @param {IntasendMpesaTransactionFindUniqueArgs} args - Arguments to find a IntasendMpesaTransaction
-     * @example
-     * // Get one IntasendMpesaTransaction
-     * const intasendMpesaTransaction = await prisma.intasendMpesaTransaction.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends IntasendMpesaTransactionFindUniqueArgs>(
-      args: SelectSubset<T, IntasendMpesaTransactionFindUniqueArgs<ExtArgs>>,
-    ): Prisma__IntasendMpesaTransactionClient<
-      $Result.GetResult<
-        Prisma.$IntasendMpesaTransactionPayload<ExtArgs>,
-        T,
-        'findUnique'
-      > | null,
-      null,
-      ExtArgs
-    >;
-
-    /**
-     * Find one IntasendMpesaTransaction that matches the filter or throw an error with `error.code='P2025'`
-     * if no matches were found.
-     * @param {IntasendMpesaTransactionFindUniqueOrThrowArgs} args - Arguments to find a IntasendMpesaTransaction
-     * @example
-     * // Get one IntasendMpesaTransaction
-     * const intasendMpesaTransaction = await prisma.intasendMpesaTransaction.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends IntasendMpesaTransactionFindUniqueOrThrowArgs>(
-      args: SelectSubset<
-        T,
-        IntasendMpesaTransactionFindUniqueOrThrowArgs<ExtArgs>
-      >,
-    ): Prisma__IntasendMpesaTransactionClient<
-      $Result.GetResult<
-        Prisma.$IntasendMpesaTransactionPayload<ExtArgs>,
-        T,
-        'findUniqueOrThrow'
-      >,
-      never,
-      ExtArgs
-    >;
-
-    /**
-     * Find the first IntasendMpesaTransaction that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {IntasendMpesaTransactionFindFirstArgs} args - Arguments to find a IntasendMpesaTransaction
-     * @example
-     * // Get one IntasendMpesaTransaction
-     * const intasendMpesaTransaction = await prisma.intasendMpesaTransaction.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends IntasendMpesaTransactionFindFirstArgs>(
-      args?: SelectSubset<T, IntasendMpesaTransactionFindFirstArgs<ExtArgs>>,
-    ): Prisma__IntasendMpesaTransactionClient<
-      $Result.GetResult<
-        Prisma.$IntasendMpesaTransactionPayload<ExtArgs>,
-        T,
-        'findFirst'
-      > | null,
-      null,
-      ExtArgs
-    >;
-
-    /**
-     * Find the first IntasendMpesaTransaction that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {IntasendMpesaTransactionFindFirstOrThrowArgs} args - Arguments to find a IntasendMpesaTransaction
-     * @example
-     * // Get one IntasendMpesaTransaction
-     * const intasendMpesaTransaction = await prisma.intasendMpesaTransaction.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends IntasendMpesaTransactionFindFirstOrThrowArgs>(
-      args?: SelectSubset<
-        T,
-        IntasendMpesaTransactionFindFirstOrThrowArgs<ExtArgs>
-      >,
-    ): Prisma__IntasendMpesaTransactionClient<
-      $Result.GetResult<
-        Prisma.$IntasendMpesaTransactionPayload<ExtArgs>,
-        T,
-        'findFirstOrThrow'
-      >,
-      never,
-      ExtArgs
-    >;
-
-    /**
-     * Find zero or more IntasendMpesaTransactions that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {IntasendMpesaTransactionFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all IntasendMpesaTransactions
-     * const intasendMpesaTransactions = await prisma.intasendMpesaTransaction.findMany()
-     *
-     * // Get first 10 IntasendMpesaTransactions
-     * const intasendMpesaTransactions = await prisma.intasendMpesaTransaction.findMany({ take: 10 })
-     *
-     * // Only select the `id`
-     * const intasendMpesaTransactionWithIdOnly = await prisma.intasendMpesaTransaction.findMany({ select: { id: true } })
-     *
-     */
-    findMany<T extends IntasendMpesaTransactionFindManyArgs>(
-      args?: SelectSubset<T, IntasendMpesaTransactionFindManyArgs<ExtArgs>>,
-    ): Prisma.PrismaPromise<
-      $Result.GetResult<
-        Prisma.$IntasendMpesaTransactionPayload<ExtArgs>,
-        T,
-        'findMany'
-      >
-    >;
-
-    /**
-     * Create a IntasendMpesaTransaction.
-     * @param {IntasendMpesaTransactionCreateArgs} args - Arguments to create a IntasendMpesaTransaction.
-     * @example
-     * // Create one IntasendMpesaTransaction
-     * const IntasendMpesaTransaction = await prisma.intasendMpesaTransaction.create({
-     *   data: {
-     *     // ... data to create a IntasendMpesaTransaction
-     *   }
-     * })
-     *
-     */
-    create<T extends IntasendMpesaTransactionCreateArgs>(
-      args: SelectSubset<T, IntasendMpesaTransactionCreateArgs<ExtArgs>>,
-    ): Prisma__IntasendMpesaTransactionClient<
-      $Result.GetResult<
-        Prisma.$IntasendMpesaTransactionPayload<ExtArgs>,
-        T,
-        'create'
-      >,
-      never,
-      ExtArgs
-    >;
-
-    /**
-     * Create many IntasendMpesaTransactions.
-     * @param {IntasendMpesaTransactionCreateManyArgs} args - Arguments to create many IntasendMpesaTransactions.
-     * @example
-     * // Create many IntasendMpesaTransactions
-     * const intasendMpesaTransaction = await prisma.intasendMpesaTransaction.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *
-     */
-    createMany<T extends IntasendMpesaTransactionCreateManyArgs>(
-      args?: SelectSubset<T, IntasendMpesaTransactionCreateManyArgs<ExtArgs>>,
-    ): Prisma.PrismaPromise<BatchPayload>;
-
-    /**
-     * Create many IntasendMpesaTransactions and returns the data saved in the database.
-     * @param {IntasendMpesaTransactionCreateManyAndReturnArgs} args - Arguments to create many IntasendMpesaTransactions.
-     * @example
-     * // Create many IntasendMpesaTransactions
-     * const intasendMpesaTransaction = await prisma.intasendMpesaTransaction.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *
-     * // Create many IntasendMpesaTransactions and only return the `id`
-     * const intasendMpesaTransactionWithIdOnly = await prisma.intasendMpesaTransaction.createManyAndReturn({
-     *   select: { id: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     *
-     */
-    createManyAndReturn<
-      T extends IntasendMpesaTransactionCreateManyAndReturnArgs,
-    >(
-      args?: SelectSubset<
-        T,
-        IntasendMpesaTransactionCreateManyAndReturnArgs<ExtArgs>
-      >,
-    ): Prisma.PrismaPromise<
-      $Result.GetResult<
-        Prisma.$IntasendMpesaTransactionPayload<ExtArgs>,
-        T,
-        'createManyAndReturn'
-      >
-    >;
-
-    /**
-     * Delete a IntasendMpesaTransaction.
-     * @param {IntasendMpesaTransactionDeleteArgs} args - Arguments to delete one IntasendMpesaTransaction.
-     * @example
-     * // Delete one IntasendMpesaTransaction
-     * const IntasendMpesaTransaction = await prisma.intasendMpesaTransaction.delete({
-     *   where: {
-     *     // ... filter to delete one IntasendMpesaTransaction
-     *   }
-     * })
-     *
-     */
-    delete<T extends IntasendMpesaTransactionDeleteArgs>(
-      args: SelectSubset<T, IntasendMpesaTransactionDeleteArgs<ExtArgs>>,
-    ): Prisma__IntasendMpesaTransactionClient<
-      $Result.GetResult<
-        Prisma.$IntasendMpesaTransactionPayload<ExtArgs>,
-        T,
-        'delete'
-      >,
-      never,
-      ExtArgs
-    >;
-
-    /**
-     * Update one IntasendMpesaTransaction.
-     * @param {IntasendMpesaTransactionUpdateArgs} args - Arguments to update one IntasendMpesaTransaction.
-     * @example
-     * // Update one IntasendMpesaTransaction
-     * const intasendMpesaTransaction = await prisma.intasendMpesaTransaction.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     *
-     */
-    update<T extends IntasendMpesaTransactionUpdateArgs>(
-      args: SelectSubset<T, IntasendMpesaTransactionUpdateArgs<ExtArgs>>,
-    ): Prisma__IntasendMpesaTransactionClient<
-      $Result.GetResult<
-        Prisma.$IntasendMpesaTransactionPayload<ExtArgs>,
-        T,
-        'update'
-      >,
-      never,
-      ExtArgs
-    >;
-
-    /**
-     * Delete zero or more IntasendMpesaTransactions.
-     * @param {IntasendMpesaTransactionDeleteManyArgs} args - Arguments to filter IntasendMpesaTransactions to delete.
-     * @example
-     * // Delete a few IntasendMpesaTransactions
-     * const { count } = await prisma.intasendMpesaTransaction.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     *
-     */
-    deleteMany<T extends IntasendMpesaTransactionDeleteManyArgs>(
-      args?: SelectSubset<T, IntasendMpesaTransactionDeleteManyArgs<ExtArgs>>,
-    ): Prisma.PrismaPromise<BatchPayload>;
-
-    /**
-     * Update zero or more IntasendMpesaTransactions.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {IntasendMpesaTransactionUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many IntasendMpesaTransactions
-     * const intasendMpesaTransaction = await prisma.intasendMpesaTransaction.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     *
-     */
-    updateMany<T extends IntasendMpesaTransactionUpdateManyArgs>(
-      args: SelectSubset<T, IntasendMpesaTransactionUpdateManyArgs<ExtArgs>>,
-    ): Prisma.PrismaPromise<BatchPayload>;
-
-    /**
-     * Create or update one IntasendMpesaTransaction.
-     * @param {IntasendMpesaTransactionUpsertArgs} args - Arguments to update or create a IntasendMpesaTransaction.
-     * @example
-     * // Update or create a IntasendMpesaTransaction
-     * const intasendMpesaTransaction = await prisma.intasendMpesaTransaction.upsert({
-     *   create: {
-     *     // ... data to create a IntasendMpesaTransaction
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the IntasendMpesaTransaction we want to update
-     *   }
-     * })
-     */
-    upsert<T extends IntasendMpesaTransactionUpsertArgs>(
-      args: SelectSubset<T, IntasendMpesaTransactionUpsertArgs<ExtArgs>>,
-    ): Prisma__IntasendMpesaTransactionClient<
-      $Result.GetResult<
-        Prisma.$IntasendMpesaTransactionPayload<ExtArgs>,
-        T,
-        'upsert'
-      >,
-      never,
-      ExtArgs
-    >;
-
-    /**
-     * Count the number of IntasendMpesaTransactions.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {IntasendMpesaTransactionCountArgs} args - Arguments to filter IntasendMpesaTransactions to count.
-     * @example
-     * // Count the number of IntasendMpesaTransactions
-     * const count = await prisma.intasendMpesaTransaction.count({
-     *   where: {
-     *     // ... the filter for the IntasendMpesaTransactions we want to count
-     *   }
-     * })
-     **/
-    count<T extends IntasendMpesaTransactionCountArgs>(
-      args?: Subset<T, IntasendMpesaTransactionCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<
-              T['select'],
-              IntasendMpesaTransactionCountAggregateOutputType
-            >
-        : number
-    >;
-
-    /**
-     * Allows you to perform aggregations operations on a IntasendMpesaTransaction.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {IntasendMpesaTransactionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-     **/
-    aggregate<T extends IntasendMpesaTransactionAggregateArgs>(
-      args: Subset<T, IntasendMpesaTransactionAggregateArgs>,
-    ): Prisma.PrismaPromise<GetIntasendMpesaTransactionAggregateType<T>>;
-
-    /**
-     * Group by IntasendMpesaTransaction.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {IntasendMpesaTransactionGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     *
-     **/
-    groupBy<
-      T extends IntasendMpesaTransactionGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: IntasendMpesaTransactionGroupByArgs['orderBy'] }
-        : { orderBy?: IntasendMpesaTransactionGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<
-        Keys<MaybeTupleToUnion<T['orderBy']>>
-      >,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-        ? `Error: "by" must not be empty.`
-        : HavingValid extends False
-          ? {
-              [P in HavingFields]: P extends ByFields
-                ? never
-                : P extends string
-                  ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-                  : [
-                      Error,
-                      'Field ',
-                      P,
-                      ` in "having" needs to be provided in "by"`,
-                    ];
-            }[HavingFields]
-          : 'take' extends Keys<T>
-            ? 'orderBy' extends Keys<T>
-              ? ByValid extends True
-                ? {}
-                : {
-                    [P in OrderFields]: P extends ByFields
-                      ? never
-                      : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
-                  }[OrderFields]
-              : 'Error: If you provide "take", you also need to provide "orderBy"'
-            : 'skip' extends Keys<T>
-              ? 'orderBy' extends Keys<T>
-                ? ByValid extends True
-                  ? {}
-                  : {
-                      [P in OrderFields]: P extends ByFields
-                        ? never
-                        : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
-                    }[OrderFields]
-                : 'Error: If you provide "skip", you also need to provide "orderBy"'
-              : ByValid extends True
-                ? {}
-                : {
-                    [P in OrderFields]: P extends ByFields
-                      ? never
-                      : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`;
-                  }[OrderFields],
-    >(
-      args: SubsetIntersection<
-        T,
-        IntasendMpesaTransactionGroupByArgs,
-        OrderByArg
-      > &
-        InputErrors,
-    ): {} extends InputErrors
-      ? GetIntasendMpesaTransactionGroupByPayload<T>
-      : Prisma.PrismaPromise<InputErrors>;
-    /**
-     * Fields of the IntasendMpesaTransaction model
-     */
-    readonly fields: IntasendMpesaTransactionFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for IntasendMpesaTransaction.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__IntasendMpesaTransactionClient<
-    T,
-    Null = never,
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: 'PrismaPromise';
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(
-      onfulfilled?:
-        | ((value: T) => TResult1 | PromiseLike<TResult1>)
-        | undefined
-        | null,
-      onrejected?:
-        | ((reason: any) => TResult2 | PromiseLike<TResult2>)
-        | undefined
-        | null,
-    ): $Utils.JsPromise<TResult1 | TResult2>;
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(
-      onrejected?:
-        | ((reason: any) => TResult | PromiseLike<TResult>)
-        | undefined
-        | null,
-    ): $Utils.JsPromise<T | TResult>;
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>;
-  }
-
-  /**
-   * Fields of the IntasendMpesaTransaction model
-   */
-  interface IntasendMpesaTransactionFieldRefs {
-    readonly id: FieldRef<'IntasendMpesaTransaction', 'String'>;
-    readonly state: FieldRef<
-      'IntasendMpesaTransaction',
-      'SwapTransactionState'
-    >;
-    readonly apiRef: FieldRef<'IntasendMpesaTransaction', 'String'>;
-    readonly value: FieldRef<'IntasendMpesaTransaction', 'String'>;
-    readonly charges: FieldRef<'IntasendMpesaTransaction', 'String'>;
-    readonly netAmount: FieldRef<'IntasendMpesaTransaction', 'String'>;
-    readonly currency: FieldRef<'IntasendMpesaTransaction', 'String'>;
-    readonly account: FieldRef<'IntasendMpesaTransaction', 'String'>;
-    readonly retryCount: FieldRef<'IntasendMpesaTransaction', 'Int'>;
-    readonly createdAt: FieldRef<'IntasendMpesaTransaction', 'String'>;
-    readonly updatedAt: FieldRef<'IntasendMpesaTransaction', 'String'>;
-  }
-
-  // Custom InputTypes
-  /**
-   * IntasendMpesaTransaction findUnique
-   */
-  export type IntasendMpesaTransactionFindUniqueArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelect<ExtArgs> | null;
-    /**
-     * Filter, which IntasendMpesaTransaction to fetch.
-     */
-    where: IntasendMpesaTransactionWhereUniqueInput;
-  };
-
-  /**
-   * IntasendMpesaTransaction findUniqueOrThrow
-   */
-  export type IntasendMpesaTransactionFindUniqueOrThrowArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelect<ExtArgs> | null;
-    /**
-     * Filter, which IntasendMpesaTransaction to fetch.
-     */
-    where: IntasendMpesaTransactionWhereUniqueInput;
-  };
-
-  /**
-   * IntasendMpesaTransaction findFirst
-   */
-  export type IntasendMpesaTransactionFindFirstArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelect<ExtArgs> | null;
-    /**
-     * Filter, which IntasendMpesaTransaction to fetch.
-     */
-    where?: IntasendMpesaTransactionWhereInput;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     *
-     * Determine the order of IntasendMpesaTransactions to fetch.
-     */
-    orderBy?:
-      | IntasendMpesaTransactionOrderByWithRelationInput
-      | IntasendMpesaTransactionOrderByWithRelationInput[];
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     *
-     * Sets the position for searching for IntasendMpesaTransactions.
-     */
-    cursor?: IntasendMpesaTransactionWhereUniqueInput;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     *
-     * Take `±n` IntasendMpesaTransactions from the position of the cursor.
-     */
-    take?: number;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     *
-     * Skip the first `n` IntasendMpesaTransactions.
-     */
-    skip?: number;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     *
-     * Filter by unique combinations of IntasendMpesaTransactions.
-     */
-    distinct?:
-      | IntasendMpesaTransactionScalarFieldEnum
-      | IntasendMpesaTransactionScalarFieldEnum[];
-  };
-
-  /**
-   * IntasendMpesaTransaction findFirstOrThrow
-   */
-  export type IntasendMpesaTransactionFindFirstOrThrowArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelect<ExtArgs> | null;
-    /**
-     * Filter, which IntasendMpesaTransaction to fetch.
-     */
-    where?: IntasendMpesaTransactionWhereInput;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     *
-     * Determine the order of IntasendMpesaTransactions to fetch.
-     */
-    orderBy?:
-      | IntasendMpesaTransactionOrderByWithRelationInput
-      | IntasendMpesaTransactionOrderByWithRelationInput[];
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     *
-     * Sets the position for searching for IntasendMpesaTransactions.
-     */
-    cursor?: IntasendMpesaTransactionWhereUniqueInput;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     *
-     * Take `±n` IntasendMpesaTransactions from the position of the cursor.
-     */
-    take?: number;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     *
-     * Skip the first `n` IntasendMpesaTransactions.
-     */
-    skip?: number;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     *
-     * Filter by unique combinations of IntasendMpesaTransactions.
-     */
-    distinct?:
-      | IntasendMpesaTransactionScalarFieldEnum
-      | IntasendMpesaTransactionScalarFieldEnum[];
-  };
-
-  /**
-   * IntasendMpesaTransaction findMany
-   */
-  export type IntasendMpesaTransactionFindManyArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelect<ExtArgs> | null;
-    /**
-     * Filter, which IntasendMpesaTransactions to fetch.
-     */
-    where?: IntasendMpesaTransactionWhereInput;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     *
-     * Determine the order of IntasendMpesaTransactions to fetch.
-     */
-    orderBy?:
-      | IntasendMpesaTransactionOrderByWithRelationInput
-      | IntasendMpesaTransactionOrderByWithRelationInput[];
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     *
-     * Sets the position for listing IntasendMpesaTransactions.
-     */
-    cursor?: IntasendMpesaTransactionWhereUniqueInput;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     *
-     * Take `±n` IntasendMpesaTransactions from the position of the cursor.
-     */
-    take?: number;
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     *
-     * Skip the first `n` IntasendMpesaTransactions.
-     */
-    skip?: number;
-    distinct?:
-      | IntasendMpesaTransactionScalarFieldEnum
-      | IntasendMpesaTransactionScalarFieldEnum[];
-  };
-
-  /**
-   * IntasendMpesaTransaction create
-   */
-  export type IntasendMpesaTransactionCreateArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelect<ExtArgs> | null;
-    /**
-     * The data needed to create a IntasendMpesaTransaction.
-     */
-    data: XOR<
-      IntasendMpesaTransactionCreateInput,
-      IntasendMpesaTransactionUncheckedCreateInput
-    >;
-  };
-
-  /**
-   * IntasendMpesaTransaction createMany
-   */
-  export type IntasendMpesaTransactionCreateManyArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * The data used to create many IntasendMpesaTransactions.
-     */
-    data:
-      | IntasendMpesaTransactionCreateManyInput
-      | IntasendMpesaTransactionCreateManyInput[];
-    skipDuplicates?: boolean;
-  };
-
-  /**
-   * IntasendMpesaTransaction createManyAndReturn
-   */
-  export type IntasendMpesaTransactionCreateManyAndReturnArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelectCreateManyAndReturn<ExtArgs> | null;
-    /**
-     * The data used to create many IntasendMpesaTransactions.
-     */
-    data:
-      | IntasendMpesaTransactionCreateManyInput
-      | IntasendMpesaTransactionCreateManyInput[];
-    skipDuplicates?: boolean;
-  };
-
-  /**
-   * IntasendMpesaTransaction update
-   */
-  export type IntasendMpesaTransactionUpdateArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelect<ExtArgs> | null;
-    /**
-     * The data needed to update a IntasendMpesaTransaction.
-     */
-    data: XOR<
-      IntasendMpesaTransactionUpdateInput,
-      IntasendMpesaTransactionUncheckedUpdateInput
-    >;
-    /**
-     * Choose, which IntasendMpesaTransaction to update.
-     */
-    where: IntasendMpesaTransactionWhereUniqueInput;
-  };
-
-  /**
-   * IntasendMpesaTransaction updateMany
-   */
-  export type IntasendMpesaTransactionUpdateManyArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * The data used to update IntasendMpesaTransactions.
-     */
-    data: XOR<
-      IntasendMpesaTransactionUpdateManyMutationInput,
-      IntasendMpesaTransactionUncheckedUpdateManyInput
-    >;
-    /**
-     * Filter which IntasendMpesaTransactions to update
-     */
-    where?: IntasendMpesaTransactionWhereInput;
-  };
-
-  /**
-   * IntasendMpesaTransaction upsert
-   */
-  export type IntasendMpesaTransactionUpsertArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelect<ExtArgs> | null;
-    /**
-     * The filter to search for the IntasendMpesaTransaction to update in case it exists.
-     */
-    where: IntasendMpesaTransactionWhereUniqueInput;
-    /**
-     * In case the IntasendMpesaTransaction found by the `where` argument doesn't exist, create a new IntasendMpesaTransaction with this data.
-     */
-    create: XOR<
-      IntasendMpesaTransactionCreateInput,
-      IntasendMpesaTransactionUncheckedCreateInput
-    >;
-    /**
-     * In case the IntasendMpesaTransaction was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<
-      IntasendMpesaTransactionUpdateInput,
-      IntasendMpesaTransactionUncheckedUpdateInput
-    >;
-  };
-
-  /**
-   * IntasendMpesaTransaction delete
-   */
-  export type IntasendMpesaTransactionDeleteArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelect<ExtArgs> | null;
-    /**
-     * Filter which IntasendMpesaTransaction to delete.
-     */
-    where: IntasendMpesaTransactionWhereUniqueInput;
-  };
-
-  /**
-   * IntasendMpesaTransaction deleteMany
-   */
-  export type IntasendMpesaTransactionDeleteManyArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Filter which IntasendMpesaTransactions to delete
-     */
-    where?: IntasendMpesaTransactionWhereInput;
-  };
-
-  /**
-   * IntasendMpesaTransaction without action
-   */
-  export type IntasendMpesaTransactionDefaultArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = {
-    /**
-     * Select specific fields to fetch from the IntasendMpesaTransaction
-     */
-    select?: IntasendMpesaTransactionSelect<ExtArgs> | null;
-  };
-
-  /**
    * Enums
    */
 
@@ -4699,10 +3429,11 @@ export namespace Prisma {
   export const MpesaOnrampSwapScalarFieldEnum: {
     id: 'id';
     state: 'state';
-    userId: 'userId';
-    mpesaId: 'mpesaId';
+    reference: 'reference';
     lightning: 'lightning';
+    collectionTracker: 'collectionTracker';
     rate: 'rate';
+    amountSats: 'amountSats';
     retryCount: 'retryCount';
     createdAt: 'createdAt';
     updatedAt: 'updatedAt';
@@ -4714,10 +3445,12 @@ export namespace Prisma {
   export const MpesaOfframpSwapScalarFieldEnum: {
     id: 'id';
     state: 'state';
-    userId: 'userId';
-    mpesaId: 'mpesaId';
+    reference: 'reference';
     lightning: 'lightning';
+    phone: 'phone';
+    paymentTracker: 'paymentTracker';
     rate: 'rate';
+    amountSats: 'amountSats';
     retryCount: 'retryCount';
     createdAt: 'createdAt';
     updatedAt: 'updatedAt';
@@ -4725,23 +3458,6 @@ export namespace Prisma {
 
   export type MpesaOfframpSwapScalarFieldEnum =
     (typeof MpesaOfframpSwapScalarFieldEnum)[keyof typeof MpesaOfframpSwapScalarFieldEnum];
-
-  export const IntasendMpesaTransactionScalarFieldEnum: {
-    id: 'id';
-    state: 'state';
-    apiRef: 'apiRef';
-    value: 'value';
-    charges: 'charges';
-    netAmount: 'netAmount';
-    currency: 'currency';
-    account: 'account';
-    retryCount: 'retryCount';
-    createdAt: 'createdAt';
-    updatedAt: 'updatedAt';
-  };
-
-  export type IntasendMpesaTransactionScalarFieldEnum =
-    (typeof IntasendMpesaTransactionScalarFieldEnum)[keyof typeof IntasendMpesaTransactionScalarFieldEnum];
 
   export const SortOrder: {
     asc: 'asc';
@@ -4856,10 +3572,11 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateFilter<'MpesaOnrampSwap'>
       | $Enums.SwapTransactionState;
-    userId?: StringFilter<'MpesaOnrampSwap'> | string;
-    mpesaId?: StringFilter<'MpesaOnrampSwap'> | string;
+    reference?: StringFilter<'MpesaOnrampSwap'> | string;
     lightning?: StringFilter<'MpesaOnrampSwap'> | string;
+    collectionTracker?: StringFilter<'MpesaOnrampSwap'> | string;
     rate?: StringFilter<'MpesaOnrampSwap'> | string;
+    amountSats?: StringFilter<'MpesaOnrampSwap'> | string;
     retryCount?: IntFilter<'MpesaOnrampSwap'> | number;
     createdAt?: DateTimeFilter<'MpesaOnrampSwap'> | Date | string;
     updatedAt?: DateTimeFilter<'MpesaOnrampSwap'> | Date | string;
@@ -4868,10 +3585,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapOrderByWithRelationInput = {
     id?: SortOrder;
     state?: SortOrder;
-    userId?: SortOrder;
-    mpesaId?: SortOrder;
+    reference?: SortOrder;
     lightning?: SortOrder;
+    collectionTracker?: SortOrder;
     rate?: SortOrder;
+    amountSats?: SortOrder;
     retryCount?: SortOrder;
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
@@ -4880,30 +3598,32 @@ export namespace Prisma {
   export type MpesaOnrampSwapWhereUniqueInput = Prisma.AtLeast<
     {
       id?: string;
-      mpesaId?: string;
+      collectionTracker?: string;
       AND?: MpesaOnrampSwapWhereInput | MpesaOnrampSwapWhereInput[];
       OR?: MpesaOnrampSwapWhereInput[];
       NOT?: MpesaOnrampSwapWhereInput | MpesaOnrampSwapWhereInput[];
       state?:
         | EnumSwapTransactionStateFilter<'MpesaOnrampSwap'>
         | $Enums.SwapTransactionState;
-      userId?: StringFilter<'MpesaOnrampSwap'> | string;
+      reference?: StringFilter<'MpesaOnrampSwap'> | string;
       lightning?: StringFilter<'MpesaOnrampSwap'> | string;
       rate?: StringFilter<'MpesaOnrampSwap'> | string;
+      amountSats?: StringFilter<'MpesaOnrampSwap'> | string;
       retryCount?: IntFilter<'MpesaOnrampSwap'> | number;
       createdAt?: DateTimeFilter<'MpesaOnrampSwap'> | Date | string;
       updatedAt?: DateTimeFilter<'MpesaOnrampSwap'> | Date | string;
     },
-    'id' | 'mpesaId'
+    'id' | 'collectionTracker'
   >;
 
   export type MpesaOnrampSwapOrderByWithAggregationInput = {
     id?: SortOrder;
     state?: SortOrder;
-    userId?: SortOrder;
-    mpesaId?: SortOrder;
+    reference?: SortOrder;
     lightning?: SortOrder;
+    collectionTracker?: SortOrder;
     rate?: SortOrder;
+    amountSats?: SortOrder;
     retryCount?: SortOrder;
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
@@ -4926,10 +3646,11 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateWithAggregatesFilter<'MpesaOnrampSwap'>
       | $Enums.SwapTransactionState;
-    userId?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
-    mpesaId?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
+    reference?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
     lightning?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
+    collectionTracker?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
     rate?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
+    amountSats?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
     retryCount?: IntWithAggregatesFilter<'MpesaOnrampSwap'> | number;
     createdAt?: DateTimeWithAggregatesFilter<'MpesaOnrampSwap'> | Date | string;
     updatedAt?: DateTimeWithAggregatesFilter<'MpesaOnrampSwap'> | Date | string;
@@ -4943,10 +3664,12 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateFilter<'MpesaOfframpSwap'>
       | $Enums.SwapTransactionState;
-    userId?: StringFilter<'MpesaOfframpSwap'> | string;
-    mpesaId?: StringNullableFilter<'MpesaOfframpSwap'> | string | null;
+    reference?: StringFilter<'MpesaOfframpSwap'> | string;
     lightning?: StringFilter<'MpesaOfframpSwap'> | string;
+    phone?: StringFilter<'MpesaOfframpSwap'> | string;
+    paymentTracker?: StringNullableFilter<'MpesaOfframpSwap'> | string | null;
     rate?: StringFilter<'MpesaOfframpSwap'> | string;
+    amountSats?: StringFilter<'MpesaOfframpSwap'> | string;
     retryCount?: IntFilter<'MpesaOfframpSwap'> | number;
     createdAt?: DateTimeFilter<'MpesaOfframpSwap'> | Date | string;
     updatedAt?: DateTimeFilter<'MpesaOfframpSwap'> | Date | string;
@@ -4955,10 +3678,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapOrderByWithRelationInput = {
     id?: SortOrder;
     state?: SortOrder;
-    userId?: SortOrder;
-    mpesaId?: SortOrderInput | SortOrder;
+    reference?: SortOrder;
     lightning?: SortOrder;
+    phone?: SortOrder;
+    paymentTracker?: SortOrderInput | SortOrder;
     rate?: SortOrder;
+    amountSats?: SortOrder;
     retryCount?: SortOrder;
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
@@ -4967,30 +3692,34 @@ export namespace Prisma {
   export type MpesaOfframpSwapWhereUniqueInput = Prisma.AtLeast<
     {
       id?: string;
-      mpesaId?: string;
+      paymentTracker?: string;
       AND?: MpesaOfframpSwapWhereInput | MpesaOfframpSwapWhereInput[];
       OR?: MpesaOfframpSwapWhereInput[];
       NOT?: MpesaOfframpSwapWhereInput | MpesaOfframpSwapWhereInput[];
       state?:
         | EnumSwapTransactionStateFilter<'MpesaOfframpSwap'>
         | $Enums.SwapTransactionState;
-      userId?: StringFilter<'MpesaOfframpSwap'> | string;
+      reference?: StringFilter<'MpesaOfframpSwap'> | string;
       lightning?: StringFilter<'MpesaOfframpSwap'> | string;
+      phone?: StringFilter<'MpesaOfframpSwap'> | string;
       rate?: StringFilter<'MpesaOfframpSwap'> | string;
+      amountSats?: StringFilter<'MpesaOfframpSwap'> | string;
       retryCount?: IntFilter<'MpesaOfframpSwap'> | number;
       createdAt?: DateTimeFilter<'MpesaOfframpSwap'> | Date | string;
       updatedAt?: DateTimeFilter<'MpesaOfframpSwap'> | Date | string;
     },
-    'id' | 'mpesaId'
+    'id' | 'paymentTracker'
   >;
 
   export type MpesaOfframpSwapOrderByWithAggregationInput = {
     id?: SortOrder;
     state?: SortOrder;
-    userId?: SortOrder;
-    mpesaId?: SortOrderInput | SortOrder;
+    reference?: SortOrder;
     lightning?: SortOrder;
+    phone?: SortOrder;
+    paymentTracker?: SortOrderInput | SortOrder;
     rate?: SortOrder;
+    amountSats?: SortOrder;
     retryCount?: SortOrder;
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
@@ -5013,13 +3742,15 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateWithAggregatesFilter<'MpesaOfframpSwap'>
       | $Enums.SwapTransactionState;
-    userId?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
-    mpesaId?:
+    reference?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
+    lightning?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
+    phone?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
+    paymentTracker?:
       | StringNullableWithAggregatesFilter<'MpesaOfframpSwap'>
       | string
       | null;
-    lightning?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
     rate?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
+    amountSats?: StringWithAggregatesFilter<'MpesaOfframpSwap'> | string;
     retryCount?: IntWithAggregatesFilter<'MpesaOfframpSwap'> | number;
     createdAt?:
       | DateTimeWithAggregatesFilter<'MpesaOfframpSwap'>
@@ -5031,118 +3762,14 @@ export namespace Prisma {
       | string;
   };
 
-  export type IntasendMpesaTransactionWhereInput = {
-    AND?:
-      | IntasendMpesaTransactionWhereInput
-      | IntasendMpesaTransactionWhereInput[];
-    OR?: IntasendMpesaTransactionWhereInput[];
-    NOT?:
-      | IntasendMpesaTransactionWhereInput
-      | IntasendMpesaTransactionWhereInput[];
-    id?: StringFilter<'IntasendMpesaTransaction'> | string;
-    state?:
-      | EnumSwapTransactionStateFilter<'IntasendMpesaTransaction'>
-      | $Enums.SwapTransactionState;
-    apiRef?: StringFilter<'IntasendMpesaTransaction'> | string;
-    value?: StringFilter<'IntasendMpesaTransaction'> | string;
-    charges?: StringFilter<'IntasendMpesaTransaction'> | string;
-    netAmount?: StringFilter<'IntasendMpesaTransaction'> | string;
-    currency?: StringFilter<'IntasendMpesaTransaction'> | string;
-    account?: StringFilter<'IntasendMpesaTransaction'> | string;
-    retryCount?: IntFilter<'IntasendMpesaTransaction'> | number;
-    createdAt?: StringFilter<'IntasendMpesaTransaction'> | string;
-    updatedAt?: StringFilter<'IntasendMpesaTransaction'> | string;
-  };
-
-  export type IntasendMpesaTransactionOrderByWithRelationInput = {
-    id?: SortOrder;
-    state?: SortOrder;
-    apiRef?: SortOrder;
-    value?: SortOrder;
-    charges?: SortOrder;
-    netAmount?: SortOrder;
-    currency?: SortOrder;
-    account?: SortOrder;
-    retryCount?: SortOrder;
-    createdAt?: SortOrder;
-    updatedAt?: SortOrder;
-  };
-
-  export type IntasendMpesaTransactionWhereUniqueInput = Prisma.AtLeast<
-    {
-      id?: string;
-      AND?:
-        | IntasendMpesaTransactionWhereInput
-        | IntasendMpesaTransactionWhereInput[];
-      OR?: IntasendMpesaTransactionWhereInput[];
-      NOT?:
-        | IntasendMpesaTransactionWhereInput
-        | IntasendMpesaTransactionWhereInput[];
-      state?:
-        | EnumSwapTransactionStateFilter<'IntasendMpesaTransaction'>
-        | $Enums.SwapTransactionState;
-      apiRef?: StringFilter<'IntasendMpesaTransaction'> | string;
-      value?: StringFilter<'IntasendMpesaTransaction'> | string;
-      charges?: StringFilter<'IntasendMpesaTransaction'> | string;
-      netAmount?: StringFilter<'IntasendMpesaTransaction'> | string;
-      currency?: StringFilter<'IntasendMpesaTransaction'> | string;
-      account?: StringFilter<'IntasendMpesaTransaction'> | string;
-      retryCount?: IntFilter<'IntasendMpesaTransaction'> | number;
-      createdAt?: StringFilter<'IntasendMpesaTransaction'> | string;
-      updatedAt?: StringFilter<'IntasendMpesaTransaction'> | string;
-    },
-    'id'
-  >;
-
-  export type IntasendMpesaTransactionOrderByWithAggregationInput = {
-    id?: SortOrder;
-    state?: SortOrder;
-    apiRef?: SortOrder;
-    value?: SortOrder;
-    charges?: SortOrder;
-    netAmount?: SortOrder;
-    currency?: SortOrder;
-    account?: SortOrder;
-    retryCount?: SortOrder;
-    createdAt?: SortOrder;
-    updatedAt?: SortOrder;
-    _count?: IntasendMpesaTransactionCountOrderByAggregateInput;
-    _avg?: IntasendMpesaTransactionAvgOrderByAggregateInput;
-    _max?: IntasendMpesaTransactionMaxOrderByAggregateInput;
-    _min?: IntasendMpesaTransactionMinOrderByAggregateInput;
-    _sum?: IntasendMpesaTransactionSumOrderByAggregateInput;
-  };
-
-  export type IntasendMpesaTransactionScalarWhereWithAggregatesInput = {
-    AND?:
-      | IntasendMpesaTransactionScalarWhereWithAggregatesInput
-      | IntasendMpesaTransactionScalarWhereWithAggregatesInput[];
-    OR?: IntasendMpesaTransactionScalarWhereWithAggregatesInput[];
-    NOT?:
-      | IntasendMpesaTransactionScalarWhereWithAggregatesInput
-      | IntasendMpesaTransactionScalarWhereWithAggregatesInput[];
-    id?: StringWithAggregatesFilter<'IntasendMpesaTransaction'> | string;
-    state?:
-      | EnumSwapTransactionStateWithAggregatesFilter<'IntasendMpesaTransaction'>
-      | $Enums.SwapTransactionState;
-    apiRef?: StringWithAggregatesFilter<'IntasendMpesaTransaction'> | string;
-    value?: StringWithAggregatesFilter<'IntasendMpesaTransaction'> | string;
-    charges?: StringWithAggregatesFilter<'IntasendMpesaTransaction'> | string;
-    netAmount?: StringWithAggregatesFilter<'IntasendMpesaTransaction'> | string;
-    currency?: StringWithAggregatesFilter<'IntasendMpesaTransaction'> | string;
-    account?: StringWithAggregatesFilter<'IntasendMpesaTransaction'> | string;
-    retryCount?: IntWithAggregatesFilter<'IntasendMpesaTransaction'> | number;
-    createdAt?: StringWithAggregatesFilter<'IntasendMpesaTransaction'> | string;
-    updatedAt?: StringWithAggregatesFilter<'IntasendMpesaTransaction'> | string;
-  };
-
   export type MpesaOnrampSwapCreateInput = {
     id?: string;
     state: $Enums.SwapTransactionState;
-    userId: string;
-    mpesaId: string;
+    reference: string;
     lightning: string;
+    collectionTracker: string;
     rate: string;
+    amountSats: string;
     retryCount: number;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -5151,10 +3778,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapUncheckedCreateInput = {
     id?: string;
     state: $Enums.SwapTransactionState;
-    userId: string;
-    mpesaId: string;
+    reference: string;
     lightning: string;
+    collectionTracker: string;
     rate: string;
+    amountSats: string;
     retryCount: number;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -5165,10 +3793,11 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateFieldUpdateOperationsInput
       | $Enums.SwapTransactionState;
-    userId?: StringFieldUpdateOperationsInput | string;
-    mpesaId?: StringFieldUpdateOperationsInput | string;
+    reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
+    collectionTracker?: StringFieldUpdateOperationsInput | string;
     rate?: StringFieldUpdateOperationsInput | string;
+    amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
@@ -5179,10 +3808,11 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateFieldUpdateOperationsInput
       | $Enums.SwapTransactionState;
-    userId?: StringFieldUpdateOperationsInput | string;
-    mpesaId?: StringFieldUpdateOperationsInput | string;
+    reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
+    collectionTracker?: StringFieldUpdateOperationsInput | string;
     rate?: StringFieldUpdateOperationsInput | string;
+    amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
@@ -5191,10 +3821,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapCreateManyInput = {
     id?: string;
     state: $Enums.SwapTransactionState;
-    userId: string;
-    mpesaId: string;
+    reference: string;
     lightning: string;
+    collectionTracker: string;
     rate: string;
+    amountSats: string;
     retryCount: number;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -5205,10 +3836,11 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateFieldUpdateOperationsInput
       | $Enums.SwapTransactionState;
-    userId?: StringFieldUpdateOperationsInput | string;
-    mpesaId?: StringFieldUpdateOperationsInput | string;
+    reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
+    collectionTracker?: StringFieldUpdateOperationsInput | string;
     rate?: StringFieldUpdateOperationsInput | string;
+    amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
@@ -5219,10 +3851,11 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateFieldUpdateOperationsInput
       | $Enums.SwapTransactionState;
-    userId?: StringFieldUpdateOperationsInput | string;
-    mpesaId?: StringFieldUpdateOperationsInput | string;
+    reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
+    collectionTracker?: StringFieldUpdateOperationsInput | string;
     rate?: StringFieldUpdateOperationsInput | string;
+    amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
@@ -5231,10 +3864,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapCreateInput = {
     id: string;
     state: $Enums.SwapTransactionState;
-    userId: string;
-    mpesaId?: string | null;
+    reference: string;
     lightning: string;
+    phone: string;
+    paymentTracker?: string | null;
     rate: string;
+    amountSats: string;
     retryCount: number;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -5243,10 +3878,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapUncheckedCreateInput = {
     id: string;
     state: $Enums.SwapTransactionState;
-    userId: string;
-    mpesaId?: string | null;
+    reference: string;
     lightning: string;
+    phone: string;
+    paymentTracker?: string | null;
     rate: string;
+    amountSats: string;
     retryCount: number;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -5257,10 +3894,12 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateFieldUpdateOperationsInput
       | $Enums.SwapTransactionState;
-    userId?: StringFieldUpdateOperationsInput | string;
-    mpesaId?: NullableStringFieldUpdateOperationsInput | string | null;
+    reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
+    phone?: StringFieldUpdateOperationsInput | string;
+    paymentTracker?: NullableStringFieldUpdateOperationsInput | string | null;
     rate?: StringFieldUpdateOperationsInput | string;
+    amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
@@ -5271,10 +3910,12 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateFieldUpdateOperationsInput
       | $Enums.SwapTransactionState;
-    userId?: StringFieldUpdateOperationsInput | string;
-    mpesaId?: NullableStringFieldUpdateOperationsInput | string | null;
+    reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
+    phone?: StringFieldUpdateOperationsInput | string;
+    paymentTracker?: NullableStringFieldUpdateOperationsInput | string | null;
     rate?: StringFieldUpdateOperationsInput | string;
+    amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
@@ -5283,10 +3924,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapCreateManyInput = {
     id: string;
     state: $Enums.SwapTransactionState;
-    userId: string;
-    mpesaId?: string | null;
+    reference: string;
     lightning: string;
+    phone: string;
+    paymentTracker?: string | null;
     rate: string;
+    amountSats: string;
     retryCount: number;
     createdAt?: Date | string;
     updatedAt?: Date | string;
@@ -5297,10 +3940,12 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateFieldUpdateOperationsInput
       | $Enums.SwapTransactionState;
-    userId?: StringFieldUpdateOperationsInput | string;
-    mpesaId?: NullableStringFieldUpdateOperationsInput | string | null;
+    reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
+    phone?: StringFieldUpdateOperationsInput | string;
+    paymentTracker?: NullableStringFieldUpdateOperationsInput | string | null;
     rate?: StringFieldUpdateOperationsInput | string;
+    amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
@@ -5311,119 +3956,15 @@ export namespace Prisma {
     state?:
       | EnumSwapTransactionStateFieldUpdateOperationsInput
       | $Enums.SwapTransactionState;
-    userId?: StringFieldUpdateOperationsInput | string;
-    mpesaId?: NullableStringFieldUpdateOperationsInput | string | null;
+    reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
+    phone?: StringFieldUpdateOperationsInput | string;
+    paymentTracker?: NullableStringFieldUpdateOperationsInput | string | null;
     rate?: StringFieldUpdateOperationsInput | string;
+    amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string;
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string;
-  };
-
-  export type IntasendMpesaTransactionCreateInput = {
-    id?: string;
-    state: $Enums.SwapTransactionState;
-    apiRef: string;
-    value: string;
-    charges: string;
-    netAmount: string;
-    currency: string;
-    account: string;
-    retryCount: number;
-    createdAt: string;
-    updatedAt: string;
-  };
-
-  export type IntasendMpesaTransactionUncheckedCreateInput = {
-    id?: string;
-    state: $Enums.SwapTransactionState;
-    apiRef: string;
-    value: string;
-    charges: string;
-    netAmount: string;
-    currency: string;
-    account: string;
-    retryCount: number;
-    createdAt: string;
-    updatedAt: string;
-  };
-
-  export type IntasendMpesaTransactionUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string;
-    state?:
-      | EnumSwapTransactionStateFieldUpdateOperationsInput
-      | $Enums.SwapTransactionState;
-    apiRef?: StringFieldUpdateOperationsInput | string;
-    value?: StringFieldUpdateOperationsInput | string;
-    charges?: StringFieldUpdateOperationsInput | string;
-    netAmount?: StringFieldUpdateOperationsInput | string;
-    currency?: StringFieldUpdateOperationsInput | string;
-    account?: StringFieldUpdateOperationsInput | string;
-    retryCount?: IntFieldUpdateOperationsInput | number;
-    createdAt?: StringFieldUpdateOperationsInput | string;
-    updatedAt?: StringFieldUpdateOperationsInput | string;
-  };
-
-  export type IntasendMpesaTransactionUncheckedUpdateInput = {
-    id?: StringFieldUpdateOperationsInput | string;
-    state?:
-      | EnumSwapTransactionStateFieldUpdateOperationsInput
-      | $Enums.SwapTransactionState;
-    apiRef?: StringFieldUpdateOperationsInput | string;
-    value?: StringFieldUpdateOperationsInput | string;
-    charges?: StringFieldUpdateOperationsInput | string;
-    netAmount?: StringFieldUpdateOperationsInput | string;
-    currency?: StringFieldUpdateOperationsInput | string;
-    account?: StringFieldUpdateOperationsInput | string;
-    retryCount?: IntFieldUpdateOperationsInput | number;
-    createdAt?: StringFieldUpdateOperationsInput | string;
-    updatedAt?: StringFieldUpdateOperationsInput | string;
-  };
-
-  export type IntasendMpesaTransactionCreateManyInput = {
-    id?: string;
-    state: $Enums.SwapTransactionState;
-    apiRef: string;
-    value: string;
-    charges: string;
-    netAmount: string;
-    currency: string;
-    account: string;
-    retryCount: number;
-    createdAt: string;
-    updatedAt: string;
-  };
-
-  export type IntasendMpesaTransactionUpdateManyMutationInput = {
-    id?: StringFieldUpdateOperationsInput | string;
-    state?:
-      | EnumSwapTransactionStateFieldUpdateOperationsInput
-      | $Enums.SwapTransactionState;
-    apiRef?: StringFieldUpdateOperationsInput | string;
-    value?: StringFieldUpdateOperationsInput | string;
-    charges?: StringFieldUpdateOperationsInput | string;
-    netAmount?: StringFieldUpdateOperationsInput | string;
-    currency?: StringFieldUpdateOperationsInput | string;
-    account?: StringFieldUpdateOperationsInput | string;
-    retryCount?: IntFieldUpdateOperationsInput | number;
-    createdAt?: StringFieldUpdateOperationsInput | string;
-    updatedAt?: StringFieldUpdateOperationsInput | string;
-  };
-
-  export type IntasendMpesaTransactionUncheckedUpdateManyInput = {
-    id?: StringFieldUpdateOperationsInput | string;
-    state?:
-      | EnumSwapTransactionStateFieldUpdateOperationsInput
-      | $Enums.SwapTransactionState;
-    apiRef?: StringFieldUpdateOperationsInput | string;
-    value?: StringFieldUpdateOperationsInput | string;
-    charges?: StringFieldUpdateOperationsInput | string;
-    netAmount?: StringFieldUpdateOperationsInput | string;
-    currency?: StringFieldUpdateOperationsInput | string;
-    account?: StringFieldUpdateOperationsInput | string;
-    retryCount?: IntFieldUpdateOperationsInput | number;
-    createdAt?: StringFieldUpdateOperationsInput | string;
-    updatedAt?: StringFieldUpdateOperationsInput | string;
   };
 
   export type StringFilter<$PrismaModel = never> = {
@@ -5481,10 +4022,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapCountOrderByAggregateInput = {
     id?: SortOrder;
     state?: SortOrder;
-    userId?: SortOrder;
-    mpesaId?: SortOrder;
+    reference?: SortOrder;
     lightning?: SortOrder;
+    collectionTracker?: SortOrder;
     rate?: SortOrder;
+    amountSats?: SortOrder;
     retryCount?: SortOrder;
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
@@ -5497,10 +4039,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapMaxOrderByAggregateInput = {
     id?: SortOrder;
     state?: SortOrder;
-    userId?: SortOrder;
-    mpesaId?: SortOrder;
+    reference?: SortOrder;
     lightning?: SortOrder;
+    collectionTracker?: SortOrder;
     rate?: SortOrder;
+    amountSats?: SortOrder;
     retryCount?: SortOrder;
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
@@ -5509,10 +4052,11 @@ export namespace Prisma {
   export type MpesaOnrampSwapMinOrderByAggregateInput = {
     id?: SortOrder;
     state?: SortOrder;
-    userId?: SortOrder;
-    mpesaId?: SortOrder;
+    reference?: SortOrder;
     lightning?: SortOrder;
+    collectionTracker?: SortOrder;
     rate?: SortOrder;
+    amountSats?: SortOrder;
     retryCount?: SortOrder;
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
@@ -5613,10 +4157,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapCountOrderByAggregateInput = {
     id?: SortOrder;
     state?: SortOrder;
-    userId?: SortOrder;
-    mpesaId?: SortOrder;
+    reference?: SortOrder;
     lightning?: SortOrder;
+    phone?: SortOrder;
+    paymentTracker?: SortOrder;
     rate?: SortOrder;
+    amountSats?: SortOrder;
     retryCount?: SortOrder;
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
@@ -5629,10 +4175,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapMaxOrderByAggregateInput = {
     id?: SortOrder;
     state?: SortOrder;
-    userId?: SortOrder;
-    mpesaId?: SortOrder;
+    reference?: SortOrder;
     lightning?: SortOrder;
+    phone?: SortOrder;
+    paymentTracker?: SortOrder;
     rate?: SortOrder;
+    amountSats?: SortOrder;
     retryCount?: SortOrder;
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
@@ -5641,10 +4189,12 @@ export namespace Prisma {
   export type MpesaOfframpSwapMinOrderByAggregateInput = {
     id?: SortOrder;
     state?: SortOrder;
-    userId?: SortOrder;
-    mpesaId?: SortOrder;
+    reference?: SortOrder;
     lightning?: SortOrder;
+    phone?: SortOrder;
+    paymentTracker?: SortOrder;
     rate?: SortOrder;
+    amountSats?: SortOrder;
     retryCount?: SortOrder;
     createdAt?: SortOrder;
     updatedAt?: SortOrder;
@@ -5673,56 +4223,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>;
     _min?: NestedStringNullableFilter<$PrismaModel>;
     _max?: NestedStringNullableFilter<$PrismaModel>;
-  };
-
-  export type IntasendMpesaTransactionCountOrderByAggregateInput = {
-    id?: SortOrder;
-    state?: SortOrder;
-    apiRef?: SortOrder;
-    value?: SortOrder;
-    charges?: SortOrder;
-    netAmount?: SortOrder;
-    currency?: SortOrder;
-    account?: SortOrder;
-    retryCount?: SortOrder;
-    createdAt?: SortOrder;
-    updatedAt?: SortOrder;
-  };
-
-  export type IntasendMpesaTransactionAvgOrderByAggregateInput = {
-    retryCount?: SortOrder;
-  };
-
-  export type IntasendMpesaTransactionMaxOrderByAggregateInput = {
-    id?: SortOrder;
-    state?: SortOrder;
-    apiRef?: SortOrder;
-    value?: SortOrder;
-    charges?: SortOrder;
-    netAmount?: SortOrder;
-    currency?: SortOrder;
-    account?: SortOrder;
-    retryCount?: SortOrder;
-    createdAt?: SortOrder;
-    updatedAt?: SortOrder;
-  };
-
-  export type IntasendMpesaTransactionMinOrderByAggregateInput = {
-    id?: SortOrder;
-    state?: SortOrder;
-    apiRef?: SortOrder;
-    value?: SortOrder;
-    charges?: SortOrder;
-    netAmount?: SortOrder;
-    currency?: SortOrder;
-    account?: SortOrder;
-    retryCount?: SortOrder;
-    createdAt?: SortOrder;
-    updatedAt?: SortOrder;
-  };
-
-  export type IntasendMpesaTransactionSumOrderByAggregateInput = {
-    retryCount?: SortOrder;
   };
 
   export type StringFieldUpdateOperationsInput = {
@@ -5938,12 +4438,6 @@ export namespace Prisma {
   export type MpesaOfframpSwapArgs<
     ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
   > = MpesaOfframpSwapDefaultArgs<ExtArgs>;
-  /**
-   * @deprecated Use IntasendMpesaTransactionDefaultArgs instead
-   */
-  export type IntasendMpesaTransactionArgs<
-    ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs,
-  > = IntasendMpesaTransactionDefaultArgs<ExtArgs>;
 
   /**
    * Batch Payload for updateMany & deleteMany & createMany

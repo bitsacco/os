@@ -1,8 +1,38 @@
+import {
+  IsString,
+  IsOptional,
+  IsNotEmpty,
+  Validate,
+  IsDefined,
+  IsEnum,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { IsString, IsOptional, IsNotEmpty, Validate } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { OnrampSwapRequest, IsStringifiedNumberConstraint } from '../types';
+import {
+  OnrampSwapRequest,
+  IsStringifiedNumberConstraint,
+  OnrampSwapSource,
+  Currency,
+  OnrampSwapTarget,
+} from '../types';
+import { Bolt11InvoiceDto, MobileMoneyDto } from './payments.dto';
 import { QuoteDto } from './quote.dto';
+
+class OnrampSwapSourceDto implements OnrampSwapSource {
+  @IsEnum(Currency)
+  @ApiProperty({ enum: Currency, enumName: 'Currency' })
+  currency: Currency;
+
+  @IsDefined()
+  @ApiProperty({ type: MobileMoneyDto })
+  origin: MobileMoneyDto;
+}
+
+class OnrampSwapTargetDto implements OnrampSwapTarget {
+  @IsDefined()
+  @ApiProperty({ type: Bolt11InvoiceDto })
+  invoice: Bolt11InvoiceDto;
+}
 
 export class CreateOnrampSwapDto implements OnrampSwapRequest {
   @IsOptional()
@@ -20,17 +50,13 @@ export class CreateOnrampSwapDto implements OnrampSwapRequest {
   @Validate(IsStringifiedNumberConstraint)
   @Type(() => String)
   @ApiProperty()
-  amount: string;
+  amountFiat: string;
 
   @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty()
-  phone: string;
+  @ApiProperty({ type: OnrampSwapSourceDto })
+  source: OnrampSwapSourceDto;
 
   @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty()
-  lightning: string;
+  @ApiProperty({ type: OnrampSwapTargetDto })
+  target: OnrampSwapTargetDto;
 }

@@ -125,10 +125,11 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
 exports.Prisma.MpesaOnrampSwapScalarFieldEnum = {
   id: 'id',
   state: 'state',
-  userId: 'userId',
-  mpesaId: 'mpesaId',
+  reference: 'reference',
   lightning: 'lightning',
+  collectionTracker: 'collectionTracker',
   rate: 'rate',
+  amountSats: 'amountSats',
   retryCount: 'retryCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -137,24 +138,12 @@ exports.Prisma.MpesaOnrampSwapScalarFieldEnum = {
 exports.Prisma.MpesaOfframpSwapScalarFieldEnum = {
   id: 'id',
   state: 'state',
-  userId: 'userId',
-  mpesaId: 'mpesaId',
+  reference: 'reference',
   lightning: 'lightning',
+  phone: 'phone',
+  paymentTracker: 'paymentTracker',
   rate: 'rate',
-  retryCount: 'retryCount',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.IntasendMpesaTransactionScalarFieldEnum = {
-  id: 'id',
-  state: 'state',
-  apiRef: 'apiRef',
-  value: 'value',
-  charges: 'charges',
-  netAmount: 'netAmount',
-  currency: 'currency',
-  account: 'account',
+  amountSats: 'amountSats',
   retryCount: 'retryCount',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -184,8 +173,7 @@ exports.SwapTransactionState = exports.$Enums.SwapTransactionState = {
 
 exports.Prisma.ModelName = {
   MpesaOnrampSwap: 'MpesaOnrampSwap',
-  MpesaOfframpSwap: 'MpesaOfframpSwap',
-  IntasendMpesaTransaction: 'IntasendMpesaTransaction'
+  MpesaOfframpSwap: 'MpesaOfframpSwap'
 };
 
 /**

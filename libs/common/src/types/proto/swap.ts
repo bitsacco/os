@@ -93,11 +93,23 @@ export interface OnrampSwapRequest {
    * Amount to swap
    * Any transaction fees will be deducted from this amount
    */
-  amount: string;
-  /** If provided, the service will attempt mobile money onramp */
-  phone?: string | undefined;
-  /** If provided, the service will attempt to pay a Lightning Network invoice */
-  lightning?: string | undefined;
+  amountFiat: string;
+  /** Source of the swap */
+  source: OnrampSwapSource | undefined;
+  /** Target of the swap */
+  target: OnrampSwapTarget | undefined;
+}
+
+export interface OnrampSwapSource {
+  /** Currency code for the target currency */
+  currency: Currency;
+  /** Mobile money destination */
+  phone?: MobileMoney | undefined;
+}
+
+export interface OnrampSwapTarget {
+  /** Lightning protocol destination */
+  invoice?: Bolt11 | undefined;
 }
 
 export interface OfframpSwapRequest {
@@ -110,7 +122,7 @@ export interface OfframpSwapRequest {
    * Amount to swap
    * Any transaction fees will be deducted from this amount
    */
-  amount: string;
+  amountFiat: string;
   /** Target of the swap */
   target: OfframpSwapTarget | undefined;
 }
@@ -119,12 +131,17 @@ export interface OfframpSwapTarget {
   /** Currency code for the target currency */
   currency: Currency;
   /** Mobile money destination */
-  mobileMoney?: MobileMoney | undefined;
+  phone?: MobileMoney | undefined;
 }
 
 export interface MobileMoney {
   /** Phone number for the mobile money offramp */
   phone: string;
+}
+
+export interface Bolt11 {
+  /** Bolt11 lightning invoice */
+  invoice: string;
 }
 
 /** FindSwapRequest: Represents a request to find a swap. */

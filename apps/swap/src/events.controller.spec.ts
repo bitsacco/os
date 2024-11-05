@@ -2,9 +2,9 @@ import { TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { createTestingModuleWithValidation } from '@bitsacco/common';
 import { EventsController } from './events.controller';
-import { MpesaTransactionUpdateDto } from './dto';
+import { MpesaCollectionUpdateDto } from './dto';
 import { SwapService } from './swap.service';
-import { MpesaTractactionState } from './intasend/intasend.types';
+import { MpesaTransactionState } from './intasend/intasend.types';
 
 describe('EventsController', () => {
   let controller: EventsController;
@@ -33,9 +33,9 @@ describe('EventsController', () => {
   });
 
   it('should call processSwapUpdate', async () => {
-    const data: MpesaTransactionUpdateDto = {
+    const data: MpesaCollectionUpdateDto = {
       invoice_id: 'invid',
-      state: MpesaTractactionState.Processing,
+      state: MpesaTransactionState.Processing,
       charges: '0',
       net_amount: '100',
       currency: 'KES',

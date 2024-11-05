@@ -1,21 +1,25 @@
 import IntaSend = require('intasend-node');
 import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger } from '@nestjs/common';
-import { MpesaTractactionState, MpesaTxTracker } from './intasend.types';
-import { MpesaTransactionUpdateDto, SendSTKPushDto } from '../dto';
-import { PrismaService } from '../prisma.service';
-
-const INTASEND_MPESA_TX_UPDATE_CHALLENGE = 'BITSACCO';
+import {
+  BatchPaymentStatusCode,
+  MpesaTransactionState,
+  MpesaTracker,
+  PaymentStatusCode,
+} from './intasend.types';
+import {
+  MpesaCollectionUpdateDto,
+  MpesaPaymentUpdateDto,
+  SendSTKPushDto,
+} from '../dto';
+import { SendMpesaDto } from '../dto/send-mpesa.dto';
 
 @Injectable()
 export class IntasendService {
   private readonly logger = new Logger(IntasendService.name);
   private intasend: IntaSend;
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly prismaService: PrismaService,
-  ) {
+  constructor(private readonly configService: ConfigService) {
     this.logger.log('IntasendService created');
 
     const pubkey = this.configService.getOrThrow<string>('INTASEND_PUBLIC_KEY');
@@ -40,67 +44,122 @@ export class IntasendService {
     }
   }
 
-  async sendMpesaStkPush(payload: SendSTKPushDto): Promise<MpesaTxTracker> {
+  async sendMpesaStkPush(payload: SendSTKPushDto): Promise<MpesaTracker> {
     this.logger.log(`Sending STK push to ${payload.phone_number}`);
     const resp = await this.intasend.collection().mpesaStkPush(payload);
 
     return {
       id: resp.invoice.invoice_id,
-      state: MpesaTractactionState.Pending,
+      state: MpesaTransactionState.Pending,
     };
   }
 
-  async updateMpesaTx({
+  async sendMpesaPayment(payload: SendMpesaDto): Promise<MpesaTracker> {
+    this.logger.log(`Sending Mpesa payment to ${payload.account}`);
+    const resp = await this.intasend.payouts().mpesa({
+      currency: 'KES',
+      requires_approval: 'NO',
+      transactions: [payload],
+    });
+
+    return {
+      id: resp.file_id,
+      state: MpesaTransactionState.Pending,
+    };
+  }
+
+  async getMpesaTrackerFromCollectionUpdate({
     invoice_id,
     state,
-    api_ref,
-    value,
-    charges,
-    net_amount,
-    currency,
-    account,
-    retry_count,
     failed_reason,
     challenge,
-    created_at,
-    updated_at,
-  }: MpesaTransactionUpdateDto): Promise<MpesaTxTracker> {
-    if (challenge !== INTASEND_MPESA_TX_UPDATE_CHALLENGE) {
-      this.logger.error('Unauthorized update. Challenge is invalid');
-      throw new Error('Rejected mpesa transaction update');
-    }
+  }: MpesaCollectionUpdateDto): Promise<MpesaTracker> {
+    this.checkUpdateChallenge(challenge);
 
     if (failed_reason) {
       this.logger.error(`Mpesa transaction failed: ${failed_reason}`);
     }
 
-    const update = {
+    return {
+      id: invoice_id,
       state,
-      charges,
-      account,
-      value,
-      currency,
-      apiRef: api_ref,
-      netAmount: net_amount,
-      retryCount: retry_count,
-      createdAt: created_at,
-      updatedAt: updated_at,
     };
+  }
 
-    const tx = await this.prismaService.intasendMpesaTransaction.upsert({
-      where: {
-        id: invoice_id,
-      },
-      update,
-      create: {
-        id: invoice_id,
-        ...update,
-      },
-    });
+  async getMpesaTrackerFromPaymentUpdate({
+    file_id,
+    status_code,
+    transactions,
+    challenge,
+  }: MpesaPaymentUpdateDto): Promise<MpesaTracker> {
+    this.checkUpdateChallenge(challenge);
+
+    let batch: MpesaTransactionState;
+    switch (status_code) {
+      case BatchPaymentStatusCode.BP101:
+      case BatchPaymentStatusCode.BP103:
+      case BatchPaymentStatusCode.BP104:
+      case BatchPaymentStatusCode.BP106:
+      case BatchPaymentStatusCode.BP108:
+        batch = MpesaTransactionState.Pending;
+        break;
+      case BatchPaymentStatusCode.BP109:
+      case BatchPaymentStatusCode.BP110:
+        batch = MpesaTransactionState.Processing;
+        break;
+      case BatchPaymentStatusCode.BF102:
+      case BatchPaymentStatusCode.BF105:
+      case BatchPaymentStatusCode.BF107:
+      case BatchPaymentStatusCode.BE111:
+        batch = MpesaTransactionState.Failed;
+        break;
+      case BatchPaymentStatusCode.BC100:
+        batch = MpesaTransactionState.Complete;
+        break;
+    }
+
+    let state: MpesaTransactionState;
+    if (batch === MpesaTransactionState.Complete) {
+      if (transactions.length !== 1) {
+        this.logger.error('Invalid transaction update. Expected 1 transaction');
+        throw new Error('Rejected mpesa transaction update');
+      }
+
+      const tx = transactions[0];
+      switch (tx.status_code) {
+        case PaymentStatusCode.TP101:
+        case PaymentStatusCode.TP102:
+          throw new Error('Transaction should not be pending or processing');
+        case PaymentStatusCode.TF103:
+        case PaymentStatusCode.TF104:
+        case PaymentStatusCode.TF105:
+        case PaymentStatusCode.TF106:
+        case PaymentStatusCode.TC108:
+          state = MpesaTransactionState.Failed;
+          break;
+        case PaymentStatusCode.TS100:
+          state = MpesaTransactionState.Complete;
+          break;
+        case PaymentStatusCode.TH107:
+          state = MpesaTransactionState.Processing;
+          break;
+        case PaymentStatusCode.TR109:
+          state = MpesaTransactionState.Retry;
+          break;
+      }
+    }
 
     return {
-      id: tx.id,
+      id: file_id,
       state,
     };
+  }
+
+  private checkUpdateChallenge(challenge: string) {
+    const INTASEND_MPESA_TX_UPDATE_CHALLENGE = 'BITSACCO';
+    if (challenge !== INTASEND_MPESA_TX_UPDATE_CHALLENGE) {
+      this.logger.error('Unauthorized update. Challenge is invalid');
+      throw new Error('Rejected mpesa transaction update');
+    }
   }
 }

@@ -14,14 +14,16 @@ model MpesaOnrampSwap {
   id        String               @id @default(uuid())
   /// Tracks progress of the swap
   state     SwapTransactionState
-  /// References the user who made the transaction.
-  userId    String
-  /// References the onramp Mpesa transaction ID.
-  mpesaId   String @unique
+  /// References the user who made the transaction
+  reference    String
   /// Lightning invoice to pay.
   lightning String
-  /// Fx Rate
+  /// References the fiat onramp collection ID
+  collectionTracker   String @unique
+  /// Fx Rate from 
   rate      String
+  /// Amount in satoshi
+  amountSats String
   /// Retry count tracker
   retryCount Int
   /// Timestamps
@@ -34,14 +36,18 @@ model MpesaOfframpSwap {
   id        String               @id
   /// Tracks progress of the swap
   state     SwapTransactionState
-  /// References the user who made the transaction.
-  userId    String
-  /// References the offramp Mpesa transaction ID.
-  mpesaId   String? @unique
-  /// Lightning invoice to be paid before invoice can proceed.
+  /// References the user who made the transaction
+  reference    String
+  /// Lightning invoice to be paid before offramp can proceed
   lightning String
+  /// Phone number to send mpesa the payment
+  phone String
+  /// References the fiat offramp payment ID
+  paymentTracker   String? @unique
   /// Fx Rate
   rate      String
+  /// Amount in satoshi
+  amountSats String
   /// Retry count tracker
   retryCount Int
   /// Timestamps
@@ -55,18 +61,4 @@ enum SwapTransactionState {
   FAILED
   COMPLETE
   RETRY
-}
-
-model IntasendMpesaTransaction {
-  id         String               @id @default(uuid())
-  state      SwapTransactionState
-  apiRef     String
-  value      String
-  charges    String
-  netAmount  String
-  currency   String
-  account    String
-  retryCount Int
-  createdAt  String
-  updatedAt  String
 }

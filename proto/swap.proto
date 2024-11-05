@@ -88,23 +88,35 @@ message OnrampSwapRequest {
 
   // Amount to swap
   // Any transaction fees will be deducted from this amount
-  string amount = 3;
+  string amountFiat = 3;
 
   reserved 4, 5, 6, 7, 8, 9;
 
   // Source of the swap
-  oneof source {
-    // If provided, the service will attempt mobile money onramp
-    string phone = 10;
-  }
+  OnrampSwapSource source = 10;
 
   // Target of the swap
-  oneof target {
-    // If provided, the service will attempt to pay a Lightning Network invoice
-    string lightning = 11;
+  OnrampSwapTarget target = 11;
+}
+
+message OnrampSwapSource {
+  // Currency code for the target currency
+  Currency currency = 1;
+
+  // Target destination
+  oneof origin {
+    // Mobile money destination
+    MobileMoney phone = 2;
   }
 }
 
+message OnrampSwapTarget {
+  // Payout destination
+  oneof payout {
+    // Lightning protocol destination
+    Bolt11 invoice = 2;
+  }
+}
 
 message OfframpSwapRequest {
   // Optional reference to a quote.
@@ -113,7 +125,7 @@ message OfframpSwapRequest {
 
   // Amount to swap
   // Any transaction fees will be deducted from this amount
-  string amount = 2;
+  string amountFiat = 2;
 
   // Target of the swap
   OfframpSwapTarget target = 3;
@@ -123,16 +135,21 @@ message OfframpSwapTarget {
   // Currency code for the target currency
   Currency currency = 1;
 
-  // Target destination
-  oneof destination {
+  // Payout destination
+  oneof payout {
     // Mobile money destination
-    MobileMoney mobile_money = 2;
+    MobileMoney phone = 2;
   }
 }
 
 message MobileMoney {
   // Phone number for the mobile money offramp
   string phone = 1;
+}
+
+message Bolt11 {
+  // Bolt11 lightning invoice
+  string invoice = 1;
 }
 
 // FindSwapRequest: Represents a request to find a swap.

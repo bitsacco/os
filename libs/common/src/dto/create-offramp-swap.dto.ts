@@ -11,18 +11,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   Currency,
   IsStringifiedNumberConstraint,
-  MobileMoney,
   OfframpSwapRequest,
   OfframpSwapTarget,
 } from '../types';
 import { QuoteDto } from './quote.dto';
-
-class MobileMoneyDto implements MobileMoney {
-  @IsString()
-  @Type(() => String)
-  @ApiProperty()
-  phone: string;
-}
+import { MobileMoneyDto } from './payments.dto';
 
 class OfframpSwapTargetDto implements OfframpSwapTarget {
   @IsEnum(Currency)
@@ -50,7 +43,7 @@ export class CreateOfframpSwapDto implements OfframpSwapRequest {
   @Validate(IsStringifiedNumberConstraint)
   @Type(() => String)
   @ApiProperty()
-  amount: string;
+  amountFiat: string;
 
   @IsNotEmpty()
   @ApiProperty({ type: OfframpSwapTargetDto })
