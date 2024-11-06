@@ -13,13 +13,16 @@ import {
   IsStringifiedNumberConstraint,
   OfframpSwapRequest,
   OfframpSwapTarget,
+  SupportedCurrencies,
 } from '../types';
 import { QuoteDto } from './quote.dto';
 import { MobileMoneyDto } from './payments.dto';
+import { TransformToCurrency } from './transforms';
 
 class OfframpSwapTargetDto implements OfframpSwapTarget {
   @IsEnum(Currency)
-  @ApiProperty({ enum: Currency, enumName: 'Currency' })
+  @ApiProperty({ enum: SupportedCurrencies, enumName: 'SupportedCurrencyType' })
+  @TransformToCurrency()
   currency: Currency;
 
   @IsDefined()

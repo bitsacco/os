@@ -14,13 +14,16 @@ import {
   OnrampSwapSource,
   Currency,
   OnrampSwapTarget,
+  SupportedCurrencies,
 } from '../types';
 import { Bolt11InvoiceDto, MobileMoneyDto } from './payments.dto';
+import { TransformToCurrency } from './transforms';
 import { QuoteDto } from './quote.dto';
 
 class OnrampSwapSourceDto implements OnrampSwapSource {
   @IsEnum(Currency)
-  @ApiProperty({ enum: Currency, enumName: 'Currency' })
+  @ApiProperty({ enum: SupportedCurrencies, enumName: 'SupportedCurrencyType' })
+  @TransformToCurrency()
   currency: Currency;
 
   @IsDefined()
