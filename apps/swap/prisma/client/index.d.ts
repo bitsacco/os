@@ -1236,7 +1236,7 @@ export namespace Prisma {
     state: $Enums.SwapTransactionState;
     reference: string;
     lightning: string;
-    collectionTracker: string;
+    collectionTracker: string | null;
     rate: string;
     amountSats: string;
     retryCount: number;
@@ -1338,7 +1338,7 @@ export namespace Prisma {
         /**
          * References the fiat onramp collection ID
          */
-        collectionTracker: string;
+        collectionTracker: string | null;
         /**
          * Fx Rate from
          */
@@ -3574,7 +3574,7 @@ export namespace Prisma {
       | $Enums.SwapTransactionState;
     reference?: StringFilter<'MpesaOnrampSwap'> | string;
     lightning?: StringFilter<'MpesaOnrampSwap'> | string;
-    collectionTracker?: StringFilter<'MpesaOnrampSwap'> | string;
+    collectionTracker?: StringNullableFilter<'MpesaOnrampSwap'> | string | null;
     rate?: StringFilter<'MpesaOnrampSwap'> | string;
     amountSats?: StringFilter<'MpesaOnrampSwap'> | string;
     retryCount?: IntFilter<'MpesaOnrampSwap'> | number;
@@ -3587,7 +3587,7 @@ export namespace Prisma {
     state?: SortOrder;
     reference?: SortOrder;
     lightning?: SortOrder;
-    collectionTracker?: SortOrder;
+    collectionTracker?: SortOrderInput | SortOrder;
     rate?: SortOrder;
     amountSats?: SortOrder;
     retryCount?: SortOrder;
@@ -3621,7 +3621,7 @@ export namespace Prisma {
     state?: SortOrder;
     reference?: SortOrder;
     lightning?: SortOrder;
-    collectionTracker?: SortOrder;
+    collectionTracker?: SortOrderInput | SortOrder;
     rate?: SortOrder;
     amountSats?: SortOrder;
     retryCount?: SortOrder;
@@ -3648,7 +3648,10 @@ export namespace Prisma {
       | $Enums.SwapTransactionState;
     reference?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
     lightning?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
-    collectionTracker?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
+    collectionTracker?:
+      | StringNullableWithAggregatesFilter<'MpesaOnrampSwap'>
+      | string
+      | null;
     rate?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
     amountSats?: StringWithAggregatesFilter<'MpesaOnrampSwap'> | string;
     retryCount?: IntWithAggregatesFilter<'MpesaOnrampSwap'> | number;
@@ -3767,7 +3770,7 @@ export namespace Prisma {
     state: $Enums.SwapTransactionState;
     reference: string;
     lightning: string;
-    collectionTracker: string;
+    collectionTracker?: string | null;
     rate: string;
     amountSats: string;
     retryCount: number;
@@ -3780,7 +3783,7 @@ export namespace Prisma {
     state: $Enums.SwapTransactionState;
     reference: string;
     lightning: string;
-    collectionTracker: string;
+    collectionTracker?: string | null;
     rate: string;
     amountSats: string;
     retryCount: number;
@@ -3795,7 +3798,10 @@ export namespace Prisma {
       | $Enums.SwapTransactionState;
     reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
-    collectionTracker?: StringFieldUpdateOperationsInput | string;
+    collectionTracker?:
+      | NullableStringFieldUpdateOperationsInput
+      | string
+      | null;
     rate?: StringFieldUpdateOperationsInput | string;
     amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
@@ -3810,7 +3816,10 @@ export namespace Prisma {
       | $Enums.SwapTransactionState;
     reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
-    collectionTracker?: StringFieldUpdateOperationsInput | string;
+    collectionTracker?:
+      | NullableStringFieldUpdateOperationsInput
+      | string
+      | null;
     rate?: StringFieldUpdateOperationsInput | string;
     amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
@@ -3823,7 +3832,7 @@ export namespace Prisma {
     state: $Enums.SwapTransactionState;
     reference: string;
     lightning: string;
-    collectionTracker: string;
+    collectionTracker?: string | null;
     rate: string;
     amountSats: string;
     retryCount: number;
@@ -3838,7 +3847,10 @@ export namespace Prisma {
       | $Enums.SwapTransactionState;
     reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
-    collectionTracker?: StringFieldUpdateOperationsInput | string;
+    collectionTracker?:
+      | NullableStringFieldUpdateOperationsInput
+      | string
+      | null;
     rate?: StringFieldUpdateOperationsInput | string;
     amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
@@ -3853,7 +3865,10 @@ export namespace Prisma {
       | $Enums.SwapTransactionState;
     reference?: StringFieldUpdateOperationsInput | string;
     lightning?: StringFieldUpdateOperationsInput | string;
-    collectionTracker?: StringFieldUpdateOperationsInput | string;
+    collectionTracker?:
+      | NullableStringFieldUpdateOperationsInput
+      | string
+      | null;
     rate?: StringFieldUpdateOperationsInput | string;
     amountSats?: StringFieldUpdateOperationsInput | string;
     retryCount?: IntFieldUpdateOperationsInput | number;
@@ -3997,6 +4012,21 @@ export namespace Prisma {
       | $Enums.SwapTransactionState;
   };
 
+  export type StringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null;
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    lt?: string | StringFieldRefInput<$PrismaModel>;
+    lte?: string | StringFieldRefInput<$PrismaModel>;
+    gt?: string | StringFieldRefInput<$PrismaModel>;
+    gte?: string | StringFieldRefInput<$PrismaModel>;
+    contains?: string | StringFieldRefInput<$PrismaModel>;
+    startsWith?: string | StringFieldRefInput<$PrismaModel>;
+    endsWith?: string | StringFieldRefInput<$PrismaModel>;
+    mode?: QueryMode;
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null;
+  };
+
   export type IntFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>;
     in?: number[] | ListIntFieldRefInput<$PrismaModel>;
@@ -4017,6 +4047,11 @@ export namespace Prisma {
     gt?: Date | string | DateTimeFieldRefInput<$PrismaModel>;
     gte?: Date | string | DateTimeFieldRefInput<$PrismaModel>;
     not?: NestedDateTimeFilter<$PrismaModel> | Date | string;
+  };
+
+  export type SortOrderInput = {
+    sort: SortOrder;
+    nulls?: NullsOrder;
   };
 
   export type MpesaOnrampSwapCountOrderByAggregateInput = {
@@ -4104,6 +4139,27 @@ export namespace Prisma {
     _max?: NestedEnumSwapTransactionStateFilter<$PrismaModel>;
   };
 
+  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null;
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    lt?: string | StringFieldRefInput<$PrismaModel>;
+    lte?: string | StringFieldRefInput<$PrismaModel>;
+    gt?: string | StringFieldRefInput<$PrismaModel>;
+    gte?: string | StringFieldRefInput<$PrismaModel>;
+    contains?: string | StringFieldRefInput<$PrismaModel>;
+    startsWith?: string | StringFieldRefInput<$PrismaModel>;
+    endsWith?: string | StringFieldRefInput<$PrismaModel>;
+    mode?: QueryMode;
+    not?:
+      | NestedStringNullableWithAggregatesFilter<$PrismaModel>
+      | string
+      | null;
+    _count?: NestedIntNullableFilter<$PrismaModel>;
+    _min?: NestedStringNullableFilter<$PrismaModel>;
+    _max?: NestedStringNullableFilter<$PrismaModel>;
+  };
+
   export type IntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>;
     in?: number[] | ListIntFieldRefInput<$PrismaModel>;
@@ -4132,26 +4188,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>;
     _min?: NestedDateTimeFilter<$PrismaModel>;
     _max?: NestedDateTimeFilter<$PrismaModel>;
-  };
-
-  export type StringNullableFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null;
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
-    lt?: string | StringFieldRefInput<$PrismaModel>;
-    lte?: string | StringFieldRefInput<$PrismaModel>;
-    gt?: string | StringFieldRefInput<$PrismaModel>;
-    gte?: string | StringFieldRefInput<$PrismaModel>;
-    contains?: string | StringFieldRefInput<$PrismaModel>;
-    startsWith?: string | StringFieldRefInput<$PrismaModel>;
-    endsWith?: string | StringFieldRefInput<$PrismaModel>;
-    mode?: QueryMode;
-    not?: NestedStringNullableFilter<$PrismaModel> | string | null;
-  };
-
-  export type SortOrderInput = {
-    sort: SortOrder;
-    nulls?: NullsOrder;
   };
 
   export type MpesaOfframpSwapCountOrderByAggregateInput = {
@@ -4204,33 +4240,16 @@ export namespace Prisma {
     retryCount?: SortOrder;
   };
 
-  export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null;
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
-    lt?: string | StringFieldRefInput<$PrismaModel>;
-    lte?: string | StringFieldRefInput<$PrismaModel>;
-    gt?: string | StringFieldRefInput<$PrismaModel>;
-    gte?: string | StringFieldRefInput<$PrismaModel>;
-    contains?: string | StringFieldRefInput<$PrismaModel>;
-    startsWith?: string | StringFieldRefInput<$PrismaModel>;
-    endsWith?: string | StringFieldRefInput<$PrismaModel>;
-    mode?: QueryMode;
-    not?:
-      | NestedStringNullableWithAggregatesFilter<$PrismaModel>
-      | string
-      | null;
-    _count?: NestedIntNullableFilter<$PrismaModel>;
-    _min?: NestedStringNullableFilter<$PrismaModel>;
-    _max?: NestedStringNullableFilter<$PrismaModel>;
-  };
-
   export type StringFieldUpdateOperationsInput = {
     set?: string;
   };
 
   export type EnumSwapTransactionStateFieldUpdateOperationsInput = {
     set?: $Enums.SwapTransactionState;
+  };
+
+  export type NullableStringFieldUpdateOperationsInput = {
+    set?: string | null;
   };
 
   export type IntFieldUpdateOperationsInput = {
@@ -4243,10 +4262,6 @@ export namespace Prisma {
 
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string;
-  };
-
-  export type NullableStringFieldUpdateOperationsInput = {
-    set?: string | null;
   };
 
   export type NestedStringFilter<$PrismaModel = never> = {
@@ -4276,6 +4291,20 @@ export namespace Prisma {
     not?:
       | NestedEnumSwapTransactionStateFilter<$PrismaModel>
       | $Enums.SwapTransactionState;
+  };
+
+  export type NestedStringNullableFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null;
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    lt?: string | StringFieldRefInput<$PrismaModel>;
+    lte?: string | StringFieldRefInput<$PrismaModel>;
+    gt?: string | StringFieldRefInput<$PrismaModel>;
+    gte?: string | StringFieldRefInput<$PrismaModel>;
+    contains?: string | StringFieldRefInput<$PrismaModel>;
+    startsWith?: string | StringFieldRefInput<$PrismaModel>;
+    endsWith?: string | StringFieldRefInput<$PrismaModel>;
+    not?: NestedStringNullableFilter<$PrismaModel> | string | null;
   };
 
   export type NestedIntFilter<$PrismaModel = never> = {
@@ -4337,6 +4366,37 @@ export namespace Prisma {
     _max?: NestedEnumSwapTransactionStateFilter<$PrismaModel>;
   };
 
+  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: string | StringFieldRefInput<$PrismaModel> | null;
+    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
+    lt?: string | StringFieldRefInput<$PrismaModel>;
+    lte?: string | StringFieldRefInput<$PrismaModel>;
+    gt?: string | StringFieldRefInput<$PrismaModel>;
+    gte?: string | StringFieldRefInput<$PrismaModel>;
+    contains?: string | StringFieldRefInput<$PrismaModel>;
+    startsWith?: string | StringFieldRefInput<$PrismaModel>;
+    endsWith?: string | StringFieldRefInput<$PrismaModel>;
+    not?:
+      | NestedStringNullableWithAggregatesFilter<$PrismaModel>
+      | string
+      | null;
+    _count?: NestedIntNullableFilter<$PrismaModel>;
+    _min?: NestedStringNullableFilter<$PrismaModel>;
+    _max?: NestedStringNullableFilter<$PrismaModel>;
+  };
+
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null;
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null;
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null;
+    lt?: number | IntFieldRefInput<$PrismaModel>;
+    lte?: number | IntFieldRefInput<$PrismaModel>;
+    gt?: number | IntFieldRefInput<$PrismaModel>;
+    gte?: number | IntFieldRefInput<$PrismaModel>;
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null;
+  };
+
   export type NestedIntWithAggregatesFilter<$PrismaModel = never> = {
     equals?: number | IntFieldRefInput<$PrismaModel>;
     in?: number[] | ListIntFieldRefInput<$PrismaModel>;
@@ -4376,51 +4436,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>;
     _min?: NestedDateTimeFilter<$PrismaModel>;
     _max?: NestedDateTimeFilter<$PrismaModel>;
-  };
-
-  export type NestedStringNullableFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null;
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
-    lt?: string | StringFieldRefInput<$PrismaModel>;
-    lte?: string | StringFieldRefInput<$PrismaModel>;
-    gt?: string | StringFieldRefInput<$PrismaModel>;
-    gte?: string | StringFieldRefInput<$PrismaModel>;
-    contains?: string | StringFieldRefInput<$PrismaModel>;
-    startsWith?: string | StringFieldRefInput<$PrismaModel>;
-    endsWith?: string | StringFieldRefInput<$PrismaModel>;
-    not?: NestedStringNullableFilter<$PrismaModel> | string | null;
-  };
-
-  export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: string | StringFieldRefInput<$PrismaModel> | null;
-    in?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
-    notIn?: string[] | ListStringFieldRefInput<$PrismaModel> | null;
-    lt?: string | StringFieldRefInput<$PrismaModel>;
-    lte?: string | StringFieldRefInput<$PrismaModel>;
-    gt?: string | StringFieldRefInput<$PrismaModel>;
-    gte?: string | StringFieldRefInput<$PrismaModel>;
-    contains?: string | StringFieldRefInput<$PrismaModel>;
-    startsWith?: string | StringFieldRefInput<$PrismaModel>;
-    endsWith?: string | StringFieldRefInput<$PrismaModel>;
-    not?:
-      | NestedStringNullableWithAggregatesFilter<$PrismaModel>
-      | string
-      | null;
-    _count?: NestedIntNullableFilter<$PrismaModel>;
-    _min?: NestedStringNullableFilter<$PrismaModel>;
-    _max?: NestedStringNullableFilter<$PrismaModel>;
-  };
-
-  export type NestedIntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null;
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null;
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null;
-    lt?: number | IntFieldRefInput<$PrismaModel>;
-    lte?: number | IntFieldRefInput<$PrismaModel>;
-    gt?: number | IntFieldRefInput<$PrismaModel>;
-    gte?: number | IntFieldRefInput<$PrismaModel>;
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null;
   };
 
   /**

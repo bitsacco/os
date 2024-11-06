@@ -141,12 +141,6 @@ export class SwapService {
       to: Currency.BTC,
     });
 
-    const { id, state } = await this.intasendService.sendMpesaStkPush({
-      amount: Number(amountFiat),
-      phone_number: source.origin.phone,
-      api_ref: ref,
-    });
-
     const { amountSats } = fiatToBtc({
       amountFiat: Number(amountFiat),
       btcToFiatRate: Number(rate),
@@ -154,10 +148,8 @@ export class SwapService {
 
     const swap = await this.prismaService.mpesaOnrampSwap.create({
       data: {
-        id,
         reference: ref,
-        collectionTracker: id,
-        state: mapMpesaTxStateToSwapTxState(state),
+        state: SwapTransactionState.PENDING,
         lightning: target.payout.invoice,
         amountSats: amountSats.toFixed(2),
         retryCount: 0,
@@ -165,8 +157,22 @@ export class SwapService {
       },
     });
 
+    const mpesa = await this.intasendService.sendMpesaStkPush({
+      amount: Number(amountFiat),
+      phone_number: source.origin.phone,
+      api_ref: ref,
+    });
+
+    const updatedSwap = await this.prismaService.mpesaOnrampSwap.update({
+      where: { id: swap.id },
+      data: {
+        collectionTracker: mpesa.id,
+        state: mapMpesaTxStateToSwapTxState(mpesa.state),
+      },
+    });
+
     return {
-      ...swap,
+      ...updatedSwap,
       status: mapSwapTxStateToSwapStatus(swap.state),
       createdAt: swap.createdAt.toDateString(),
       updatedAt: swap.updatedAt.toDateString(),
@@ -333,7 +339,6 @@ export class SwapService {
 
     const swap = await this.prismaService.mpesaOnrampSwap.findUniqueOrThrow({
       where: {
-        id: update.invoice_id,
         collectionTracker: update.invoice_id,
       },
     });

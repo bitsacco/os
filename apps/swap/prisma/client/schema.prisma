@@ -19,7 +19,7 @@ model MpesaOnrampSwap {
   /// Lightning invoice to pay.
   lightning         String
   /// References the fiat onramp collection ID
-  collectionTracker String               @unique
+  collectionTracker String?              @unique
   /// Fx Rate from 
   rate              String
   /// Amount in satoshi

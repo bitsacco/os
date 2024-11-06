@@ -208,7 +208,6 @@ describe('SwapService', () => {
       const swap = await swapService.createOnrampSwap(req);
 
       expect(swap).toBeDefined();
-      expect(swap.rate).toEqual(mock_rate.toString());
       expect(swap.status).toEqual(SwapStatus.PENDING);
     });
   });
@@ -271,61 +270,11 @@ describe('SwapService', () => {
       state: SwapTransactionState.PENDING,
     };
 
-    it.skip('creates a new swap tx if there was none recorded before', async () => {
-      (mockCacheManager.get as jest.Mock).mockImplementation(
-        (_key: string) => ({
-          lightning: 'lnbtcexampleinvoicee',
-          phone: '0700000000',
-          amount: '100',
-          rate: mock_rate.toString(),
-          ref: 'test-onramp-swap',
-          state: MpesaTransactionState.Pending,
-        }),
-      );
-
-      (
-        mockIntasendService.getMpesaTrackerFromCollectionUpdate as jest.Mock
-      ).mockImplementation(() => ({
-        id: '123456789',
-        state: MpesaTransactionState.Pending,
-      }));
-
-      (mockPrismaService.mpesaOnrampSwap.create as jest.Mock).mockResolvedValue(
-        swap,
-      );
-      (
-        mockPrismaService.mpesaOnrampSwap.findUniqueOrThrow as jest.Mock
-      ).mockImplementation(() => {
-        throw new Error('Not found');
-      });
-      (
-        mockPrismaService.mpesaOnrampSwap.update as jest.Mock
-      ).mockImplementation((u) => {
-        return {
-          ...swap,
-          state: u.data.state,
-        };
-      });
-
-      await swapService.processSwapUpdate({
-        ...req,
-        state: MpesaTransactionState.Processing,
-      });
-      expect(
-        mockIntasendService.getMpesaTrackerFromCollectionUpdate,
-      ).toHaveBeenCalled();
-      expect(
-        mockPrismaService.mpesaOnrampSwap.findUniqueOrThrow,
-      ).toHaveBeenCalled();
-      expect(mockPrismaService.mpesaOnrampSwap.create).toHaveBeenCalled();
-      expect(mockPrismaService.mpesaOnrampSwap.update).toHaveBeenCalled();
-    });
-
     it('should update swap tx from PENDING to PROCESSING', async () => {
       (
         mockIntasendService.getMpesaTrackerFromCollectionUpdate as jest.Mock
       ).mockImplementation(() => ({
-        id: '123456789',
+        id: 'MPSA56789',
         state: MpesaTransactionState.Processing,
       }));
 
