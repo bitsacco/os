@@ -1,7 +1,8 @@
 import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { HttpLoggingInterceptor } from '@bitsacco/common';
 import { ApiModule } from './api.module';
 
 const API_VERSION = 'v1';
@@ -12,6 +13,15 @@ async function bootstrap() {
   // setup pino logging
   app.useLogger(app.get(Logger));
 
+  // setup validation
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+
   app.setGlobalPrefix(API_VERSION);
   // app.enableVersioning({
   //   type: VersioningType.URI,
@@ -19,6 +29,8 @@ async function bootstrap() {
   // });
 
   setupOpenAPI(app, 'docs');
+
+  app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
   await app.listen(process.env.PORT ?? 4000);
 }

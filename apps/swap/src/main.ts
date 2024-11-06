@@ -2,7 +2,6 @@ import { join } from 'path';
 import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ReflectionService } from '@grpc/reflection';
 import { SwapModule } from './swap.module';
@@ -13,7 +12,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   const swap_url = configService.getOrThrow<string>('SWAP_GRPC_URL');
-  app.connectMicroservice<MicroserviceOptions>({
+  const swap = app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
       package: 'swap',
@@ -39,9 +38,6 @@ async function bootstrap() {
 
   // setup pino logging
   app.useLogger(app.get(Logger));
-
-  // setup validation
-  app.useGlobalPipes(new ValidationPipe());
 
   await app.startAllMicroservices();
 }
