@@ -35,19 +35,9 @@ describe('EventsController', () => {
   it('should call processSwapUpdate', async () => {
     const data: MpesaCollectionUpdateDto = {
       invoice_id: 'invid',
-      state: MpesaTransactionState.Processing,
-      charges: '0',
-      net_amount: '100',
-      currency: 'KES',
-      value: '100',
-      account: '0700000000',
-      api_ref: 'test-update',
-      retry_count: 0,
-      created_at: '2021-01-01T00:00:00.000Z',
-      updated_at: '2021-01-01T00:00:00.000Z',
       challenge: 'BITSACCO',
+      state: MpesaTransactionState.Processing,
       failed_reason: null,
-      failed_code: null,
     };
     await controller.handleSwapUpdate(data);
     expect(swapService.processSwapUpdate).toHaveBeenCalledWith(data);

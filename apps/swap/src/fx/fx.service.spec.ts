@@ -2,6 +2,7 @@ import { TestingModule } from '@nestjs/testing';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
   createTestingModuleWithValidation,
+  Currency,
   CustomStore,
 } from '@bitsacco/common';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -22,9 +23,7 @@ describe('FxService', () => {
 
     mockCacheManager = {
       get: jest.fn().mockImplementation((key: string) => {
-        return Promise.resolve({
-          btcToKesRate: mock_rate,
-        });
+        return Promise.resolve(mock_rate);
       }),
       set: jest.fn(),
     } as unknown as CustomStore;
@@ -63,7 +62,9 @@ describe('FxService', () => {
       }
     });
 
-    await expect(await fxService.getBtcToKesRate()).toEqual(mock_rate);
+    await expect(
+      await fxService.getExchangeRate(Currency.BTC, Currency.KES),
+    ).toEqual(mock_rate);
   });
 
   it('dev: throws error if MOCK_BTC_KES_RATE config are not set', async () => {
@@ -80,7 +81,9 @@ describe('FxService', () => {
       return Promise.reject(new Error('cache miss'));
     });
 
-    await expect(fxService.getBtcToKesRate()).rejects.toThrow(
+    await expect(
+      fxService.getExchangeRate(Currency.BTC, Currency.KES),
+    ).rejects.toThrow(
       'Either CURRENCY_API_KEY or MOCK_BTC_KES_RATE must be configured',
     );
   });
@@ -97,7 +100,9 @@ describe('FxService', () => {
       }
     });
 
-    await expect(await fxService.getBtcToKesRate()).toEqual(mock_rate);
+    await expect(
+      await fxService.getExchangeRate(Currency.BTC, Currency.KES),
+    ).toEqual(mock_rate);
   });
 
   it('production: throws error if CURRENCY_API_KEY and MOCK_BTC_KES_RATE config are not set', async () => {
@@ -114,9 +119,9 @@ describe('FxService', () => {
       return Promise.reject(new Error('cache miss'));
     });
 
-    await expect(fxService.getBtcToKesRate()).rejects.toThrow(
-      'CURRENCY_API_KEY not found',
-    );
+    await expect(
+      fxService.getExchangeRate(Currency.BTC, Currency.KES),
+    ).rejects.toThrow('CURRENCY_API_KEY not found');
   });
 
   it('production: throws error when CURRENCY_API_KEY config is not valid', async () => {
@@ -133,9 +138,6 @@ describe('FxService', () => {
       }
     });
 
-    // await expect(fxService.getBtcToKesRate()).rejects.toThrow(
-    //   'Request failed with status code 401',
-    // );
-    await expect(fxService.getBtcToKesRate()).rejects;
+    await expect(fxService.getExchangeRate(Currency.BTC, Currency.KES)).rejects;
   });
 });

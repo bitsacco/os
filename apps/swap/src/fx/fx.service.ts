@@ -4,7 +4,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { CustomStore } from '@bitsacco/common';
+import { Currency, CustomStore } from '@bitsacco/common';
 
 interface CurrencyApiResponse {
   meta: {
@@ -21,7 +21,6 @@ interface CurrencyApiResponse {
 @Injectable()
 export class FxService {
   private readonly logger = new Logger(FxService.name);
-  private readonly CACHE_KEY = 'currency_api_rates';
   private readonly CACHE_TTL = 3600; // 1 hour in seconds
 
   constructor(
@@ -32,15 +31,20 @@ export class FxService {
     this.logger.log('FxService initialized');
   }
 
-  private async getCurrencyApiRates() {
-    const cachedData = await this.cacheManager
+  async getExchangeRate(
+    baseCurrency: Currency,
+    targetCurrency: Currency,
+  ): Promise<number> {
+    const cacheKey = `${baseCurrency}-${targetCurrency}`;
+
+    const cachedRate = await this.cacheManager
       .get<{
         btcToKesRate: string;
-      }>(this.CACHE_KEY)
+      }>(cacheKey)
       .catch((_) => undefined);
-    if (cachedData) {
+    if (cachedRate) {
       this.logger.log('Returning cached currency rates');
-      return cachedData;
+      return cachedRate;
     }
 
     const env = this.configService.get('NODE_ENV');
@@ -50,7 +54,7 @@ export class FxService {
     if (!api_key) {
       if (mock_rate) {
         this.logger.log('Returning fake currency rates');
-        return { btcToKesRate: mock_rate };
+        return mock_rate;
       }
 
       if (env === 'production') {
@@ -65,7 +69,7 @@ export class FxService {
     const response = await firstValueFrom(
       this.httpService
         .get(
-          `https://api.currencyapi.com/v3/latest?apikey=${api_key}&base_currency=BTC&currencies=KES`,
+          `https://api.currencyapi.com/v3/latest?apikey=${api_key}&base_currency=${baseCurrency}&currencies=${targetCurrency}`,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -81,21 +85,18 @@ export class FxService {
 
     const { data }: CurrencyApiResponse = response.data;
 
-    const btcToKesRate = data.KES.value;
-    this.logger.log(`1 BTC = ${btcToKesRate} KES`);
+    const rate = data[targetCurrency].value;
+    this.logger.log(`1 ${baseCurrency} = ${rate} ${targetCurrency}`);
 
-    const result = { btcToKesRate };
-    await this.cacheManager.set(this.CACHE_KEY, result, this.CACHE_TTL);
-    return result;
+    await this.cacheManager.set(cacheKey, rate, this.CACHE_TTL);
+    return rate;
   }
 
-  async getBtcToKesRate() {
-    const { btcToKesRate } = await this.getCurrencyApiRates();
-    return btcToKesRate;
-  }
-
-  async getKesToBtcRate() {
-    const { btcToKesRate } = await this.getCurrencyApiRates();
-    return 1 / btcToKesRate;
+  async getInverseExchangeRate(
+    baseCurrency: Currency,
+    targetCurrency: Currency,
+  ) {
+    const rate = await this.getExchangeRate(baseCurrency, targetCurrency);
+    return 1 / rate;
   }
 }

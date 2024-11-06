@@ -1,4 +1,4 @@
-import { SupportedCurrencyType, SupportedCurrencies, Currency } from '../types';
+import { SupportedCurrencies, Currency } from '../types';
 import { mapToCurrency } from './currency';
 
 describe('mapToCurrency', () => {

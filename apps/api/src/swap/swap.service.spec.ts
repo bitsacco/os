@@ -2,9 +2,9 @@ import { ConfigService } from '@nestjs/config';
 import { TestingModule } from '@nestjs/testing';
 import { ClientGrpc } from '@nestjs/microservices';
 import {
-  btcFromKes,
   createTestingModuleWithValidation,
   Currency,
+  fiatToBtc,
   type QuoteRequest,
   type QuoteResponse,
   SWAP_SERVICE_NAME,
@@ -32,10 +32,10 @@ describe('SwapService', () => {
               id: mock_id,
               from,
               to,
-              amount: btcFromKes({
-                amountKes: Number(amount),
-                btcToKesRate: mock_btc_kes,
-              }).toString(),
+              amount: fiatToBtc({
+                amountFiat: Number(amount),
+                btcToFiatRate: mock_btc_kes,
+              }).amountBtc.toFixed(9),
               expiry: (Math.floor(Date.now() / 1000) + 30 * 60).toString(),
               rate: mock_btc_kes.toString(),
             };
@@ -148,9 +148,18 @@ describe('SwapService', () => {
       const swap = swapService.postOnrampTransaction({
         quote: undefined,
         ref: '1234',
-        amount: '100',
-        phone: '0700000000',
-        lightning: 'lnbc1000u1p0j7j0pp5',
+        amountFiat: '100',
+        source: {
+          currency: Currency.KES,
+          origin: {
+            phone: '07000000000',
+          },
+        },
+        target: {
+          invoice: {
+            invoice: 'lnbc1000u1p0j7j0pp5',
+          },
+        },
       });
       expect(swap).toBeDefined();
       expect(mockSwapServiceClient.createOnrampSwap).toHaveBeenCalled();
@@ -159,9 +168,18 @@ describe('SwapService', () => {
     it('can initiate an onramp swap with a quote', () => {
       const swap = swapService.postOnrampTransaction({
         ref: '1234',
-        amount: '100',
-        phone: '0700000000',
-        lightning: 'lnbc1000u1p0j7j0pp5',
+        amountFiat: '100',
+        source: {
+          currency: Currency.KES,
+          origin: {
+            phone: '07000000000',
+          },
+        },
+        target: {
+          invoice: {
+            invoice: 'lnbc1000u1p0j7j0pp5',
+          },
+        },
         quote: {
           id: mock_id,
           refreshIfExpired: true,
@@ -212,7 +230,7 @@ describe('SwapService', () => {
       const swap = swapService.postOfframpTransaction({
         quote: undefined,
         ref: '1234',
-        amount: '100',
+        amountFiat: '100',
         target: {
           currency: Currency.KES,
           destination: {
@@ -227,7 +245,7 @@ describe('SwapService', () => {
     it('can initiate an offramp swap with a quote', () => {
       const swap = swapService.postOfframpTransaction({
         ref: '1234',
-        amount: '100',
+        amountFiat: '100',
         target: {
           currency: Currency.KES,
           destination: {

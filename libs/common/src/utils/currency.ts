@@ -11,32 +11,52 @@ export function mapToCurrency(currency: SupportedCurrencyType): Currency {
   }
 }
 
-export function satsFromKes({
-  amountKes,
-  btcToKesRate,
+export function fiatToBtc({
+  amountFiat,
+  btcToFiatRate,
 }: {
-  amountKes: number;
-  btcToKesRate: number;
-}): string {
-  return ((amountKes * 100000000) / btcToKesRate).toFixed(2);
-}
-
-export function btcFromKes({
-  amountKes,
-  btcToKesRate,
-}: {
-  amountKes: number;
-  btcToKesRate: number;
-}): string {
-  return (amountKes / btcToKesRate).toFixed(9);
-}
-
-export function kesFromBtc({
-  amountBtc,
-  kesToBtcRate,
-}: {
+  amountFiat: number;
+  btcToFiatRate: number;
+}): {
   amountBtc: number;
-  kesToBtcRate: number;
-}): string {
-  return (amountBtc * kesToBtcRate).toFixed(9);
+  amountSats: number;
+  amountMsats: number;
+} {
+  const amountBtc = amountFiat / btcToFiatRate;
+  const amountSats = amountBtc * 100000000;
+  const amountMsats = amountSats * 1000;
+
+  return { amountBtc, amountSats, amountMsats };
+}
+
+export function btcToFiat({
+  amountBtc,
+  amountSats,
+  amountMsats,
+  fiatToBtcRate,
+}: {
+  amountBtc?: number;
+  amountSats?: number;
+  amountMsats?: number;
+  fiatToBtcRate: number;
+}): {
+  amountFiat: number;
+} {
+  let btcAmount: number;
+
+  if (amountBtc !== undefined) {
+    btcAmount = amountBtc;
+  } else if (amountSats !== undefined) {
+    btcAmount = amountSats / 100000000;
+  } else if (amountMsats !== undefined) {
+    btcAmount = amountMsats / 100000000000;
+  } else {
+    throw new Error(
+      'One of amountBtc, amountSats, or amountMsats must be provided',
+    );
+  }
+
+  const amountFiat = btcAmount * fiatToBtcRate;
+
+  return { amountFiat };
 }

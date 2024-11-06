@@ -1,9 +1,9 @@
 import {
-  btcFromKes,
   CreateOfframpSwapDto,
   CreateOnrampSwapDto,
   createTestingModuleWithValidation,
   Currency,
+  fiatToBtc,
   SwapStatus,
 } from '@bitsacco/common';
 import { TestingModule } from '@nestjs/testing';
@@ -81,8 +81,8 @@ describe('SwapService', () => {
         {
           provide: FxService,
           useValue: {
-            getBtcToKesRate: jest.fn().mockResolvedValue(mock_rate),
-            getKesToBtcRate: jest.fn().mockResolvedValue(1 / mock_rate),
+            getExchangeRate: jest.fn().mockResolvedValue(mock_rate),
+            getInverseExchangeRate: jest.fn().mockResolvedValue(1 / mock_rate),
           },
         },
         {
@@ -145,7 +145,10 @@ describe('SwapService', () => {
       expect(quote).toBeDefined();
       expect(quote.amount).toBeDefined();
       expect(quote.amount).toEqual(
-        btcFromKes({ amountKes: Number(amount), btcToKesRate: mock_rate }),
+        fiatToBtc({
+          amountFiat: Number(amount),
+          btcToFiatRate: mock_rate,
+        }).amountBtc.toFixed(9),
       );
       expect(mockCacheManager.set).toHaveBeenCalled();
     });

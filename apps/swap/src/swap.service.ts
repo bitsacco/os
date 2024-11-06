@@ -1,5 +1,4 @@
 import {
-  btcFromKes,
   Currency,
   PaginatedRequest,
   QuoteRequest,
@@ -11,11 +10,12 @@ import {
   PaginatedSwapResponse,
   SwapResponse,
   CreateOfframpSwapDto,
-  kesFromBtc,
   QuoteDto,
   ReceiveContext,
   type ReceivePaymentFailureEvent,
   type ReceivePaymentSuccessEvent,
+  fiatToBtc,
+  btcToFiat,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -66,22 +66,25 @@ export class SwapService {
       }
 
       let convertedAmount: string | undefined;
-      let fxRate: string;
+      const fxRate = await this.fxService.getExchangeRate(
+        Currency.BTC,
+        Currency.KES,
+      );
 
-      if (from === Currency.KES && to === Currency.BTC) {
-        const btcToKesRate = await this.fxService.getBtcToKesRate();
-        const amountBtc =
-          amount && btcFromKes({ amountKes: Number(amount), btcToKesRate });
-        convertedAmount = amountBtc?.toString();
-        fxRate = btcToKesRate.toString();
+      if (from === Currency.KES && to === Currency.BTC && amount) {
+        const { amountBtc } = fiatToBtc({
+          amountFiat: Number(amount),
+          btcToFiatRate: fxRate,
+        });
+        convertedAmount = amountBtc.toFixed(9);
       }
 
-      if (from === Currency.BTC && to === Currency.KES) {
-        const kesToBtcRate = await this.fxService.getKesToBtcRate();
-        const amountKes =
-          amount && kesFromBtc({ amountBtc: Number(amount), kesToBtcRate });
-        convertedAmount = amountKes?.toString();
-        fxRate = kesToBtcRate.toString();
+      if (from === Currency.BTC && to === Currency.KES && amount) {
+        const { amountFiat } = btcToFiat({
+          amountSats: Number(amount),
+          fiatToBtcRate: fxRate,
+        });
+        convertedAmount = amountFiat.toFixed(2);
       }
 
       const expiry = Math.floor(Date.now() / 1000) + 30 * 60; // 30 mins from now
@@ -90,7 +93,7 @@ export class SwapService {
         id: uuidv4(),
         from,
         to,
-        rate: fxRate,
+        rate: fxRate.toString(),
         amount: convertedAmount,
         expiry: expiry.toString(),
       };
@@ -144,16 +147,19 @@ export class SwapService {
       api_ref: ref,
     });
 
-    const amountSats = Number(rate) * Number(amountFiat);
+    const { amountSats } = fiatToBtc({
+      amountFiat: Number(amountFiat),
+      btcToFiatRate: Number(rate),
+    });
 
     const swap = await this.prismaService.mpesaOnrampSwap.create({
       data: {
         id,
-        state: SwapTransactionState.PENDING,
         reference: ref,
         collectionTracker: id,
+        state: mapMpesaTxStateToSwapTxState(state),
         lightning: target.invoice.invoice,
-        amountSats: amountSats.toString(),
+        amountSats: amountSats.toFixed(2),
         retryCount: 0,
         rate,
       },
@@ -228,10 +234,13 @@ export class SwapService {
       to: target.currency,
     });
 
-    const amountSats = Number(rate) * Number(amountFiat);
+    const { amountSats, amountMsats } = fiatToBtc({
+      amountFiat: Number(amountFiat),
+      btcToFiatRate: Number(rate),
+    });
 
     const { invoice: lightning, operationId: id } =
-      await this.fedimintService.invoice(amountSats * 1000, ref || 'offramp');
+      await this.fedimintService.invoice(amountMsats, ref || 'offramp');
 
     const swap = await this.prismaService.mpesaOfframpSwap.create({
       data: {
@@ -241,7 +250,7 @@ export class SwapService {
         retryCount: 0,
         reference: ref,
         phone: target.destination.phone,
-        amountSats: amountSats.toString(),
+        amountSats: amountSats.toFixed(2),
         state: SwapTransactionState.PENDING,
       },
     });

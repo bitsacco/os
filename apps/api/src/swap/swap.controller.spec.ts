@@ -1,6 +1,7 @@
 import { TestingModule } from '@nestjs/testing';
 import {
   createTestingModuleWithValidation,
+  Currency,
   EVENTS_SERVICE_BUS,
   SupportedCurrencies,
 } from '@bitsacco/common';
@@ -71,9 +72,18 @@ describe('SwapController', () => {
       const req = {
         quote: undefined,
         ref: 'ref',
-        amount: '100',
-        phone: '07000000000',
-        lightning: 'lnbc1000u1p0j7j0pp5',
+        amountFiat: '100',
+        source: {
+          currency: Currency.KES,
+          origin: {
+            phone: '07000000000',
+          },
+        },
+        target: {
+          invoice: {
+            invoice: 'lnbc1000u1p0j7j0pp5',
+          },
+        },
       };
       controller.postOnrampTransaction(req);
       expect(swapService.postOnrampTransaction).toHaveBeenCalled();
@@ -106,7 +116,7 @@ describe('SwapController', () => {
       const req = {
         quote: undefined,
         ref: 'ref',
-        amount: '100',
+        amountFiat: '100',
         target: {
           currency: SupportedCurrencies.KES,
           destination: {
