@@ -3,7 +3,11 @@ import { SupportedCurrencyType } from '../types';
 import { mapToCurrency } from '../utils';
 
 export function TransformToCurrency() {
-  return Transform(({ value }) =>
-    mapToCurrency(value as SupportedCurrencyType),
-  );
+  return Transform(({ value }) => {
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    return mapToCurrency(value as SupportedCurrencyType);
+  });
 }

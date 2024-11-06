@@ -103,13 +103,13 @@ export interface OnrampSwapRequest {
 export interface OnrampSwapSource {
   /** Currency code for the target currency */
   currency: Currency;
-  /** Mobile money destination */
-  phone?: MobileMoney | undefined;
+  /** Target destination */
+  origin: MobileMoney | undefined;
 }
 
 export interface OnrampSwapTarget {
-  /** Lightning protocol destination */
-  invoice?: Bolt11 | undefined;
+  /** Lightning protocol payout */
+  payout: Bolt11 | undefined;
 }
 
 export interface OfframpSwapRequest {
@@ -130,8 +130,8 @@ export interface OfframpSwapRequest {
 export interface OfframpSwapTarget {
   /** Currency code for the target currency */
   currency: Currency;
-  /** Mobile money destination */
-  phone?: MobileMoney | undefined;
+  /** Mobile money payout destination */
+  payout: MobileMoney | undefined;
 }
 
 export interface MobileMoney {

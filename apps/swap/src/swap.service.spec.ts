@@ -199,7 +199,7 @@ describe('SwapService', () => {
           },
         },
         target: {
-          invoice: {
+          payout: {
             invoice: 'lnbtcexampleinvoicee',
           },
         },
@@ -429,7 +429,7 @@ describe('SwapService', () => {
         amountFiat: '100',
         target: {
           currency: Currency.KES,
-          destination: {
+          payout: {
             phone: '0700000000',
           },
         },

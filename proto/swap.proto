@@ -104,18 +104,12 @@ message OnrampSwapSource {
   Currency currency = 1;
 
   // Target destination
-  oneof origin {
-    // Mobile money destination
-    MobileMoney phone = 2;
-  }
+  MobileMoney origin = 2;
 }
 
 message OnrampSwapTarget {
-  // Payout destination
-  oneof payout {
-    // Lightning protocol destination
-    Bolt11 invoice = 2;
-  }
+  // Lightning protocol payout
+  Bolt11 payout = 2;
 }
 
 message OfframpSwapRequest {
@@ -135,11 +129,8 @@ message OfframpSwapTarget {
   // Currency code for the target currency
   Currency currency = 1;
 
-  // Payout destination
-  oneof payout {
-    // Mobile money destination
-    MobileMoney phone = 2;
-  }
+  // Mobile money payout destination
+  MobileMoney payout = 2;
 }
 
 message MobileMoney {

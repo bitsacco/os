@@ -27,7 +27,7 @@ class OfframpSwapTargetDto implements OfframpSwapTarget {
 
   @IsDefined()
   @ApiProperty({ type: MobileMoneyDto })
-  destination: MobileMoneyDto;
+  payout: MobileMoneyDto;
 }
 
 export class CreateOfframpSwapDto implements OfframpSwapRequest {
