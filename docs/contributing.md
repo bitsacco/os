@@ -72,15 +72,3 @@ $ bun proto:gen
 ```
 Resulting typescript files are generated in the `/libs/common/src/types/proto` folder.
 You might need to manually update the index file in the types folder to include the new files.
-
-## Working with Prisma
-
-We use [Prisma](https://prisma.io/) as the ORM for our database.
-Each service that uses prisma has a `prisma.schema` file in its corresponding `/src//prisma` folder.
-At present, we manually need to gnerate and commit the prisma client whenever the schema is changed.
-To do this, run the following command from within the service directory:
-
-```bash
-# generate prisma client
-$ bun prisma:gen
-```

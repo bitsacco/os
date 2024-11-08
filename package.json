@@ -21,8 +21,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "bun test apps/api/test/ --config ./apps/api/test/jest-e2e.json",
     "proto:gen": "protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/common/src/types/proto --ts_proto_opt=nestJs=true -I ./proto ./proto/*.proto",
-    "proto:clean": "rm ./libs/common/src/types/proto/*.ts",
-    "migrate": "bun ./scripts/migrate.ts"
+    "proto:clean": "rm ./libs/common/src/types/proto/*.ts"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.12.2",
@@ -39,7 +38,6 @@
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/sequelize": "^10.0.1",
     "@nestjs/swagger": "^7.4.2",
-    "@prisma/client": "^5.21.1",
     "cache-manager": "4.1.0",
     "cache-manager-redis-store": "^3.0.1",
     "class-transformer": "^0.5.1",
@@ -52,7 +50,6 @@
     "nestjs-pino": "^4.1.0",
     "pino-http": "^10.3.0",
     "pino-pretty": "^11.3.0",
-    "prisma": "^5.21.1",
     "redis": "^4.7.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
