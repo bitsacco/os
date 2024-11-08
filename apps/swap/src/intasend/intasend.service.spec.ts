@@ -2,7 +2,6 @@ import { TestingModule } from '@nestjs/testing';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { createTestingModuleWithValidation } from '@bitsacco/common';
 import { IntasendService } from './intasend.service';
-import { PrismaService } from '../prisma.service';
 import { SendSTKPushDto } from '../dto';
 
 describe('IntasendService', () => {
@@ -74,12 +73,6 @@ async function createIntasendService(mockCfg: jest.Mocked<ConfigService>) {
       {
         provide: ConfigService,
         useValue: mockCfg,
-      },
-      {
-        provide: PrismaService,
-        useValue: {
-          $connect: jest.fn(),
-        },
       },
     ],
   });

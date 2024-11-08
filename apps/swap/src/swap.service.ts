@@ -21,13 +21,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { MpesaOnrampSwap, SwapTransactionState } from '../prisma/client';
-import { FxService } from './fx/fx.service';
-import { PrismaService } from './prisma.service';
 import { IntasendService } from './intasend/intasend.service';
 import { MpesaCollectionUpdateDto, MpesaPaymentUpdateDto } from './dto';
 import { MpesaTransactionState } from './intasend/intasend.types';
 import { FedimintService } from './fedimint/fedimint.service';
+import { FxService } from './fx/fx.service';
+import {
+  MpesaOnrampSwapDocument,
+  MpesaOnrampSwapRepository,
+  MpesaOfframpSwapRepository,
+  SwapTransactionState,
+} from '../db';
 import {
   fedimint_receive_success,
   fedimint_receive_failure,
@@ -43,9 +47,10 @@ export class SwapService {
     private readonly fxService: FxService,
     private readonly intasendService: IntasendService,
     private readonly fedimintService: FedimintService,
-    private readonly prismaService: PrismaService,
     private readonly eventEmitter: EventEmitter2,
     @Inject(CACHE_MANAGER) private readonly cacheManager: CustomStore,
+    private readonly offramp: MpesaOfframpSwapRepository,
+    private readonly onramp: MpesaOnrampSwapRepository,
   ) {
     this.logger.log('SwapService initialized');
     this.eventEmitter.on(
@@ -146,15 +151,13 @@ export class SwapService {
       btcToFiatRate: Number(rate),
     });
 
-    const swap = await this.prismaService.mpesaOnrampSwap.create({
-      data: {
-        reference: ref,
-        state: SwapTransactionState.PENDING,
-        lightning: target.payout.invoice,
-        amountSats: amountSats.toFixed(2),
-        retryCount: 0,
-        rate,
-      },
+    const swap = await this.onramp.create({
+      reference: ref,
+      state: SwapTransactionState.PENDING,
+      lightning: target.payout.invoice,
+      amountSats: amountSats.toFixed(2),
+      retryCount: 0,
+      rate,
     });
 
     const mpesa = await this.intasendService.sendMpesaStkPush({
@@ -163,16 +166,17 @@ export class SwapService {
       api_ref: ref,
     });
 
-    const updatedSwap = await this.prismaService.mpesaOnrampSwap.update({
-      where: { id: swap.id },
-      data: {
+    const updatedSwap = await this.onramp.findOneAndUpdate(
+      { _id: swap._id },
+      {
         collectionTracker: mpesa.id,
         state: mapMpesaTxStateToSwapTxState(mpesa.state),
       },
-    });
+    );
 
     return {
       ...updatedSwap,
+      id: updatedSwap._id.toString(),
       status: mapSwapTxStateToSwapStatus(swap.state),
       createdAt: swap.createdAt.toDateString(),
       updatedAt: swap.updatedAt.toDateString(),
@@ -181,16 +185,11 @@ export class SwapService {
 
   async findOnrampSwap({ id }: FindSwapDto): Promise<SwapResponse> {
     try {
-      // Look up swap in db
-      const swap = await this.prismaService.mpesaOnrampSwap.findUniqueOrThrow({
-        where: {
-          // is this mpesa id or swap id?
-          id,
-        },
-      });
+      const swap = await this.onramp.findOne({ _id: id });
 
       return {
         ...swap,
+        id: swap._id.toString(),
         status: mapSwapTxStateToSwapStatus(swap.state),
         retryCount: swap.retryCount,
         createdAt: swap.createdAt.toDateString(),
@@ -206,7 +205,7 @@ export class SwapService {
     page,
     size,
   }: PaginatedRequest): Promise<PaginatedSwapResponse> {
-    const onramps = await this.prismaService.mpesaOnrampSwap.findMany();
+    const onramps = await this.onramp.find({});
     const pages = Math.ceil(onramps.length / size);
 
     // select the last page if requested page exceeds total pages possible
@@ -216,6 +215,7 @@ export class SwapService {
       .slice(selectPage * size, (selectPage + 1) * size + size)
       .map((swap) => ({
         ...swap,
+        id: swap._id.toString(),
         status: mapSwapTxStateToSwapStatus(swap.state),
         createdAt: swap.createdAt.toDateString(),
         updatedAt: swap.updatedAt.toDateString(),
@@ -248,17 +248,14 @@ export class SwapService {
     const { invoice: lightning, operationId: id } =
       await this.fedimintService.invoice(amountMsats, ref || 'offramp');
 
-    const swap = await this.prismaService.mpesaOfframpSwap.create({
-      data: {
-        id,
-        rate,
-        lightning,
-        retryCount: 0,
-        reference: ref,
-        phone: target.payout.phone,
-        amountSats: amountSats.toFixed(2),
-        state: SwapTransactionState.PENDING,
-      },
+    const swap = await this.offramp.create({
+      rate,
+      lightning,
+      retryCount: 0,
+      reference: ref,
+      phone: target.payout.phone,
+      amountSats: amountSats.toFixed(2),
+      state: SwapTransactionState.PENDING,
     });
 
     // listen for payment
@@ -266,8 +263,9 @@ export class SwapService {
 
     return {
       ...swap,
+      id: swap._id.toString(),
       lightning,
-      status: mapSwapTxStateToSwapStatus(swap.state),
+      status: mapSwapTxStateToSwapStatus(swap.state as SwapTransactionState),
       createdAt: swap.createdAt.toDateString(),
       updatedAt: swap.updatedAt.toDateString(),
     };
@@ -275,16 +273,12 @@ export class SwapService {
 
   async findOfframpSwap({ id }: FindSwapDto): Promise<SwapResponse> {
     try {
-      // Look up swap in db
-      const swap = await this.prismaService.mpesaOfframpSwap.findUniqueOrThrow({
-        where: {
-          id,
-        },
-      });
+      const swap = await this.offramp.findOne({ _id: id });
 
       return {
         ...swap,
-        status: mapSwapTxStateToSwapStatus(swap.state),
+        id: swap._id.toString(),
+        status: mapSwapTxStateToSwapStatus(swap.state as SwapTransactionState),
         retryCount: swap.retryCount,
         createdAt: swap.createdAt.toDateString(),
         updatedAt: swap.updatedAt.toDateString(),
@@ -299,7 +293,7 @@ export class SwapService {
     page,
     size,
   }: PaginatedRequest): Promise<PaginatedSwapResponse> {
-    const offramps = await this.prismaService.mpesaOfframpSwap.findMany();
+    const offramps = await this.offramp.find({});
     const pages = Math.ceil(offramps.length / size);
 
     // select the last page if requested page exceeds total pages possible
@@ -309,7 +303,8 @@ export class SwapService {
       .slice(selectPage * size, (selectPage + 1) * size + size)
       .map((swap) => ({
         ...swap,
-        status: mapSwapTxStateToSwapStatus(swap.state),
+        id: swap._id.toString(),
+        status: mapSwapTxStateToSwapStatus(swap.state as SwapTransactionState),
         createdAt: swap.createdAt.toDateString(),
         updatedAt: swap.updatedAt.toDateString(),
       }));
@@ -337,10 +332,8 @@ export class SwapService {
     const mpesa =
       await this.intasendService.getMpesaTrackerFromCollectionUpdate(update);
 
-    const swap = await this.prismaService.mpesaOnrampSwap.findUniqueOrThrow({
-      where: {
-        collectionTracker: update.invoice_id,
-      },
+    const swap = await this.onramp.findOne({
+      collectionTracker: update.invoice_id,
     });
 
     if (!swap) {
@@ -367,17 +360,14 @@ export class SwapService {
         break;
     }
 
-    await this.prismaService.mpesaOnrampSwap.update({
-      where: { id: swap.id },
-      data: updates,
-    });
+    await this.onramp.findOneAndUpdate({ _id: swap._id }, updates);
 
     this.logger.log('Swap Updated');
     return;
   }
 
   private async swapToBtc(
-    swap: MpesaOnrampSwap,
+    swap: MpesaOnrampSwapDocument,
   ): Promise<{ state: SwapTransactionState; operationId: string }> {
     this.logger.log('Swapping to BTC');
     this.logger.log('Swap', swap);
@@ -393,7 +383,7 @@ export class SwapService {
       this.logger.log(`Attempting to pay : ${swap.lightning}`);
 
       const { operationId } = await this.fedimintService.pay(swap.lightning);
-      this.logger.log('Completed Onramp Swap', swap.id, operationId);
+      this.logger.log('Completed onramp Swap', swap._id, operationId);
 
       return {
         state: SwapTransactionState.COMPLETE,
@@ -409,22 +399,20 @@ export class SwapService {
     const mpesa =
       await this.intasendService.getMpesaTrackerFromPaymentUpdate(update);
 
-    const swap = await this.prismaService.mpesaOfframpSwap.findUnique({
-      where: {
-        paymentTracker: update.file_id,
-      },
+    const swap = await this.onramp.findOne({
+      paymentTracker: update.file_id,
     });
 
     if (!swap) {
       throw new Error('Failed to create or update swap');
     }
 
-    await this.prismaService.mpesaOfframpSwap.update({
-      where: { id: swap.id },
-      data: {
+    await this.offramp.findOneAndUpdate(
+      { _id: swap._id },
+      {
         state: mapMpesaTxStateToSwapTxState(mpesa.state),
       },
-    });
+    );
 
     this.logger.log('Swap Updated');
     return;
@@ -438,9 +426,7 @@ export class SwapService {
     this.logger.log('Successfully received payment');
     this.logger.log(`Context : ${context}, OperationId: ${operationId}`);
 
-    const swap = await this.prismaService.mpesaOfframpSwap.findUnique({
-      where: { id: operationId },
-    });
+    const swap = await this.offramp.findOne({ _id: operationId });
 
     const amount = Number(swap.amountSats) * Number(swap.rate);
 
@@ -451,13 +437,13 @@ export class SwapService {
       narrative: 'withdrawal',
     });
 
-    await this.prismaService.mpesaOfframpSwap.update({
-      where: { id: operationId },
-      data: {
+    await this.offramp.findOneAndUpdate(
+      { _id: operationId },
+      {
         paymentTracker: id,
         state: SwapTransactionState.PROCESSING,
       },
-    });
+    );
   }
 
   @OnEvent(fedimint_receive_failure)

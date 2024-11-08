@@ -6,11 +6,6 @@ COPY package.json ./
 COPY bun.lockb ./
 COPY tsconfig.json tsconfig.json
 COPY nest-cli.json nest-cli.json
-COPY apps/swap/prisma/client ./prisma/client
-
-# FIXME: This hack allows prisma to work with oven/bun
-# Ref: https://github.com/oven-sh/bun/issues/5320#issuecomment-1730927088
-COPY --from=node:20 /usr/local/bin/node /usr/local/bin/node
 
 COPY apps/swap apps/swap
 COPY libs libs
@@ -33,6 +28,5 @@ RUN bun install --production
 
 COPY --from=development /usr/src/app/dist ./dist
 COPY --from=development /usr/src/app/proto ./proto
-COPY --from=development /usr/src/app/prisma ./prisma
 
-CMD ["sh", "-c", "bun run prisma migrate deploy && bun run dist/apps/swap/main.js"]
+CMD ["sh", "-c", "bun run dist/apps/swap/main.js"]

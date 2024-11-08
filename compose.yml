@@ -9,7 +9,7 @@ services:
     command: bun dev api
     restart: always
     depends_on:
-      - postgres
+      - mongodb
     env_file:
       - ./apps/api/.env
     ports:
@@ -26,12 +26,12 @@ services:
     command: [
         "sh",
         "-c",
-        "bun prisma migrate deploy --schema apps/swap/prisma/schema.prisma && bun dev swap"
+        "bun dev swap"
       ]
     restart: always
     depends_on:
       - swap-clientd
-      - postgres
+      - mongodb
       - redis
     env_file:
       - ./apps/swap/.env
@@ -39,18 +39,19 @@ services:
       - '4040:4040'
     volumes:
       - .:/usr/src/app
-  postgres:
-    image: postgres:15-alpine
-    container_name: postgres
+
+  mongodb:
+    image: mongo:7.0-jammy
+    container_name: mongodb
     environment:
-      - POSTGRES_USER=bs
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=postgres
+      - MONGO_INITDB_ROOT_USERNAME=bs
+      - MONGO_INITDB_ROOT_PASSWORD=password
     ports:
-      - '5432:5432'
+      - '27017:27017'
     volumes:
-      - postgres_datadir:/var/lib/postgresql/data
+      - mongodb_datadir:/data/db
     restart: always
+
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -72,5 +73,5 @@ services:
       - swap_clientd_datadir:/var/lib/clientd
     restart: always
 volumes:
-  postgres_datadir:
+  mongodb_datadir:
   swap_clientd_datadir:

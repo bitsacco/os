@@ -52,9 +52,18 @@ describe('SwapController', () => {
         refreshIfExpired: false,
       },
       ref: 'test-onramp-swap',
-      phone: '0700000000',
-      amount: '100',
-      lightning: 'lnbtcexampleinvoicee',
+      amountFiat: '100',
+      source: {
+        currency: Currency.KES,
+        origin: {
+          phone: '0700000000',
+        },
+      },
+      target: {
+        payout: {
+          invoice: 'lnbtcexampleinvoicee',
+        },
+      },
     };
 
     await swapController.createOnrampSwap(req);

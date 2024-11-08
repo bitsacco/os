@@ -2,17 +2,24 @@ import * as Joi from 'joi';
 import { redisStore } from 'cache-manager-redis-store';
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
-import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { CACHE_MANAGER, CacheModule } from '@nestjs/cache-manager';
-import { CustomStore, LoggerModule } from '@bitsacco/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { CacheModule } from '@nestjs/cache-manager';
+import { CustomStore, DatabaseModule, LoggerModule } from '@bitsacco/common';
 import { SwapController } from './swap.controller';
 import { SwapService } from './swap.service';
 import { FxService } from './fx/fx.service';
-import { PrismaService } from './prisma.service';
 import { IntasendService } from './intasend/intasend.service';
 import { EventsController } from './events.controller';
 import { FedimintService } from './fedimint/fedimint.service';
+import {
+  MpesaOfframpSwapRepository,
+  MpesaOfframpSwapDocument,
+  MpesaOfframpSwapSchema,
+  MpesaOnrampSwapRepository,
+  MpesaOnrampSwapDocument,
+  MpesaOnrampSwapSchema,
+} from '../db';
 
 @Module({
   imports: [
@@ -34,6 +41,11 @@ import { FedimintService } from './fedimint/fedimint.service';
         FEDIMINT_GATEWAY_ID: Joi.string().required(),
       }),
     }),
+    DatabaseModule,
+    DatabaseModule.forFeature([
+      { name: MpesaOnrampSwapDocument.name, schema: MpesaOnrampSwapSchema },
+      { name: MpesaOfframpSwapDocument.name, schema: MpesaOfframpSwapSchema },
+    ]),
     LoggerModule,
     HttpModule,
     CacheModule.registerAsync({
@@ -63,39 +75,13 @@ import { FedimintService } from './fedimint/fedimint.service';
   ],
   controllers: [SwapController, EventsController],
   providers: [
-    {
-      provide: SwapService,
-      useFactory: (
-        fxService: FxService,
-        intasendService: IntasendService,
-        fedimintService: FedimintService,
-        prismaService: PrismaService,
-        eventEmitter: EventEmitter2,
-        cacheManager: CustomStore,
-      ) => {
-        return new SwapService(
-          fxService,
-          intasendService,
-          fedimintService,
-          prismaService,
-          eventEmitter,
-          cacheManager,
-        );
-      },
-      inject: [
-        FxService,
-        IntasendService,
-        FedimintService,
-        PrismaService,
-        EventEmitter2,
-        CACHE_MANAGER,
-      ],
-    },
+    SwapService,
     FxService,
-    PrismaService,
     IntasendService,
     ConfigService,
     FedimintService,
+    MpesaOfframpSwapRepository,
+    MpesaOnrampSwapRepository,
   ],
 })
 export class SwapModule {}
