@@ -252,7 +252,7 @@ export class SwapService {
       rate,
       lightning,
       retryCount: 0,
-      reference: ref,
+      reference: 'ref',
       phone: target.payout.phone,
       amountSats: amountSats.toFixed(2),
       state: SwapTransactionState.PENDING,
@@ -399,7 +399,7 @@ export class SwapService {
     const mpesa =
       await this.intasendService.getMpesaTrackerFromPaymentUpdate(update);
 
-    const swap = await this.onramp.findOne({
+    const swap = await this.offramp.findOne({
       paymentTracker: update.file_id,
     });
 
@@ -423,9 +423,6 @@ export class SwapService {
     context,
     operationId,
   }: ReceivePaymentSuccessEvent) {
-    this.logger.log('Successfully received payment');
-    this.logger.log(`Context : ${context}, OperationId: ${operationId}`);
-
     const swap = await this.offramp.findOne({ _id: operationId });
 
     const amount = Number(swap.amountSats) * Number(swap.rate);
@@ -444,6 +441,8 @@ export class SwapService {
         state: SwapTransactionState.PROCESSING,
       },
     );
+
+    this.logger.log(`Received lightning payment for ${context} : ${operationId}`);
   }
 
   @OnEvent(fedimint_receive_failure)
@@ -451,8 +450,14 @@ export class SwapService {
     context,
     operationId,
   }: ReceivePaymentFailureEvent) {
-    this.logger.log('Failed to receive payment');
-    this.logger.log(`Context : ${context}, OperationId: ${operationId}`);
+    this.logger.log(`Failed to eceive lightning payment for ${context} : ${operationId}`);
+
+    await this.offramp.findOneAndUpdate(
+      { _id: operationId },
+      {
+        state: SwapTransactionState.FAILED,
+      },
+    );
   }
 }
 

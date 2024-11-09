@@ -101,8 +101,7 @@ export class FedimintService {
   }
 
   async pay(invoice: string): Promise<{ operationId: string; fee: number }> {
-    this.logger.log('Paying invoice');
-    this.logger.log('Invoice', invoice);
+    this.logger.log(`Paying Invoice : ${invoice}`);
 
     const { operationId, fee }: LightningPayResponse = await this.post<
       { paymentInfo: string } & WithFederationId & WithGatewayId,
@@ -113,7 +112,7 @@ export class FedimintService {
       gatewayId: this.gatewayId,
     });
 
-    this.logger.log('Paid Invoice : ', operationId);
+    this.logger.log(`Paid Invoice : ${invoice} : ${operationId}`);
     return {
       operationId,
       fee,

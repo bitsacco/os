@@ -6,6 +6,7 @@ import {
   Validate,
   IsEnum,
   IsDefined,
+  ValidateNested,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import {
@@ -21,17 +22,21 @@ import { TransformToCurrency } from './transforms';
 
 class OfframpSwapTargetDto implements OfframpSwapTarget {
   @IsEnum(Currency)
-  @ApiProperty({ enum: SupportedCurrencies, enumName: 'SupportedCurrencyType' })
   @TransformToCurrency()
+  @ApiProperty({ enum: SupportedCurrencies, enumName: 'SupportedCurrencyType' })
   currency: Currency;
 
   @IsDefined()
+  @ValidateNested()
+  @Type(() => MobileMoneyDto)
   @ApiProperty({ type: MobileMoneyDto })
   payout: MobileMoneyDto;
 }
 
 export class CreateOfframpSwapDto implements OfframpSwapRequest {
   @IsOptional()
+  @ValidateNested()
+  @Type(() => QuoteDto)
   @ApiProperty({ type: QuoteDto })
   quote: QuoteDto;
 
@@ -49,6 +54,8 @@ export class CreateOfframpSwapDto implements OfframpSwapRequest {
   amountFiat: string;
 
   @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => OfframpSwapTargetDto)
   @ApiProperty({ type: OfframpSwapTargetDto })
   target: OfframpSwapTargetDto;
 }
