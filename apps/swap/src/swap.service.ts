@@ -139,7 +139,7 @@ export class SwapService {
     amountFiat,
     source,
     target,
-    ref,
+    reference,
   }: CreateOnrampSwapDto): Promise<SwapResponse> {
     const rate = await this.getRate(quote, {
       from: Currency.KES,
@@ -152,7 +152,7 @@ export class SwapService {
     });
 
     const swap = await this.onramp.create({
-      reference: ref,
+      reference,
       state: SwapTransactionState.PENDING,
       lightning: target.payout.invoice,
       amountSats: amountSats.toFixed(2),
@@ -163,7 +163,7 @@ export class SwapService {
     const mpesa = await this.intasendService.sendMpesaStkPush({
       amount: Number(amountFiat),
       phone_number: source.origin.phone,
-      api_ref: ref,
+      api_ref: reference,
     });
 
     const updatedSwap = await this.onramp.findOneAndUpdate(
@@ -230,10 +230,10 @@ export class SwapService {
   }
 
   async createOfframpSwap({
-    ref,
     quote,
     amountFiat,
     target,
+    reference,
   }: CreateOfframpSwapDto): Promise<SwapResponse> {
     const rate = await this.getRate(quote, {
       from: Currency.BTC,
@@ -246,13 +246,13 @@ export class SwapService {
     });
 
     const { invoice: lightning, operationId: id } =
-      await this.fedimintService.invoice(amountMsats, ref || 'offramp');
+      await this.fedimintService.invoice(amountMsats, reference);
 
     const swap = await this.offramp.create({
       rate,
+      reference,
       lightning,
       retryCount: 0,
-      reference: 'ref',
       phone: target.payout.phone,
       amountSats: amountSats.toFixed(2),
       state: SwapTransactionState.PENDING,
@@ -442,7 +442,9 @@ export class SwapService {
       },
     );
 
-    this.logger.log(`Received lightning payment for ${context} : ${operationId}`);
+    this.logger.log(
+      `Received lightning payment for ${context} : ${operationId}`,
+    );
   }
 
   @OnEvent(fedimint_receive_failure)
@@ -450,7 +452,9 @@ export class SwapService {
     context,
     operationId,
   }: ReceivePaymentFailureEvent) {
-    this.logger.log(`Failed to eceive lightning payment for ${context} : ${operationId}`);
+    this.logger.log(
+      `Failed to eceive lightning payment for ${context} : ${operationId}`,
+    );
 
     await this.offramp.findOneAndUpdate(
       { _id: operationId },

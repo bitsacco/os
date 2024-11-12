@@ -88,7 +88,7 @@ export interface OnrampSwapRequest {
    */
   quote?: Quote | undefined;
   /** Swap initiator reference to the account this transaction is associated with. */
-  ref: string;
+  reference: string;
   /**
    * Amount to swap
    * Any transaction fees will be deducted from this amount
@@ -118,6 +118,8 @@ export interface OfframpSwapRequest {
    * If not specified, the service will create a new quote for the swap
    */
   quote?: Quote | undefined;
+  /** Swap initiator reference to the account this transaction is associated with. */
+  reference: string;
   /**
    * Amount to swap
    * Any transaction fees will be deducted from this amount

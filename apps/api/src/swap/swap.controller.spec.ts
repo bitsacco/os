@@ -71,7 +71,7 @@ describe('SwapController', () => {
     it('should call swapService.postOnrampTransaction', () => {
       const req = {
         quote: undefined,
-        ref: 'ref',
+        reference: 'ref',
         amountFiat: '100',
         source: {
           currency: Currency.KES,
@@ -80,7 +80,7 @@ describe('SwapController', () => {
           },
         },
         target: {
-          invoice: {
+          payout: {
             invoice: 'lnbc1000u1p0j7j0pp5',
           },
         },
@@ -115,11 +115,11 @@ describe('SwapController', () => {
     it('should call swapService.postOfframpTransaction', () => {
       const req = {
         quote: undefined,
-        ref: 'ref',
+        reference: 'ref',
         amountFiat: '100',
         target: {
           currency: SupportedCurrencies.KES,
-          destination: {
+          payout: {
             phone: '07000000000',
           },
         },

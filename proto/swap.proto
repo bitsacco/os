@@ -84,7 +84,7 @@ message OnrampSwapRequest {
   optional Quote quote = 1;
 
   // Swap initiator reference to the account this transaction is associated with.
-  string ref = 2;
+  string reference = 2;
 
   // Amount to swap
   // Any transaction fees will be deducted from this amount
@@ -117,12 +117,15 @@ message OfframpSwapRequest {
   // If not specified, the service will create a new quote for the swap
   optional Quote quote = 1;
 
+  // Swap initiator reference to the account this transaction is associated with.
+  string reference = 2;
+
   // Amount to swap
   // Any transaction fees will be deducted from this amount
-  string amountFiat = 2;
+  string amountFiat = 3;
 
   // Target of the swap
-  OfframpSwapTarget target = 3;
+  OfframpSwapTarget target = 4;
 }
 
 message OfframpSwapTarget {

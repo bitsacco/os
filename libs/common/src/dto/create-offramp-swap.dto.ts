@@ -44,7 +44,7 @@ export class CreateOfframpSwapDto implements OfframpSwapRequest {
   @IsString()
   @Type(() => String)
   @ApiProperty()
-  ref: string;
+  reference: string;
 
   @IsNotEmpty()
   @IsString()

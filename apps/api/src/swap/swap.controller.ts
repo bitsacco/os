@@ -77,13 +77,13 @@ export class SwapController {
   @ApiOperation({ summary: 'List onramp swaps' })
   @ApiQuery({
     name: 'page',
-    example: '?page=0',
+    example: '0',
     type: ListSwapsDto['page'],
     required: false,
   })
   @ApiQuery({
     name: 'size',
-    example: '?size=100',
+    example: '100',
     type: ListSwapsDto['size'],
     required: false,
   })
@@ -139,13 +139,13 @@ export class SwapController {
   @ApiOperation({ summary: 'List offramp swaps' })
   @ApiQuery({
     name: 'page',
-    example: '?page=0',
+    example: '0',
     type: ListSwapsDto['page'],
     required: false,
   })
   @ApiQuery({
     name: 'size',
-    example: '?size=100',
+    example: '100',
     type: ListSwapsDto['size'],
     required: false,
   })

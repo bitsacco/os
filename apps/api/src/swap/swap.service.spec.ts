@@ -147,7 +147,7 @@ describe('SwapService', () => {
     it('can initiate an onramp swap without a quote', () => {
       const swap = swapService.postOnrampTransaction({
         quote: undefined,
-        ref: '1234',
+        reference: 'ref',
         amountFiat: '100',
         source: {
           currency: Currency.KES,
@@ -167,7 +167,7 @@ describe('SwapService', () => {
 
     it('can initiate an onramp swap with a quote', () => {
       const swap = swapService.postOnrampTransaction({
-        ref: '1234',
+        reference: 'ref',
         amountFiat: '100',
         source: {
           currency: Currency.KES,
@@ -229,7 +229,7 @@ describe('SwapService', () => {
     it('can initiate an offramp swap without a quote', () => {
       const swap = swapService.postOfframpTransaction({
         quote: undefined,
-        ref: '1234',
+        reference: 'ref',
         amountFiat: '100',
         target: {
           currency: Currency.KES,
@@ -244,7 +244,7 @@ describe('SwapService', () => {
 
     it('can initiate an offramp swap with a quote', () => {
       const swap = swapService.postOfframpTransaction({
-        ref: '1234',
+        reference: 'ref',
         amountFiat: '100',
         target: {
           currency: Currency.KES,

@@ -53,7 +53,7 @@ export class CreateOnrampSwapDto implements OnrampSwapRequest {
   @IsString()
   @Type(() => String)
   @ApiProperty()
-  ref: string;
+  reference: string;
 
   @IsNotEmpty()
   @IsString()
