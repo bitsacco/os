@@ -21,8 +21,8 @@
       "@bitsacco/common": [
         "libs/common/src"
       ],
-      "@bitsacco/common/*": [
-        "libs/common/src/*"
+      "@bitsacco/testing": [
+        "libs/testing/src"
       ]
     }
   }

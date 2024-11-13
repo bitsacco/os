@@ -1,10 +1,11 @@
 import { TestingModule } from '@nestjs/testing';
 import {
-  createTestingModuleWithValidation,
   Currency,
   EVENTS_SERVICE_BUS,
   SupportedCurrencies,
 } from '@bitsacco/common';
+import { createTestingModuleWithValidation } from '@bitsacco/testing';
+
 import { SwapController } from './swap.controller';
 import { SwapService } from './swap.service';
 import { ClientProxy } from '@nestjs/microservices';

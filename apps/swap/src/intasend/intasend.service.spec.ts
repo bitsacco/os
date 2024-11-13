@@ -1,6 +1,6 @@
 import { TestingModule } from '@nestjs/testing';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { createTestingModuleWithValidation } from '@bitsacco/common';
+import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { IntasendService } from './intasend.service';
 import { SendSTKPushDto } from '../dto';
 

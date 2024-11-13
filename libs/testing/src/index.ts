@@ -1,5 +1,5 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ValidationPipe } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
 
 export async function createTestingModuleWithValidation(metadata: any) {
   const app: TestingModule = await Test.createTestingModule(metadata).compile();

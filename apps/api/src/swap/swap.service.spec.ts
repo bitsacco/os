@@ -2,7 +2,6 @@ import { ConfigService } from '@nestjs/config';
 import { TestingModule } from '@nestjs/testing';
 import { ClientGrpc } from '@nestjs/microservices';
 import {
-  createTestingModuleWithValidation,
   Currency,
   fiatToBtc,
   type QuoteRequest,
@@ -10,6 +9,7 @@ import {
   SWAP_SERVICE_NAME,
   SwapServiceClient,
 } from '@bitsacco/common';
+import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { SwapService } from './swap.service';
 
 describe('SwapService', () => {

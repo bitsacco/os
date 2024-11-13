@@ -1,7 +1,6 @@
 services:
   api:
     container_name: api
-    # image: test-api-manual-build
     build:
       context: .
       dockerfile: ./apps/api/Dockerfile
@@ -18,7 +17,6 @@ services:
       - .:/usr/src/app
   swap:
     container_name: swap
-    # image: test-swap-manual-build
     build:
       context: .
       dockerfile: ./apps/swap/Dockerfile

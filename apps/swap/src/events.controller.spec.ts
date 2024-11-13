@@ -1,6 +1,6 @@
 import { TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
-import { createTestingModuleWithValidation } from '@bitsacco/common';
+import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { EventsController } from './events.controller';
 import { MpesaCollectionUpdateDto } from './dto';
 import { SwapService } from './swap.service';

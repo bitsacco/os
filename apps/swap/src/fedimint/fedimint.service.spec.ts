@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { createTestingModuleWithValidation } from '@bitsacco/common';
+import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { FedimintService } from './fedimint.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 

@@ -103,7 +103,8 @@
       "<rootDir>/apps/"
     ],
     "moduleNameMapper": {
-      "^@bitsacco/common(|/.*)$": "<rootDir>/libs/common/src/$1"
+      "^@bitsacco/common(|/.*)$": "<rootDir>/libs/common/src/$1",
+      "^@bitsacco/testing(|/.*)$": "<rootDir>/libs/testing/src/$1"
     }
   }
 }

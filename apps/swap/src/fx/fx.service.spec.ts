@@ -1,10 +1,7 @@
 import { TestingModule } from '@nestjs/testing';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import {
-  createTestingModuleWithValidation,
-  Currency,
-  CustomStore,
-} from '@bitsacco/common';
+import { Currency, CustomStore } from '@bitsacco/common';
+import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { CacheModule } from '@nestjs/cache-manager';
 import { HttpModule } from '@nestjs/axios';
 import { FxService } from './fx.service';

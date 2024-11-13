@@ -1,8 +1,5 @@
-import {
-  CreateOnrampSwapDto,
-  Currency,
-  createTestingModuleWithValidation,
-} from '@bitsacco/common';
+import { CreateOnrampSwapDto, Currency } from '@bitsacco/common';
+import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { TestingModule } from '@nestjs/testing';
 import { SwapService } from './swap.service';
 import { SwapController } from './swap.controller';

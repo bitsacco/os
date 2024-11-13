@@ -1,12 +1,12 @@
 import {
   CreateOfframpSwapDto,
   CreateOnrampSwapDto,
-  createTestingModuleWithValidation,
   Currency,
   DatabaseModule,
   fiatToBtc,
   SwapStatus,
 } from '@bitsacco/common';
+import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { TestingModule } from '@nestjs/testing';
 import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 import { FxService } from './fx/fx.service';
