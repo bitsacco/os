@@ -8,6 +8,7 @@ import {
   Currency,
   CustomStore,
   mapToSupportedCurrency,
+  SupportedCurrencyType,
 } from '@bitsacco/common';
 
 interface CurrencyApiResponse {
@@ -36,8 +37,8 @@ export class FxService {
   }
 
   async getExchangeRate(
-    baseCurrency: Currency,
-    targetCurrency: Currency,
+    baseCurrency: SupportedCurrencyType,
+    targetCurrency: SupportedCurrencyType,
   ): Promise<number> {
     const cacheKey = `${baseCurrency}-${targetCurrency}`;
 
@@ -73,7 +74,7 @@ export class FxService {
     const response = await firstValueFrom(
       this.httpService
         .get(
-          `https://api.currencyapi.com/v3/latest?apikey=${api_key}&base_currency=${mapToSupportedCurrency(baseCurrency)}&currencies=${mapToSupportedCurrency(targetCurrency)}`,
+          `https://api.currencyapi.com/v3/latest?apikey=${api_key}&base_currency=${baseCurrency}&currencies=${targetCurrency}`,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -100,7 +101,7 @@ export class FxService {
     baseCurrency: Currency,
     targetCurrency: Currency,
   ) {
-    const rate = await this.getExchangeRate(baseCurrency, targetCurrency);
+    const rate = await this.getExchangeRate(mapToSupportedCurrency(baseCurrency), mapToSupportedCurrency(targetCurrency));
     return 1 / rate;
   }
 }

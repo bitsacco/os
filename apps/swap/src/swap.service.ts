@@ -16,6 +16,7 @@ import {
   type ReceivePaymentSuccessEvent,
   fiatToBtc,
   btcToFiat,
+  SupportedCurrencyType,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -72,8 +73,8 @@ export class SwapService {
 
       let convertedAmount: string | undefined;
       const fxRate = await this.fxService.getExchangeRate(
-        Currency.BTC,
-        Currency.KES,
+        'BTC' as SupportedCurrencyType,
+        'KES' as SupportedCurrencyType,
       );
 
       if (from === Currency.KES && to === Currency.BTC && amount) {
