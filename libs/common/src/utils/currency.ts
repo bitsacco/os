@@ -11,6 +11,19 @@ export function mapToCurrency(currency: SupportedCurrencyType): Currency {
   }
 }
 
+export function mapToSupportedCurrency(
+  currency: Currency,
+): SupportedCurrencyType {
+  switch (currency) {
+    case Currency.BTC:
+      return 'BTC' as SupportedCurrencyType;
+    case Currency.KES:
+      return 'KES' as SupportedCurrencyType;
+    default:
+      throw new Error(`Unsupported currency: ${currency}`);
+  }
+}
+
 export function fiatToBtc({
   amountFiat,
   btcToFiatRate,

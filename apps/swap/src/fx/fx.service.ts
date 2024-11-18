@@ -4,7 +4,11 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { Currency, CustomStore } from '@bitsacco/common';
+import {
+  Currency,
+  CustomStore,
+  mapToSupportedCurrency,
+} from '@bitsacco/common';
 
 interface CurrencyApiResponse {
   meta: {
@@ -69,7 +73,7 @@ export class FxService {
     const response = await firstValueFrom(
       this.httpService
         .get(
-          `https://api.currencyapi.com/v3/latest?apikey=${api_key}&base_currency=${baseCurrency}&currencies=${targetCurrency}`,
+          `https://api.currencyapi.com/v3/latest?apikey=${api_key}&base_currency=${mapToSupportedCurrency(baseCurrency)}&currencies=${mapToSupportedCurrency(targetCurrency)}`,
           {
             headers: {
               'Content-Type': 'application/json',
