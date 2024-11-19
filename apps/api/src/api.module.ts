@@ -6,10 +6,13 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
   EVENTS_SERVICE_BUS,
   LoggerModule,
+  NOSTR_PACKAGE_NAME,
+  NOSTR_SERVICE_NAME,
   SWAP_PACKAGE_NAME,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
 import { SwapController, SwapService } from './swap';
+import { NostrController, NostrService } from './nostr';
 
 @Module({
   imports: [
@@ -38,6 +41,18 @@ import { SwapController, SwapService } from './swap';
         inject: [ConfigService],
       },
       {
+        name: NOSTR_SERVICE_NAME,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: NOSTR_PACKAGE_NAME,
+            protoPath: join(__dirname, '../../../proto/nostr.proto'),
+            url: configService.getOrThrow<string>('NOSTR_GRPC_URL'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
@@ -50,7 +65,7 @@ import { SwapController, SwapService } from './swap';
       },
     ]),
   ],
-  controllers: [SwapController],
-  providers: [SwapService],
+  controllers: [SwapController, NostrController],
+  providers: [SwapService, NostrService],
 })
 export class ApiModule {}

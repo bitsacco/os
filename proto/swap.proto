@@ -26,9 +26,6 @@ service SwapService {
   rpc ListOfframpSwaps (PaginatedRequest) returns (PaginatedSwapResponse) {}
 }
 
-// Empty: Represents an empty message.
-message Empty {}
-
 // QuoteRequest: Represents a request for a currency swap quote.
 message QuoteRequest {
   // Currency to swap from

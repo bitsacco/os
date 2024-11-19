@@ -38,6 +38,28 @@ services:
     volumes:
       - .:/usr/src/app
 
+  nostr:
+    container_name: nostr
+    build:
+      context: .
+      dockerfile: ./apps/nostr/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev nostr"
+      ]
+    restart: always
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - ./apps/nostr/.env
+    ports:
+      - '4050:4050'
+    volumes:
+      - .:/usr/src/app
+
   mongodb:
     image: mongo:7.0-jammy
     container_name: mongodb

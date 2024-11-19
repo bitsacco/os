@@ -5,7 +5,9 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "assets": ["**/*.proto"],
+    "assets": [
+      "**/*.proto"
+    ],
     "watchAssets": true
   },
   "projects": {
@@ -34,6 +36,15 @@
       "sourceRoot": "apps/swap/src",
       "compilerOptions": {
         "tsConfigPath": "apps/swap/tsconfig.app.json"
+      }
+    },
+    "nostr": {
+      "type": "application",
+      "root": "apps/nostr",
+      "entryFile": "main",
+      "sourceRoot": "apps/nostr/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/nostr/tsconfig.app.json"
       }
     }
   },

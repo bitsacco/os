@@ -101,7 +101,10 @@ export class FxService {
     baseCurrency: Currency,
     targetCurrency: Currency,
   ) {
-    const rate = await this.getExchangeRate(mapToSupportedCurrency(baseCurrency), mapToSupportedCurrency(targetCurrency));
+    const rate = await this.getExchangeRate(
+      mapToSupportedCurrency(baseCurrency),
+      mapToSupportedCurrency(targetCurrency),
+    );
     return 1 / rate;
   }
 }
