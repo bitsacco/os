@@ -5,10 +5,10 @@ import {
   SupportedCurrencies,
 } from '@bitsacco/common';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
+import { ClientProxy } from '@nestjs/microservices';
 
 import { SwapController } from './swap.controller';
 import { SwapService } from './swap.service';
-import { ClientProxy } from '@nestjs/microservices';
 
 describe('SwapController', () => {
   let controller: SwapController;

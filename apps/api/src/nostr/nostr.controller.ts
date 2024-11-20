@@ -1,9 +1,7 @@
-import { ClientProxy } from '@nestjs/microservices';
 import { ApiOperation, ApiBody } from '@nestjs/swagger';
-import { Body, Controller, Inject, Logger, Post } from '@nestjs/common';
+import { Body, Controller, Logger, Post } from '@nestjs/common';
 import {
   ConfigureNostrRelaysDto,
-  EVENTS_SERVICE_BUS,
   SendEncryptedNostrDmDto,
 } from '@bitsacco/common';
 import { NostrService } from './nostr.service';
@@ -12,10 +10,7 @@ import { NostrService } from './nostr.service';
 export class NostrController {
   private readonly logger = new Logger(NostrController.name);
 
-  constructor(
-    private readonly nostrService: NostrService,
-    @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
-  ) {
+  constructor(private readonly nostrService: NostrService) {
     this.logger.log('NostrController initialized');
   }
 
