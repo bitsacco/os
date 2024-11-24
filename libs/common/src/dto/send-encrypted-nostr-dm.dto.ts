@@ -20,7 +20,7 @@ class NostrRecipientDto implements NostrRecipient {
   @IsOptional()
   @IsString()
   @Type(() => String)
-  @ApiProperty()
+  @ApiProperty({ example: '' })
   pubkey: string;
 }
 
@@ -28,7 +28,7 @@ export class SendEncryptedNostrDmDto implements NostrDirectMessageRequest {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  @ApiProperty()
+  @ApiProperty({ example: 'hello bitsacco'})
   message: string;
 
   @IsDefined()

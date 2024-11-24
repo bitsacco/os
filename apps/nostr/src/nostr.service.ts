@@ -1,6 +1,7 @@
 import NDK, {
   NDKEvent,
   NDKPrivateKeySigner,
+  NDKRelay,
   NDKUser,
 } from '@nostr-dev-kit/ndk';
 import { nip19 } from 'nostr-tools';
@@ -16,6 +17,9 @@ const explicitRelayUrls = [
   'wss://relay.damus.io',
   'wss://relay.nostr.bg',
   'wss://relay.snort.social',
+  'wss://nostr.mom',
+  'wss://nos.lol',
+  'wss://relay.nostr.bg'
 ];
 
 @Injectable()
@@ -35,6 +39,15 @@ export class NostrService {
     this.ndk = new NDK({
       explicitRelayUrls,
       signer,
+    });
+
+
+    this.ndk.pool.on('relay:connect', (relay: NDKRelay) => {
+      this.logger.log(`Connected to relay: ${relay.url}`);
+    });
+
+    this.ndk.pool.on('relay:disconnect', (relay: NDKRelay) => {
+      this.logger.warn(`Disconnected from relay: ${relay.url}`);
     });
 
     this.connectRelays()
@@ -107,7 +120,7 @@ export class NostrService {
   async sendEncryptedDirectMessage({
     message,
     recipient,
-    retry,
+    retry = true,
   }: SendEncryptedNostrDmDto): Promise<void> {
     try {
       if (!this.connected) {
@@ -115,6 +128,10 @@ export class NostrService {
       }
 
       const receiver = this.parseRecipient(recipient) || this.pubkey;
+
+      this.logger.log(
+        `${this.ndk.pool.connectedRelays().length} relays connected`,
+      );
 
       const dm = new NDKEvent(this.ndk, {
         kind: 4,
