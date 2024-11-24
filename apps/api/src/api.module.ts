@@ -24,6 +24,8 @@ import { SmsController } from './sms/sms.controller';
         PORT: Joi.string().required(),
         NODE_ENV: Joi.string().required(),
         SWAP_GRPC_URL: Joi.string().required(),
+        NOSTR_GRPC_URL: Joi.string().required(),
+        SMS_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
       }),
