@@ -83,10 +83,9 @@ export class NostrService {
   }
 
   private parseRecipient(recipient: NostrRecipient): string {
-    let target: string = '';
     if (!recipient) {
       this.logger.log(`Recipient undefined. Notifying self`);
-      target = this.pubkey;
+      return this.pubkey;
     }
 
     const { npub, pubkey } = recipient;
@@ -95,15 +94,14 @@ export class NostrService {
     if (npub && npub.startsWith('npub')) {
       const { type, data } = nip19.decode(npub);
       if (type === 'npub') {
-        target = data as string;
+        return data as string;
       }
     }
 
     if (pubkey) {
       // todo: validate pubkey
-      target = pubkey;
+      return pubkey;
     }
-    return target;
   }
 
   async sendEncryptedDirectMessage({

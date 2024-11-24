@@ -14,7 +14,7 @@ class NostrRecipientDto implements NostrRecipient {
   @IsOptional()
   @IsString()
   @Type(() => String)
-  @ApiProperty()
+  @ApiProperty({ example: 'npub17k76drpaeaungjltz9zlrr89ua0rlawgzs8fasaar49w0mnytrssgtk09g' })
   npub: string;
 
   @IsOptional()
