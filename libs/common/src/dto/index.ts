@@ -7,3 +7,4 @@ export * from './quote.dto';
 // nostr
 export * from './configure-nostr-relays.dto';
 export * from './send-encrypted-nostr-dm.dto';
+export * from './sms.dto';

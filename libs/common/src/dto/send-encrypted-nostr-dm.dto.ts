@@ -14,7 +14,9 @@ class NostrRecipientDto implements NostrRecipient {
   @IsOptional()
   @IsString()
   @Type(() => String)
-  @ApiProperty({ example: 'npub17k76drpaeaungjltz9zlrr89ua0rlawgzs8fasaar49w0mnytrssgtk09g' })
+  @ApiProperty({
+    example: 'npub17k76drpaeaungjltz9zlrr89ua0rlawgzs8fasaar49w0mnytrssgtk09g',
+  })
   npub: string;
 
   @IsOptional()
@@ -28,7 +30,7 @@ export class SendEncryptedNostrDmDto implements NostrDirectMessageRequest {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  @ApiProperty({ example: 'hello bitsacco'})
+  @ApiProperty({ example: 'hello bitsacco' })
   message: string;
 
   @IsDefined()

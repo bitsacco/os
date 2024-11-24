@@ -19,7 +19,7 @@ const explicitRelayUrls = [
   'wss://relay.snort.social',
   'wss://nostr.mom',
   'wss://nos.lol',
-  'wss://relay.nostr.bg'
+  'wss://relay.nostr.bg',
 ];
 
 @Injectable()
@@ -40,7 +40,6 @@ export class NostrService {
       explicitRelayUrls,
       signer,
     });
-
 
     this.ndk.pool.on('relay:connect', (relay: NDKRelay) => {
       this.logger.log(`Connected to relay: ${relay.url}`);

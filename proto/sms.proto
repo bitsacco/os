@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+import "lib.proto";
+
+package sms;
+
+service SmsService {
+  rpc SendSms (SendSmsRequest) returns (lib.Empty) {}
+
+  rpc SendBulkSms (SendBulkSmsRequest) returns (lib.Empty) {}
+}
+
+message SendSmsRequest {
+  string message = 1;
+
+  string receiver = 2;
+}
+
+message SendBulkSmsRequest {
+  string message = 1;
+
+  repeated string receivers = 2;
+}

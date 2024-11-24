@@ -6,13 +6,14 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
   EVENTS_SERVICE_BUS,
   LoggerModule,
-  NOSTR_PACKAGE_NAME,
   NOSTR_SERVICE_NAME,
-  SWAP_PACKAGE_NAME,
+  SMS_SERVICE_NAME,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
 import { SwapController, SwapService } from './swap';
 import { NostrController, NostrService } from './nostr';
+import { SmsService } from './sms/sms.service';
+import { SmsController } from './sms/sms.controller';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { NostrController, NostrService } from './nostr';
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
           options: {
-            package: SWAP_PACKAGE_NAME,
+            package: 'swap',
             protoPath: join(__dirname, '../../../proto/swap.proto'),
             url: configService.getOrThrow<string>('SWAP_GRPC_URL'),
           },
@@ -45,9 +46,21 @@ import { NostrController, NostrService } from './nostr';
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
           options: {
-            package: NOSTR_PACKAGE_NAME,
+            package: 'nostr',
             protoPath: join(__dirname, '../../../proto/nostr.proto'),
             url: configService.getOrThrow<string>('NOSTR_GRPC_URL'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: SMS_SERVICE_NAME,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'sms',
+            protoPath: join(__dirname, '../../../proto/sms.proto'),
+            url: configService.getOrThrow<string>('SMS_GRPC_URL'),
           },
         }),
         inject: [ConfigService],
@@ -65,7 +78,7 @@ import { NostrController, NostrService } from './nostr';
       },
     ]),
   ],
-  controllers: [SwapController, NostrController],
-  providers: [SwapService, NostrService],
+  controllers: [SwapController, NostrController, SmsController],
+  providers: [SwapService, NostrService, SmsService],
 })
 export class ApiModule {}

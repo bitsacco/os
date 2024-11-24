@@ -1,32 +1,32 @@
 import { TestingModule } from '@nestjs/testing';
-import { NostrServiceClient } from '@bitsacco/common';
+import { SmsServiceClient } from '@bitsacco/common';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { ClientGrpc } from '@nestjs/microservices';
-import { NostrService } from './nostr.service';
+import { SmsService } from './sms.service';
 
-describe('NostrService', () => {
-  let service: NostrService;
+describe('SmsService', () => {
+  let service: SmsService;
   let serviceGenerator: ClientGrpc;
-  let mockNostrServiceClient: Partial<NostrServiceClient>;
+  let mockSmsServiceClient: Partial<SmsServiceClient>;
 
   beforeEach(async () => {
     serviceGenerator = {
-      getService: jest.fn().mockReturnValue(mockNostrServiceClient),
-      getClientByServiceName: jest.fn().mockReturnValue(mockNostrServiceClient),
+      getService: jest.fn().mockReturnValue(mockSmsServiceClient),
+      getClientByServiceName: jest.fn().mockReturnValue(mockSmsServiceClient),
     };
 
     const module: TestingModule = await createTestingModuleWithValidation({
       providers: [
         {
-          provide: NostrService,
+          provide: SmsService,
           useFactory: () => {
-            return new NostrService(serviceGenerator);
+            return new SmsService(serviceGenerator);
           },
         },
       ],
     });
 
-    service = module.get<NostrService>(NostrService);
+    service = module.get<SmsService>(SmsService);
   });
 
   it('should be defined', () => {

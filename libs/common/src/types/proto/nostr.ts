@@ -7,8 +7,7 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
-
-export interface Empty {}
+import { Empty } from './lib';
 
 export interface ConfigureNostrRelaysRequest {
   relays: NostrRelay[];
@@ -30,8 +29,6 @@ export interface NostrRelay {
   read: boolean;
   write: boolean;
 }
-
-export const NOSTR_PACKAGE_NAME = 'nostr';
 
 export interface NostrServiceClient {
   configureTrustedNostrRelays(

@@ -8,8 +8,6 @@
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 
-export const protobufPackage = 'swap';
-
 /** Currency: Enum representing supported currencies. */
 export enum Currency {
   BTC = 0,
@@ -185,8 +183,6 @@ export interface SwapResponse {
   createdAt: string;
   updatedAt?: string | undefined;
 }
-
-export const SWAP_PACKAGE_NAME = 'swap';
 
 /** SwapService: Defines the main service for handling swap operations. */
 

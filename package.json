@@ -14,6 +14,7 @@
     "build:api": "bun run build api",
     "build:swap": "bun run build swap",
     "build:nostr": "bun run build nostr",
+    "build:sms": "bun run build sms",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
     "lint": "bun run eslint \"{apps,libs,test}/**/*.ts\" --fix",
     "test": "bun test",
@@ -21,7 +22,7 @@
     "test:cov": "bun test --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "bun test apps/api/test/ --config ./apps/api/test/jest-e2e.json",
-    "proto:gen": "protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/common/src/types/proto --ts_proto_opt=nestJs=true --ts_proto_opt=eslint_disable -I ./proto ./proto/*.proto",
+    "proto:gen": "protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/common/src/types/proto --ts_proto_opt=nestJs=true --ts_proto_opt=exportCommonSymbols=false --ts_proto_opt=eslint_disable -I ./proto ./proto/*.proto",
     "proto:clean": "rm ./libs/common/src/types/proto/*.ts"
   },
   "dependencies": {
@@ -40,6 +41,7 @@
     "@nestjs/sequelize": "^10.0.1",
     "@nestjs/swagger": "^7.4.2",
     "@nostr-dev-kit/ndk": "^2.10.6",
+    "africastalking": "^0.7.0",
     "cache-manager": "4.1.0",
     "cache-manager-redis-store": "^3.0.1",
     "class-transformer": "^0.5.1",

@@ -60,6 +60,28 @@ services:
     volumes:
       - .:/usr/src/app
 
+  sms:
+    container_name: sms
+    build:
+      context: .
+      dockerfile: ./apps/sms/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev sms"
+      ]
+    restart: always
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - ./apps/sms/.env
+    ports:
+      - '4060:4060'
+    volumes:
+      - .:/usr/src/app
+
   mongodb:
     image: mongo:7.0-jammy
     container_name: mongodb
