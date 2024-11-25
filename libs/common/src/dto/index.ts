@@ -8,3 +8,4 @@ export * from './quote.dto';
 export * from './configure-nostr-relays.dto';
 export * from './send-encrypted-nostr-dm.dto';
 export * from './sms.dto';
+export * from './shares.dto';

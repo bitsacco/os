@@ -55,6 +55,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/sms/tsconfig.app.json"
       }
+    },
+    "shares": {
+      "type": "application",
+      "root": "apps/shares",
+      "entryFile": "main",
+      "sourceRoot": "apps/shares/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/shares/tsconfig.app.json"
+      }
     }
   },
   "monorepo": true,
