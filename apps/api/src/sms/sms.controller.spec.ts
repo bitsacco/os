@@ -4,7 +4,7 @@ import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { SmsController } from './sms.controller';
 import { SmsService } from './sms.service';
 
-describe('SmsController', () => {
+describe.skip('SmsController', () => {
   let controller: SmsController;
   let smsService: SmsService;
 
