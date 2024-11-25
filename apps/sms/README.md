@@ -5,7 +5,7 @@ This is a passthrough sms sender using africastalking APIs.
 
 ## Dev
 
-Run `bun dev nossmstr` to launch the microservice in development mode.
+Run `bun dev sms` to launch the microservice in development mode.
 Run `bun start` to launch this plus any other microservice and the REST api gateway in dev mode 
 
 ## Docs

@@ -82,6 +82,28 @@ services:
     volumes:
       - .:/usr/src/app
 
+  shares:
+    container_name: shares
+    build:
+      context: .
+      dockerfile: ./apps/shares/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev shares"
+      ]
+    restart: always
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - ./apps/shares/.env
+    ports:
+      - '4070:4070'
+    volumes:
+      - .:/usr/src/app
+
   mongodb:
     image: mongo:7.0-jammy
     container_name: mongodb

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+import "lib.proto";
+
+package shares;
+
+service SharesService {
+  rpc BuyShares(BuySharesRequest) returns (BuySharesResponse);
+}
+
+message BuySharesRequest {
+  string user_id = 1;
+  int32 quantity = 3;
+}
+
+message BuySharesResponse {
+  bool success = 1;
+  string message = 2;
+  double total_cost = 3;
+}
