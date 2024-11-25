@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsString, IsNotEmpty } from 'class-validator';
-import { SendBulkSmsRequest, type SendSmsRequest } from '@bitsacco/common';
+import { SendBulkSmsRequest, SendSmsRequest } from '@bitsacco/common';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SendSmsDto implements SendSmsRequest {

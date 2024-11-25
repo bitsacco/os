@@ -7,6 +7,7 @@ import {
   EVENTS_SERVICE_BUS,
   LoggerModule,
   NOSTR_SERVICE_NAME,
+  SHARES_SERVICE_NAME,
   SMS_SERVICE_NAME,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
@@ -14,6 +15,8 @@ import { SwapController, SwapService } from './swap';
 import { NostrController, NostrService } from './nostr';
 import { SmsService } from './sms/sms.service';
 import { SmsController } from './sms/sms.controller';
+import { SharesService } from './shares/shares.service';
+import { SharesController } from './shares/shares.controller';
 
 @Module({
   imports: [
@@ -68,6 +71,18 @@ import { SmsController } from './sms/sms.controller';
         inject: [ConfigService],
       },
       {
+        name: SHARES_SERVICE_NAME,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'shares',
+            protoPath: join(__dirname, '../../../proto/shares.proto'),
+            url: configService.getOrThrow<string>('SHARES_GRPC_URL'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
@@ -80,7 +95,12 @@ import { SmsController } from './sms/sms.controller';
       },
     ]),
   ],
-  controllers: [SwapController, NostrController, SmsController],
-  providers: [SwapService, NostrService, SmsService],
+  controllers: [
+    SwapController,
+    NostrController,
+    SmsController,
+    SharesController,
+  ],
+  providers: [SwapService, NostrService, SmsService, SharesService],
 })
 export class ApiModule {}
