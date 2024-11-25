@@ -1,7 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { SchemaTypes } from 'mongoose';
 import { Prop, Schema } from '@nestjs/mongoose';
-import { UUID } from 'crypto';
 
 @Schema()
 export class AbstractDocument {
