@@ -5,7 +5,7 @@ import "lib.proto";
 package shares;
 
 service SharesService {
-  rpc BuyShares(BuySharesRequest) returns (BuySharesResponse);
+  rpc BuyShares(BuySharesRequest) returns (ShareDetailResponse);
 }
 
 message BuySharesRequest {
@@ -13,8 +13,15 @@ message BuySharesRequest {
   int32 quantity = 3;
 }
 
-message BuySharesResponse {
-  bool success = 1;
-  string message = 2;
-  double total_cost = 3;
+message ShareDetailResponse {
+  string user_id = 1;
+  int32 total_shares = 2;
+  repeated ShareDetails shares = 3;
+}
+
+message ShareDetails {
+  // Number of shared purchased
+  int32 quantity = 1;
+  // Unix timestamp for when the shares were purchased
+  int64 purchasedAtUnix = 3;
 }

@@ -13,23 +13,30 @@ export interface BuySharesRequest {
   quantity: number;
 }
 
-export interface BuySharesResponse {
-  success: boolean;
-  message: string;
-  totalCost: number;
+export interface ShareDetailResponse {
+  userId: string;
+  totalShares: number;
+  shares: ShareDetails[];
+}
+
+export interface ShareDetails {
+  /** Number of shared purchased */
+  quantity: number;
+  /** Unix timestamp for when the shares were purchased */
+  purchasedAtUnix: number;
 }
 
 export interface SharesServiceClient {
-  buyShares(request: BuySharesRequest): Observable<BuySharesResponse>;
+  buyShares(request: BuySharesRequest): Observable<ShareDetailResponse>;
 }
 
 export interface SharesServiceController {
   buyShares(
     request: BuySharesRequest,
   ):
-    | Promise<BuySharesResponse>
-    | Observable<BuySharesResponse>
-    | BuySharesResponse;
+    | Promise<ShareDetailResponse>
+    | Observable<ShareDetailResponse>
+    | ShareDetailResponse;
 }
 
 export function SharesServiceControllerMethods() {

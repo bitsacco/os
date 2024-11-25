@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { BuySharesDto } from '@bitsacco/common';
+import { BuySharesDto, ShareDetailResponse } from '@bitsacco/common';
 
 @Injectable()
 export class SharesService {
@@ -9,7 +9,23 @@ export class SharesService {
     this.logger.log('SharesService created');
   }
 
-  async buyShares({ userId, quantity }: BuySharesDto): Promise<void> {
+  async buyShares({
+    userId,
+    quantity,
+  }: BuySharesDto): Promise<ShareDetailResponse> {
     this.logger.debug(`Buying ${quantity} Bitsacco shares for ${userId}`);
+
+    const res: ShareDetailResponse = {
+      userId,
+      totalShares: quantity,
+      shares: [
+        {
+          quantity,
+          purchasedAtUnix: new Date().getTime(),
+        },
+      ],
+    };
+
+    return Promise.resolve(res);
   }
 }

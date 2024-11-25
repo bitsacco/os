@@ -16,7 +16,7 @@ export class SharesController {
   @ApiBody({
     type: BuySharesDto,
   })
-  send(@Body() req: BuySharesDto) {
+  buyShares(@Body() req: BuySharesDto) {
     return this.sharesService.buyShares(req);
   }
 }
