@@ -1,4 +1,4 @@
-import africastalking from 'africastalking';
+import * as africastalking from 'africastalking';
 import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger } from '@nestjs/common';
 import { SendBulkSmsDto, SendSmsDto } from '@bitsacco/common';
