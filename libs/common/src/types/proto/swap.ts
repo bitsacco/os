@@ -7,6 +7,7 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
+import { Bolt11 } from './lightning';
 
 /** Currency: Enum representing supported currencies. */
 export enum Currency {
@@ -134,11 +135,6 @@ export interface OfframpSwapTarget {
 export interface MobileMoney {
   /** Phone number for the mobile money offramp */
   phone: string;
-}
-
-export interface Bolt11 {
-  /** Bolt11 lightning invoice */
-  invoice: string;
 }
 
 /** FindSwapRequest: Represents a request to find a swap. */

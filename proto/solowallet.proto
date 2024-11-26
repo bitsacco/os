@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+import "swap.proto";
+
+package solowallet;
+
+service SolowalletService {
+  rpc DepositFunds(DepositFundsRequest) returns (WalletDetailsResonse){}
+}
+
+message DepositFundsRequest {
+  string user_id = 1;
+
+  optional swap.OnrampSwapRequest fiat_deposit = 2;
+
+  // Add more otional funding sources, like direct lightning deposit
+}
+
+message WalletDetailsResonse {
+  string user_id = 1;
+}

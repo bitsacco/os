@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "lightning.proto";
+
 package swap;
 
 // SwapService: Defines the main service for handling swap operations.
@@ -106,7 +108,7 @@ message OnrampSwapSource {
 
 message OnrampSwapTarget {
   // Lightning protocol payout
-  Bolt11 payout = 2;
+  lightning.Bolt11 payout = 2;
 }
 
 message OfframpSwapRequest {
@@ -136,11 +138,6 @@ message OfframpSwapTarget {
 message MobileMoney {
   // Phone number for the mobile money offramp
   string phone = 1;
-}
-
-message Bolt11 {
-  // Bolt11 lightning invoice
-  string invoice = 1;
 }
 
 // FindSwapRequest: Represents a request to find a swap.

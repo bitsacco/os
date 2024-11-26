@@ -64,6 +64,15 @@
       "compilerOptions": {
         "tsConfigPath": "apps/shares/tsconfig.app.json"
       }
+    },
+    "solowallet": {
+      "type": "application",
+      "root": "apps/solowallet",
+      "entryFile": "main",
+      "sourceRoot": "apps/solowallet/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/solowallet/tsconfig.app.json"
+      }
     }
   },
   "monorepo": true,

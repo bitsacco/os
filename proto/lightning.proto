@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package lightning;
+
+message Bolt11 {
+  // Bolt11 lightning invoice
+  string invoice = 1;
+}
