@@ -30,6 +30,8 @@ async function bootstrap() {
 
   setupOpenAPI(app, 'docs');
 
+  setupCORS(app);
+
   app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
   await app.listen(process.env.PORT ?? 4000);
@@ -54,5 +56,31 @@ function setupOpenAPI(app: INestApplication, path: string) {
     useGlobalPrefix: true,
     jsonDocumentUrl: `${path}/json`,
     yamlDocumentUrl: `${path}/yaml`,
+  });
+}
+
+function setupCORS(app: INestApplication) {
+  const allowedOrigins = [
+    'https://bitsacco.com',
+    'http://localhost:*',
+    'http://127.0.0.1:*',
+    'http://0.0.0.0:*'
+  ]
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(new Error('CORS error null origin'), origin);
+      }
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(new Error('Blocked by CORS'), origin);
+      } else {
+        callback(null, origin);
+      }
+    },
+    methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+    credentials: true,
+    allowedHeaders: 'Content-Type, Accept, Authorization',
+    exposedHeaders: 'X-Session-Id',
   });
 }
