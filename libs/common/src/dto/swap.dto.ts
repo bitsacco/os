@@ -8,6 +8,7 @@ import {
   ValidateNested,
   IsNumber,
   Min,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -22,10 +23,36 @@ import {
   OfframpSwapRequest,
   OfframpSwapTarget,
   PaginatedRequest,
+  MobileMoney,
+  Bolt11,
 } from '../types';
-import { Bolt11InvoiceDto, MobileMoneyDto } from './payments.dto';
 import { TransformToCurrency } from './transforms';
-import { QuoteDto } from './quote.dto';
+
+export class QuoteDto {
+  @IsString()
+  @Type(() => String)
+  @ApiProperty()
+  id: string;
+
+  @IsBoolean()
+  @Type(() => Boolean)
+  @ApiProperty()
+  refreshIfExpired: boolean;
+}
+
+export class MobileMoneyDto implements MobileMoney {
+  @IsString()
+  @Type(() => String)
+  @ApiProperty()
+  phone: string;
+}
+
+export class Bolt11InvoiceDto implements Bolt11 {
+  @IsString()
+  @Type(() => String)
+  @ApiProperty()
+  invoice: string;
+}
 
 class OnrampSwapSourceDto implements OnrampSwapSource {
   @IsEnum(Currency)
@@ -80,7 +107,6 @@ export class CreateOnrampSwapDto implements OnrampSwapRequest {
   @ApiProperty({ type: OnrampSwapTargetDto })
   target: OnrampSwapTargetDto;
 }
-
 
 class OfframpSwapTargetDto implements OfframpSwapTarget {
   @IsEnum(Currency)

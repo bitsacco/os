@@ -9,7 +9,12 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { ConfigureNostrRelaysRequest, NostrDirectMessageRequest, NostrRecipient, NostrRelay } from '../types';
+import {
+  ConfigureNostrRelaysRequest,
+  NostrDirectMessageRequest,
+  NostrRecipient,
+  NostrRelay,
+} from '../types';
 
 class NostrRecipientDto implements NostrRecipient {
   @IsOptional()

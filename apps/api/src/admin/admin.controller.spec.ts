@@ -19,12 +19,12 @@ describe('AdminController', () => {
                 hasShares: false,
               },
               swapStatus: {
-                isRunning: true
-              }
-            })
-          }
-        }
-      ]
+                isRunning: true,
+              },
+            }),
+          },
+        },
+      ],
     });
 
     controller = module.get<AdminController>(AdminController);

@@ -6,11 +6,11 @@ export class AdminService {
   async getStatus(): Promise<BitsaccoStatus> {
     return {
       memberStatus: {
-        hasShares: false
+        hasShares: false,
       },
       swapStatus: {
-        isRunning: true
+        isRunning: true,
       },
-    }
+    };
   }
 }

@@ -6,9 +6,7 @@ import { AdminService } from './admin.service';
 export class AdminController {
   private readonly logger = new Logger(AdminController.name);
 
-  constructor(
-    private readonly adminService: AdminService,
-  ) {
+  constructor(private readonly adminService: AdminService) {
     this.logger.log('AdminController initialized');
   }
 

@@ -104,6 +104,12 @@ import { AdminService } from './admin/admin.service';
     SmsController,
     SharesController,
   ],
-  providers: [SwapService, NostrService, SmsService, SharesService, AdminService],
+  providers: [
+    SwapService,
+    NostrService,
+    SmsService,
+    SharesService,
+    AdminService,
+  ],
 })
 export class ApiModule {}

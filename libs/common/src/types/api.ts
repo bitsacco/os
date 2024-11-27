@@ -20,7 +20,7 @@ interface MemberStatus {
 }
 
 interface ServiceStatus {
-  isRunning: boolean
+  isRunning: boolean;
 }
 
 export interface BitsaccoStatus {
