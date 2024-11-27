@@ -5,10 +5,11 @@ import {
   IsDefined,
   ValidateNested,
   IsOptional,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { NostrDirectMessageRequest, NostrRecipient } from '../types';
+import { ConfigureNostrRelaysRequest, NostrDirectMessageRequest, NostrRecipient, NostrRelay } from '../types';
 
 class NostrRecipientDto implements NostrRecipient {
   @IsOptional()
@@ -43,4 +44,33 @@ export class SendEncryptedNostrDmDto implements NostrDirectMessageRequest {
   @Type(() => Boolean)
   @ApiProperty()
   retry: boolean;
+}
+
+class NostrRelayDto implements NostrRelay {
+  @IsNotEmpty()
+  @IsString()
+  @Matches(/^wss?:\/\/.+/, {
+    message: 'Socket must be a valid WebSocket URL (ws:// or wss://)',
+  })
+  @Type(() => String)
+  @ApiProperty()
+  socket: string;
+
+  @IsBoolean()
+  @Type(() => Boolean)
+  @ApiProperty()
+  read: boolean;
+
+  @IsBoolean()
+  @Type(() => Boolean)
+  @ApiProperty()
+  write: boolean;
+}
+
+export class ConfigureNostrRelaysDto implements ConfigureNostrRelaysRequest {
+  @IsDefined()
+  @ValidateNested({ each: true })
+  @Type(() => NostrRelayDto)
+  @ApiProperty({ type: [NostrRelayDto] })
+  relays: NostrRelayDto[];
 }
