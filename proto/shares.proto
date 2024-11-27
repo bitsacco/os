@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "lib.proto";
+
 package shares;
 
 service SharesService {
