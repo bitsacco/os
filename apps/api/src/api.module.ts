@@ -17,6 +17,8 @@ import { SmsService } from './sms/sms.service';
 import { SmsController } from './sms/sms.controller';
 import { SharesService } from './shares/shares.service';
 import { SharesController } from './shares/shares.controller';
+import { AdminController } from './admin/admin.controller';
+import { AdminService } from './admin/admin.service';
 
 @Module({
   imports: [
@@ -96,11 +98,12 @@ import { SharesController } from './shares/shares.controller';
     ]),
   ],
   controllers: [
+    AdminController,
     SwapController,
     NostrController,
     SmsController,
     SharesController,
   ],
-  providers: [SwapService, NostrService, SmsService, SharesService],
+  providers: [SwapService, NostrService, SmsService, SharesService, AdminService],
 })
 export class ApiModule {}

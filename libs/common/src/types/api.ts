@@ -14,3 +14,16 @@ export interface OnrampQuoteRequest {
   to: SupportedCurrencyType;
   amount?: string;
 }
+
+interface MemberStatus {
+  hasShares: boolean;
+}
+
+interface ServiceStatus {
+  isRunning: boolean
+}
+
+export interface BitsaccoStatus {
+  memberStatus: MemberStatus;
+  swapStatus: ServiceStatus;
+}
