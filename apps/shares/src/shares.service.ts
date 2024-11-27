@@ -1,12 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { BuySharesDto, ShareDetailResponse } from '@bitsacco/common';
+import {
+  BuySharesDto,
+  Empty,
+  ShareDetailResponse,
+  ShareSubscriptionResponse,
+} from '@bitsacco/common';
 import { SharesRepository } from './db';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class SharesService {
   private readonly logger = new Logger(SharesService.name);
 
-  constructor(private readonly shares: SharesRepository) {
+  constructor(
+    private readonly shares: SharesRepository,
+    private readonly configService: ConfigService,
+  ) {
     this.logger.log('SharesService created');
   }
 
@@ -22,7 +31,7 @@ export class SharesService {
     });
 
     const allShares = await this.shares.find({ userId });
-    const totalShares = allShares.reduce(
+    const shareHoldings = allShares.reduce(
       (sum, share) => sum + share.quantity,
       0,
     );
@@ -35,10 +44,36 @@ export class SharesService {
 
     const res: ShareDetailResponse = {
       userId,
-      totalShares,
+      shareHoldings,
       shares,
     };
 
     return Promise.resolve(res);
+  }
+
+  async getShareSubscrition(_: Empty): Promise<ShareSubscriptionResponse> {
+    let sharesIssued = this.configService.get<number>('SHARES_ISSUED') || 0;
+    let sharesSold = 0;
+
+    try {
+      sharesSold = await this.shares
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              totalShares: { $sum: { $sum: '$shareHoldings' } },
+            },
+          },
+        ])
+        .then((result) => result[0]?.totalShares || 0);
+    } catch (e) {
+      this.logger.log('Failed to aggregate shares sold');
+      sharesSold = sharesIssued;
+    }
+
+    return {
+      sharesIssued,
+      sharesSold,
+    };
   }
 }

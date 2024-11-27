@@ -13,6 +13,7 @@ import { SharesDocument, SharesRepository, SharesSchema } from './db';
       validationSchema: Joi.object({
         NODE_ENV: Joi.string().required(),
         SHARES_GRPC_URL: Joi.string().required(),
+        SHARES_ISSUED: Joi.number().required(),
         DATABASE_URL: Joi.string().required(),
       }),
     }),

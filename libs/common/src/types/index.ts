@@ -1,3 +1,4 @@
+export * from './proto/lib';
 export * from './proto/swap';
 export * from './proto/nostr';
 export * from './proto/sms';

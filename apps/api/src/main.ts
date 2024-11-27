@@ -64,8 +64,8 @@ function setupCORS(app: INestApplication) {
     'https://bitsacco.com',
     'http://localhost:*',
     'http://127.0.0.1:*',
-    'http://0.0.0.0:*'
-  ]
+    'http://0.0.0.0:*',
+  ];
 
   app.enableCors({
     origin: (origin, callback) => {

@@ -6,6 +6,7 @@ package shares;
 
 service SharesService {
   rpc BuyShares(BuySharesRequest) returns (ShareDetailResponse);
+  rpc GetShareSubscription(lib.Empty) returns (ShareSubscriptionResponse);
 }
 
 message BuySharesRequest {
@@ -15,7 +16,7 @@ message BuySharesRequest {
 
 message ShareDetailResponse {
   string user_id = 1;
-  int32 total_shares = 2;
+  int32 share_holdings = 2;
   repeated ShareDetails shares = 3;
 }
 
@@ -24,4 +25,11 @@ message ShareDetails {
   int32 quantity = 1;
   // Unix timestamp for when the shares were purchased
   int64 purchasedAtUnix = 3;
+}
+
+message ShareSubscriptionResponse {
+  // Total shares issued
+  int32 shares_issued = 1;
+  // Total shares subscribed
+  int32 shares_sold = 2;
 }

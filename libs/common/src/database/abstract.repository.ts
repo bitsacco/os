@@ -1,4 +1,10 @@
-import { FilterQuery, Model, Types, UpdateQuery } from 'mongoose';
+import {
+  FilterQuery,
+  Model,
+  PipelineStage,
+  Types,
+  UpdateQuery,
+} from 'mongoose';
 import { Logger, NotFoundException } from '@nestjs/common';
 import { AbstractDocument } from './abstract.schema';
 
@@ -53,5 +59,9 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     filterQuery: FilterQuery<TDocument>,
   ): Promise<TDocument> {
     return this.model.findOneAndDelete(filterQuery).lean<TDocument>(true);
+  }
+
+  async aggregate(pipeline: PipelineStage[]): Promise<any[]> {
+    return this.model.aggregate(pipeline);
   }
 }
