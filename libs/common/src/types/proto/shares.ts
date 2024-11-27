@@ -18,6 +18,7 @@ export interface ShareDetailResponse {
   userId: string;
   shareHoldings: number;
   shares: ShareDetails[];
+  shareSubscription: ShareSubscriptionResponse | undefined;
 }
 
 export interface ShareDetails {

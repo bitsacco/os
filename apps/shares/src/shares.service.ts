@@ -42,10 +42,13 @@ export class SharesService {
       }))
       .reverse();
 
+    const shareSubscription = await this.getShareSubscrition({});
+
     const res: ShareDetailResponse = {
       userId,
       shareHoldings,
       shares,
+      shareSubscription,
     };
 
     return Promise.resolve(res);
