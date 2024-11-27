@@ -69,14 +69,8 @@ function setupCORS(app: INestApplication) {
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin) {
-        callback(new Error('CORS error null origin'), origin);
-      }
-      if (allowedOrigins.indexOf(origin) !== -1) {
-        callback(new Error('Blocked by CORS'), origin);
-      } else {
-        callback(null, origin);
-      }
+      // TODO: Strict CORS origin check in production
+      callback(null, origin);
     },
     methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     credentials: true,
