@@ -17,6 +17,7 @@ export interface ShareDetailResponse {
   userId: string;
   totalShares: number;
   shares: ShareDetails[];
+  shareSubscription: ShareSubscriptionResponse | undefined;
 }
 
 export interface ShareDetails {

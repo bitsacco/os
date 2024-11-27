@@ -17,6 +17,7 @@ message ShareDetailResponse {
   string user_id = 1;
   int32 total_shares = 2;
   repeated ShareDetails shares = 3;
+  ShareSubscriptionResponse share_subscription = 4;
 }
 
 message ShareDetails {
