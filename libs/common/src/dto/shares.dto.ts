@@ -1,7 +1,15 @@
 import { Type } from 'class-transformer';
 import { IsString, IsNotEmpty, IsPositive, IsNumber } from 'class-validator';
-import { BuySharesRequest } from '@bitsacco/common';
+import { BuySharesRequest, GetShareDetailRequest } from '@bitsacco/common';
 import { ApiProperty } from '@nestjs/swagger';
+
+export class GetShareDetailDto implements GetShareDetailRequest {
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty()
+  userId: string;
+}
 
 export class BuySharesDto implements BuySharesRequest {
   @IsNotEmpty()

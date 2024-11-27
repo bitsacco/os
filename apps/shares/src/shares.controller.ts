@@ -3,6 +3,7 @@ import { GrpcMethod } from '@nestjs/microservices';
 import {
   BuySharesDto,
   type Empty,
+  GetShareDetailDto,
   SharesServiceControllerMethods,
 } from '@bitsacco/common';
 import { SharesService } from './shares.service';
@@ -11,6 +12,11 @@ import { SharesService } from './shares.service';
 @SharesServiceControllerMethods()
 export class SharesController {
   constructor(private readonly sharesService: SharesService) {}
+
+  @GrpcMethod()
+  getShareDetail(request: GetShareDetailDto) {
+    return this.sharesService.getShareDetail(request);
+  }
 
   @GrpcMethod()
   buyShares(request: BuySharesDto) {

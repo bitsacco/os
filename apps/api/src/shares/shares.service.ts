@@ -3,6 +3,7 @@ import {
   SHARES_SERVICE_NAME,
   BuySharesDto,
   Empty,
+  GetShareDetailDto,
 } from '@bitsacco/common';
 import { Inject, Injectable } from '@nestjs/common';
 import { type ClientGrpc } from '@nestjs/microservices';
@@ -16,6 +17,10 @@ export class SharesService {
   onModuleInit() {
     this.client =
       this.grpc.getService<SharesServiceClient>(SHARES_SERVICE_NAME);
+  }
+
+  getShareDetail(req: GetShareDetailDto) {
+    return this.client.getShareDetail(req);
   }
 
   buyShares(req: BuySharesDto) {

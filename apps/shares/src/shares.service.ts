@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   BuySharesDto,
   Empty,
+  GetShareDetailDto,
   ShareDetailResponse,
   ShareSubscriptionResponse,
 } from '@bitsacco/common';
@@ -19,17 +20,9 @@ export class SharesService {
     this.logger.log('SharesService created');
   }
 
-  async buyShares({
+  async getShareDetail({
     userId,
-    quantity,
-  }: BuySharesDto): Promise<ShareDetailResponse> {
-    this.logger.debug(`Buying ${quantity} Bitsacco shares for ${userId}`);
-
-    await this.shares.create({
-      userId,
-      quantity,
-    });
-
+  }: GetShareDetailDto): Promise<ShareDetailResponse> {
     const allShares = await this.shares.find({ userId });
     const shareHoldings = allShares.reduce(
       (sum, share) => sum + share.quantity,
@@ -52,6 +45,20 @@ export class SharesService {
     };
 
     return Promise.resolve(res);
+  }
+
+  async buyShares({
+    userId,
+    quantity,
+  }: BuySharesDto): Promise<ShareDetailResponse> {
+    this.logger.debug(`Buying ${quantity} Bitsacco shares for ${userId}`);
+
+    await this.shares.create({
+      userId,
+      quantity,
+    });
+
+    return this.getShareDetail({ userId });
   }
 
   async getShareSubscrition(_: Empty): Promise<ShareSubscriptionResponse> {

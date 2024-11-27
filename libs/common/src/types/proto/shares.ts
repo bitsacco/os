@@ -9,6 +9,10 @@ import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { Empty } from './lib';
 
+export interface GetShareDetailRequest {
+  userId: string;
+}
+
 export interface BuySharesRequest {
   userId: string;
   quantity: number;
@@ -36,12 +40,23 @@ export interface ShareSubscriptionResponse {
 }
 
 export interface SharesServiceClient {
+  getShareDetail(
+    request: GetShareDetailRequest,
+  ): Observable<ShareDetailResponse>;
+
   buyShares(request: BuySharesRequest): Observable<ShareDetailResponse>;
 
   getShareSubscription(request: Empty): Observable<ShareSubscriptionResponse>;
 }
 
 export interface SharesServiceController {
+  getShareDetail(
+    request: GetShareDetailRequest,
+  ):
+    | Promise<ShareDetailResponse>
+    | Observable<ShareDetailResponse>
+    | ShareDetailResponse;
+
   buyShares(
     request: BuySharesRequest,
   ):
@@ -59,7 +74,11 @@ export interface SharesServiceController {
 
 export function SharesServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ['buyShares', 'getShareSubscription'];
+    const grpcMethods: string[] = [
+      'getShareDetail',
+      'buyShares',
+      'getShareSubscription',
+    ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(
         constructor.prototype,

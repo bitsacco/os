@@ -5,8 +5,13 @@ import "lib.proto";
 package shares;
 
 service SharesService {
+  rpc GetShareDetail(GetShareDetailRequest) returns (ShareDetailResponse);
   rpc BuyShares(BuySharesRequest) returns (ShareDetailResponse);
   rpc GetShareSubscription(lib.Empty) returns (ShareSubscriptionResponse);
+}
+
+message GetShareDetailRequest {
+  string user_id = 1;
 }
 
 message BuySharesRequest {
