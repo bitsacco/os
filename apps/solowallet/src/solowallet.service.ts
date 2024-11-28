@@ -1,6 +1,10 @@
 import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger } from '@nestjs/common';
-import { DepositFundsRequestDto } from '@bitsacco/common';
+import {
+  DepositFundsRequestDto,
+  SolowalletDepositTransaction,
+  TransactionStatus,
+} from '@bitsacco/common';
 import { SolowalletRepository } from './db';
 
 @Injectable()
@@ -14,5 +18,26 @@ export class SolowalletService {
     this.logger.log('SharesService created');
   }
 
-  depositFunds({ userId, fiat_deposit }: DepositFundsRequestDto) {}
+  async depositFunds({
+    userId,
+    fiat_deposit,
+  }: DepositFundsRequestDto): Promise<SolowalletDepositTransaction> {
+    if (fiat_deposit) {
+      // initiate onramp swap
+    }
+
+    const deposit = await this.wallet.create({
+      userId,
+      amountMsats: 21,
+      status: TransactionStatus.PENDING,
+      reference: '123456789',
+    });
+
+    return {
+      ...deposit,
+      id: deposit._id,
+      createdAt: deposit.createdAt.toDateString(),
+      updatedAt: deposit.updatedAt.toDateString(),
+    };
+  }
 }

@@ -3,3 +3,11 @@ syntax = "proto3";
 package lib;
 
 message Empty {}
+
+// TransactionStatus: Enum representing the possible statuses of a transaction.
+enum TransactionStatus {
+  PENDING = 0;
+  PROCESSING = 1;
+  FAILED = 2;
+  COMPLETE = 3;
+}

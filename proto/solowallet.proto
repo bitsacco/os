@@ -1,11 +1,12 @@
 syntax = "proto3";
 
+import "lib.proto";
 import "swap.proto";
 
 package solowallet;
 
 service SolowalletService {
-  rpc DepositFunds(DepositFundsRequest) returns (WalletDetailsResonse){}
+  rpc DepositFunds(DepositFundsRequest) returns (SolowalletDepositTransaction){}
 }
 
 message DepositFundsRequest {
@@ -16,6 +17,18 @@ message DepositFundsRequest {
   // Add more otional funding sources, like direct lightning deposit
 }
 
-message WalletDetailsResonse {
-  string user_id = 1;
+message SolowalletDepositTransaction {
+  string id = 1;
+
+  string user_id = 2;
+
+  int32 amount_msats = 3;
+
+  lib.TransactionStatus status = 4;
+
+  string reference = 5;
+
+  string createdAt = 6;
+
+  optional string updatedAt = 7;
 }

@@ -5,11 +5,11 @@ import {
   Empty,
   GetShareDetailDto,
 } from '@bitsacco/common';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 
 @Injectable()
-export class SharesService {
+export class SharesService implements OnModuleInit {
   private client: SharesServiceClient;
 
   constructor(@Inject(SHARES_SERVICE_NAME) private readonly grpc: ClientGrpc) {}

@@ -6,4 +6,13 @@
 
 /* eslint-disable */
 
+/** TransactionStatus: Enum representing the possible statuses of a transaction. */
+export enum TransactionStatus {
+  PENDING = 0,
+  PROCESSING = 1,
+  FAILED = 2,
+  COMPLETE = 3,
+  UNRECOGNIZED = -1,
+}
+
 export interface Empty {}

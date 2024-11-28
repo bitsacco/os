@@ -9,6 +9,7 @@ import {
   NOSTR_SERVICE_NAME,
   SHARES_SERVICE_NAME,
   SMS_SERVICE_NAME,
+  SOLOWALLET_SERVICE_NAME,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
 import { SwapController, SwapService } from './swap';
@@ -19,6 +20,8 @@ import { SharesService } from './shares/shares.service';
 import { SharesController } from './shares/shares.controller';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
+import { SolowalletService } from './solowallet/solowallet.service';
+import { SolowalletController } from './solowallet/solowallet.controller';
 
 @Module({
   imports: [
@@ -31,6 +34,8 @@ import { AdminService } from './admin/admin.service';
         SWAP_GRPC_URL: Joi.string().required(),
         NOSTR_GRPC_URL: Joi.string().required(),
         SMS_GRPC_URL: Joi.string().required(),
+        SHARES_GRPC_URL: Joi.string().required(),
+        SOLOWALLET_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
       }),
@@ -85,6 +90,18 @@ import { AdminService } from './admin/admin.service';
         inject: [ConfigService],
       },
       {
+        name: SOLOWALLET_SERVICE_NAME,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'solowallet',
+            protoPath: join(__dirname, '../../../proto/solowallet.proto'),
+            url: configService.getOrThrow<string>('SOLOWALLET_GRPC_URL'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
@@ -103,6 +120,7 @@ import { AdminService } from './admin/admin.service';
     NostrController,
     SmsController,
     SharesController,
+    SolowalletController,
   ],
   providers: [
     SwapService,
@@ -110,6 +128,7 @@ import { AdminService } from './admin/admin.service';
     SmsService,
     SharesService,
     AdminService,
+    SolowalletService,
   ],
 })
 export class ApiModule {}

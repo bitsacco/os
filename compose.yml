@@ -104,6 +104,28 @@ services:
     volumes:
       - .:/usr/src/app
 
+  solowallet:
+    container_name: solowallet
+    build:
+      context: .
+      dockerfile: ./apps/solowallet/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev solowallet"
+      ]
+    restart: always
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - ./apps/solowallet/.env
+    ports:
+      - '4080:4080'
+    volumes:
+      - .:/usr/src/app
+
   mongodb:
     image: mongo:7.0-jammy
     container_name: mongodb
