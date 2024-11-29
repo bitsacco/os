@@ -4,7 +4,7 @@ import {
   Currency,
   DatabaseModule,
   fiatToBtc,
-  SwapStatus,
+  TransactionStatus,
 } from '@bitsacco/common';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { TestingModule } from '@nestjs/testing';
@@ -226,7 +226,7 @@ describe.skip('SwapService', () => {
       const swap = await swapService.createOnrampSwap(req);
 
       expect(swap).toBeDefined();
-      expect(swap.status).toEqual(SwapStatus.PENDING);
+      expect(swap.status).toEqual(TransactionStatus.PENDING);
     });
   });
 
@@ -394,7 +394,7 @@ describe.skip('SwapService', () => {
 
       expect(swap).toBeDefined();
       expect(swap.rate).toEqual(mock_rate.toString());
-      expect(swap.status).toEqual(SwapStatus.PENDING);
+      expect(swap.status).toEqual(TransactionStatus.PENDING);
       expect(mockCacheManager.set).toHaveBeenCalled();
     });
   });

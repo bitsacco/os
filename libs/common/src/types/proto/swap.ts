@@ -7,21 +7,13 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
+import { TransactionStatus } from './lib';
 import { Bolt11 } from './lightning';
 
 /** Currency: Enum representing supported currencies. */
 export enum Currency {
   BTC = 0,
   KES = 1,
-  UNRECOGNIZED = -1,
-}
-
-/** SwapStatus: Enum representing the possible statuses of a swap. */
-export enum SwapStatus {
-  PENDING = 0,
-  PROCESSING = 1,
-  FAILED = 2,
-  COMPLETE = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -172,7 +164,7 @@ export interface SwapResponse {
   /** lightning invoice to be paid for swap */
   lightning: string;
   /** Current status of the swap */
-  status: SwapStatus;
+  status: TransactionStatus;
   /** Optional reference to a user */
   userId?: string | undefined;
   retryCount: number;

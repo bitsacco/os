@@ -3,7 +3,7 @@ import {
   PaginatedRequest,
   QuoteRequest,
   QuoteResponse,
-  SwapStatus,
+  TransactionStatus,
   CreateOnrampSwapDto,
   FindSwapDto,
   CustomStore,
@@ -178,7 +178,7 @@ export class SwapService {
     return {
       ...updatedSwap,
       id: updatedSwap._id.toString(),
-      status: mapSwapTxStateToSwapStatus(swap.state),
+      status: mapSwapTxStateToTransactionStatus(swap.state),
       createdAt: swap.createdAt.toDateString(),
       updatedAt: swap.updatedAt.toDateString(),
     };
@@ -191,7 +191,7 @@ export class SwapService {
       return {
         ...swap,
         id: swap._id.toString(),
-        status: mapSwapTxStateToSwapStatus(swap.state),
+        status: mapSwapTxStateToTransactionStatus(swap.state),
         retryCount: swap.retryCount,
         createdAt: swap.createdAt.toDateString(),
         updatedAt: swap.updatedAt.toDateString(),
@@ -217,7 +217,7 @@ export class SwapService {
       .map((swap) => ({
         ...swap,
         id: swap._id.toString(),
-        status: mapSwapTxStateToSwapStatus(swap.state),
+        status: mapSwapTxStateToTransactionStatus(swap.state),
         createdAt: swap.createdAt.toDateString(),
         updatedAt: swap.updatedAt.toDateString(),
       }));
@@ -266,7 +266,9 @@ export class SwapService {
       ...swap,
       id: swap._id.toString(),
       lightning,
-      status: mapSwapTxStateToSwapStatus(swap.state as SwapTransactionState),
+      status: mapSwapTxStateToTransactionStatus(
+        swap.state as SwapTransactionState,
+      ),
       createdAt: swap.createdAt.toDateString(),
       updatedAt: swap.updatedAt.toDateString(),
     };
@@ -279,7 +281,9 @@ export class SwapService {
       return {
         ...swap,
         id: swap._id.toString(),
-        status: mapSwapTxStateToSwapStatus(swap.state as SwapTransactionState),
+        status: mapSwapTxStateToTransactionStatus(
+          swap.state as SwapTransactionState,
+        ),
         retryCount: swap.retryCount,
         createdAt: swap.createdAt.toDateString(),
         updatedAt: swap.updatedAt.toDateString(),
@@ -305,7 +309,9 @@ export class SwapService {
       .map((swap) => ({
         ...swap,
         id: swap._id.toString(),
-        status: mapSwapTxStateToSwapStatus(swap.state as SwapTransactionState),
+        status: mapSwapTxStateToTransactionStatus(
+          swap.state as SwapTransactionState,
+        ),
         createdAt: swap.createdAt.toDateString(),
         updatedAt: swap.updatedAt.toDateString(),
       }));
@@ -483,16 +489,18 @@ function mapMpesaTxStateToSwapTxState(
   }
 }
 
-function mapSwapTxStateToSwapStatus(state: SwapTransactionState): SwapStatus {
+function mapSwapTxStateToTransactionStatus(
+  state: SwapTransactionState,
+): TransactionStatus {
   switch (state) {
     case SwapTransactionState.PENDING:
-      return SwapStatus.PENDING;
+      return TransactionStatus.PENDING;
     case SwapTransactionState.FAILED:
-      return SwapStatus.FAILED;
+      return TransactionStatus.FAILED;
     case SwapTransactionState.COMPLETE:
-      return SwapStatus.COMPLETE;
+      return TransactionStatus.COMPLETE;
     case SwapTransactionState.RETRY:
     case SwapTransactionState.PROCESSING:
-      return SwapStatus.PROCESSING;
+      return TransactionStatus.PROCESSING;
   }
 }

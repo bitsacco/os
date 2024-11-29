@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+import "lib.proto";
 import "lightning.proto";
 
 package swap;
@@ -152,14 +153,6 @@ enum Currency {
   KES = 1;
 }
 
-// SwapStatus: Enum representing the possible statuses of a swap.
-enum SwapStatus {
-  PENDING = 0;
-  PROCESSING = 1;
-  FAILED = 2;
-  COMPLETE = 3;
-}
-
 message PaginatedRequest {
   // Page offset to start from
   int32 page = 2;
@@ -190,7 +183,7 @@ message SwapResponse {
   string lightning = 3;
 
   // Current status of the swap
-  SwapStatus status = 4;
+  lib.TransactionStatus status = 4;
 
   // Optional reference to a user
   optional string userId = 5;
