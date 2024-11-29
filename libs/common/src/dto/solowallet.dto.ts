@@ -14,5 +14,5 @@ export class DepositFundsRequestDto implements DepositFundsRequest {
   @ValidateNested()
   @Type(() => CreateOnrampSwapDto)
   @ApiProperty({ type: CreateOnrampSwapDto })
-  fiat_deposit?: CreateOnrampSwapDto;
+  fiatDeposit?: CreateOnrampSwapDto;
 }

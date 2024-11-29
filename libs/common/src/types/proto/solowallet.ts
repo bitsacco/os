@@ -18,8 +18,9 @@ export interface DepositFundsRequest {
 export interface SolowalletDepositTransaction {
   id: string;
   userId: string;
-  amountMsats: number;
   status: TransactionStatus;
+  amountMsats: number;
+  amountFiat?: number | undefined;
   reference: string;
   createdAt: string;
   updatedAt?: string | undefined;

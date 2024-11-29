@@ -22,13 +22,17 @@ message SolowalletDepositTransaction {
 
   string user_id = 2;
 
-  int32 amount_msats = 3;
+  lib.TransactionStatus status = 3;
 
-  lib.TransactionStatus status = 4;
+  int32 amount_msats = 4;
 
-  string reference = 5;
+  optional int32 amount_fiat = 5;
 
-  string createdAt = 6;
+  reserved 6, 7, 8, 9;
 
-  optional string updatedAt = 7;
+  string reference = 10;
+
+  string createdAt = 11;
+
+  optional string updatedAt = 12;
 }
