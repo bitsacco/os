@@ -117,6 +117,7 @@ services:
       ]
     restart: always
     depends_on:
+      - swap
       - mongodb
       - redis
     env_file:

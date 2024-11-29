@@ -18,12 +18,14 @@ describe('SolowalletService', () => {
     };
 
     const module: TestingModule = await createTestingModuleWithValidation({
-      providers: [{
-        provide: SolowalletService,
-        useFactory: () => {
-          return new SolowalletService(serviceGenerator);
-        }
-      }],
+      providers: [
+        {
+          provide: SolowalletService,
+          useFactory: () => {
+            return new SolowalletService(serviceGenerator);
+          },
+        },
+      ],
     });
 
     service = module.get<SolowalletService>(SolowalletService);
