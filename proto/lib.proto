@@ -11,3 +11,10 @@ enum TransactionStatus {
   FAILED = 2;
   COMPLETE = 3;
 }
+
+message PaginatedRequest {
+  // Page offset to start from
+  int32 page = 2;
+  // Number of items to be return per page
+  int32 size = 1;
+}

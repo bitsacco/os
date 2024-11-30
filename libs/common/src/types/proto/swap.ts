@@ -7,7 +7,7 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
-import { TransactionStatus } from './lib';
+import { PaginatedRequest, TransactionStatus } from './lib';
 import { Bolt11 } from './lightning';
 
 /** Currency: Enum representing supported currencies. */
@@ -133,13 +133,6 @@ export interface MobileMoney {
 export interface FindSwapRequest {
   /** Unique identifier for the swap */
   id: string;
-}
-
-export interface PaginatedRequest {
-  /** Page offset to start from */
-  page: number;
-  /** Number of items to be return per page */
-  size: number;
 }
 
 export interface PaginatedSwapResponse {

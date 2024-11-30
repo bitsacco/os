@@ -16,3 +16,10 @@ export enum TransactionStatus {
 }
 
 export interface Empty {}
+
+export interface PaginatedRequest {
+  /** Page offset to start from */
+  page: number;
+  /** Number of items to be return per page */
+  size: number;
+}

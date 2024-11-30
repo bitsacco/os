@@ -3,7 +3,10 @@ import {
   CreateOnrampSwapDto,
   DepositFundsRequestDto,
   fiatToBtc,
-  SolowalletDepositTransaction,
+  FindUserTxsRequest,
+  PaginatedRequestDto,
+  PaginatedSolowalletTxsResponse,
+  SolowalletTxs,
   SWAP_SERVICE_NAME,
   SwapResponse,
   SwapServiceClient,
@@ -74,7 +77,7 @@ export class SolowalletService {
   async depositFunds({
     userId,
     fiatDeposit,
-  }: DepositFundsRequestDto): Promise<SolowalletDepositTransaction> {
+  }: DepositFundsRequestDto): Promise<SolowalletTxs> {
     const { status, reference, amountMsats, amountFiat } = fiatDeposit
       ? await this.initiateSwap(fiatDeposit)
       : {
@@ -95,10 +98,38 @@ export class SolowalletService {
 
     return {
       ...deposit,
-      status,
       id: deposit._id,
       createdAt: deposit.createdAt.toDateString(),
       updatedAt: deposit.updatedAt.toDateString(),
+    };
+  }
+
+  async findUserDeposits({
+    userId,
+    pagination,
+  }: FindUserTxsRequest): Promise<PaginatedSolowalletTxsResponse> {
+    const allDeposits = await this.wallet.find({ userId });
+
+    const { page, size } = pagination;
+    const pages = Math.ceil(allDeposits.length / size);
+
+    // select the last page if requested page exceeds total pages possible
+    const selectPage = page > pages ? pages - 1 : page;
+
+    const deposits = allDeposits
+      .slice(selectPage * size, (selectPage + 1) * size + size)
+      .map((deposit) => ({
+        ...deposit,
+        id: deposit._id,
+        createdAt: deposit.createdAt.toDateString(),
+        updatedAt: deposit.updatedAt.toDateString(),
+      }));
+
+    return {
+      transactions: deposits,
+      page: selectPage,
+      size,
+      pages,
     };
   }
 }

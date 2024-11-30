@@ -7,7 +7,7 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
-import { TransactionStatus } from './lib';
+import { PaginatedRequest, TransactionStatus } from './lib';
 import { OnrampSwapRequest } from './swap';
 
 export interface DepositFundsRequest {
@@ -15,7 +15,7 @@ export interface DepositFundsRequest {
   fiatDeposit?: OnrampSwapRequest | undefined;
 }
 
-export interface SolowalletDepositTransaction {
+export interface SolowalletTxs {
   id: string;
   userId: string;
   status: TransactionStatus;
@@ -26,24 +26,46 @@ export interface SolowalletDepositTransaction {
   updatedAt?: string | undefined;
 }
 
+export interface FindUserTxsRequest {
+  userId: string;
+  pagination: PaginatedRequest | undefined;
+}
+
+export interface PaginatedSolowalletTxsResponse {
+  /** List of onramp swaps */
+  transactions: SolowalletTxs[];
+  /** Current page offset */
+  page: number;
+  /** Number of items return per page */
+  size: number;
+  /** Number of pages given the current page size */
+  pages: number;
+}
+
 export interface SolowalletServiceClient {
-  depositFunds(
-    request: DepositFundsRequest,
-  ): Observable<SolowalletDepositTransaction>;
+  depositFunds(request: DepositFundsRequest): Observable<SolowalletTxs>;
+
+  findUserDeposits(
+    request: FindUserTxsRequest,
+  ): Observable<PaginatedSolowalletTxsResponse>;
 }
 
 export interface SolowalletServiceController {
   depositFunds(
     request: DepositFundsRequest,
+  ): Promise<SolowalletTxs> | Observable<SolowalletTxs> | SolowalletTxs;
+
+  findUserDeposits(
+    request: FindUserTxsRequest,
   ):
-    | Promise<SolowalletDepositTransaction>
-    | Observable<SolowalletDepositTransaction>
-    | SolowalletDepositTransaction;
+    | Promise<PaginatedSolowalletTxsResponse>
+    | Observable<PaginatedSolowalletTxsResponse>
+    | PaginatedSolowalletTxsResponse;
 }
 
 export function SolowalletServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ['depositFunds'];
+    const grpcMethods: string[] = ['depositFunds', 'findUserDeposits'];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(
         constructor.prototype,

@@ -1,5 +1,6 @@
 import {
   DepositFundsRequestDto,
+  FindUserTxsRequestDto,
   SOLOWALLET_SERVICE_NAME,
   SolowalletServiceClient,
 } from '@bitsacco/common';
@@ -22,5 +23,9 @@ export class SolowalletService implements OnModuleInit {
 
   depositFunds(req: DepositFundsRequestDto) {
     return this.client.depositFunds(req);
+  }
+
+  findUserDeposits(req: FindUserTxsRequestDto) {
+    return this.client.findUserDeposits(req);
   }
 }

@@ -1,6 +1,5 @@
 import {
   Currency,
-  PaginatedRequest,
   QuoteRequest,
   QuoteResponse,
   TransactionStatus,
@@ -17,6 +16,7 @@ import {
   fiatToBtc,
   btcToFiat,
   SupportedCurrencyType,
+  PaginatedRequestDto,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -205,7 +205,7 @@ export class SwapService {
   async listOnrampSwaps({
     page,
     size,
-  }: PaginatedRequest): Promise<PaginatedSwapResponse> {
+  }: PaginatedRequestDto): Promise<PaginatedSwapResponse> {
     const onramps = await this.onramp.find({});
     const pages = Math.ceil(onramps.length / size);
 
@@ -297,7 +297,7 @@ export class SwapService {
   async listOfframpSwaps({
     page,
     size,
-  }: PaginatedRequest): Promise<PaginatedSwapResponse> {
+  }: PaginatedRequestDto): Promise<PaginatedSwapResponse> {
     const offramps = await this.offramp.find({});
     const pages = Math.ceil(offramps.length / size);
 

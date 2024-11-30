@@ -17,7 +17,7 @@ service SwapService {
   rpc FindOnrampSwap (FindSwapRequest) returns (SwapResponse) {}
 
   // ListOnrampSwaps: Lists all onramp swaps, with pagination.
-  rpc ListOnrampSwaps (PaginatedRequest) returns (PaginatedSwapResponse) {}
+  rpc ListOnrampSwaps (lib.PaginatedRequest) returns (PaginatedSwapResponse) {}
 
   // CreateOfframpSwap: Initiates an offramp swap transaction.
   rpc CreateOfframpSwap (OfframpSwapRequest) returns (SwapResponse) {}
@@ -26,7 +26,7 @@ service SwapService {
   rpc FindOfframpSwap (FindSwapRequest) returns (SwapResponse) {}
 
   // ListOfframpSwaps: Lists all offramp swaps, with pagination.
-  rpc ListOfframpSwaps (PaginatedRequest) returns (PaginatedSwapResponse) {}
+  rpc ListOfframpSwaps (lib.PaginatedRequest) returns (PaginatedSwapResponse) {}
 }
 
 // QuoteRequest: Represents a request for a currency swap quote.
@@ -151,13 +151,6 @@ message FindSwapRequest {
 enum Currency {
   BTC = 0;
   KES = 1;
-}
-
-message PaginatedRequest {
-  // Page offset to start from
-  int32 page = 2;
-  // Number of items to be return per page
-  int32 size = 1;
 }
 
 message PaginatedSwapResponse {
