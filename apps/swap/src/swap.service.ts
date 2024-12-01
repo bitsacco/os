@@ -463,7 +463,7 @@ export class SwapService {
     operationId,
   }: ReceivePaymentFailureEvent) {
     this.logger.log(
-      `Failed to eceive lightning payment for ${context} : ${operationId}`,
+      `Failed to receive lightning payment for ${context} : ${operationId}`,
     );
 
     await this.offramp.findOneAndUpdate(

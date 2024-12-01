@@ -8,7 +8,7 @@
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { PaginatedRequest, TransactionStatus } from './lib';
-import { FmInvoice } from './lightning';
+import { Bolt11 } from './lightning';
 import { OnrampSwapSource } from './swap';
 
 export interface DepositFundsRequest {
@@ -21,6 +21,7 @@ export interface DepositFundsRequest {
 export interface DepositFundsResponse {
   txId: string;
   deposits: PaginatedSolowalletTxsResponse | undefined;
+  meta?: DepositsMeta | undefined;
 }
 
 export interface SolowalletTx {
@@ -29,7 +30,7 @@ export interface SolowalletTx {
   status: TransactionStatus;
   amountMsats: number;
   amountFiat?: number | undefined;
-  lightning: FmInvoice | undefined;
+  lightning: Bolt11 | undefined;
   reference: string;
   createdAt: string;
   updatedAt?: string | undefined;
@@ -38,6 +39,11 @@ export interface SolowalletTx {
 export interface FindUserTxsRequest {
   userId: string;
   pagination: PaginatedRequest | undefined;
+}
+
+export interface FindUserDepositTxsResponse {
+  deposits: PaginatedSolowalletTxsResponse | undefined;
+  meta?: DepositsMeta | undefined;
 }
 
 export interface PaginatedSolowalletTxsResponse {
@@ -51,12 +57,18 @@ export interface PaginatedSolowalletTxsResponse {
   pages: number;
 }
 
+export interface DepositsMeta {
+  totalMsats: number;
+  avgMsats: number;
+  count: number;
+}
+
 export interface SolowalletServiceClient {
   depositFunds(request: DepositFundsRequest): Observable<DepositFundsResponse>;
 
   findUserDeposits(
     request: FindUserTxsRequest,
-  ): Observable<PaginatedSolowalletTxsResponse>;
+  ): Observable<FindUserDepositTxsResponse>;
 }
 
 export interface SolowalletServiceController {
@@ -70,9 +82,9 @@ export interface SolowalletServiceController {
   findUserDeposits(
     request: FindUserTxsRequest,
   ):
-    | Promise<PaginatedSolowalletTxsResponse>
-    | Observable<PaginatedSolowalletTxsResponse>
-    | PaginatedSolowalletTxsResponse;
+    | Promise<FindUserDepositTxsResponse>
+    | Observable<FindUserDepositTxsResponse>
+    | FindUserDepositTxsResponse;
 }
 
 export function SolowalletServiceControllerMethods() {

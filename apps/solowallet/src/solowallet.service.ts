@@ -4,10 +4,12 @@ import {
   Currency,
   DepositFundsRequestDto,
   DepositFundsResponse,
+  DepositsMeta,
   fedimint_receive_failure,
   fedimint_receive_success,
   FedimintService,
   fiatToBtc,
+  FindUserDepositTxsResponse,
   FindUserTxsRequestDto,
   FmInvoice,
   PaginatedSolowalletTxsResponse,
@@ -168,6 +170,7 @@ export class SolowalletService {
         return {
           ...deposit,
           lightning,
+          paymentTracker: lightning.operationId,
           id: deposit._id,
           status: deposit.status,
           createdAt: deposit.createdAt.toDateString(),
@@ -181,6 +184,38 @@ export class SolowalletService {
       size,
       pages,
     };
+  }
+
+  private async getDepositsMeta(
+    userId: string,
+  ): Promise<DepositsMeta | undefined> {
+    let meta: DepositsMeta = undefined;
+    try {
+      meta = await this.wallet
+        .aggregate([
+          {
+            $match: {
+              userId: userId,
+              status: TransactionStatus.COMPLETE,
+            },
+          },
+          {
+            $group: {
+              _id: '$userId',
+              totalMsats: { $sum: '$amountMsats' },
+              avgMsats: { $avg: '$amountMsats' },
+              count: { $sum: 1 },
+            },
+          },
+        ])
+        .then((result) => {
+          return result[0];
+        });
+    } catch (e) {
+      this.logger.error('Error getting deposits meta', e);
+    }
+
+    return meta;
   }
 
   async depositFunds({
@@ -220,29 +255,45 @@ export class SolowalletService {
       amountMsats,
       amountFiat,
       lightning: JSON.stringify(lightning),
+      paymentTracker: lightning.operationId,
       status,
       reference,
     });
 
     // listen for payment
-    this.fedimintService.receive(ReceiveContext.SOLOWALLET, deposit._id);
+    this.fedimintService.receive(
+      ReceiveContext.SOLOWALLET,
+      lightning.operationId,
+    );
 
     const deposits = await this.getPaginatedUserDeposits({
       userId,
       pagination: { page: 0, size: 10 },
     });
 
+    const meta = await this.getDepositsMeta(userId);
+
     return {
       txId: deposit._id,
       deposits,
+      meta,
     };
   }
 
   async findUserDeposits({
     userId,
     pagination,
-  }: FindUserTxsRequestDto): Promise<PaginatedSolowalletTxsResponse> {
-    return this.getPaginatedUserDeposits({ userId, pagination });
+  }: FindUserTxsRequestDto): Promise<FindUserDepositTxsResponse> {
+    const deposits = await this.getPaginatedUserDeposits({
+      userId,
+      pagination,
+    });
+    const meta = await this.getDepositsMeta(userId);
+
+    return {
+      deposits,
+      meta,
+    };
   }
 
   @OnEvent(fedimint_receive_success)
@@ -251,7 +302,7 @@ export class SolowalletService {
     operationId,
   }: ReceivePaymentSuccessEvent) {
     await this.wallet.findOneAndUpdate(
-      { _id: operationId },
+      { paymentTracker: operationId },
       {
         status: TransactionStatus.COMPLETE,
       },
@@ -268,11 +319,11 @@ export class SolowalletService {
     operationId,
   }: ReceivePaymentFailureEvent) {
     this.logger.log(
-      `Failed to eceive lightning payment for ${context} : ${operationId}`,
+      `Failed to receive lightning payment for ${context} : ${operationId}`,
     );
 
     await this.wallet.findOneAndUpdate(
-      { _id: operationId },
+      { paymentTracker: operationId },
       {
         state: TransactionStatus.FAILED,
       },

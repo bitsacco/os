@@ -22,9 +22,15 @@ export class SolowalletDocument extends AbstractDocument {
   @Prop({ type: String, required: true })
   lightning: string;
 
+  @Prop({ type: String, required: true, unique: true })
+  paymentTracker?: string;
+
   @Prop({ type: String, required: true })
   reference: string;
 }
 
 export const SolowalletSchema =
   SchemaFactory.createForClass(SolowalletDocument);
+
+// Ensure uniqueness only when paymentTracker is not null
+SolowalletSchema.index({ paymentTracker: 1 }, { unique: true, sparse: true });

@@ -9,7 +9,7 @@ package solowallet;
 service SolowalletService {
   rpc DepositFunds(DepositFundsRequest) returns (DepositFundsResponse){}
 
-  rpc FindUserDeposits(FindUserTxsRequest) returns (PaginatedSolowalletTxsResponse){}
+  rpc FindUserDeposits(FindUserTxsRequest) returns (FindUserDepositTxsResponse){}
 }
 
 message DepositFundsRequest {
@@ -27,6 +27,7 @@ message DepositFundsRequest {
 message DepositFundsResponse {
   string tx_id = 1;
   PaginatedSolowalletTxsResponse deposits = 2;
+  optional DepositsMeta meta = 3;
 }
 
 message SolowalletTx {
@@ -56,6 +57,11 @@ message FindUserTxsRequest {
   lib.PaginatedRequest pagination = 2;
 }
 
+message FindUserDepositTxsResponse {
+  PaginatedSolowalletTxsResponse deposits = 1;
+  optional DepositsMeta meta = 2;
+}
+
 message PaginatedSolowalletTxsResponse {
   // List of onramp swaps
   repeated SolowalletTx transactions = 1;
@@ -65,4 +71,10 @@ message PaginatedSolowalletTxsResponse {
   int32 size = 3;
   // Number of pages given the current page size
   int32 pages = 4;
+}
+
+message DepositsMeta {
+  int32 total_msats = 1;
+  float avg_msats = 2;
+  int32 count = 3;
 }
