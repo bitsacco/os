@@ -4,6 +4,8 @@ import {
   Currency,
   DepositFundsRequestDto,
   DepositFundsResponse,
+  fedimint_receive_failure,
+  fedimint_receive_success,
   FedimintService,
   fiatToBtc,
   FindUserTxsRequestDto,
@@ -12,14 +14,18 @@ import {
   QuoteDto,
   QuoteRequestDto,
   QuoteResponse,
+  ReceiveContext,
+  type ReceivePaymentFailureEvent,
+  type ReceivePaymentSuccessEvent,
   SWAP_SERVICE_NAME,
   SwapResponse,
   SwapServiceClient,
   TransactionStatus,
 } from '@bitsacco/common';
-import { SolowalletRepository } from './db';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { catchError, firstValueFrom, map, of, tap } from 'rxjs';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { SolowalletRepository } from './db';
 
 @Injectable()
 export class SolowalletService {
@@ -29,11 +35,22 @@ export class SolowalletService {
   constructor(
     private readonly wallet: SolowalletRepository,
     private readonly fedimintService: FedimintService,
+    private readonly eventEmitter: EventEmitter2,
     @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
   ) {
     this.logger.log('SolowalletService created');
     this.swapService =
       this.swapGrpc.getService<SwapServiceClient>(SWAP_SERVICE_NAME);
+
+    this.eventEmitter.on(
+      fedimint_receive_success,
+      this.handleSuccessfulReceive.bind(this),
+    );
+    this.eventEmitter.on(
+      fedimint_receive_failure,
+      this.handleFailedReceive.bind(this),
+    );
+    this.logger.log('SwapService initialized');
   }
 
   private async getQuote({ from, to, amount }: QuoteRequestDto): Promise<{
@@ -152,6 +169,7 @@ export class SolowalletService {
           ...deposit,
           lightning,
           id: deposit._id,
+          status: deposit.status,
           createdAt: deposit.createdAt.toDateString(),
           updatedAt: deposit.updatedAt.toDateString(),
         };
@@ -206,6 +224,9 @@ export class SolowalletService {
       reference,
     });
 
+    // listen for payment
+    this.fedimintService.receive(ReceiveContext.SOLOWALLET, deposit._id);
+
     const deposits = await this.getPaginatedUserDeposits({
       userId,
       pagination: { page: 0, size: 10 },
@@ -222,5 +243,39 @@ export class SolowalletService {
     pagination,
   }: FindUserTxsRequestDto): Promise<PaginatedSolowalletTxsResponse> {
     return this.getPaginatedUserDeposits({ userId, pagination });
+  }
+
+  @OnEvent(fedimint_receive_success)
+  private async handleSuccessfulReceive({
+    context,
+    operationId,
+  }: ReceivePaymentSuccessEvent) {
+    await this.wallet.findOneAndUpdate(
+      { _id: operationId },
+      {
+        status: TransactionStatus.COMPLETE,
+      },
+    );
+
+    this.logger.log(
+      `Received lightning payment for ${context} : ${operationId}`,
+    );
+  }
+
+  @OnEvent(fedimint_receive_failure)
+  private async handleFailedReceive({
+    context,
+    operationId,
+  }: ReceivePaymentFailureEvent) {
+    this.logger.log(
+      `Failed to eceive lightning payment for ${context} : ${operationId}`,
+    );
+
+    await this.wallet.findOneAndUpdate(
+      { _id: operationId },
+      {
+        state: TransactionStatus.FAILED,
+      },
+    );
   }
 }

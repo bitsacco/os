@@ -208,7 +208,7 @@ describe.skip('SwapService', () => {
           id: 'dadad-bdjada-dadad',
           refreshIfExpired: false,
         },
-        ref: 'test-onramp-swap',
+        reference: 'test-onramp-swap',
         amountFiat: '100',
         source: {
           currency: Currency.KES,
@@ -380,7 +380,7 @@ describe.skip('SwapService', () => {
           id: 'dadad-bdjada-dadad',
           refreshIfExpired: false,
         },
-        ref: 'test-onramp-swap',
+        reference: 'test-onramp-swap',
         amountFiat: '100',
         target: {
           currency: Currency.KES,
