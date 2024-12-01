@@ -6,7 +6,7 @@ export class AdminService {
   async getStatus(): Promise<BitsaccoStatus> {
     return {
       memberStatus: {
-        hasShares: false,
+        hasShares: true,
       },
       swapStatus: {
         isRunning: true,
