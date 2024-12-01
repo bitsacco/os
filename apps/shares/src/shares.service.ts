@@ -23,17 +23,15 @@ export class SharesService {
   async getShareDetail({
     userId,
   }: GetShareDetailDto): Promise<ShareDetailResponse> {
-    const allShares = await this.shares.find({ userId });
+    const allShares = await this.shares.find({ userId }, { createdAt: -1 });
     const shareHoldings = allShares.reduce(
       (sum, share) => sum + share.quantity,
       0,
     );
-    const shares = allShares
-      .map((share) => ({
-        quantity: share.quantity,
-        purchasedAtUnix: Number(share.createdAt),
-      }))
-      .reverse();
+    const shares = allShares.map((share) => ({
+      quantity: share.quantity,
+      purchasedAtUnix: Number(share.createdAt),
+    }));
 
     const shareSubscription = await this.getShareSubscrition({});
 
@@ -71,7 +69,7 @@ export class SharesService {
           {
             $group: {
               _id: null,
-              totalShares: { $sum: { $sum: '$shareHoldings' } },
+              totalShares: { $sum: { $sum: '$quantity' } },
             },
           },
         ])
