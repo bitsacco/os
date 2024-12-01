@@ -9,7 +9,7 @@ export class DepositFundsRequestDto implements DepositFundsRequest {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  @ApiProperty()
+  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
   userId: string;
 
   @ValidateNested()
@@ -22,7 +22,7 @@ export class FindUserTxsRequestDto implements FindUserTxsRequest {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  @ApiProperty()
+  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
   userId: string;
 
   @ValidateNested()

@@ -92,7 +92,7 @@ export class CreateOnrampSwapDto implements OnrampSwapRequest {
   @IsString()
   @Validate(IsStringifiedNumberConstraint)
   @Type(() => String)
-  @ApiProperty({ example: "2" })
+  @ApiProperty({ example: '2' })
   amountFiat: string;
 
   @IsNotEmpty()
