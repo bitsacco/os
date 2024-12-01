@@ -79,7 +79,7 @@ export class CreateOnrampSwapDto implements OnrampSwapRequest {
   @IsOptional()
   @ValidateNested()
   @Type(() => QuoteDto)
-  @ApiProperty({ type: QuoteDto })
+  @ApiProperty({ type: QuoteDto, example: null })
   quote: QuoteDto;
 
   @IsNotEmpty()
@@ -92,7 +92,7 @@ export class CreateOnrampSwapDto implements OnrampSwapRequest {
   @IsString()
   @Validate(IsStringifiedNumberConstraint)
   @Type(() => String)
-  @ApiProperty()
+  @ApiProperty({ example: "2" })
   amountFiat: string;
 
   @IsNotEmpty()
