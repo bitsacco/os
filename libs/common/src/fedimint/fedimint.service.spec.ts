@@ -1,7 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
-import { FedimintService } from './fedimint.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { FedimintService } from './fedimint.service';
 
 describe('FedimintService', () => {
   let mockCfg: jest.Mocked<ConfigService> = {

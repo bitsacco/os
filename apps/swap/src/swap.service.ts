@@ -13,8 +13,11 @@ import {
   ReceiveContext,
   type ReceivePaymentFailureEvent,
   type ReceivePaymentSuccessEvent,
-  fiatToBtc,
   btcToFiat,
+  fiatToBtc,
+  fedimint_receive_success,
+  fedimint_receive_failure,
+  FedimintService,
   SupportedCurrencyType,
   PaginatedRequestDto,
 } from '@bitsacco/common';
@@ -25,7 +28,6 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { IntasendService } from './intasend/intasend.service';
 import { MpesaCollectionUpdateDto, MpesaPaymentUpdateDto } from './dto';
 import { MpesaTransactionState } from './intasend/intasend.types';
-import { FedimintService } from './fedimint/fedimint.service';
 import { FxService } from './fx/fx.service';
 import {
   MpesaOnrampSwapDocument,
@@ -33,10 +35,6 @@ import {
   MpesaOfframpSwapRepository,
   SwapTransactionState,
 } from '../db';
-import {
-  fedimint_receive_success,
-  fedimint_receive_failure,
-} from './fedimint/fedimint.const';
 import { isMpesaCollectionUpdate } from './dto/utils';
 
 @Injectable()

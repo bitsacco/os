@@ -4,16 +4,16 @@ import {
   Currency,
   DatabaseModule,
   fiatToBtc,
+  FedimintService,
   TransactionStatus,
 } from '@bitsacco/common';
-import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { TestingModule } from '@nestjs/testing';
+import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 import { FxService } from './fx/fx.service';
 import { SwapService } from './swap.service';
 import { IntasendService } from './intasend/intasend.service';
 import { MpesaTransactionState } from './intasend/intasend.types';
-import { FedimintService } from './fedimint/fedimint.service';
 import { MpesaCollectionUpdateDto } from './dto';
 import {
   MpesaOfframpSwapRepository,

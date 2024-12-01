@@ -5,13 +5,12 @@ import { HttpModule } from '@nestjs/axios';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CacheModule } from '@nestjs/cache-manager';
-import { CustomStore, DatabaseModule, LoggerModule } from '@bitsacco/common';
+import { CustomStore, DatabaseModule, FedimintService, LoggerModule } from '@bitsacco/common';
 import { SwapController } from './swap.controller';
 import { SwapService } from './swap.service';
 import { FxService } from './fx/fx.service';
 import { IntasendService } from './intasend/intasend.service';
 import { EventsController } from './events.controller';
-import { FedimintService } from './fedimint/fedimint.service';
 import {
   MpesaOfframpSwapRepository,
   MpesaOfframpSwapDocument,
