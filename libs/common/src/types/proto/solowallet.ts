@@ -15,7 +15,12 @@ export interface DepositFundsRequest {
   fiatDeposit?: OnrampSwapRequest | undefined;
 }
 
-export interface SolowalletTxs {
+export interface DepositFundsResponse {
+  txId: string;
+  deposits: PaginatedSolowalletTxsResponse | undefined;
+}
+
+export interface SolowalletTx {
   id: string;
   userId: string;
   status: TransactionStatus;
@@ -33,7 +38,7 @@ export interface FindUserTxsRequest {
 
 export interface PaginatedSolowalletTxsResponse {
   /** List of onramp swaps */
-  transactions: SolowalletTxs[];
+  transactions: SolowalletTx[];
   /** Current page offset */
   page: number;
   /** Number of items return per page */
@@ -43,7 +48,7 @@ export interface PaginatedSolowalletTxsResponse {
 }
 
 export interface SolowalletServiceClient {
-  depositFunds(request: DepositFundsRequest): Observable<SolowalletTxs>;
+  depositFunds(request: DepositFundsRequest): Observable<DepositFundsResponse>;
 
   findUserDeposits(
     request: FindUserTxsRequest,
@@ -53,7 +58,10 @@ export interface SolowalletServiceClient {
 export interface SolowalletServiceController {
   depositFunds(
     request: DepositFundsRequest,
-  ): Promise<SolowalletTxs> | Observable<SolowalletTxs> | SolowalletTxs;
+  ):
+    | Promise<DepositFundsResponse>
+    | Observable<DepositFundsResponse>
+    | DepositFundsResponse;
 
   findUserDeposits(
     request: FindUserTxsRequest,

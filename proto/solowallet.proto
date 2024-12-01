@@ -6,7 +6,7 @@ import "swap.proto";
 package solowallet;
 
 service SolowalletService {
-  rpc DepositFunds(DepositFundsRequest) returns (SolowalletTxs){}
+  rpc DepositFunds(DepositFundsRequest) returns (DepositFundsResponse){}
 
   rpc FindUserDeposits(FindUserTxsRequest) returns (PaginatedSolowalletTxsResponse){}
 }
@@ -19,7 +19,12 @@ message DepositFundsRequest {
   // Add more otional funding sources, like direct lightning deposit
 }
 
-message SolowalletTxs {
+message DepositFundsResponse {
+  string tx_id = 1;
+  PaginatedSolowalletTxsResponse deposits = 2;
+}
+
+message SolowalletTx {
   string id = 1;
 
   string user_id = 2;
@@ -46,7 +51,7 @@ message FindUserTxsRequest {
 
 message PaginatedSolowalletTxsResponse {
   // List of onramp swaps
-  repeated SolowalletTxs transactions = 1;
+  repeated SolowalletTx transactions = 1;
   // Current page offset
   int32 page = 2;
   // Number of items return per page

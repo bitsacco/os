@@ -2,11 +2,11 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   CreateOnrampSwapDto,
   DepositFundsRequestDto,
+  DepositFundsResponse,
   fiatToBtc,
-  FindUserTxsRequest,
-  PaginatedRequestDto,
+  FindUserTxsRequestDto,
   PaginatedSolowalletTxsResponse,
-  SolowalletTxs,
+  SolowalletTx,
   SWAP_SERVICE_NAME,
   SwapResponse,
   SwapServiceClient,
@@ -74,41 +74,11 @@ export class SolowalletService {
     );
   }
 
-  async depositFunds({
-    userId,
-    fiatDeposit,
-  }: DepositFundsRequestDto): Promise<SolowalletTxs> {
-    const { status, reference, amountMsats, amountFiat } = fiatDeposit
-      ? await this.initiateSwap(fiatDeposit)
-      : {
-          status: TransactionStatus.PENDING,
-          reference: '',
-          amountMsats: 0,
-          amountFiat: 0,
-        };
-
-    this.logger.log(status);
-    const deposit = await this.wallet.create({
-      userId,
-      amountMsats,
-      amountFiat,
-      status,
-      reference,
-    });
-
-    return {
-      ...deposit,
-      id: deposit._id,
-      createdAt: deposit.createdAt.toDateString(),
-      updatedAt: deposit.updatedAt.toDateString(),
-    };
-  }
-
-  async findUserDeposits({
+  private async getPaginatedUserDeposits({
     userId,
     pagination,
-  }: FindUserTxsRequest): Promise<PaginatedSolowalletTxsResponse> {
-    const allDeposits = await this.wallet.find({ userId });
+  }: FindUserTxsRequestDto): Promise<PaginatedSolowalletTxsResponse> {
+    const allDeposits = await this.wallet.find({ userId }, { createdAt: -1 });
 
     const { page, size } = pagination;
     const pages = Math.ceil(allDeposits.length / size);
@@ -131,5 +101,45 @@ export class SolowalletService {
       size,
       pages,
     };
+  }
+
+  async depositFunds({
+    userId,
+    fiatDeposit,
+  }: DepositFundsRequestDto): Promise<DepositFundsResponse> {
+    const { status, reference, amountMsats, amountFiat } = fiatDeposit
+      ? await this.initiateSwap(fiatDeposit)
+      : {
+          status: TransactionStatus.PENDING,
+          reference: '',
+          amountMsats: 0,
+          amountFiat: 0,
+        };
+
+    this.logger.log(status);
+    const deposit = await this.wallet.create({
+      userId,
+      amountMsats,
+      amountFiat,
+      status,
+      reference,
+    });
+
+    const deposits = await this.getPaginatedUserDeposits({
+      userId,
+      pagination: { page: 0, size: 10 },
+    });
+
+    return {
+      txId: deposit._id,
+      deposits,
+    };
+  }
+
+  async findUserDeposits({
+    userId,
+    pagination,
+  }: FindUserTxsRequestDto): Promise<PaginatedSolowalletTxsResponse> {
+    return this.getPaginatedUserDeposits({ userId, pagination });
   }
 }

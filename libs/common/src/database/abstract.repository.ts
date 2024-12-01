@@ -2,6 +2,7 @@ import {
   FilterQuery,
   Model,
   PipelineStage,
+  SortOrder,
   Types,
   UpdateQuery,
 } from 'mongoose';
@@ -51,8 +52,17 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return document;
   }
 
-  async find(filterQuery: FilterQuery<TDocument>): Promise<TDocument[]> {
-    return this.model.find(filterQuery).lean<TDocument[]>(true);
+  async find(
+    filterQuery: FilterQuery<TDocument>,
+    sort?: { [key: string]: SortOrder },
+  ): Promise<TDocument[]> {
+    const query = this.model.find(filterQuery).lean<TDocument[]>(true);
+
+    if (sort) {
+      query.sort(sort);
+    }
+
+    return query.exec();
   }
 
   async findOneAndDelete(
