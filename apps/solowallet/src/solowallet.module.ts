@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
   DatabaseModule,
+  FedimintService,
   LoggerModule,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
@@ -15,6 +16,8 @@ import {
   SolowalletRepository,
   SolowalletSchema,
 } from './db';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -25,6 +28,10 @@ import {
         SOLOWALLET_GRPC_URL: Joi.string().required(),
         SWAP_GRPC_URL: Joi.string().required(),
         DATABASE_URL: Joi.string().required(),
+        FEDIMINT_CLIENTD_BASE_URL: Joi.string().required(),
+        FEDIMINT_CLIENTD_PASSWORD: Joi.string().required(),
+        FEDIMINT_FEDERATION_ID: Joi.string().required(),
+        FEDIMINT_GATEWAY_ID: Joi.string().required(),
       }),
     }),
     DatabaseModule,
@@ -32,6 +39,7 @@ import {
       { name: SolowalletDocument.name, schema: SolowalletSchema },
     ]),
     LoggerModule,
+    HttpModule,
     ClientsModule.registerAsync([
       {
         name: SWAP_SERVICE_NAME,
@@ -46,8 +54,18 @@ import {
         inject: [ConfigService],
       },
     ]),
+    EventEmitterModule.forRoot({
+      global: true,
+      delimiter: '.',
+      verboseMemoryLeak: true,
+    }),
   ],
   controllers: [SolowalletController],
-  providers: [SolowalletService, ConfigService, SolowalletRepository],
+  providers: [
+    SolowalletService,
+    ConfigService,
+    SolowalletRepository,
+    FedimintService,
+  ],
 })
 export class SolowalletModule {}

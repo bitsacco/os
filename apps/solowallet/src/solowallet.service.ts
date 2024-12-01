@@ -1,12 +1,17 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   CreateOnrampSwapDto,
+  Currency,
   DepositFundsRequestDto,
   DepositFundsResponse,
+  FedimintService,
   fiatToBtc,
   FindUserTxsRequestDto,
+  FmInvoice,
   PaginatedSolowalletTxsResponse,
-  SolowalletTx,
+  QuoteDto,
+  QuoteRequestDto,
+  QuoteResponse,
   SWAP_SERVICE_NAME,
   SwapResponse,
   SwapServiceClient,
@@ -23,11 +28,54 @@ export class SolowalletService {
 
   constructor(
     private readonly wallet: SolowalletRepository,
+    private readonly fedimintService: FedimintService,
     @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
   ) {
     this.logger.log('SolowalletService created');
     this.swapService =
       this.swapGrpc.getService<SwapServiceClient>(SWAP_SERVICE_NAME);
+  }
+
+  private async getQuote({ from, to, amount }: QuoteRequestDto): Promise<{
+    quote: QuoteDto | null;
+    amountMsats: number;
+  }> {
+    return firstValueFrom(
+      this.swapService
+        .getQuote({
+          from,
+          to,
+          amount,
+        })
+        .pipe(
+          tap((quote: QuoteResponse) => {
+            this.logger.log(`Quote: ${quote}`);
+          }),
+          map((quote: QuoteResponse) => {
+            const { amountMsats } = fiatToBtc({
+              amountFiat: Number(amount),
+              btcToFiatRate: Number(quote.rate),
+            });
+
+            return {
+              quote: {
+                id: quote.id,
+                refreshIfExpired: true,
+              },
+              amountMsats,
+            };
+          }),
+        )
+        .pipe(
+          catchError((error) => {
+            this.logger.error('Error geeting quote:', error);
+            return of({
+              amountMsats: 0,
+              quote: null,
+            });
+          }),
+        ),
+    );
   }
 
   private async initiateSwap(fiatDeposit: CreateOnrampSwapDto): Promise<{
@@ -88,12 +136,26 @@ export class SolowalletService {
 
     const deposits = allDeposits
       .slice(selectPage * size, (selectPage + 1) * size + size)
-      .map((deposit) => ({
-        ...deposit,
-        id: deposit._id,
-        createdAt: deposit.createdAt.toDateString(),
-        updatedAt: deposit.updatedAt.toDateString(),
-      }));
+      .map((deposit) => {
+        let lightning: FmInvoice;
+        try {
+          lightning = JSON.parse(deposit.lightning);
+        } catch (error) {
+          this.logger.warn('Error parsing lightning invoice', error);
+          lightning = {
+            invoice: '',
+            operationId: '',
+          };
+        }
+
+        return {
+          ...deposit,
+          lightning,
+          id: deposit._id,
+          createdAt: deposit.createdAt.toDateString(),
+          updatedAt: deposit.updatedAt.toDateString(),
+        };
+      });
 
     return {
       transactions: deposits,
@@ -105,15 +167,33 @@ export class SolowalletService {
 
   async depositFunds({
     userId,
-    fiatDeposit,
+    amountFiat,
+    reference,
+    onramp,
   }: DepositFundsRequestDto): Promise<DepositFundsResponse> {
-    const { status, reference, amountMsats, amountFiat } = fiatDeposit
-      ? await this.initiateSwap(fiatDeposit)
+    const { quote, amountMsats } = await this.getQuote({
+      from: onramp?.currency || Currency.KES,
+      to: Currency.BTC,
+      amount: amountFiat.toString(),
+    });
+
+    const lightning = await this.fedimintService.invoice(
+      amountMsats,
+      reference,
+    );
+
+    const { status } = onramp
+      ? await this.initiateSwap({
+          quote,
+          amountFiat: amountFiat.toString(),
+          reference,
+          source: onramp,
+          target: {
+            payout: lightning,
+          },
+        })
       : {
           status: TransactionStatus.PENDING,
-          reference: '',
-          amountMsats: 0,
-          amountFiat: 0,
         };
 
     this.logger.log(status);
@@ -121,6 +201,7 @@ export class SolowalletService {
       userId,
       amountMsats,
       amountFiat,
+      lightning: JSON.stringify(lightning),
       status,
       reference,
     });

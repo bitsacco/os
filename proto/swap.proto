@@ -88,7 +88,7 @@ message OnrampSwapRequest {
 
   // Amount to swap
   // Any transaction fees will be deducted from this amount
-  string amountFiat = 3;
+  string amount_fiat = 3;
 
   reserved 4, 5, 6, 7, 8, 9;
 
@@ -122,7 +122,7 @@ message OfframpSwapRequest {
 
   // Amount to swap
   // Any transaction fees will be deducted from this amount
-  string amountFiat = 3;
+  string amount_fiat = 3;
 
   // Target of the swap
   OfframpSwapTarget target = 4;

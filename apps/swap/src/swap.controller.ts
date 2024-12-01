@@ -5,9 +5,9 @@ import {
   CreateOfframpSwapDto,
   type FindSwapRequest,
   type PaginatedRequest,
-  type QuoteRequest,
   SwapServiceController,
   SwapServiceControllerMethods,
+  QuoteRequestDto,
 } from '@bitsacco/common';
 import { SwapService } from './swap.service';
 
@@ -17,7 +17,7 @@ export class SwapController implements SwapServiceController {
   constructor(private readonly swapService: SwapService) {}
 
   @GrpcMethod()
-  getQuote(request: QuoteRequest) {
+  getQuote(request: QuoteRequestDto) {
     return this.swapService.getQuote(request);
   }
 

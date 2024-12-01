@@ -20,6 +20,9 @@ export class SolowalletDocument extends AbstractDocument {
   status: TransactionStatus;
 
   @Prop({ type: String, required: true })
+  lightning: string;
+
+  @Prop({ type: String, required: true })
   reference: string;
 }
 

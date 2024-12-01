@@ -6,3 +6,10 @@ message Bolt11 {
   // Bolt11 lightning invoice
   string invoice = 1;
 }
+
+message FmInvoice {
+  // Fallback invoice
+  string invoice = 1;
+
+  string operationId = 2;
+}

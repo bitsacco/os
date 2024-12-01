@@ -2,6 +2,7 @@ syntax = "proto3";
 
 import "lib.proto";
 import "swap.proto";
+import "lightning.proto";
 
 package solowallet;
 
@@ -14,7 +15,11 @@ service SolowalletService {
 message DepositFundsRequest {
   string user_id = 1;
 
-  optional swap.OnrampSwapRequest fiat_deposit = 2;
+  int32 amount_fiat = 2;
+
+  string reference = 3;
+
+  optional swap.OnrampSwapSource onramp = 5;
 
   // Add more otional funding sources, like direct lightning deposit
 }
@@ -35,7 +40,9 @@ message SolowalletTx {
 
   optional int32 amount_fiat = 5;
 
-  reserved 6, 7, 8, 9;
+  lightning.Bolt11 lightning = 6;
+
+  reserved 7, 8, 9;
 
   string reference = 10;
 

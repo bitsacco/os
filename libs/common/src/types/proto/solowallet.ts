@@ -8,11 +8,14 @@
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { PaginatedRequest, TransactionStatus } from './lib';
-import { OnrampSwapRequest } from './swap';
+import { FmInvoice } from './lightning';
+import { OnrampSwapSource } from './swap';
 
 export interface DepositFundsRequest {
   userId: string;
-  fiatDeposit?: OnrampSwapRequest | undefined;
+  amountFiat: number;
+  reference: string;
+  onramp?: OnrampSwapSource | undefined;
 }
 
 export interface DepositFundsResponse {
@@ -26,6 +29,7 @@ export interface SolowalletTx {
   status: TransactionStatus;
   amountMsats: number;
   amountFiat?: number | undefined;
+  lightning: FmInvoice | undefined;
   reference: string;
   createdAt: string;
   updatedAt?: string | undefined;

@@ -20,6 +20,7 @@ import {
   FedimintService,
   SupportedCurrencyType,
   PaginatedRequestDto,
+  QuoteRequestDto,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -63,7 +64,11 @@ export class SwapService {
     this.logger.log('SwapService initialized');
   }
 
-  async getQuote({ from, to, amount }: QuoteRequest): Promise<QuoteResponse> {
+  async getQuote({
+    from,
+    to,
+    amount,
+  }: QuoteRequestDto): Promise<QuoteResponse> {
     try {
       if (amount && isNaN(Number(amount))) {
         throw new Error('Amount must be a number');

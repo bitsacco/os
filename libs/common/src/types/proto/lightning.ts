@@ -10,3 +10,9 @@ export interface Bolt11 {
   /** Bolt11 lightning invoice */
   invoice: string;
 }
+
+export interface FmInvoice {
+  /** Fallback invoice */
+  invoice: string;
+  operationId: string;
+}

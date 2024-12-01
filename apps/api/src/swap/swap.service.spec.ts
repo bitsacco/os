@@ -4,7 +4,7 @@ import { ClientGrpc } from '@nestjs/microservices';
 import {
   Currency,
   fiatToBtc,
-  type QuoteRequest,
+  QuoteRequestDto,
   type QuoteResponse,
   SWAP_SERVICE_NAME,
   SwapServiceClient,
@@ -27,7 +27,7 @@ describe('SwapService', () => {
       getQuote: jest
         .fn()
         .mockImplementation(
-          ({ from, to, amount }: QuoteRequest): QuoteResponse => {
+          ({ from, to, amount }: QuoteRequestDto): QuoteResponse => {
             return {
               id: mock_id,
               from,
@@ -156,7 +156,7 @@ describe('SwapService', () => {
           },
         },
         target: {
-          invoice: {
+          payout: {
             invoice: 'lnbc1000u1p0j7j0pp5',
           },
         },
@@ -176,7 +176,7 @@ describe('SwapService', () => {
           },
         },
         target: {
-          invoice: {
+          payout: {
             invoice: 'lnbc1000u1p0j7j0pp5',
           },
         },
@@ -233,7 +233,7 @@ describe('SwapService', () => {
         amountFiat: '100',
         target: {
           currency: Currency.KES,
-          destination: {
+          payout: {
             phone: '0700000000',
           },
         },
@@ -248,7 +248,7 @@ describe('SwapService', () => {
         amountFiat: '100',
         target: {
           currency: Currency.KES,
-          destination: {
+          payout: {
             phone: '0700000000',
           },
         },

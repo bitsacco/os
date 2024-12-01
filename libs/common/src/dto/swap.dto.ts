@@ -25,8 +25,15 @@ import {
   PaginatedRequest,
   MobileMoney,
   Bolt11,
+  QuoteRequest,
 } from '../types';
 import { TransformToCurrency } from './transforms';
+
+export class QuoteRequestDto implements QuoteRequest {
+  from: Currency;
+  to: Currency;
+  amount?: string;
+}
 
 export class QuoteDto {
   @IsString()
@@ -54,7 +61,7 @@ export class Bolt11InvoiceDto implements Bolt11 {
   invoice: string;
 }
 
-class OnrampSwapSourceDto implements OnrampSwapSource {
+export class OnrampSwapSourceDto implements OnrampSwapSource {
   @IsEnum(Currency)
   @TransformToCurrency()
   @ApiProperty({ enum: SupportedCurrencies, enumName: 'SupportedCurrencyType' })
@@ -160,10 +167,12 @@ export class ListSwapsDto implements PaginatedRequest {
   @ApiProperty()
   @IsNumber()
   @Min(0)
+  @ApiProperty({ example: 0 })
   page: number;
 
   @ApiProperty()
   @IsNumber()
   @Min(1)
+  @ApiProperty({ example: 10 })
   size: number;
 }
