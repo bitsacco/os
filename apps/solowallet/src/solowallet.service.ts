@@ -203,7 +203,7 @@ export class SolowalletService {
           {
             $match: {
               userId: userId,
-              status: TransactionStatus.COMPLETE,
+              status: TransactionStatus.COMPLETE.toString(),
             },
           },
           {
