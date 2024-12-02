@@ -193,20 +193,20 @@ export class SolowalletService {
     userId,
     pagination,
   }: UserTxsRequestDto): Promise<PaginatedSolowalletTxsResponse> {
-    const allDeposits = await this.wallet.find({ userId }, { createdAt: -1 });
+    const allTx = await this.wallet.find({ userId }, { createdAt: -1 });
 
     const { page, size } = pagination;
-    const pages = Math.ceil(allDeposits.length / size);
+    const pages = Math.ceil(allTx.length / size);
 
     // select the last page if requested page exceeds total pages possible
     const selectPage = page > pages ? pages - 1 : page;
 
-    const deposits = allDeposits
+    const transactions = allTx
       .slice(selectPage * size, (selectPage + 1) * size + size)
-      .map((deposit) => {
+      .map((tx) => {
         let lightning: FmInvoice;
         try {
-          lightning = JSON.parse(deposit.lightning);
+          lightning = JSON.parse(tx.lightning);
         } catch (error) {
           this.logger.warn('Error parsing lightning invoice', error);
           lightning = {
@@ -217,32 +217,32 @@ export class SolowalletService {
 
         let status = TransactionStatus.UNRECOGNIZED;
         try {
-          status = Number(deposit.status) as TransactionStatus;
+          status = Number(tx.status) as TransactionStatus;
         } catch (error) {
           this.logger.warn('Error parsing transaction status', error);
         }
 
         let type = TransactionType.UNRECOGNIZED;
         try {
-          type = Number(deposit.type) as TransactionType;
+          type = Number(tx.type) as TransactionType;
         } catch (error) {
           this.logger.warn('Error parsing transaction type', error);
         }
 
         return {
-          ...deposit,
+          ...tx,
           status,
           type,
           lightning,
           paymentTracker: lightning.operationId,
-          id: deposit._id,
-          createdAt: deposit.createdAt.toDateString(),
-          updatedAt: deposit.updatedAt.toDateString(),
+          id: tx._id,
+          createdAt: tx.createdAt.toDateString(),
+          updatedAt: tx.updatedAt.toDateString(),
         };
       });
 
     return {
-      transactions: deposits,
+      transactions,
       page: selectPage,
       size,
       pages,
