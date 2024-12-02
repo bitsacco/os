@@ -9,13 +9,13 @@ export class SolowalletDocument extends AbstractDocument {
   @Prop({ type: Number, required: true })
   amountMsats: number;
 
-  @Prop({ type: Number, required: true })
-  amountFiat: number;
+  @Prop({ type: Number, required: false })
+  amountFiat?: number;
 
   @Prop({
     type: String,
-    enum: Object.values(TransactionStatus),
     required: true,
+    enum: Object.values(TransactionStatus),
   })
   status: TransactionStatus;
 

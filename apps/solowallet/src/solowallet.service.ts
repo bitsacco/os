@@ -167,12 +167,19 @@ export class SolowalletService {
           };
         }
 
+        let status = TransactionStatus.UNRECOGNIZED;
+        try {
+          status = Number(deposit.status) as TransactionStatus;
+        } catch (error) {
+          this.logger.warn('Error parsing deposit status', error);
+        }
+
         return {
           ...deposit,
+          status,
           lightning,
           paymentTracker: lightning.operationId,
           id: deposit._id,
-          status: deposit.status,
           createdAt: deposit.createdAt.toDateString(),
           updatedAt: deposit.updatedAt.toDateString(),
         };
