@@ -1,6 +1,7 @@
 import {
   DepositFundsRequestDto,
-  FindUserTxsRequestDto,
+  UserTxsRequestDto,
+  WithdrawFundsRequestDto,
 } from '@bitsacco/common';
 import { Body, Controller, Logger, Post } from '@nestjs/common';
 import { ApiOperation, ApiBody } from '@nestjs/swagger';
@@ -23,12 +24,21 @@ export class SolowalletController {
     return this.walletService.depositFunds(req);
   }
 
-  @Post('user-deposits')
-  @ApiOperation({ summary: 'Find Solowallet user deposits' })
+  @Post('withdraw')
+  @ApiOperation({ summary: 'Withdraw funds from Solowallet' })
   @ApiBody({
-    type: FindUserTxsRequestDto,
+    type: WithdrawFundsRequestDto,
   })
-  findUserDeposits(@Body() req: FindUserTxsRequestDto) {
-    return this.walletService.findUserDeposits(req);
+  withdrawFunds(@Body() req: WithdrawFundsRequestDto) {
+    return this.walletService.withdrawFunds(req);
+  }
+
+  @Post('transactions')
+  @ApiOperation({ summary: 'Find Solowallet user transactions' })
+  @ApiBody({
+    type: UserTxsRequestDto,
+  })
+  userTransactions(@Body() req: UserTxsRequestDto) {
+    return this.walletService.userTransactions(req);
   }
 }

@@ -9,7 +9,13 @@ import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { PaginatedRequest, TransactionStatus } from './lib';
 import { Bolt11 } from './lightning';
-import { OnrampSwapSource } from './swap';
+import { OfframpSwapTarget, OnrampSwapSource } from './swap';
+
+export enum TransactionType {
+  DEPOSIT = 0,
+  WITHDRAW = 1,
+  UNRECOGNIZED = -1,
+}
 
 export interface DepositFundsRequest {
   userId: string;
@@ -18,10 +24,24 @@ export interface DepositFundsRequest {
   onramp?: OnrampSwapSource | undefined;
 }
 
-export interface DepositFundsResponse {
-  txId: string;
-  deposits: PaginatedSolowalletTxsResponse | undefined;
-  meta?: DepositsMeta | undefined;
+export interface WithdrawFundsRequest {
+  userId: string;
+  amountFiat: number;
+  reference: string;
+  offramp?: OfframpSwapTarget | undefined;
+  lightning?: Bolt11 | undefined;
+}
+
+export interface UserTxsRequest {
+  userId: string;
+  pagination: PaginatedRequest | undefined;
+}
+
+export interface UserTxsResponse {
+  txId?: string | undefined;
+  ledger: PaginatedSolowalletTxsResponse | undefined;
+  meta?: WalletMeta | undefined;
+  userId: string;
 }
 
 export interface SolowalletTx {
@@ -31,19 +51,10 @@ export interface SolowalletTx {
   amountMsats: number;
   amountFiat?: number | undefined;
   lightning: Bolt11 | undefined;
+  type: TransactionType;
   reference: string;
   createdAt: string;
   updatedAt?: string | undefined;
-}
-
-export interface FindUserTxsRequest {
-  userId: string;
-  pagination: PaginatedRequest | undefined;
-}
-
-export interface FindUserDepositTxsResponse {
-  deposits: PaginatedSolowalletTxsResponse | undefined;
-  meta?: DepositsMeta | undefined;
 }
 
 export interface PaginatedSolowalletTxsResponse {
@@ -57,39 +68,41 @@ export interface PaginatedSolowalletTxsResponse {
   pages: number;
 }
 
-export interface DepositsMeta {
-  totalMsats: number;
-  avgMsats: number;
-  count: number;
+export interface WalletMeta {
+  totalDeposits: number;
+  totalWithdrawals: number;
+  currentBalance: number;
 }
 
 export interface SolowalletServiceClient {
-  depositFunds(request: DepositFundsRequest): Observable<DepositFundsResponse>;
+  depositFunds(request: DepositFundsRequest): Observable<UserTxsResponse>;
 
-  findUserDeposits(
-    request: FindUserTxsRequest,
-  ): Observable<FindUserDepositTxsResponse>;
+  withdrawFunds(request: WithdrawFundsRequest): Observable<UserTxsResponse>;
+
+  userTransactions(request: UserTxsRequest): Observable<UserTxsResponse>;
 }
 
 export interface SolowalletServiceController {
   depositFunds(
     request: DepositFundsRequest,
-  ):
-    | Promise<DepositFundsResponse>
-    | Observable<DepositFundsResponse>
-    | DepositFundsResponse;
+  ): Promise<UserTxsResponse> | Observable<UserTxsResponse> | UserTxsResponse;
 
-  findUserDeposits(
-    request: FindUserTxsRequest,
-  ):
-    | Promise<FindUserDepositTxsResponse>
-    | Observable<FindUserDepositTxsResponse>
-    | FindUserDepositTxsResponse;
+  withdrawFunds(
+    request: WithdrawFundsRequest,
+  ): Promise<UserTxsResponse> | Observable<UserTxsResponse> | UserTxsResponse;
+
+  userTransactions(
+    request: UserTxsRequest,
+  ): Promise<UserTxsResponse> | Observable<UserTxsResponse> | UserTxsResponse;
 }
 
 export function SolowalletServiceControllerMethods() {
   return function (constructor: Function) {
-    const grpcMethods: string[] = ['depositFunds', 'findUserDeposits'];
+    const grpcMethods: string[] = [
+      'depositFunds',
+      'withdrawFunds',
+      'userTransactions',
+    ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(
         constructor.prototype,

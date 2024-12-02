@@ -115,7 +115,7 @@ export class CreateOnrampSwapDto implements OnrampSwapRequest {
   target: OnrampSwapTargetDto;
 }
 
-class OfframpSwapTargetDto implements OfframpSwapTarget {
+export class OfframpSwapTargetDto implements OfframpSwapTarget {
   @IsEnum(Currency)
   @TransformToCurrency()
   @ApiProperty({ enum: SupportedCurrencies, enumName: 'SupportedCurrencyType' })

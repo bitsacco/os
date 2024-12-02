@@ -7,9 +7,11 @@ import "lightning.proto";
 package solowallet;
 
 service SolowalletService {
-  rpc DepositFunds(DepositFundsRequest) returns (DepositFundsResponse){}
+  rpc DepositFunds(DepositFundsRequest) returns (UserTxsResponse){}
 
-  rpc FindUserDeposits(FindUserTxsRequest) returns (FindUserDepositTxsResponse){}
+  rpc WithdrawFunds(WithdrawFundsRequest) returns (UserTxsResponse){}
+
+  rpc UserTransactions(UserTxsRequest) returns (UserTxsResponse){}
 }
 
 message DepositFundsRequest {
@@ -21,13 +23,38 @@ message DepositFundsRequest {
 
   optional swap.OnrampSwapSource onramp = 5;
 
-  // Add more otional funding sources, like direct lightning deposit
+  // Add more optional funding sources, like direct lightning deposit
 }
 
-message DepositFundsResponse {
-  string tx_id = 1;
-  PaginatedSolowalletTxsResponse deposits = 2;
-  optional DepositsMeta meta = 3;
+message WithdrawFundsRequest {
+  string user_id = 1;
+
+  int32 amountFiat = 2;
+
+  string reference = 3;
+
+  optional swap.OfframpSwapTarget offramp = 4;
+
+  optional lightning.Bolt11 lightning = 5;
+
+  // Add more optional withdrawal targets, like bolt12 or lnurl address
+}
+
+message UserTxsRequest {
+  string user_id = 1;
+  lib.PaginatedRequest pagination = 2;
+}
+
+message UserTxsResponse {
+  optional string tx_id = 1;
+  PaginatedSolowalletTxsResponse ledger = 2;
+  optional WalletMeta meta = 3;
+  string user_id = 4;
+}
+
+enum TransactionType {
+  DEPOSIT = 0;
+  WITHDRAW = 1;
 }
 
 message SolowalletTx {
@@ -43,23 +70,15 @@ message SolowalletTx {
 
   lightning.Bolt11 lightning = 6;
 
-  reserved 7, 8, 9;
+  TransactionType type = 7;
+
+  reserved 8, 9;
 
   string reference = 10;
 
   string createdAt = 11;
 
   optional string updatedAt = 12;
-}
-
-message FindUserTxsRequest {
-  string user_id = 1;
-  lib.PaginatedRequest pagination = 2;
-}
-
-message FindUserDepositTxsResponse {
-  PaginatedSolowalletTxsResponse deposits = 1;
-  optional DepositsMeta meta = 2;
 }
 
 message PaginatedSolowalletTxsResponse {
@@ -73,8 +92,8 @@ message PaginatedSolowalletTxsResponse {
   int32 pages = 4;
 }
 
-message DepositsMeta {
-  int32 total_msats = 1;
-  float avg_msats = 2;
-  int32 count = 3;
+message WalletMeta {
+  int32 total_deposits = 1;
+  float total_withdrawals = 2;
+  int32 current_balance = 3;
 }

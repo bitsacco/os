@@ -1,5 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { AbstractDocument, TransactionStatus } from '@bitsacco/common';
+import {
+  AbstractDocument,
+  TransactionStatus,
+  TransactionType,
+} from '@bitsacco/common';
 
 @Schema({ versionKey: false })
 export class SolowalletDocument extends AbstractDocument {
@@ -11,6 +15,13 @@ export class SolowalletDocument extends AbstractDocument {
 
   @Prop({ type: Number, required: false })
   amountFiat?: number;
+
+  @Prop({
+    type: String,
+    required: true,
+    enum: Object.values(TransactionType),
+  })
+  type: TransactionType;
 
   @Prop({
     type: String,

@@ -1,8 +1,9 @@
 import {
   DepositFundsRequestDto,
-  FindUserTxsRequestDto,
+  UserTxsRequestDto,
   SOLOWALLET_SERVICE_NAME,
   SolowalletServiceClient,
+  WithdrawFundsRequestDto,
 } from '@bitsacco/common';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { type ClientGrpc } from '@nestjs/microservices';
@@ -25,7 +26,11 @@ export class SolowalletService implements OnModuleInit {
     return this.client.depositFunds(req);
   }
 
-  findUserDeposits(req: FindUserTxsRequestDto) {
-    return this.client.findUserDeposits(req);
+  userTransactions(req: UserTxsRequestDto) {
+    return this.client.userTransactions(req);
+  }
+
+  withdrawFunds(req: WithdrawFundsRequestDto) {
+    return this.client.withdrawFunds(req);
   }
 }

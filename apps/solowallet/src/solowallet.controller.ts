@@ -3,7 +3,8 @@ import { GrpcMethod } from '@nestjs/microservices';
 import {
   SolowalletServiceControllerMethods,
   DepositFundsRequestDto,
-  FindUserTxsRequestDto,
+  UserTxsRequestDto,
+  WithdrawFundsRequestDto,
 } from '@bitsacco/common';
 import { SolowalletService } from './solowallet.service';
 
@@ -18,7 +19,12 @@ export class SolowalletController {
   }
 
   @GrpcMethod()
-  findUserDeposits(request: FindUserTxsRequestDto) {
-    return this.solowalletService.findUserDeposits(request);
+  userTransactions(request: UserTxsRequestDto) {
+    return this.solowalletService.userTransactions(request);
+  }
+
+  @GrpcMethod()
+  withdrawFunds(request: WithdrawFundsRequestDto) {
+    return this.solowalletService.withdrawFunds(request);
   }
 }

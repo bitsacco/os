@@ -15,6 +15,7 @@ import {
   WithFederationId,
   WithGatewayId,
 } from '@bitsacco/common';
+import { decode } from 'light-bolt11-decoder';
 
 @Injectable()
 export class FedimintService {
@@ -100,17 +101,44 @@ export class FedimintService {
     };
   }
 
+  async decode(invoice: string): Promise<FlatDecodedInvoice> {
+    try {
+      const decodedInvoice = decode(invoice);
+      // this.logger.log(decodedInvoice);
+
+      return {
+        paymentHash: decodedInvoice.sections.find(
+          (s) => s.name === 'payment_hash',
+        )?.value,
+        amountMsats: decodedInvoice.sections.find((s) => s.name === 'amount')
+          ?.value,
+        description: decodedInvoice.sections.find(
+          (s) => s.name === 'description',
+        )?.value,
+        timestamp: decodedInvoice.sections.find((s) => s.name === 'timestamp')
+          ?.value,
+      };
+    } catch (error) {
+      console.error('Error decoding invoice:', error);
+      throw new Error('Failed to decode invoice');
+    }
+  }
+
   async pay(invoice: string): Promise<{ operationId: string; fee: number }> {
     this.logger.log(`Paying Invoice : ${invoice}`);
 
-    const { operationId, fee }: LightningPayResponse = await this.post<
+    const foo = await this.post<
       { paymentInfo: string } & WithFederationId & WithGatewayId,
-      LightningPayResponse
+      unknown
     >('/ln/pay', {
       paymentInfo: invoice,
       federationId: this.federationId,
       gatewayId: this.gatewayId,
     });
+
+    this.logger.log(foo);
+    const { operationId, fee }: LightningPayResponse =
+      foo as LightningPayResponse;
 
     this.logger.log(`Paid Invoice : ${invoice} : ${operationId}`);
     return {
@@ -167,4 +195,11 @@ export class FedimintService {
         });
       });
   }
+}
+
+interface FlatDecodedInvoice {
+  paymentHash: string;
+  amountMsats: string;
+  description: string;
+  timestamp: number;
 }

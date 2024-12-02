@@ -52,6 +52,7 @@
     "intasend-node": "^1.1.2",
     "ioredis": "^5.4.1",
     "joi": "^17.13.3",
+    "light-bolt11-decoder": "^3.2.0",
     "mongoose": "^8.8.0",
     "nestjs-pino": "^4.1.0",
     "nostr-tools": "^2.10.3",
