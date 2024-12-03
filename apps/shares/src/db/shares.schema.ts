@@ -51,31 +51,31 @@ export class SharesDocument extends AbstractDocument {
 
 export const SharesSchema = SchemaFactory.createForClass(SharesDocument);
 
-export function toSharesTx(share: SharesDocument): SharesTx {
+export function toSharesTx(doc: SharesDocument): SharesTx {
   let status: SharesTxStatus;
 
-  if (share.status === undefined || share.status.toString() === '0') {
+  if (doc.status === undefined || doc.status.toString() === '0') {
     status = SharesTxStatus.PROPOSED;
-  } else if (share.status.toString() === '1') {
+  } else if (doc.status.toString() === '1') {
     status = SharesTxStatus.PROCESSING;
-  } else if (share.status.toString() === '2') {
+  } else if (doc.status.toString() === '2') {
     status = SharesTxStatus.APPROVED;
-  } else if (share.status.toString() === '3') {
+  } else if (doc.status.toString() === '3') {
     status = SharesTxStatus.COMPLETE;
-  } else if (share.status.toString() === '4') {
+  } else if (doc.status.toString() === '4') {
     status = SharesTxStatus.FAILED;
   } else {
     status = SharesTxStatus.UNRECOGNIZED;
   }
 
   return {
-    id: share._id,
-    userId: share.userId,
-    offerId: share.offerId,
-    quantity: share.quantity,
+    id: doc._id,
+    userId: doc.userId,
+    offerId: doc.offerId,
+    quantity: doc.quantity,
     status,
-    transfer: share.transfer,
-    createdAt: share.createdAt.toDateString(),
-    updatedAt: share.updatedAt.toDateString(),
+    transfer: doc.transfer,
+    createdAt: doc.createdAt.toDateString(),
+    updatedAt: doc.updatedAt.toDateString(),
   };
 }

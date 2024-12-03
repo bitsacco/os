@@ -15,6 +15,22 @@ services:
       - '4000:4000'
     volumes:
       - .:/usr/src/app
+  auth:
+    container_name: auth
+    build:
+      context: .
+      dockerfile: ./apps/auth/Dockerfile
+      target: development
+    command: bun dev auth
+    restart: always
+    depends_on:
+      - mongodb
+    env_file:
+      - ./apps/auth/.dev.env
+    ports:
+      - '4010:4010'
+    volumes:
+      - .:/usr/src/app
   swap:
     container_name: swap
     build:

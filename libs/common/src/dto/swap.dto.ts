@@ -50,7 +50,9 @@ export class QuoteDto {
 export class MobileMoneyDto implements MobileMoney {
   @IsString()
   @Type(() => String)
-  @ApiProperty()
+  @ApiProperty({
+    example: '254700000000',
+  })
   phone: string;
 }
 
