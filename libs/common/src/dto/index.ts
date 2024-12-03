@@ -1,3 +1,4 @@
+export * from './auth.dto';
 export * from './lib.dto';
 export * from './swap.dto';
 export * from './nostr.dto';
