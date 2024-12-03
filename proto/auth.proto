@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package auth;
+
+service AuthService {
+  rpc CreateUser (CreateUserRequest) returns (User) {}
+  rpc Authenticate (AuthUserRequest) returns (User) {}
+}
+
+message CreateUserRequest {
+  string phone = 1;
+  string pin = 2;
+  string npub = 3;
+  repeated string roles = 4;
+}
+
+message AuthUserRequest {
+  string Authentication = 1;
+}
+
+message User {
+  string id = 1;
+  string pin = 2;
+
+  reserved 3, 4, 5;
+
+  // Users phone number identifier
+  optional string phone = 6;
+  // Users phone number has been verified via SMS
+  bool phone_verified = 7;
+  // Users nostr npub identifier
+  optional string npub = 8;
+  // Users name or nym
+  optional string name = 9;
+  // Users avatar url
+  optional string avatar_url = 10;
+  
+  reserved 11, 12, 13, 14;
+
+  // Users roles
+  repeated string roles = 15;
+}
