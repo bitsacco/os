@@ -30,7 +30,8 @@ export class SharesService {
     );
     const shares = allShares.map((share) => ({
       quantity: share.quantity,
-      purchasedAtUnix: Number(share.createdAt),
+      createdAt: share.createdAt.toDateString(),
+      updatedAt: share.updatedAt.toDateString(),
     }));
 
     const shareSubscription = await this.getShareSubscrition({});

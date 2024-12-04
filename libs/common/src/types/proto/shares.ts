@@ -29,7 +29,8 @@ export interface ShareDetails {
   /** Number of shared purchased */
   quantity: number;
   /** Unix timestamp for when the shares were purchased */
-  purchasedAtUnix: number;
+  createdAt: string;
+  updatedAt?: string | undefined;
 }
 
 export interface ShareSubscriptionResponse {

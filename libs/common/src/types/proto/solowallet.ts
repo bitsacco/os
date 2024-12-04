@@ -8,7 +8,7 @@
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { PaginatedRequest, TransactionStatus } from './lib';
-import { FmInvoice } from './lightning';
+import { Bolt11 } from './lightning';
 import { OnrampSwapSource } from './swap';
 
 export interface DepositFundsRequest {
@@ -29,7 +29,7 @@ export interface SolowalletTx {
   status: TransactionStatus;
   amountMsats: number;
   amountFiat?: number | undefined;
-  lightning: FmInvoice | undefined;
+  lightning: Bolt11 | undefined;
   reference: string;
   createdAt: string;
   updatedAt?: string | undefined;
