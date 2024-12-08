@@ -30,7 +30,8 @@ message ShareDetails {
   // Number of shared purchased
   int32 quantity = 1;
   // Unix timestamp for when the shares were purchased
-  int64 purchasedAtUnix = 3;
+  string createdAt = 11;
+  optional string updatedAt = 12;
 }
 
 message ShareSubscriptionResponse {
