@@ -9,6 +9,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { object } from 'joi';
 import { ClientProxy } from '@nestjs/microservices';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import {
@@ -164,8 +165,8 @@ export class SwapController {
     summary:
       'Post updates to an acive swap. Used as a webhook by 3rd parties to notify transaction progress',
   })
-  @ApiBody({})
-  postSwapUpdate(@Body() updates: any) {
+  @ApiBody({ type: object })
+  postSwapUpdate(@Body() updates: unknown) {
     this.eventsClient.emit(process_swap_update, updates);
     return { success: true };
   }
