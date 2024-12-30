@@ -9,76 +9,163 @@ import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import { Empty } from './lib';
 
-export interface GetShareDetailRequest {
-  userId: string;
+export enum SharesTxStatus {
+  PROPOSED = 0,
+  PROCESSING = 1,
+  APPROVED = 2,
+  COMPLETE = 3,
+  FAILED = 4,
+  UNRECOGNIZED = -1,
 }
 
-export interface BuySharesRequest {
-  userId: string;
+export interface OfferSharesRequest {
+  /** Number of shares to issue */
   quantity: number;
+  /** Date from which the shares will be available for subscription */
+  availableFrom: string;
+  /**
+   * Date until which the shares will be available for subscription
+   * Shares can be sold out before this availability date lapses
+   */
+  availableTo?: string | undefined;
 }
 
-export interface ShareDetailResponse {
-  userId: string;
-  shareHoldings: number;
-  shares: ShareDetails[];
-  shareSubscription: ShareSubscriptionResponse | undefined;
-}
-
-export interface ShareDetails {
-  /** Number of shared purchased */
+export interface SharesOffer {
+  id: string;
+  /** Number of shares issued */
   quantity: number;
-  /** Unix timestamp for when the shares were purchased */
+  /** Number of shares subscribed by members */
+  subscribedQuantity: number;
+  /** Date from which the shares will be available for subscription */
+  availableFrom: string;
+  /**
+   * Date until which the shares will be available for subscription
+   * Shares can be sold out before this availability date lapses
+   */
+  availableTo?: string | undefined;
   createdAt: string;
   updatedAt?: string | undefined;
 }
 
-export interface ShareSubscriptionResponse {
-  /** Total shares issued */
-  sharesIssued: number;
-  /** Total shares subscribed */
-  sharesSold: number;
+export interface AllSharesOffers {
+  offers: SharesOffer[];
+  totalOfferQuantity: number;
+  totalSubscribedQuantity: number;
+}
+
+export interface SharesTx {
+  id: string;
+  userId: string;
+  offerId: string;
+  quantity: number;
+  status: SharesTxStatus;
+  transfer?: SharesTxTransferMeta | undefined;
+  createdAt: string;
+  updatedAt?: string | undefined;
+}
+
+export interface SharesTxTransferMeta {
+  fromUserId: string;
+  toUserId: string;
+  quantity: number;
+}
+
+export interface SubscribeSharesRequest {
+  userId: string;
+  offerId: string;
+  quantity: number;
+}
+
+export interface TransferSharesRequest {
+  fromUserId: string;
+  toUserId: string;
+  sharesId: string;
+  quantity: number;
+}
+
+export interface UserSharesTxsRequest {
+  userId: string;
+}
+
+export interface UserShareTxsResponse {
+  userId: string;
+  shareHoldings: number;
+  shares: SharesTx[];
+  offers: AllSharesOffers | undefined;
+}
+
+export interface AllSharesTxsResponse {
+  shares: SharesTx[];
+  offers: AllSharesOffers | undefined;
 }
 
 export interface SharesServiceClient {
-  getShareDetail(
-    request: GetShareDetailRequest,
-  ): Observable<ShareDetailResponse>;
+  offerShares(request: OfferSharesRequest): Observable<AllSharesOffers>;
 
-  buyShares(request: BuySharesRequest): Observable<ShareDetailResponse>;
+  getSharesOffers(request: Empty): Observable<AllSharesOffers>;
 
-  getShareSubscription(request: Empty): Observable<ShareSubscriptionResponse>;
+  subscribeShares(
+    request: SubscribeSharesRequest,
+  ): Observable<UserShareTxsResponse>;
+
+  transferShares(
+    request: TransferSharesRequest,
+  ): Observable<UserShareTxsResponse>;
+
+  userSharesTransactions(
+    request: UserSharesTxsRequest,
+  ): Observable<UserShareTxsResponse>;
+
+  allSharesTransactions(request: Empty): Observable<AllSharesTxsResponse>;
 }
 
 export interface SharesServiceController {
-  getShareDetail(
-    request: GetShareDetailRequest,
-  ):
-    | Promise<ShareDetailResponse>
-    | Observable<ShareDetailResponse>
-    | ShareDetailResponse;
+  offerShares(
+    request: OfferSharesRequest,
+  ): Promise<AllSharesOffers> | Observable<AllSharesOffers> | AllSharesOffers;
 
-  buyShares(
-    request: BuySharesRequest,
-  ):
-    | Promise<ShareDetailResponse>
-    | Observable<ShareDetailResponse>
-    | ShareDetailResponse;
+  getSharesOffers(
+    request: Empty,
+  ): Promise<AllSharesOffers> | Observable<AllSharesOffers> | AllSharesOffers;
 
-  getShareSubscription(
+  subscribeShares(
+    request: SubscribeSharesRequest,
+  ):
+    | Promise<UserShareTxsResponse>
+    | Observable<UserShareTxsResponse>
+    | UserShareTxsResponse;
+
+  transferShares(
+    request: TransferSharesRequest,
+  ):
+    | Promise<UserShareTxsResponse>
+    | Observable<UserShareTxsResponse>
+    | UserShareTxsResponse;
+
+  userSharesTransactions(
+    request: UserSharesTxsRequest,
+  ):
+    | Promise<UserShareTxsResponse>
+    | Observable<UserShareTxsResponse>
+    | UserShareTxsResponse;
+
+  allSharesTransactions(
     request: Empty,
   ):
-    | Promise<ShareSubscriptionResponse>
-    | Observable<ShareSubscriptionResponse>
-    | ShareSubscriptionResponse;
+    | Promise<AllSharesTxsResponse>
+    | Observable<AllSharesTxsResponse>
+    | AllSharesTxsResponse;
 }
 
 export function SharesServiceControllerMethods() {
   return function (constructor: Function) {
     const grpcMethods: string[] = [
-      'getShareDetail',
-      'buyShares',
-      'getShareSubscription',
+      'offerShares',
+      'getSharesOffers',
+      'subscribeShares',
+      'transferShares',
+      'userSharesTransactions',
+      'allSharesTransactions',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(

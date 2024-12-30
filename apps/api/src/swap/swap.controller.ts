@@ -137,7 +137,7 @@ export class SwapController {
   }
 
   @Get('offramp/all')
-  @ApiOperation({ summary: 'List offramp swaps' })
+  @ApiOperation({ summary: 'List all offramp swaps' })
   @ApiQuery({
     name: 'page',
     example: '0',

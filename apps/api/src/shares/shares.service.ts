@@ -1,9 +1,11 @@
 import {
   SharesServiceClient,
   SHARES_SERVICE_NAME,
-  BuySharesDto,
   Empty,
-  GetShareDetailDto,
+  OfferSharesDto,
+  SubscribeSharesDto,
+  TransferSharesDto,
+  UserSharesDto,
 } from '@bitsacco/common';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { type ClientGrpc } from '@nestjs/microservices';
@@ -19,15 +21,27 @@ export class SharesService implements OnModuleInit {
       this.grpc.getService<SharesServiceClient>(SHARES_SERVICE_NAME);
   }
 
-  getShareDetail(req: GetShareDetailDto) {
-    return this.client.getShareDetail(req);
+  offerShares(req: OfferSharesDto) {
+    return this.client.offerShares(req);
   }
 
-  buyShares(req: BuySharesDto) {
-    return this.client.buyShares(req);
+  getSharesOffers(req: Empty) {
+    return this.client.getSharesOffers(req);
   }
 
-  getShareSubscription(req: Empty) {
-    return this.client.getShareSubscription({});
+  subscribeShares(req: SubscribeSharesDto) {
+    return this.client.subscribeShares(req);
+  }
+
+  transferShares(req: TransferSharesDto) {
+    return this.client.transferShares(req);
+  }
+
+  userSharesTransactions(req: UserSharesDto) {
+    return this.client.userSharesTransactions(req);
+  }
+
+  allSharesTransactions(req: Empty) {
+    return this.client.allSharesTransactions(req);
   }
 }

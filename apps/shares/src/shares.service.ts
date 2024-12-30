@@ -1,88 +1,164 @@
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  BuySharesDto,
-  Empty,
-  GetShareDetailDto,
-  ShareDetailResponse,
-  ShareSubscriptionResponse,
+  AllSharesOffers,
+  AllSharesTxsResponse,
+  OfferSharesDto,
+  SharesOffer,
+  SharesTxStatus,
+  SubscribeSharesDto,
+  TransferSharesDto,
+  UserSharesDto,
+  UserShareTxsResponse,
 } from '@bitsacco/common';
-import { SharesRepository } from './db';
-import { ConfigService } from '@nestjs/config';
+import { SharesOfferRepository, SharesRepository, toSharesTx } from './db';
 
 @Injectable()
 export class SharesService {
   private readonly logger = new Logger(SharesService.name);
 
   constructor(
+    private readonly shareOffers: SharesOfferRepository,
     private readonly shares: SharesRepository,
-    private readonly configService: ConfigService,
   ) {
     this.logger.log('SharesService created');
   }
 
-  async getShareDetail({
-    userId,
-  }: GetShareDetailDto): Promise<ShareDetailResponse> {
-    const allShares = await this.shares.find({ userId }, { createdAt: -1 });
-    const shareHoldings = allShares.reduce(
-      (sum, share) => sum + share.quantity,
-      0,
-    );
-    const shares = allShares.map((share) => ({
-      quantity: share.quantity,
-      createdAt: share.createdAt.toDateString(),
-      updatedAt: share.updatedAt.toDateString(),
+  async offerShares({
+    quantity,
+    availableFrom,
+    availableTo,
+  }: OfferSharesDto): Promise<AllSharesOffers> {
+    await this.shareOffers.create({
+      quantity,
+      subscribedQuantity: 0,
+      availableFrom: new Date(availableFrom),
+      availableTo: availableTo ? new Date(availableTo) : undefined,
+    });
+
+    return this.getSharesOffers();
+  }
+
+  async getSharesOffers(): Promise<AllSharesOffers> {
+    const offers: SharesOffer[] = (
+      await this.shareOffers.find({}, { createdAt: -1 })
+    ).map((offer) => ({
+      id: offer._id,
+      quantity: offer.quantity,
+      subscribedQuantity: offer.subscribedQuantity,
+      availableFrom: offer.availableFrom.toDateString(),
+      availableTo: offer.availableTo.toDateString(),
+      createdAt: offer.createdAt.toDateString(),
+      updatedAt: offer.updatedAt.toDateString(),
     }));
 
-    const shareSubscription = await this.getShareSubscrition({});
+    const totalOfferQuantity = offers.reduce(
+      (sum, offer) => sum + offer.quantity,
+      0,
+    );
+    const totalSubscribedQuantity = offers.reduce(
+      (sum, offer) => sum + offer.subscribedQuantity,
+      0,
+    );
 
-    const res: ShareDetailResponse = {
-      userId,
-      shareHoldings,
-      shares,
-      shareSubscription,
+    const res: AllSharesOffers = {
+      offers,
+      totalOfferQuantity,
+      totalSubscribedQuantity,
     };
 
     return Promise.resolve(res);
   }
 
-  async buyShares({
+  async subscribeShares({
     userId,
+    offerId,
     quantity,
-  }: BuySharesDto): Promise<ShareDetailResponse> {
-    this.logger.debug(`Buying ${quantity} Bitsacco shares for ${userId}`);
+  }: SubscribeSharesDto): Promise<UserShareTxsResponse> {
+    this.logger.debug(`Subscribing ${quantity} Bitsacco shares for ${userId}`);
 
     await this.shares.create({
       userId,
+      offerId,
       quantity,
+      status: SharesTxStatus.PROPOSED,
     });
 
-    return this.getShareDetail({ userId });
+    return this.userSharesTransactions({ userId });
   }
 
-  async getShareSubscrition(_: Empty): Promise<ShareSubscriptionResponse> {
-    let sharesIssued = this.configService.get<number>('SHARES_ISSUED') || 0;
-    let sharesSold = 0;
+  async transferShares({
+    sharesId,
+    ...transfer
+  }: TransferSharesDto): Promise<UserShareTxsResponse> {
+    // const originShares = await this.userShareTransactions({
+    //   userId: fromUserId,
+    // });
 
-    try {
-      sharesSold = await this.shares
-        .aggregate([
-          {
-            $group: {
-              _id: null,
-              totalShares: { $sum: { $sum: '$quantity' } },
-            },
-          },
-        ])
-        .then((result) => result[0]?.totalShares || 0);
-    } catch (e) {
-      this.logger.log('Failed to aggregate shares sold');
-      sharesSold = sharesIssued;
+    const originShares = await this.shares.findOne({ _id: sharesId });
+
+    if (originShares.status !== SharesTxStatus.COMPLETE) {
+      throw new Error('Shares are not available to transfer');
     }
 
+    if (originShares.quantity < transfer.quantity) {
+      throw new Error('Not enough shares to transfer');
+    }
+
+    await this.shares.findOneAndUpdate(
+      { _id: sharesId },
+      {
+        $set: {
+          quantity: originShares.quantity - transfer.quantity,
+          updatedAt: Date.now(),
+          transfer,
+        },
+      },
+    );
+
+    // Assign shares to the recipient
+    await this.shares.create({
+      userId: transfer.toUserId,
+      offerId: originShares.offerId,
+      quantity: transfer.quantity,
+      transfer,
+      status: SharesTxStatus.COMPLETE,
+    });
+
+    return this.userSharesTransactions({ userId: transfer.fromUserId });
+  }
+
+  async userSharesTransactions({
+    userId,
+  }: UserSharesDto): Promise<UserShareTxsResponse> {
+    const shares = (await this.shares.find({ userId }, { createdAt: -1 })).map(
+      toSharesTx,
+    );
+
+    const shareHoldings = shares.reduce(
+      (sum, share) => sum + share.quantity,
+      0,
+    );
+
+    const offers = await this.getSharesOffers();
+
     return {
-      sharesIssued,
-      sharesSold,
+      userId,
+      shareHoldings,
+      shares,
+      offers,
+    };
+  }
+
+  async allSharesTransactions(): Promise<AllSharesTxsResponse> {
+    const shares = (await this.shares.find({}, { createdAt: -1 })).map(
+      toSharesTx,
+    );
+
+    const offers = await this.getSharesOffers();
+
+    return {
+      shares,
+      offers,
     };
   }
 }

@@ -1,10 +1,12 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
-  BuySharesDto,
   type Empty,
-  GetShareDetailDto,
+  OfferSharesDto,
   SharesServiceControllerMethods,
+  SubscribeSharesDto,
+  TransferSharesDto,
+  UserTxsRequestDto,
 } from '@bitsacco/common';
 import { SharesService } from './shares.service';
 
@@ -14,17 +16,32 @@ export class SharesController {
   constructor(private readonly sharesService: SharesService) {}
 
   @GrpcMethod()
-  getShareDetail(request: GetShareDetailDto) {
-    return this.sharesService.getShareDetail(request);
+  offerShares(request: OfferSharesDto) {
+    return this.sharesService.offerShares(request);
   }
 
   @GrpcMethod()
-  buyShares(request: BuySharesDto) {
-    return this.sharesService.buyShares(request);
+  getSharesOffers(_: Empty) {
+    return this.sharesService.getSharesOffers();
   }
 
   @GrpcMethod()
-  getShareSubscription(request: Empty) {
-    return this.sharesService.getShareSubscrition(request);
+  subscribeShares(request: SubscribeSharesDto) {
+    return this.sharesService.subscribeShares(request);
+  }
+
+  @GrpcMethod()
+  transferShares(request: TransferSharesDto) {
+    return this.sharesService.transferShares(request);
+  }
+
+  @GrpcMethod()
+  userSharesTransactions(request: UserTxsRequestDto) {
+    return this.sharesService.userSharesTransactions(request);
+  }
+
+  @GrpcMethod()
+  allSharesTransactions(_: Empty) {
+    return this.sharesService.allSharesTransactions();
   }
 }

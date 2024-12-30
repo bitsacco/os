@@ -1,6 +1,18 @@
-import { BuySharesDto, GetShareDetailDto } from '@bitsacco/common';
-import { Body, Controller, Get, Logger, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiBody, ApiQuery } from '@nestjs/swagger';
+import {
+  OfferSharesDto,
+  SubscribeSharesDto,
+  TransferSharesDto,
+} from '@bitsacco/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { ApiOperation, ApiBody, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { SharesService } from './shares.service';
 
 @Controller('shares')
@@ -11,32 +23,53 @@ export class SharesController {
     this.logger.log('SharesController initialized');
   }
 
-  @Get('detail')
-  @ApiOperation({ summary: 'Get share details' })
-  @ApiQuery({ name: 'user', type: String, required: true })
-  getShareDetail(@Query('user') user: string) {
-    return this.sharesService.getShareDetail({ userId: user });
-  }
-
-  @Post('buy')
-  @ApiOperation({ summary: 'Buy Bitsacco shares' })
+  @Post('offer')
+  @ApiOperation({ summary: 'Offer Bitsacco shares' })
   @ApiBody({
-    type: BuySharesDto,
+    type: OfferSharesDto,
   })
-  buyShares(@Body() req: BuySharesDto) {
-    return this.sharesService.buyShares(req);
+  offerShares(@Body() req: OfferSharesDto) {
+    return this.sharesService.offerShares(req);
   }
 
-  @Get('subscription')
-  @ApiOperation({ summary: 'Show Bitsacco share subscription levels' })
-  getShareSubscription() {
-    return this.sharesService.getShareSubscription({});
+  @Get('offers')
+  @ApiOperation({ summary: 'List all share offers' })
+  getShareOffers() {
+    return this.sharesService.getSharesOffers({});
+  }
+
+  @Post('subscribe')
+  @ApiOperation({ summary: 'Subscribe Bitsacco shares' })
+  @ApiBody({
+    type: SubscribeSharesDto,
+  })
+  subscribeShares(@Body() req: SubscribeSharesDto) {
+    return this.sharesService.subscribeShares(req);
+  }
+
+  @Post('transfer')
+  @ApiOperation({ summary: 'Transfer Bitsacco shares' })
+  @ApiBody({
+    type: TransferSharesDto,
+  })
+  transferShares(@Body() req: TransferSharesDto) {
+    return this.sharesService.transferShares(req);
+  }
+
+  @Get('transactions')
+  @ApiOperation({ summary: 'List all Bitsacco share transactions' })
+  allSharesTransactions() {
+    return this.sharesService.allSharesTransactions({});
+  }
+
+  @Get('transactions/:userId')
+  @ApiOperation({
+    summary: 'List all Bitsacco share transactions for user with given ID',
+  })
+  @ApiParam({ name: 'userId', type: 'string', description: 'User ID' })
+  userSharesTransactions(@Param('userId') userId: string) {
+    return this.sharesService.userSharesTransactions({
+      userId,
+    });
   }
 }
-
-// @ApiQuery({ name: 'currency', enum: SupportedCurrencies, required: true })
-//   @ApiQuery({ name: 'amount', type: Number, required: false })
-//   getOnrampQuote(
-//     @Query('currency') currency: SupportedCurrencyType,
-//     @Query('amount') amount?: number,
-//   ) {

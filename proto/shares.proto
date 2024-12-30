@@ -5,38 +5,114 @@ import "lib.proto";
 package shares;
 
 service SharesService {
-  rpc GetShareDetail(GetShareDetailRequest) returns (ShareDetailResponse);
-  rpc BuyShares(BuySharesRequest) returns (ShareDetailResponse);
-  rpc GetShareSubscription(lib.Empty) returns (ShareSubscriptionResponse);
+  rpc OfferShares(OfferSharesRequest) returns (AllSharesOffers);
+  rpc GetSharesOffers(lib.Empty) returns (AllSharesOffers);
+  rpc SubscribeShares(SubscribeSharesRequest) returns (UserShareTxsResponse);
+  rpc TransferShares(TransferSharesRequest) returns (UserShareTxsResponse);
+  rpc UserSharesTransactions(UserSharesTxsRequest) returns (UserShareTxsResponse);
+  rpc AllSharesTransactions(lib.Empty) returns (AllSharesTxsResponse);
 }
 
-message GetShareDetailRequest {
-  string user_id = 1;
+message OfferSharesRequest {
+  // Number of shares to issue
+  int32 quantity = 1;
+
+  // Date from which the shares will be available for subscription
+  string available_from = 2;
+
+  // Date until which the shares will be available for subscription
+  // Shares can be sold out before this availability date lapses
+  optional string available_to = 3;
 }
 
-message BuySharesRequest {
-  string user_id = 1;
+message SharesOffer {
+  string id = 1;
+
+  // Number of shares issued
+  int32 quantity = 2;
+
+  // Number of shares subscribed by members
+  int32 subscribed_quantity = 3;
+
+  // Date from which the shares will be available for subscription
+  string available_from = 4;
+
+  // Date until which the shares will be available for subscription
+  // Shares can be sold out before this availability date lapses
+  optional string available_to = 5;
+
+  reserved 6, 7, 8, 9, 10;
+
+  string created_at = 11;
+
+  optional string updated_at = 12;
+}
+
+message AllSharesOffers {
+  repeated SharesOffer offers = 1;
+  int32 total_offer_quantity = 2;
+  int32 total_subscribed_quantity = 3;
+}
+
+message SharesTx {
+  string id = 1;
+
+  string user_id = 2;
+
+  string offer_id = 3;
+
+  int32 quantity = 4;
+
+  SharesTxStatus status = 5;
+
+  optional SharesTxTransferMeta transfer = 6;
+
+  reserved 7, 8, 9, 10;
+
+  string created_at = 11;
+
+  optional string updated_at = 12;
+}
+
+enum SharesTxStatus {
+  PROPOSED = 0;
+  PROCESSING = 1;
+  APPROVED = 2;
+  COMPLETE = 3;
+  FAILED = 4;
+}
+
+message SharesTxTransferMeta {
+  string from_user_id = 1;
+  string to_user_id = 2;
   int32 quantity = 3;
 }
 
-message ShareDetailResponse {
+message SubscribeSharesRequest {
+  string user_id = 1;
+  string offer_id = 2;
+  int32 quantity = 3;
+}
+
+message TransferSharesRequest {
+  string from_user_id = 1;
+  string to_user_id = 2;
+  string shares_id = 3;
+  int32 quantity = 4;
+}
+
+message UserSharesTxsRequest {
+  string user_id = 1;
+}
+
+message UserShareTxsResponse {
   string user_id = 1;
   int32 share_holdings = 2;
-  repeated ShareDetails shares = 3;
-  ShareSubscriptionResponse share_subscription = 4;
+  repeated SharesTx shares = 3;
+  AllSharesOffers offers = 4;
 }
 
-message ShareDetails {
-  // Number of shared purchased
-  int32 quantity = 1;
-  // Unix timestamp for when the shares were purchased
-  string createdAt = 11;
-  optional string updatedAt = 12;
-}
-
-message ShareSubscriptionResponse {
-  // Total shares issued
-  int32 shares_issued = 1;
-  // Total shares subscribed
-  int32 shares_sold = 2;
+message AllSharesTxsResponse {
+  repeated SharesTx shares = 1;
+  AllSharesOffers offers = 2;
 }

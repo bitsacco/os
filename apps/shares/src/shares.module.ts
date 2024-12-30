@@ -4,7 +4,14 @@ import { DatabaseModule, LoggerModule } from '@bitsacco/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SharesController } from './shares.controller';
 import { SharesService } from './shares.service';
-import { SharesDocument, SharesRepository, SharesSchema } from './db';
+import {
+  SharesDocument,
+  SharesOfferDocument,
+  SharesOfferRepository,
+  SharesOfferSchema,
+  SharesRepository,
+  SharesSchema,
+} from './db';
 
 @Module({
   imports: [
@@ -19,11 +26,17 @@ import { SharesDocument, SharesRepository, SharesSchema } from './db';
     }),
     DatabaseModule,
     DatabaseModule.forFeature([
+      { name: SharesOfferDocument.name, schema: SharesOfferSchema },
       { name: SharesDocument.name, schema: SharesSchema },
     ]),
     LoggerModule,
   ],
   controllers: [SharesController],
-  providers: [SharesService, ConfigService, SharesRepository],
+  providers: [
+    SharesService,
+    ConfigService,
+    SharesOfferRepository,
+    SharesRepository,
+  ],
 })
 export class SharesModule {}
