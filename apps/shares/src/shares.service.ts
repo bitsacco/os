@@ -7,6 +7,7 @@ import {
   SharesTxStatus,
   SubscribeSharesDto,
   TransferSharesDto,
+  UpdateSharesDto,
   UserSharesDto,
   UserShareTxsResponse,
 } from '@bitsacco/common';
@@ -90,10 +91,6 @@ export class SharesService {
     sharesId,
     ...transfer
   }: TransferSharesDto): Promise<UserShareTxsResponse> {
-    // const originShares = await this.userShareTransactions({
-    //   userId: fromUserId,
-    // });
-
     const originShares = await this.shares.findOne({ _id: sharesId });
 
     if (originShares.status !== SharesTxStatus.COMPLETE) {
@@ -104,27 +101,46 @@ export class SharesService {
       throw new Error('Not enough shares to transfer');
     }
 
-    await this.shares.findOneAndUpdate(
-      { _id: sharesId },
-      {
-        $set: {
-          quantity: originShares.quantity - transfer.quantity,
-          updatedAt: Date.now(),
-          transfer,
-        },
+    // Update origin shares quantity, and record transfer metadata
+    await this.updateShares({
+      sharesId,
+      updates: {
+        quantity: originShares.quantity - transfer.quantity,
+        transfer,
       },
-    );
+    });
 
     // Assign shares to the recipient
     await this.shares.create({
       userId: transfer.toUserId,
       offerId: originShares.offerId,
       quantity: transfer.quantity,
-      transfer,
       status: SharesTxStatus.COMPLETE,
+      transfer,
     });
 
     return this.userSharesTransactions({ userId: transfer.fromUserId });
+  }
+
+  async updateShares({
+    sharesId,
+    updates,
+  }: UpdateSharesDto): Promise<UserShareTxsResponse> {
+    const originShares = await this.shares.findOne({ _id: sharesId });
+    const { quantity, status, transfer, offerId } = updates;
+
+    let { userId } = await this.shares.findOneAndUpdate(
+      { _id: sharesId },
+      {
+        quantity: quantity ?? originShares.quantity,
+        status: status ?? originShares.status,
+        transfer: transfer ?? originShares.transfer,
+        offerId: offerId ?? originShares.offerId,
+        updatedAt: Date.now(),
+      },
+    );
+
+    return this.userSharesTransactions({ userId });
   }
 
   async userSharesTransactions({

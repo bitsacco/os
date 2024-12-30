@@ -2,17 +2,10 @@ import {
   OfferSharesDto,
   SubscribeSharesDto,
   TransferSharesDto,
+  UpdateSharesDto,
 } from '@bitsacco/common';
-import {
-  Body,
-  Controller,
-  Get,
-  Logger,
-  Param,
-  Post,
-  Query,
-} from '@nestjs/common';
-import { ApiOperation, ApiBody, ApiQuery, ApiParam } from '@nestjs/swagger';
+import { Body, Controller, Get, Logger, Param, Post } from '@nestjs/common';
+import { ApiOperation, ApiBody, ApiParam } from '@nestjs/swagger';
 import { SharesService } from './shares.service';
 
 @Controller('shares')
@@ -54,6 +47,15 @@ export class SharesController {
   })
   transferShares(@Body() req: TransferSharesDto) {
     return this.sharesService.transferShares(req);
+  }
+
+  @Post('update')
+  @ApiOperation({ summary: 'Update Bitsacco shares' })
+  @ApiBody({
+    type: UpdateSharesDto,
+  })
+  updateShares(@Body() req: UpdateSharesDto) {
+    return this.sharesService.updateShares(req);
   }
 
   @Get('transactions')

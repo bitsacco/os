@@ -6,6 +6,7 @@ import {
   SubscribeSharesDto,
   TransferSharesDto,
   UserSharesDto,
+  UpdateSharesDto,
 } from '@bitsacco/common';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { type ClientGrpc } from '@nestjs/microservices';
@@ -35,6 +36,10 @@ export class SharesService implements OnModuleInit {
 
   transferShares(req: TransferSharesDto) {
     return this.client.transferShares(req);
+  }
+
+  updateShares(req: UpdateSharesDto) {
+    return this.client.updateShares(req);
   }
 
   userSharesTransactions(req: UserSharesDto) {

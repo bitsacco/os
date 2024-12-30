@@ -83,6 +83,18 @@ export interface TransferSharesRequest {
   quantity: number;
 }
 
+export interface UpdateSharesRequest {
+  sharesId: string;
+  updates: SharesTxUpdates | undefined;
+}
+
+export interface SharesTxUpdates {
+  quantity?: number | undefined;
+  status?: SharesTxStatus | undefined;
+  transfer?: SharesTxTransferMeta | undefined;
+  offerId?: string | undefined;
+}
+
 export interface UserSharesTxsRequest {
   userId: string;
 }
@@ -111,6 +123,8 @@ export interface SharesServiceClient {
   transferShares(
     request: TransferSharesRequest,
   ): Observable<UserShareTxsResponse>;
+
+  updateShares(request: UpdateSharesRequest): Observable<UserShareTxsResponse>;
 
   userSharesTransactions(
     request: UserSharesTxsRequest,
@@ -142,6 +156,13 @@ export interface SharesServiceController {
     | Observable<UserShareTxsResponse>
     | UserShareTxsResponse;
 
+  updateShares(
+    request: UpdateSharesRequest,
+  ):
+    | Promise<UserShareTxsResponse>
+    | Observable<UserShareTxsResponse>
+    | UserShareTxsResponse;
+
   userSharesTransactions(
     request: UserSharesTxsRequest,
   ):
@@ -164,6 +185,7 @@ export function SharesServiceControllerMethods() {
       'getSharesOffers',
       'subscribeShares',
       'transferShares',
+      'updateShares',
       'userSharesTransactions',
       'allSharesTransactions',
     ];

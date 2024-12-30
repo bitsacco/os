@@ -6,6 +6,7 @@ import {
   SharesServiceControllerMethods,
   SubscribeSharesDto,
   TransferSharesDto,
+  UpdateSharesDto,
   UserTxsRequestDto,
 } from '@bitsacco/common';
 import { SharesService } from './shares.service';
@@ -33,6 +34,11 @@ export class SharesController {
   @GrpcMethod()
   transferShares(request: TransferSharesDto) {
     return this.sharesService.transferShares(request);
+  }
+
+  @GrpcMethod()
+  updateShares(request: UpdateSharesDto) {
+    return this.sharesService.updateShares(request);
   }
 
   @GrpcMethod()

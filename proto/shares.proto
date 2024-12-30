@@ -9,6 +9,7 @@ service SharesService {
   rpc GetSharesOffers(lib.Empty) returns (AllSharesOffers);
   rpc SubscribeShares(SubscribeSharesRequest) returns (UserShareTxsResponse);
   rpc TransferShares(TransferSharesRequest) returns (UserShareTxsResponse);
+  rpc UpdateShares(UpdateSharesRequest) returns (UserShareTxsResponse);
   rpc UserSharesTransactions(UserSharesTxsRequest) returns (UserShareTxsResponse);
   rpc AllSharesTransactions(lib.Empty) returns (AllSharesTxsResponse);
 }
@@ -99,6 +100,21 @@ message TransferSharesRequest {
   string to_user_id = 2;
   string shares_id = 3;
   int32 quantity = 4;
+}
+
+message UpdateSharesRequest {
+  string shares_id = 1;
+  SharesTxUpdates updates = 2;
+}
+
+message SharesTxUpdates {
+  optional int32 quantity = 1;
+
+  optional SharesTxStatus status = 2;
+
+  optional SharesTxTransferMeta transfer = 3;
+
+  optional string offer_id = 4;
 }
 
 message UserSharesTxsRequest {
