@@ -111,6 +111,10 @@ export interface AllSharesTxsResponse {
   offers: AllSharesOffers | undefined;
 }
 
+export interface FindShareTxRequest {
+  sharesId: string;
+}
+
 export interface SharesServiceClient {
   offerShares(request: OfferSharesRequest): Observable<AllSharesOffers>;
 
@@ -131,6 +135,8 @@ export interface SharesServiceClient {
   ): Observable<UserShareTxsResponse>;
 
   allSharesTransactions(request: Empty): Observable<AllSharesTxsResponse>;
+
+  findSharesTransaction(request: FindShareTxRequest): Observable<SharesTx>;
 }
 
 export interface SharesServiceController {
@@ -176,6 +182,10 @@ export interface SharesServiceController {
     | Promise<AllSharesTxsResponse>
     | Observable<AllSharesTxsResponse>
     | AllSharesTxsResponse;
+
+  findSharesTransaction(
+    request: FindShareTxRequest,
+  ): Promise<SharesTx> | Observable<SharesTx> | SharesTx;
 }
 
 export function SharesServiceControllerMethods() {
@@ -188,6 +198,7 @@ export function SharesServiceControllerMethods() {
       'updateShares',
       'userSharesTransactions',
       'allSharesTransactions',
+      'findSharesTransaction',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(

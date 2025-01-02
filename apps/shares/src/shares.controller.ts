@@ -2,6 +2,7 @@ import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   type Empty,
+  FindSharesTxDto,
   OfferSharesDto,
   SharesServiceControllerMethods,
   SubscribeSharesDto,
@@ -49,5 +50,10 @@ export class SharesController {
   @GrpcMethod()
   allSharesTransactions(_: Empty) {
     return this.sharesService.allSharesTransactions();
+  }
+
+  @GrpcMethod()
+  findSharesTransaction(request: FindSharesTxDto) {
+    return this.sharesService.findSharesTransaction(request);
   }
 }

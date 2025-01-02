@@ -74,4 +74,19 @@ export class SharesController {
       userId,
     });
   }
+
+  @Get('transactions/find/:sharesId')
+  @ApiOperation({
+    summary: 'Find Bitsacco shares transaction with given ID',
+  })
+  @ApiParam({
+    name: 'sharesId',
+    type: 'string',
+    description: 'Share Transaction ID',
+  })
+  findSharesTransaction(@Param('sharesId') sharesId: string) {
+    return this.sharesService.findSharesTransaction({
+      sharesId,
+    });
+  }
 }

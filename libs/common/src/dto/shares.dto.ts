@@ -11,6 +11,7 @@ import {
   IsNotEmptyObject,
 } from 'class-validator';
 import {
+  FindShareTxRequest,
   OfferSharesRequest,
   SharesTxStatus,
   type SharesTxTransferMeta,
@@ -160,4 +161,12 @@ export class UserSharesDto implements UserSharesTxsRequest {
   @Type(() => String)
   @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
   userId: string;
+}
+
+export class FindSharesTxDto implements FindShareTxRequest {
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ example: '3e158dfd-cb98-40b1-9ed2-a13006a9f430' })
+  sharesId: string;
 }

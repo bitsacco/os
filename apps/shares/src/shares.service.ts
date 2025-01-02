@@ -2,8 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   AllSharesOffers,
   AllSharesTxsResponse,
+  FindSharesTxDto,
   OfferSharesDto,
   SharesOffer,
+  SharesTx,
   SharesTxStatus,
   SubscribeSharesDto,
   TransferSharesDto,
@@ -129,11 +131,13 @@ export class SharesService {
     const originShares = await this.shares.findOne({ _id: sharesId });
     const { quantity, status, transfer, offerId } = updates;
 
+    this.logger.log(`Updates : ${JSON.stringify(updates)}`);
+
     let { userId } = await this.shares.findOneAndUpdate(
       { _id: sharesId },
       {
-        quantity: quantity ?? originShares.quantity,
-        status: status ?? originShares.status,
+        quantity: quantity !== undefined ? quantity : originShares.quantity,
+        status: status !== undefined ? status : originShares.status,
         transfer: transfer ?? originShares.transfer,
         offerId: offerId ?? originShares.offerId,
         updatedAt: Date.now(),
@@ -176,5 +180,17 @@ export class SharesService {
       shares,
       offers,
     };
+  }
+
+  async findSharesTransaction({
+    sharesId,
+  }: FindSharesTxDto): Promise<SharesTx> {
+    const shares = toSharesTx(await this.shares.findOne({ _id: sharesId }));
+
+    if (!shares) {
+      throw new Error('Shares transaction not found');
+    }
+
+    return shares;
   }
 }

@@ -12,6 +12,7 @@ service SharesService {
   rpc UpdateShares(UpdateSharesRequest) returns (UserShareTxsResponse);
   rpc UserSharesTransactions(UserSharesTxsRequest) returns (UserShareTxsResponse);
   rpc AllSharesTransactions(lib.Empty) returns (AllSharesTxsResponse);
+  rpc FindSharesTransaction(FindShareTxRequest) returns (SharesTx);
 }
 
 message OfferSharesRequest {
@@ -132,3 +133,7 @@ message AllSharesTxsResponse {
   repeated SharesTx shares = 1;
   AllSharesOffers offers = 2;
 }
+
+message FindShareTxRequest {
+  string shares_id = 1;
+}   
