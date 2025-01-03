@@ -154,10 +154,14 @@ export class SharesService {
       toSharesTx,
     );
 
-    const shareHoldings = shares.reduce(
-      (sum, share) => sum + share.quantity,
-      0,
-    );
+    const shareHoldings = shares
+      .filter((share) => {
+        return (
+          share.status === SharesTxStatus.COMPLETE ||
+          share.status === SharesTxStatus.APPROVED
+        );
+      })
+      .reduce((sum, share) => sum + share.quantity, 0);
 
     const offers = await this.getSharesOffers();
 

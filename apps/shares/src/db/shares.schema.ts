@@ -52,12 +52,28 @@ export class SharesDocument extends AbstractDocument {
 export const SharesSchema = SchemaFactory.createForClass(SharesDocument);
 
 export function toSharesTx(share: SharesDocument): SharesTx {
+  let status: SharesTxStatus;
+
+  if (share.status === undefined || share.status.toString() === '0') {
+    status = SharesTxStatus.PROPOSED;
+  } else if (share.status.toString() === '1') {
+    status = SharesTxStatus.PROCESSING;
+  } else if (share.status.toString() === '2') {
+    status = SharesTxStatus.APPROVED;
+  } else if (share.status.toString() === '3') {
+    status = SharesTxStatus.COMPLETE;
+  } else if (share.status.toString() === '4') {
+    status = SharesTxStatus.FAILED;
+  } else {
+    status = SharesTxStatus.UNRECOGNIZED;
+  }
+
   return {
     id: share._id,
     userId: share.userId,
     offerId: share.offerId,
     quantity: share.quantity,
-    status: share.status,
+    status,
     transfer: share.transfer,
     createdAt: share.createdAt.toDateString(),
     updatedAt: share.updatedAt.toDateString(),
