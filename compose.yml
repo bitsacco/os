@@ -154,13 +154,14 @@ services:
       - FEDIMINT_CLIENTD_PASSWORD=fmcdpass
       - FEDIMINT_CLIENTD_ADDR=clientd:7070
       - FEDIMINT_CLIENTD_MODE=rest
-      - FEDIMINT_CLIENTD_INVITE_CODE=fed11qgqrwdthwden5te0v9cxjttndakk2ttrdpjk2um994erx7rsx568vur9dy68z6pnvd6xg63hwsh8wmn90p6zuctswqhsqqfqt94ttf29vdm0jfw3gk3w7quvcknshxd705ksavc0ajj7sj0v6dgsxcydnc
+      # - FEDIMINT_CLIENTD_INVITE_CODE=fed11qgqrwdthwden5te0v9cxjttndakk2ttrdpjk2um994erx7rsx568vur9dy68z6pnvd6xg63hwsh8wmn90p6zuctswqhsqqfqt94ttf29vdm0jfw3gk3w7quvcknshxd705ksavc0ajj7sj0v6dgsxcydnc
+      - FEDIMINT_CLIENTD_INVITE_CODE=fed11qgqrsdnhwden5te0dp6k6mtfdenj6mr0v3nk2tfk09jkkeekxechqmphdvm8wdttxauxvufwwahx27r59eshqup0waej7qqpyq8kqe90ktshlvw3f88ztywxz559ag0yjvljvvtd3kepx2sfg2qdjn7s5m0
     ports:
       - 7070:7070
     volumes:
-      - swap_clientd_datadir:/var/lib/clientd
+      - clientd_datadir:/var/lib/clientd
     restart: always
 
 volumes:
   mongodb_datadir:
-  swap_clientd_datadir:
+  clientd_datadir:
