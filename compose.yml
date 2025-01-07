@@ -10,7 +10,7 @@ services:
     depends_on:
       - mongodb
     env_file:
-      - ./apps/api/.env
+      - ./apps/api/.dev.env
     ports:
       - '4000:4000'
     volumes:
@@ -32,7 +32,7 @@ services:
       - mongodb
       - redis
     env_file:
-      - ./apps/swap/.env
+      - ./apps/swap/.dev.env
     ports:
       - '4040:4040'
     volumes:
@@ -54,7 +54,7 @@ services:
       - mongodb
       - redis
     env_file:
-      - ./apps/nostr/.env
+      - ./apps/nostr/.dev.env
     ports:
       - '4050:4050'
     volumes:
@@ -76,7 +76,7 @@ services:
       - mongodb
       - redis
     env_file:
-      - ./apps/sms/.env
+      - ./apps/sms/.dev.env
     ports:
       - '4060:4060'
     volumes:
@@ -98,7 +98,7 @@ services:
       - mongodb
       - redis
     env_file:
-      - ./apps/shares/.env
+      - ./apps/shares/.dev.env
     ports:
       - '4070:4070'
     volumes:
@@ -121,7 +121,7 @@ services:
       - mongodb
       - redis
     env_file:
-      - ./apps/solowallet/.env
+      - ./apps/solowallet/.dev.env
     ports:
       - '4080:4080'
     volumes:
@@ -134,7 +134,7 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=bs
       - MONGO_INITDB_ROOT_PASSWORD=password
     ports:
-      - '27017:27017'
+      - '0.0.0.0:27017:27017'
     volumes:
       - mongodb_datadir:/data/db
     restart: always
@@ -145,6 +145,7 @@ services:
     ports:
       - '6379:6379'
     restart: always
+
   swap-clientd:
     image: okjodom/fedimint-clientd:v0.4.0
     container_name: swap-clientd
@@ -159,6 +160,7 @@ services:
     volumes:
       - swap_clientd_datadir:/var/lib/clientd
     restart: always
+
 volumes:
   mongodb_datadir:
   swap_clientd_datadir:
