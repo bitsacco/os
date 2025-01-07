@@ -28,7 +28,7 @@ services:
       ]
     restart: always
     depends_on:
-      - swap-clientd
+      - clientd
       - mongodb
       - redis
     env_file:
@@ -146,17 +146,17 @@ services:
       - '6379:6379'
     restart: always
 
-  swap-clientd:
+  clientd:
     image: okjodom/fedimint-clientd:v0.4.0
-    container_name: swap-clientd
+    container_name: clientd
     environment:
       - FEDIMINT_CLIENTD_DB_PATH=/var/lib/clientd
       - FEDIMINT_CLIENTD_PASSWORD=fmcdpass
-      - FEDIMINT_CLIENTD_ADDR=0.0.0.0:7070
+      - FEDIMINT_CLIENTD_ADDR=clientd:7070
       - FEDIMINT_CLIENTD_MODE=rest
       - FEDIMINT_CLIENTD_INVITE_CODE=fed11qgqrwdthwden5te0v9cxjttndakk2ttrdpjk2um994erx7rsx568vur9dy68z6pnvd6xg63hwsh8wmn90p6zuctswqhsqqfqt94ttf29vdm0jfw3gk3w7quvcknshxd705ksavc0ajj7sj0v6dgsxcydnc
     ports:
-      - 0.0.0.0:7070:7070
+      - 7070:7070
     volumes:
       - swap_clientd_datadir:/var/lib/clientd
     restart: always
