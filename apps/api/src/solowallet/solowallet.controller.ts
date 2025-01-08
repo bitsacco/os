@@ -1,5 +1,6 @@
 import {
   DepositFundsRequestDto,
+  UpdateTxDto,
   UserTxsRequestDto,
   WithdrawFundsRequestDto,
 } from '@bitsacco/common';
@@ -40,5 +41,14 @@ export class SolowalletController {
   })
   userTransactions(@Body() req: UserTxsRequestDto) {
     return this.walletService.userTransactions(req);
+  }
+
+  @Post('update')
+  @ApiOperation({ summary: 'Update Solowallet transaction' })
+  @ApiBody({
+    type: UpdateTxDto,
+  })
+  updateShares(@Body() req: UpdateTxDto) {
+    return this.walletService.updateTransaction(req);
   }
 }

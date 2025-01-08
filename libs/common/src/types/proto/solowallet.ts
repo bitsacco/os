@@ -74,12 +74,25 @@ export interface WalletMeta {
   currentBalance: number;
 }
 
+export interface UpdateTxRequest {
+  txId: string;
+  updates: SolowalletTxUpdates | undefined;
+}
+
+export interface SolowalletTxUpdates {
+  status?: TransactionStatus | undefined;
+  lightning?: Bolt11 | undefined;
+  reference?: string | undefined;
+}
+
 export interface SolowalletServiceClient {
   depositFunds(request: DepositFundsRequest): Observable<UserTxsResponse>;
 
   withdrawFunds(request: WithdrawFundsRequest): Observable<UserTxsResponse>;
 
   userTransactions(request: UserTxsRequest): Observable<UserTxsResponse>;
+
+  updateTransaction(request: UpdateTxRequest): Observable<UserTxsResponse>;
 }
 
 export interface SolowalletServiceController {
@@ -94,6 +107,10 @@ export interface SolowalletServiceController {
   userTransactions(
     request: UserTxsRequest,
   ): Promise<UserTxsResponse> | Observable<UserTxsResponse> | UserTxsResponse;
+
+  updateTransaction(
+    request: UpdateTxRequest,
+  ): Promise<UserTxsResponse> | Observable<UserTxsResponse> | UserTxsResponse;
 }
 
 export function SolowalletServiceControllerMethods() {
@@ -102,6 +119,7 @@ export function SolowalletServiceControllerMethods() {
       'depositFunds',
       'withdrawFunds',
       'userTransactions',
+      'updateTransaction',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(

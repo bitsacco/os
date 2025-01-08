@@ -12,6 +12,8 @@ service SolowalletService {
   rpc WithdrawFunds(WithdrawFundsRequest) returns (UserTxsResponse){}
 
   rpc UserTransactions(UserTxsRequest) returns (UserTxsResponse){}
+
+  rpc UpdateTransaction(UpdateTxRequest) returns (UserTxsResponse) {}
 }
 
 message DepositFundsRequest {
@@ -96,4 +98,15 @@ message WalletMeta {
   int32 total_deposits = 1;
   float total_withdrawals = 2;
   int32 current_balance = 3;
+}
+
+message UpdateTxRequest {
+  string tx_id = 1;
+  SolowalletTxUpdates updates = 2;
+}
+
+message SolowalletTxUpdates {
+  optional lib.TransactionStatus status = 1;
+  optional lightning.Bolt11 lightning = 2;
+  optional string reference = 3;
 }

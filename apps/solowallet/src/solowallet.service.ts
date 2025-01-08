@@ -25,6 +25,7 @@ import {
   TransactionType,
   WithdrawFundsRequestDto,
   CreateOfframpSwapDto,
+  UpdateTxDto,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { catchError, firstValueFrom, map, of, tap } from 'rxjs';
@@ -476,6 +477,33 @@ export class SolowalletService {
 
     return {
       txId: withdrawal._id,
+      ledger,
+      meta,
+      userId,
+    };
+  }
+
+  async updateTransaction({ txId, updates }: UpdateTxDto) {
+    const originTx = await this.wallet.findOne({ _id: txId });
+    const { status, lightning, reference } = updates;
+
+    let { userId } = await this.wallet.findOneAndUpdate(
+      { _id: txId },
+      {
+        status: status !== undefined ? status : originTx.status,
+        lightning: lightning !== undefined ? lightning : originTx.lightning,
+        reference: reference ?? originTx.reference,
+      },
+    );
+
+    const ledger = await this.getPaginatedUserTxLedger({
+      userId,
+      pagination: { page: 0, size: 10 },
+    });
+    const meta = await this.getWalletMeta(userId);
+
+    return {
+      txId: originTx._id,
       ledger,
       meta,
       userId,
