@@ -250,16 +250,19 @@ export class SolowalletService {
     };
   }
 
-  private async aggregateUserDeposits(userId: string): Promise<number> {
-    let deposits: number = 0;
+  private async aggregateUserTransactions(
+    userId: string,
+    type: TransactionType,
+  ): Promise<number> {
+    let transactions: number = 0;
     try {
-      deposits = await this.wallet
+      transactions = await this.wallet
         .aggregate([
           {
             $match: {
               userId: userId,
               status: TransactionStatus.COMPLETE.toString(),
-              type: TransactionType.DEPOSIT.toString(),
+              type: type.toString(),
             },
           },
           {
@@ -273,44 +276,21 @@ export class SolowalletService {
           return result[0].totalMsats || 0;
         });
     } catch (e) {
-      this.logger.error('Error aggregating deposits', e);
+      this.logger.error('Error aggregating transactions', e);
     }
 
-    return deposits;
-  }
-
-  private async aggregateUserWithdrawals(userId: string): Promise<number> {
-    let withdrawals: number = 0;
-    try {
-      withdrawals = await this.wallet
-        .aggregate([
-          {
-            $match: {
-              userId: userId,
-              status: TransactionStatus.COMPLETE.toString(),
-              type: TransactionType.WITHDRAW.toString(),
-            },
-          },
-          {
-            $group: {
-              _id: '$userId',
-              totalMsats: { $sum: '$amountMsats' },
-            },
-          },
-        ])
-        .then((result) => {
-          return result[0].totalMsats || 0;
-        });
-    } catch (e) {
-      this.logger.error('Error aggregating withdrawals', e);
-    }
-
-    return withdrawals;
+    return transactions;
   }
 
   private async getWalletMeta(userId: string): Promise<WalletMeta> {
-    const totalDeposits = await this.aggregateUserDeposits(userId);
-    const totalWithdrawals = await this.aggregateUserWithdrawals(userId);
+    const totalDeposits = await this.aggregateUserTransactions(
+      userId,
+      TransactionType.DEPOSIT,
+    );
+    const totalWithdrawals = await this.aggregateUserTransactions(
+      userId,
+      TransactionType.WITHDRAW,
+    );
 
     return {
       totalDeposits,
