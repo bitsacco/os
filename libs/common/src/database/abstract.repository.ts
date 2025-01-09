@@ -3,7 +3,6 @@ import {
   Model,
   PipelineStage,
   SortOrder,
-  Types,
   UpdateQuery,
 } from 'mongoose';
 import { Logger, NotFoundException } from '@nestjs/common';

@@ -14,6 +14,8 @@ service SolowalletService {
   rpc UserTransactions(UserTxsRequest) returns (UserTxsResponse){}
 
   rpc UpdateTransaction(UpdateTxRequest) returns (UserTxsResponse) {}
+
+  rpc ContinueTransaction(ContinueTxRequest) returns (UserTxsResponse) {}
 }
 
 message DepositFundsRequest {
@@ -109,4 +111,14 @@ message SolowalletTxUpdates {
   optional lib.TransactionStatus status = 1;
   optional lightning.Bolt11 lightning = 2;
   optional string reference = 3;
+}
+
+message ContinueTxRequest {
+  string user_id = 1;
+
+  string tx_id = 2;
+
+  int32 amount_fiat = 3;
+
+  optional swap.OnrampSwapSource onramp = 5;
 }

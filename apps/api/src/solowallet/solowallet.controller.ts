@@ -1,4 +1,5 @@
 import {
+  ContinueTxRequestDto,
   DepositFundsRequestDto,
   UpdateTxDto,
   UserTxsRequestDto,
@@ -50,5 +51,14 @@ export class SolowalletController {
   })
   updateShares(@Body() req: UpdateTxDto) {
     return this.walletService.updateTransaction(req);
+  }
+
+  @Post('continue')
+  @ApiOperation({ summary: 'Continue Solowallet transaction' })
+  @ApiBody({
+    type: ContinueTxRequestDto,
+  })
+  continueTransaction(@Body() req: ContinueTxRequestDto) {
+    return this.walletService.continueTransaction(req);
   }
 }

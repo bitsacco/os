@@ -22,6 +22,7 @@ import {
   UpdateTxRequest,
   SolowalletTxUpdates,
   TransactionStatus,
+  ContinueTxRequest,
 } from '../types';
 import { PaginatedRequestDto } from './lib.dto';
 
@@ -124,4 +125,29 @@ export class UpdateTxDto implements UpdateTxRequest {
   @Type(() => SolowalletTxUpdatesDto)
   @ApiProperty({ type: SolowalletTxUpdatesDto })
   updates: SolowalletTxUpdatesDto;
+}
+
+export class ContinueTxRequestDto implements ContinueTxRequest {
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  userId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ example: '35f47ebd-599e-4334-a741-67f3495995e3' })
+  txId: string;
+
+  @ApiProperty()
+  @IsNumber()
+  @Min(1)
+  @ApiProperty({ example: 2 })
+  amountFiat: number;
+
+  @ValidateNested()
+  @Type(() => OnrampSwapSourceDto)
+  @ApiProperty({ type: OnrampSwapSourceDto })
+  onramp?: OnrampSwapSourceDto;
 }

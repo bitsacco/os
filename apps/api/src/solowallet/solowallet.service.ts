@@ -5,6 +5,7 @@ import {
   SolowalletServiceClient,
   WithdrawFundsRequestDto,
   UpdateTxDto,
+  ContinueTxRequestDto,
 } from '@bitsacco/common';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { type ClientGrpc } from '@nestjs/microservices';
@@ -37,5 +38,9 @@ export class SolowalletService implements OnModuleInit {
 
   updateTransaction(req: UpdateTxDto) {
     return this.client.updateTransaction(req);
+  }
+
+  continueTransaction(req: ContinueTxRequestDto) {
+    return this.client.continueTransaction(req);
   }
 }

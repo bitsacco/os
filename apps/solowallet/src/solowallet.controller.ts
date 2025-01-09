@@ -6,6 +6,7 @@ import {
   UserTxsRequestDto,
   WithdrawFundsRequestDto,
   UpdateTxDto,
+  ContinueTxRequestDto,
 } from '@bitsacco/common';
 import { SolowalletService } from './solowallet.service';
 
@@ -32,5 +33,10 @@ export class SolowalletController {
   @GrpcMethod()
   updateTransaction(request: UpdateTxDto) {
     return this.solowalletService.updateTransaction(request);
+  }
+
+  @GrpcMethod()
+  continueTransaction(request: ContinueTxRequestDto) {
+    return this.solowalletService.continueTransaction(request);
   }
 }
