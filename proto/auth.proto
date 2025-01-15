@@ -1,14 +1,11 @@
 syntax = "proto3";
-
-import "lib.proto";
-
 package auth;
 
 service AuthService {
-  rpc LoginUser (LoginUserRequest) returns (User) {}
+  rpc LoginUser (LoginUserRequest) returns (AuthResponse) {}
   rpc RegisterUser (RegisterUserRequest) returns (User) {}
-  rpc Verifyuser (VerifyUserRequest) returns (lib.Empty) {}
-  rpc Authenticate (AuthRequest) returns (User) {}
+  rpc VerifyUser (VerifyUserRequest) returns (User) {}
+  rpc Authenticate (AuthRequest) returns (AuthResponse) {}
 }
 
 message LoginUserRequest {
@@ -31,6 +28,10 @@ message VerifyUserRequest {
 }
 
 message AuthRequest {
+  string token = 1;
+}
+
+message AuthResponse {
   string token = 1;
 }
 

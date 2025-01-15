@@ -1,9 +1,11 @@
-import { join } from 'path';
 import * as Joi from 'joi';
+import { join } from 'path';
+import { JwtModule } from '@nestjs/jwt';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
+  AUTH_SERVICE_NAME,
   EVENTS_SERVICE_BUS,
   LoggerModule,
   NOSTR_SERVICE_NAME,
@@ -22,9 +24,12 @@ import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
 import { SolowalletService } from './solowallet/solowallet.service';
 import { SolowalletController } from './solowallet/solowallet.controller';
+import { AuthService } from './auth/auth.service';
+import { AuthController } from './auth/auth.controller';
 
 @Module({
   imports: [
+    JwtModule,
     LoggerModule,
     ConfigModule.forRoot({
       isGlobal: true,
@@ -41,6 +46,18 @@ import { SolowalletController } from './solowallet/solowallet.controller';
       }),
     }),
     ClientsModule.registerAsync([
+      {
+        name: AUTH_SERVICE_NAME,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'auth',
+            protoPath: join(__dirname, '../../../proto/auth.proto'),
+            url: configService.getOrThrow<string>('AUTH_GRPC_URL'),
+          },
+        }),
+        inject: [ConfigService],
+      },
       {
         name: SWAP_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
@@ -115,20 +132,22 @@ import { SolowalletController } from './solowallet/solowallet.controller';
     ]),
   ],
   controllers: [
-    AdminController,
+    AuthController,
     SwapController,
     NostrController,
     SmsController,
     SharesController,
     SolowalletController,
+    AdminController,
   ],
   providers: [
+    AuthService,
     SwapService,
     NostrService,
     SmsService,
     SharesService,
-    AdminService,
     SolowalletService,
+    AdminService,
   ],
 })
 export class ApiModule {}

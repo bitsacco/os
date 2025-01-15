@@ -9,3 +9,4 @@ export * from './proto/solowallet';
 export * from './api';
 export * from './validator';
 export * from './fedimint';
+export * from './auth';

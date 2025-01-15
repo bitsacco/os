@@ -7,7 +7,6 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
-import { Empty } from './lib';
 
 export enum Role {
   Member = 0,
@@ -17,7 +16,7 @@ export enum Role {
 }
 
 export interface LoginUserRequest {
-  pin: string | undefined;
+  pin?: string | undefined;
   phone?: string | undefined;
   npub?: string | undefined;
 }
@@ -36,6 +35,10 @@ export interface VerifyUserRequest {
 }
 
 export interface AuthRequest {
+  token: string;
+}
+
+export interface AuthResponse {
   token: string;
 }
 
@@ -66,27 +69,31 @@ export interface Profile {
 }
 
 export interface AuthServiceClient {
-  loginUser(request: LoginUserRequest): Observable<User>;
+  loginUser(request: LoginUserRequest): Observable<AuthResponse>;
 
   registerUser(request: RegisterUserRequest): Observable<User>;
 
-  verifyuser(request: VerifyUserRequest): Observable<Empty>;
+  verifyUser(request: VerifyUserRequest): Observable<User>;
 
-  authenticate(request: AuthRequest): Observable<User>;
+  authenticate(request: AuthRequest): Observable<AuthResponse>;
 }
 
 export interface AuthServiceController {
-  loginUser(request: LoginUserRequest): Promise<User> | Observable<User> | User;
+  loginUser(
+    request: LoginUserRequest,
+  ): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
 
   registerUser(
     request: RegisterUserRequest,
   ): Promise<User> | Observable<User> | User;
 
-  verifyuser(
+  verifyUser(
     request: VerifyUserRequest,
-  ): Promise<Empty> | Observable<Empty> | Empty;
+  ): Promise<User> | Observable<User> | User;
 
-  authenticate(request: AuthRequest): Promise<User> | Observable<User> | User;
+  authenticate(
+    request: AuthRequest,
+  ): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
 }
 
 export function AuthServiceControllerMethods() {
@@ -94,7 +101,7 @@ export function AuthServiceControllerMethods() {
     const grpcMethods: string[] = [
       'loginUser',
       'registerUser',
-      'verifyuser',
+      'verifyUser',
       'authenticate',
     ];
     for (const method of grpcMethods) {

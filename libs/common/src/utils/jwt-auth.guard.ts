@@ -7,10 +7,16 @@ import {
   OnModuleInit,
   UnauthorizedException,
 } from '@nestjs/common';
-import { type ClientGrpc } from '@nestjs/microservices';
 import { Reflector } from '@nestjs/core';
+import { JwtService } from '@nestjs/jwt';
+import { type ClientGrpc } from '@nestjs/microservices';
 import { catchError, map, Observable, of, tap } from 'rxjs';
-import { AUTH_SERVICE_NAME, AuthServiceClient, Role } from '../types';
+import {
+  AUTH_SERVICE_NAME,
+  AuthServiceClient,
+  AuthTokenPayload,
+  Role,
+} from '../types';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate, OnModuleInit {
@@ -18,13 +24,14 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
   private authService: AuthServiceClient;
 
   constructor(
-    @Inject(AUTH_SERVICE_NAME) private readonly client: ClientGrpc,
+    @Inject(AUTH_SERVICE_NAME) private readonly grpc: ClientGrpc,
     private readonly reflector: Reflector,
+    private readonly jwtService: JwtService,
   ) {}
 
   onModuleInit() {
     this.authService =
-      this.client.getService<AuthServiceClient>(AUTH_SERVICE_NAME);
+      this.grpc.getService<AuthServiceClient>(AUTH_SERVICE_NAME);
   }
 
   canActivate(
@@ -45,19 +52,17 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
         token: jwt,
       })
       .pipe(
-        tap((res) => {
+        tap(({ token }) => {
+          const { user } = this.jwtService.decode<AuthTokenPayload>(token);
           if (roles) {
             for (const role of roles) {
-              if (!res.roles?.includes(role)) {
+              if (!user.roles?.includes(role)) {
                 this.logger.error('The user does not have valid roles.');
                 throw new UnauthorizedException();
               }
             }
           }
-          context.switchToHttp().getRequest().user = {
-            ...res,
-            _id: res.id,
-          };
+          context.switchToHttp().getRequest().user = user;
         }),
         map(() => true),
         catchError((err) => {

@@ -25,7 +25,7 @@ export class AuthController {
   }
 
   @GrpcMethod()
-  verifyuser(req: VerifyUserRequestDto) {
+  verifyUser(req: VerifyUserRequestDto) {
     return this.authService.verifyUser(req);
   }
 

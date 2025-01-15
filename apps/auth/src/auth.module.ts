@@ -23,7 +23,7 @@ import { AuthService } from './auth.service';
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION: Joi.string().required(),
-        PIN_SALT: Joi.string().required(),
+        SALT_ROUNDS: Joi.number().required(),
       }),
     }),
     DatabaseModule,

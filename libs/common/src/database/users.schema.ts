@@ -41,7 +41,7 @@ export class UsersDocument extends AbstractDocument {
 export const UsersSchema = SchemaFactory.createForClass(UsersDocument);
 
 UsersSchema.index({ 'phone.number': 1 }, { unique: true, sparse: true });
-UsersSchema.index({ 'nostr.pubkey': 1 }, { unique: true, sparse: true });
+UsersSchema.index({ 'nostr.npub': 1 }, { unique: true, sparse: true });
 
 export function toUser(doc: UsersDocument): User {
   return {

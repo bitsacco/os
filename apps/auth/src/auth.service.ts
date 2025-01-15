@@ -3,17 +3,13 @@ import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger } from '@nestjs/common';
 import {
   AuthRequest,
+  AuthTokenPayload,
   LoginUserRequestDto,
   RegisterUserRequestDto,
   User,
   VerifyUserRequestDto,
 } from '@bitsacco/common';
 import { UsersService } from './users';
-
-interface AuthTokenPayload {
-  user: User;
-  expires: Date;
-}
 
 @Injectable()
 export class AuthService {
@@ -29,8 +25,9 @@ export class AuthService {
 
   async loginUser(req: LoginUserRequestDto) {
     const user = await this.userService.validateUser(req);
-
-    return this.createAuthToken(user);
+    return {
+      token: this.createAuthToken(user),
+    };
   }
 
   async registerUser(req: RegisterUserRequestDto) {

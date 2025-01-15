@@ -21,15 +21,14 @@ class AuthRequestBase {
   @IsNotEmpty()
   @IsString()
   @Validate(IsStringifiedNumberConstraint, [{ digits: 6, positive: true }])
-  @ApiProperty({ example: '123456' })
+  @ApiProperty({ example: '000000' })
   pin: string;
 
   @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @IsPhoneNumber()
   @ApiProperty({
-    example: '254700000000',
+    example: '+254700000000',
   })
   phone?: string;
 
@@ -51,8 +50,7 @@ export class RegisterUserRequestDto
   implements RegisterUserRequest
 {
   @IsArray()
-  @IsEnum({ each: true, type: Role })
-  @IsNotEmpty({ each: true })
+  // @IsEnum({ each: true, type: Role })
   @ApiProperty({
     type: [Role],
     enum: Role,

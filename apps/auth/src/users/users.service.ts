@@ -22,11 +22,7 @@ export class UsersService {
   async validateUser({ pin, phone, npub }: LoginUserRequestDto): Promise<User> {
     const ud: UsersDocument = await this.queryUser({ phone, npub });
 
-    const pinHash = await bcrypt.hash(
-      pin,
-      this.configService.getOrThrow('PIN_SALT'),
-    );
-    const pinIsValid = await bcrypt.compare(pinHash, ud.pinHash);
+    const pinIsValid = await bcrypt.compare(pin, ud.pinHash);
     if (!pinIsValid) {
       throw new UnauthorizedException('Credentials are not valid.');
     }
@@ -35,11 +31,13 @@ export class UsersService {
   }
 
   async registerUser({ pin, phone, npub, roles }: RegisterUserRequestDto) {
+    let salt = await bcrypt.genSalt(
+      this.configService.getOrThrow('SALT_ROUNDS'),
+    );
+    const pinHash = await bcrypt.hash(pin, salt);
+
     const user = await this.users.create({
-      pinHash: await bcrypt.hash(
-        pin,
-        this.configService.getOrThrow('PIN_SALT'),
-      ),
+      pinHash,
       phone: {
         number: phone,
         verified: false,
@@ -69,11 +67,14 @@ export class UsersService {
       throw new Error('User not found');
     }
 
-    if (!otp) {
-      // generate new otp and update user document
+    if (otp) {
+      // check otp against user otp
     }
 
-    // send otp notifications to sms/nostr
+    if (!otp) {
+      // generate new otp and update user document
+      // send otp notifications via sms/nostr
+    }
 
     return toUser(ud);
   }
@@ -85,23 +86,11 @@ export class UsersService {
       ud = await this.users.findOne({ _id: id });
     } else if (phone) {
       ud = await this.users.findOne({
-        $match: {
-          phone: {
-            $match: {
-              number: phone,
-            },
-          },
-        },
+        'phone.number': phone,
       });
     } else if (npub) {
       ud = await this.users.findOne({
-        $match: {
-          nostr: {
-            $match: {
-              npub,
-            },
-          },
-        },
+        'nostr.npub': npub,
       });
     } else {
       throw new Error('Invalid user query');
