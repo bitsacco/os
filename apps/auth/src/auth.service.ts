@@ -1,13 +1,19 @@
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import {
   AuthRequest,
+  AuthResponse,
   AuthTokenPayload,
   LoginUserRequestDto,
   RegisterUserRequestDto,
-  User,
   VerifyUserRequestDto,
+  User,
 } from '@bitsacco/common';
 import { UsersService } from './users';
 
@@ -23,33 +29,57 @@ export class AuthService {
     this.logger.log('AuthService initialized');
   }
 
-  async loginUser(req: LoginUserRequestDto) {
-    const user = await this.userService.validateUser(req);
-    return {
-      token: this.createAuthToken(user),
-    };
+  async loginUser(req: LoginUserRequestDto): Promise<AuthResponse> {
+    try {
+      const { user, authorized } = await this.userService.validateUser(req);
+      const token = authorized ? this.createAuthToken(user) : undefined;
+
+      return { user, token };
+    } catch (e) {
+      this.logger.error(e);
+      throw new UnauthorizedException('Invalid credentials');
+    }
   }
 
-  async registerUser(req: RegisterUserRequestDto) {
-    return this.userService.registerUser(req);
+  async registerUser(req: RegisterUserRequestDto): Promise<AuthResponse> {
+    try {
+      const user = await this.userService.registerUser(req);
+
+      return { user };
+    } catch (e) {
+      this.logger.error(e);
+      throw new InternalServerErrorException('Register user failed');
+    }
   }
 
-  async verifyUser(req: VerifyUserRequestDto) {
-    return this.userService.verifyUser(req);
+  async verifyUser(req: VerifyUserRequestDto): Promise<AuthResponse> {
+    try {
+      const { user, authorized } = await this.userService.verifyUser(req);
+      const token = authorized ? this.createAuthToken(user) : undefined;
+
+      return { user, token };
+    } catch (e) {
+      this.logger.error(e);
+      throw new UnauthorizedException('Invalid credentials');
+    }
   }
 
-  async authenticate({ token }: AuthRequest) {
+  async authenticate({ token }: AuthRequest): Promise<AuthResponse> {
     const { user, expires } = this.jwtService.verify<AuthTokenPayload>(token);
 
     if (expires < new Date()) {
-      throw new Error('Token expired. Unauthenticated');
+      throw new UnauthorizedException('Token expired');
     }
 
-    const u = await this.userService.findUser({
-      id: user.id,
-    });
+    try {
+      await this.userService.findUser({
+        id: user.id,
+      });
+    } catch {
+      throw new UnauthorizedException('Invalid user');
+    }
 
-    return this.createAuthToken(u);
+    return { user, token };
   }
 
   private createAuthToken(user: User) {

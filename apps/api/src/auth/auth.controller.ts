@@ -43,9 +43,7 @@ export class AuthController {
     type: RegisterUserRequestDto,
   })
   register(@Body() req: RegisterUserRequestDto) {
-    return firstValueFrom(this.authService.registerUser(req)).then((user) => ({
-      user,
-    }));
+    return this.authService.registerUser(req)
   }
 
   @Post('verify')
@@ -53,10 +51,12 @@ export class AuthController {
   @ApiBody({
     type: VerifyUserRequestDto,
   })
-  verify(@Body() req: VerifyUserRequestDto) {
-    return firstValueFrom(this.authService.verifyUser(req)).then((user) => ({
-      user,
-    }));
+  async verify(
+    @Body() req: VerifyUserRequestDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const auth = await this.authService.verifyUser(req);
+    return this.setAuthCookie(auth, res);
   }
 
   @Post('authenticate')

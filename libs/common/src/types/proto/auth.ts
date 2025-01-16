@@ -39,7 +39,8 @@ export interface AuthRequest {
 }
 
 export interface AuthResponse {
-  token: string;
+  user: User | undefined;
+  token?: string | undefined;
 }
 
 export interface User {
@@ -71,9 +72,9 @@ export interface Profile {
 export interface AuthServiceClient {
   loginUser(request: LoginUserRequest): Observable<AuthResponse>;
 
-  registerUser(request: RegisterUserRequest): Observable<User>;
+  registerUser(request: RegisterUserRequest): Observable<AuthResponse>;
 
-  verifyUser(request: VerifyUserRequest): Observable<User>;
+  verifyUser(request: VerifyUserRequest): Observable<AuthResponse>;
 
   authenticate(request: AuthRequest): Observable<AuthResponse>;
 }
@@ -85,11 +86,11 @@ export interface AuthServiceController {
 
   registerUser(
     request: RegisterUserRequest,
-  ): Promise<User> | Observable<User> | User;
+  ): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
 
   verifyUser(
     request: VerifyUserRequest,
-  ): Promise<User> | Observable<User> | User;
+  ): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
 
   authenticate(
     request: AuthRequest,

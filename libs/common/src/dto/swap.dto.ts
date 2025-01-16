@@ -9,7 +9,7 @@ import {
   IsNumber,
   Min,
   IsBoolean,
-  IsPhoneNumber,
+  // IsPhoneNumber,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -50,9 +50,9 @@ export class QuoteDto {
 
 export class MobileMoneyDto implements MobileMoney {
   @IsString()
-  @IsPhoneNumber()
+  // @IsPhoneNumber()
   @ApiProperty({
-    example: '+254700000000',
+    example: '254700000000',
   })
   phone: string;
 }

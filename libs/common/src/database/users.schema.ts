@@ -17,6 +17,13 @@ export class UsersDocument extends AbstractDocument {
   pinHash: string;
 
   @Prop({
+    type: String,
+    required: true,
+    default: '000000',
+  })
+  otp: string;
+
+  @Prop({
     type: Object,
     required: false,
   })

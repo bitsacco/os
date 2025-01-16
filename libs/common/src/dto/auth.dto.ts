@@ -1,9 +1,8 @@
 import {
   IsArray,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
-  IsPhoneNumber,
+  // IsPhoneNumber,
   IsString,
   Validate,
 } from 'class-validator';
@@ -26,9 +25,9 @@ class AuthRequestBase {
 
   @IsOptional()
   @IsString()
-  @IsPhoneNumber()
+  // @IsPhoneNumber()
   @ApiProperty({
-    example: '+254700000000',
+    example: '254700000000',
   })
   phone?: string;
 
@@ -63,7 +62,7 @@ export class VerifyUserRequestDto implements VerifyUserRequest {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  @IsPhoneNumber()
+  // @IsPhoneNumber()
   @ApiProperty({
     example: '254700000000',
   })
@@ -101,7 +100,7 @@ export class FindUserDto {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
-  @IsPhoneNumber()
+  // @IsPhoneNumber()
   @ApiProperty({
     example: '254700000000',
   })
