@@ -151,6 +151,7 @@ export class SolowalletService {
     status: TransactionStatus;
     amountMsats: number;
     amountFiat: number;
+    lightning: string;
     reference: string;
   }> {
     const reference = fiatWithdraw.reference;
@@ -161,7 +162,7 @@ export class SolowalletService {
         .createOfframpSwap(fiatWithdraw)
         .pipe(
           tap((swap: SwapResponse) => {
-            this.logger.log(`Swap: ${swap}`);
+            this.logger.log(`Swap: ${JSON.stringify(swap)}`);
           }),
           map((swap: SwapResponse) => {
             const { amountMsats } = fiatToBtc({
@@ -171,6 +172,7 @@ export class SolowalletService {
 
             return {
               status: swap.status,
+              lightning: swap.lightning,
               amountMsats,
               amountFiat,
               reference,
@@ -182,6 +184,7 @@ export class SolowalletService {
             this.logger.error('Error in swap:', error);
             return of({
               status: TransactionStatus.FAILED,
+              lightning: '',
               amountMsats: 0,
               amountFiat,
               reference,
@@ -429,19 +432,23 @@ export class SolowalletService {
         reference,
       });
     } else if (offramp) {
-      const { status, amountMsats: offrampMsats } =
-        await this.initiateOfframpSwap({
-          quote,
-          amountFiat: amountFiat.toString(),
-          reference,
-          target: offramp,
-        });
+      const {
+        status,
+        amountMsats: offrampMsats,
+        lightning,
+      } = await this.initiateOfframpSwap({
+        quote,
+        amountFiat: amountFiat.toString(),
+        reference,
+        target: offramp,
+      });
 
       withdrawal = await this.wallet.create({
         userId,
         amountMsats: offrampMsats * 1.01,
         amountFiat,
         lightning: JSON.stringify(lightning),
+        paymentTracker: undefined,
         type: TransactionType.WITHDRAW,
         status,
         reference,

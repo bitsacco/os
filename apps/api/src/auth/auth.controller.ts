@@ -43,7 +43,7 @@ export class AuthController {
     type: RegisterUserRequestDto,
   })
   register(@Body() req: RegisterUserRequestDto) {
-    return this.authService.registerUser(req)
+    return this.authService.registerUser(req);
   }
 
   @Post('verify')

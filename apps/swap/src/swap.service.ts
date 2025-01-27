@@ -249,26 +249,29 @@ export class SwapService {
       btcToFiatRate: Number(rate),
     });
 
-    const { invoice: lightning, operationId: id } =
+    const { invoice: lightning, operationId } =
       await this.fedimintService.invoice(amountMsats, reference);
 
     const swap = await this.offramp.create({
       rate,
       reference,
       lightning,
-      retryCount: 0,
       phone: target.payout.phone,
       amountSats: amountSats.toFixed(2),
+      paymentTracker: operationId,
       state: SwapTransactionState.PENDING,
+      retryCount: 0,
     });
 
     // listen for payment
-    this.fedimintService.receive(ReceiveContext.OFFRAMP, id);
+    this.fedimintService.receive(ReceiveContext.OFFRAMP, operationId);
 
     return {
-      ...swap,
-      id: swap._id.toString(),
-      lightning,
+      id: swap._id,
+      rate: swap.rate,
+      userId: swap.paymentTracker,
+      lightning: swap.lightning,
+      retryCount: swap.retryCount,
       status: mapSwapTxStateToTransactionStatus(
         swap.state as SwapTransactionState,
       ),
@@ -433,19 +436,21 @@ export class SwapService {
     context,
     operationId,
   }: ReceivePaymentSuccessEvent) {
-    const swap = await this.offramp.findOne({ _id: operationId });
+    const swap = await this.offramp.findOne({ paymentTracker: operationId });
 
-    const amount = Number(swap.amountSats) * Number(swap.rate);
-
+    const { amountFiat } = btcToFiat({
+      amountSats: Number(swap.amountSats),
+      fiatToBtcRate: Number(swap.rate),
+    });
     const { id } = await this.intasendService.sendMpesaPayment({
-      amount: amount.toString(),
+      amount: amountFiat.toFixed(0).toString(),
       account: swap.phone,
       name: 'bitsacco',
       narrative: 'withdrawal',
     });
 
     await this.offramp.findOneAndUpdate(
-      { _id: operationId },
+      { _id: swap._id },
       {
         paymentTracker: id,
         state: SwapTransactionState.PROCESSING,
