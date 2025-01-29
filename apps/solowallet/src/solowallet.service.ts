@@ -417,7 +417,8 @@ export class SolowalletService {
 
       withdrawal = await this.wallet.create({
         userId,
-        amountMsats: invoiceMsats + fee * 2,
+        // TODO: https://github.com/bitsacco/os/issues/78
+        amountMsats: invoiceMsats + fee,
         amountFiat,
         lightning: JSON.stringify(lightning),
         paymentTracker: operationId,
@@ -440,7 +441,8 @@ export class SolowalletService {
       const { operationId, fee } = await this.fedimintService.pay(invoice);
       withdrawal = await this.wallet.create({
         userId,
-        amountMsats: offrampMsats * fee * 2,
+        // TODO: https://github.com/bitsacco/os/issues/78
+        amountMsats: offrampMsats * fee,
         amountFiat,
         lightning: JSON.stringify({ invoice }),
         paymentTracker: operationId,
