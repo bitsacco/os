@@ -111,7 +111,22 @@ export class UsersService {
     const newOtp = generateOTP();
     this.logger.log(`OTP-${newOtp}`);
 
-    ud = await this.users.findOneAndUpdate({ _id: ud._id }, { otp: newOtp });
+    ud = await this.users.findOneAndUpdate(
+      { _id: ud._id },
+      {
+        otp: newOtp,
+        phone: phone &&
+          ud.phone && {
+            ...ud.phone,
+            verified: true,
+          },
+        nostr: npub &&
+          ud.nostr && {
+            ...ud.nostr,
+            verified: true,
+          },
+      },
+    );
 
     return {
       user: toUser(ud),
