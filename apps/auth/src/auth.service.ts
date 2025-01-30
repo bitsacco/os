@@ -1,6 +1,7 @@
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -14,19 +15,26 @@ import {
   RegisterUserRequestDto,
   VerifyUserRequestDto,
   User,
+  UsersService,
+  SmsServiceClient,
+  SMS_SERVICE_NAME,
 } from '@bitsacco/common';
-import { UsersService } from './users';
+import { type ClientGrpc } from '@nestjs/microservices';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly smsService: SmsServiceClient;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly userService: UsersService,
     private readonly jwtService: JwtService,
+    @Inject(SMS_SERVICE_NAME) private readonly smsGrpc: ClientGrpc,
   ) {
     this.logger.log('AuthService initialized');
+    this.smsService =
+      this.smsGrpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
   }
 
   async loginUser(req: LoginUserRequestDto): Promise<AuthResponse> {
@@ -54,8 +62,33 @@ export class AuthService {
 
   async verifyUser(req: VerifyUserRequestDto): Promise<AuthResponse> {
     try {
-      const { user, authorized } = await this.userService.verifyUser(req);
-      const token = authorized ? this.createAuthToken(user) : undefined;
+      const { user, authorized, otp } = await this.userService.verifyUser(req);
+
+      let token: string | undefined = undefined;
+      if (authorized) {
+        token = this.createAuthToken(user);
+      } else {
+      }
+
+      if (!authorized) {
+        const { phone, npub } = req;
+
+        // send user otp for verification
+        if (phone) {
+          try {
+            this.smsService.sendSms({
+              message: otp,
+              receiver: phone,
+            });
+          } catch (e) {
+            this.logger.error(e);
+          }
+        }
+
+        if (npub) {
+          // send otp via nostr
+        }
+      }
 
       return { user, token };
     } catch (e) {

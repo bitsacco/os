@@ -9,10 +9,10 @@ import {
   LoggerModule,
   SMS_SERVICE_NAME,
   UsersDocument,
+  UsersRepository,
   UsersSchema,
+  UsersService,
 } from '@bitsacco/common';
-import { UsersRepository } from './users/users.repository';
-import { UsersService } from './users/users.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 

@@ -1,12 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { AbstractDocument } from './abstract.schema';
 import {
-  Role,
   type Nostr,
   type Phone,
   type Profile,
+  Role,
   type User,
-} from '@bitsacco/common';
-import { AbstractDocument } from './abstract.schema';
+} from '../types';
 
 @Schema({ versionKey: false })
 export class UsersDocument extends AbstractDocument {

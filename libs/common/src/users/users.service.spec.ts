@@ -2,9 +2,9 @@ import { ConfigService } from '@nestjs/config';
 import { TestingModule } from '@nestjs/testing';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
+import { SmsServiceClient } from '../types';
 import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
-import { SmsServiceClient } from '@bitsacco/common';
 
 describe('UsersService', () => {
   let usersService: UsersService;
@@ -35,22 +35,18 @@ describe('UsersService', () => {
     const module: TestingModule = await createTestingModuleWithValidation({
       providers: [
         {
-          provide: UsersService,
-          useFactory: () => {
-            return new UsersService(
-              mockCfg,
-              mockUsersRepository,
-              serviceGenerator,
-            );
-          },
-        },
-        {
           provide: UsersRepository,
           useValue: mockUsersRepository,
         },
         {
           provide: ConfigService,
           useValue: mockCfg,
+        },
+        {
+          provide: UsersService,
+          useFactory: () => {
+            return new UsersService(mockCfg, mockUsersRepository);
+          },
         },
       ],
     });

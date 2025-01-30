@@ -6,13 +6,21 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
   AUTH_SERVICE_NAME,
+  DatabaseModule,
   EVENTS_SERVICE_BUS,
+  JwtAuthStrategy,
   LoggerModule,
   NOSTR_SERVICE_NAME,
+  NpubAuthStategy,
+  PhoneAuthStategy,
   SHARES_SERVICE_NAME,
   SMS_SERVICE_NAME,
   SOLOWALLET_SERVICE_NAME,
   SWAP_SERVICE_NAME,
+  UsersDocument,
+  UsersRepository,
+  UsersSchema,
+  UsersService,
 } from '@bitsacco/common';
 import { SwapController, SwapService } from './swap';
 import { NostrController, NostrService } from './nostr';
@@ -36,6 +44,8 @@ import { AuthController } from './auth/auth.controller';
       validationSchema: Joi.object({
         PORT: Joi.string().required(),
         NODE_ENV: Joi.string().required(),
+        AUTH_GRPC_URL: Joi.string().required(),
+        JWT_SECRET: Joi.string().required(),
         SWAP_GRPC_URL: Joi.string().required(),
         NOSTR_GRPC_URL: Joi.string().required(),
         SMS_GRPC_URL: Joi.string().required(),
@@ -43,6 +53,7 @@ import { AuthController } from './auth/auth.controller';
         SOLOWALLET_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
+        DATABASE_URL: Joi.string().required(),
       }),
     }),
     ClientsModule.registerAsync([
@@ -130,6 +141,10 @@ import { AuthController } from './auth/auth.controller';
         inject: [ConfigService],
       },
     ]),
+    DatabaseModule,
+    DatabaseModule.forFeature([
+      { name: UsersDocument.name, schema: UsersSchema },
+    ]),
   ],
   controllers: [
     AuthController,
@@ -142,12 +157,17 @@ import { AuthController } from './auth/auth.controller';
   ],
   providers: [
     AuthService,
+    UsersRepository,
+    UsersService,
     SwapService,
     NostrService,
     SmsService,
     SharesService,
     SolowalletService,
     AdminService,
+    PhoneAuthStategy,
+    NpubAuthStategy,
+    JwtAuthStrategy,
   ],
 })
 export class ApiModule {}

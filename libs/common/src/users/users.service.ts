@@ -1,22 +1,18 @@
 import * as bcrypt from 'bcryptjs';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { UsersRepository } from './users.repository';
+import { toUser, UsersDocument } from '../database';
+import { generateOTP } from '../utils';
+import { User } from '../types';
 import {
+  LoginUserRequestDto,
   RegisterUserRequestDto,
   FindUserDto,
-  toUser,
-  User,
-  UsersDocument,
   VerifyUserRequestDto,
-  LoginUserRequestDto,
-  generateOTP,
-  SMS_SERVICE_NAME,
-  SmsServiceClient,
-} from '@bitsacco/common';
-import { UsersRepository } from './users.repository';
-import { ConfigService } from '@nestjs/config';
-import { type ClientGrpc } from '@nestjs/microservices';
+} from '../dto';
 
-interface UserAuth {
+export interface UserAuth {
   user: User;
   authorized: boolean;
 }
@@ -24,16 +20,12 @@ interface UserAuth {
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
-  private readonly smsService: SmsServiceClient;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly users: UsersRepository,
-    @Inject(SMS_SERVICE_NAME) private readonly smsGrpc: ClientGrpc,
   ) {
     this.logger.log('UsersService initialized');
-    this.smsService =
-      this.smsGrpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
   }
 
   async validateUser({
@@ -45,7 +37,7 @@ export class UsersService {
 
     const pinIsValid = await bcrypt.compare(pin, ud.pinHash);
     if (!pinIsValid) {
-      throw new Error('Credentials are not valid.');
+      throw new UnauthorizedException('Credentials are not valid.');
     }
 
     return {
@@ -97,58 +89,46 @@ export class UsersService {
     otp,
     phone,
     npub,
-  }: VerifyUserRequestDto): Promise<UserAuth> {
+  }: VerifyUserRequestDto): Promise<UserAuth & { otp: string }> {
     let ud: UsersDocument = await this.queryUser({ phone, npub });
 
     if (!ud) {
-      throw new Error('User not found');
-    }
-
-    if (otp) {
-      if (otp !== ud.otp) {
-        throw new Error('Invalid otp');
-      }
-
-      const newOtp = generateOTP();
-      this.logger.log(`OTP-${newOtp}`);
-
-      ud = await this.users.findOneAndUpdate({ _id: ud._id }, { otp: newOtp });
-
-      return {
-        user: toUser(ud),
-        authorized: true,
-      };
+      throw new UnauthorizedException('User not found');
     }
 
     if (!otp) {
-      // send user otp for verification
-      if (phone) {
-        try {
-          this.smsService.sendSms({
-            message: ud.otp,
-            receiver: phone,
-          });
-        } catch (e) {
-          this.logger.error(e);
-        }
-      }
-
-      if (npub) {
-        // send otp via nostr
-      }
-
       return {
         user: toUser(ud),
         authorized: false,
+        otp: ud.otp,
       };
     }
+
+    if (otp !== ud.otp) {
+      throw new UnauthorizedException('Invalid otp');
+    }
+
+    const newOtp = generateOTP();
+    this.logger.log(`OTP-${newOtp}`);
+
+    ud = await this.users.findOneAndUpdate({ _id: ud._id }, { otp: newOtp });
+
+    return {
+      user: toUser(ud),
+      authorized: true,
+      otp,
+    };
   }
 
   private async queryUser({
     id,
     phone,
     npub,
-  }: Queryuser): Promise<UsersDocument> {
+  }: {
+    id?: string;
+    phone?: string;
+    npub?: string;
+  }): Promise<UsersDocument> {
     let ud: UsersDocument;
 
     if (id) {
@@ -162,19 +142,13 @@ export class UsersService {
         'nostr.npub': npub,
       });
     } else {
-      throw new Error('Invalid user query');
+      throw new UnauthorizedException('Invalid user query');
     }
 
     if (!ud) {
-      throw new Error('User not found');
+      throw new UnauthorizedException('User not found');
     }
 
     return ud;
   }
-}
-
-interface Queryuser {
-  id?: string;
-  phone?: string;
-  npub?: string;
 }

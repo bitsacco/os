@@ -1,7 +1,7 @@
 import { TestingModule } from '@nestjs/testing';
 import { NostrServiceClient } from '@bitsacco/common';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
-import { ClientGrpc } from '@nestjs/microservices';
+import { type ClientGrpc } from '@nestjs/microservices';
 import { NostrService } from './nostr.service';
 
 describe('NostrService', () => {

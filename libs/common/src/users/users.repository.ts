@@ -1,7 +1,7 @@
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { Injectable, Logger } from '@nestjs/common';
-import { AbstractRepository, UsersDocument } from '@bitsacco/common';
+import { AbstractRepository, UsersDocument } from '../database';
 
 @Injectable()
 export class UsersRepository extends AbstractRepository<UsersDocument> {
