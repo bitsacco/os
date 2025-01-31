@@ -27,6 +27,8 @@ import {
   CreateOfframpSwapDto,
   UpdateTxDto,
   ContinueTxRequestDto,
+  default_page,
+  default_page_size,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { catchError, firstValueFrom, map, of, tap } from 'rxjs';
@@ -348,7 +350,7 @@ export class SolowalletService {
 
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
-      pagination: { page: 0, size: 10 },
+      pagination: { page: default_page, size: default_page_size },
     });
 
     const meta = await this.getWalletMeta(userId);
@@ -456,7 +458,7 @@ export class SolowalletService {
 
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
-      pagination: { page: 0, size: 10 },
+      pagination: { page: default_page, size: default_page_size },
     });
     const meta = await this.getWalletMeta(userId);
 
@@ -483,7 +485,7 @@ export class SolowalletService {
 
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
-      pagination: { page: 0, size: 10 },
+      pagination: { page: default_page, size: default_page_size },
     });
     const meta = await this.getWalletMeta(userId);
 
@@ -562,7 +564,7 @@ export class SolowalletService {
 
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
-      pagination: { page: 0, size: 10 },
+      pagination: { page: default_page, size: default_page_size },
     });
 
     const meta = await this.getWalletMeta(userId);

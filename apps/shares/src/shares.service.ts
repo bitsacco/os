@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   AllSharesOffers,
   AllSharesTxsResponse,
+  default_page,
+  default_page_size,
   FindSharesTxDto,
   OfferSharesDto,
   PaginatedRequestDto,
@@ -90,7 +92,7 @@ export class SharesService {
 
     const sharesTransactions = await this.getPaginatedShareTx(
       { userId },
-      { page: 0, size: 10 },
+      { page: default_page, size: default_page_size },
     );
 
     const offers = await this.getSharesOffers();
@@ -137,7 +139,7 @@ export class SharesService {
 
     return this.userSharesTransactions({
       userId: transfer.fromUserId,
-      pagination: { page: 0, size: 10 },
+      pagination: { page: default_page, size: default_page_size },
     });
   }
 
@@ -162,7 +164,7 @@ export class SharesService {
 
     const txShares = await this.getPaginatedShareTx(
       { userId },
-      { page: 0, size: 10 },
+      { page: default_page, size: default_page_size },
     );
 
     const offers = await this.getSharesOffers();
@@ -212,7 +214,10 @@ export class SharesService {
   }
 
   async allSharesTransactions(): Promise<AllSharesTxsResponse> {
-    const shares = await this.getPaginatedShareTx({}, { page: 0, size: 10 });
+    const shares = await this.getPaginatedShareTx(
+      {},
+      { page: default_page, size: default_page_size },
+    );
 
     const offers = await this.getSharesOffers();
 

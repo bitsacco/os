@@ -22,6 +22,8 @@ import {
   CreateOnrampSwapDto,
   ListSwapsDto,
   CreateOfframpSwapDto,
+  default_page,
+  default_page_size,
 } from '@bitsacco/common';
 import { SwapService } from './swap.service';
 
@@ -89,8 +91,8 @@ export class SwapController {
     required: false,
   })
   getOnrampTransactions(
-    @Query('page') page: number = 0,
-    @Query('size') size: number = 100,
+    @Query('page') page: number = default_page,
+    @Query('size') size: number = default_page_size,
   ) {
     return this.swapService.getOnrampTransactions({
       page,

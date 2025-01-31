@@ -1,11 +1,23 @@
 import {
+  default_page,
+  default_page_size,
+  ListSwapsDto,
   OfferSharesDto,
+  PaginatedRequestDto,
   SubscribeSharesDto,
   TransferSharesDto,
   UpdateSharesDto,
 } from '@bitsacco/common';
-import { Body, Controller, Get, Logger, Param, Post } from '@nestjs/common';
-import { ApiOperation, ApiBody, ApiParam } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
+import { ApiOperation, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { SharesService } from './shares.service';
 
 @Controller('shares')
@@ -69,9 +81,29 @@ export class SharesController {
     summary: 'List all Bitsacco share transactions for user with given ID',
   })
   @ApiParam({ name: 'userId', type: 'string', description: 'User ID' })
-  userSharesTransactions(@Param('userId') userId: string) {
+  @ApiQuery({
+    name: 'page',
+    example: '0',
+    type: PaginatedRequestDto['page'],
+    required: false,
+  })
+  @ApiQuery({
+    name: 'size',
+    example: '100',
+    type: PaginatedRequestDto['size'],
+    required: false,
+  })
+  userSharesTransactions(
+    @Param('userId') userId: string,
+    @Query('page') page: number = default_page,
+    @Query('size') size: number = default_page_size,
+  ) {
     return this.sharesService.userSharesTransactions({
       userId,
+      pagination: {
+        page,
+        size,
+      },
     });
   }
 
