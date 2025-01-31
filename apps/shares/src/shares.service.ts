@@ -214,10 +214,10 @@ export class SharesService {
   }
 
   async allSharesTransactions(): Promise<AllSharesTxsResponse> {
-    const shares = await this.getPaginatedShareTx(
-      {},
-      { page: default_page, size: default_page_size },
-    );
+    const shares = await this.getPaginatedShareTx(null, {
+      page: default_page,
+      size: default_page_size,
+    });
 
     const offers = await this.getSharesOffers();
 
@@ -242,11 +242,10 @@ export class SharesService {
   }
 
   private async getPaginatedShareTx(
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    query: { userId: string } | {},
+    query: { userId: string } | null,
     pagination: PaginatedRequestDto,
   ): Promise<PaginatedUserSharesTxsResponse> {
-    const allShareTx = await this.shares.find(query, { createdAt: -1 });
+    const allShareTx = await this.shares.find(query || {}, { createdAt: -1 });
 
     const { page, size } = pagination;
     const pages = Math.ceil(allShareTx.length / size);
