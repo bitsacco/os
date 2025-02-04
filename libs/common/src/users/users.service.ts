@@ -1,5 +1,11 @@
 import * as bcrypt from 'bcryptjs';
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UsersRepository } from './users.repository';
 import { toUser, UsersDocument } from '../database';
@@ -10,6 +16,7 @@ import {
   RegisterUserRequestDto,
   FindUserDto,
   VerifyUserRequestDto,
+  UserUpdatesDto,
 } from '../dto';
 
 export interface PreUserAuth {
@@ -23,20 +30,24 @@ export interface PostUserAuth {
   authorized: true;
 }
 
-export interface UsersService {
+type UserAuth = PreUserAuth | PostUserAuth;
+
+export interface IUsersService {
   validateUser(loginDto: LoginUserRequestDto): Promise<PostUserAuth>;
 
   registerUser(registerDto: RegisterUserRequestDto): Promise<PreUserAuth>;
 
   findUser(findDto: FindUserDto): Promise<User>;
 
-  verifyUser(verifyDto: VerifyUserRequestDto): Promise<PreUserAuth>;
+  verifyUser(verifyDto: VerifyUserRequestDto): Promise<UserAuth>;
+
+  updateUser(id: string, updates: UserUpdatesDto): Promise<UserAuth>;
 
   listUsers(): Promise<User[]>;
 }
 
 @Injectable()
-export class UsersService implements UsersService {
+export class UsersService implements IUsersService {
   private readonly logger = new Logger(UsersService.name);
 
   constructor(
@@ -111,7 +122,7 @@ export class UsersService implements UsersService {
     otp,
     phone,
     npub,
-  }: VerifyUserRequestDto): Promise<PreUserAuth | PostUserAuth> {
+  }: VerifyUserRequestDto): Promise<UserAuth> {
     let ud: UsersDocument = await this.queryUser({ phone, npub });
 
     if (!ud) {
@@ -156,6 +167,66 @@ export class UsersService implements UsersService {
     };
   }
 
+  async updateUser(id: string, updates: UserUpdatesDto): Promise<UserAuth> {
+    let ud: UsersDocument = await this.queryUser({ id });
+    if (!ud) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+
+    const hunk: Partial<User> = {};
+
+    if (updates.phone) {
+      hunk.phone = {
+        ...updates.phone,
+        verified: false,
+      };
+    }
+
+    if (updates.nostr) {
+      hunk.nostr = {
+        ...updates.nostr,
+        verified: false,
+      };
+    }
+
+    if (updates.profile) {
+      hunk.profile = {
+        ...ud.profile,
+        ...updates.profile,
+      };
+    }
+
+    if (updates.roles) {
+      hunk.roles = updates.roles;
+    }
+
+    const updatedUser = await this.users.findOneAndUpdate({ _id: id }, hunk);
+
+    if (!updatedUser) {
+      throw new InternalServerErrorException('Failed to update user');
+    }
+
+    const authorized = updatedUser.phone.verified || updatedUser.nostr.verified;
+    const user = toUser(updatedUser);
+
+    return authorized
+      ? {
+          user,
+          authorized,
+        }
+      : {
+          user,
+          authorized,
+          otp: updatedUser.otp,
+        };
+  }
+
+  async listUsers(): Promise<User[]> {
+    const uds = await this.users.find({});
+
+    return uds.map(toUser);
+  }
+
   private async queryUser({
     id,
     phone,
@@ -187,16 +258,8 @@ export class UsersService implements UsersService {
 
     return ud;
   }
-
-  async listUsers(): Promise<User[]> {
-    const uds = await this.users.find({});
-
-    return uds.map(toUser);
-  }
 }
 
-export const isPreUserAuth = (
-  auth: PreUserAuth | PostUserAuth,
-): auth is PreUserAuth => {
+export const isPreUserAuth = (auth: UserAuth): auth is PreUserAuth => {
   return !auth.authorized;
 };

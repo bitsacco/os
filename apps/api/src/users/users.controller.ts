@@ -1,6 +1,6 @@
-import { UsersService } from '@bitsacco/common';
-import { ApiOperation, ApiParam } from '@nestjs/swagger';
-import { Controller, Get, Logger, Param } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Put } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { UsersService, UserUpdatesDto } from '@bitsacco/common';
 
 @Controller('users')
 export class UsersController {
@@ -35,5 +35,13 @@ export class UsersController {
   @ApiParam({ name: 'npub', description: 'User npub' })
   async findUserByNpub(@Param('npub') npub: string) {
     return this.usersService.findUser({ npub });
+  }
+
+  @Put('/update/:id')
+  @ApiOperation({ summary: 'Update user' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiBody({ type: UserUpdatesDto })
+  async updateUser(@Param('id') id: string, @Body() updates: UserUpdatesDto) {
+    return this.usersService.updateUser(id, updates);
   }
 }

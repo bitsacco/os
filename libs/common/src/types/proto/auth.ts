@@ -74,6 +74,18 @@ export interface Profile {
   avatarUrl?: string | undefined;
 }
 
+export interface UpdateUserRequest {
+  userId: string;
+  updates: UserUpdates | undefined;
+}
+
+export interface UserUpdates {
+  phone?: Phone | undefined;
+  nostr?: Nostr | undefined;
+  profile?: Profile | undefined;
+  roles: Role[];
+}
+
 export interface AuthServiceClient {
   loginUser(request: LoginUserRequest): Observable<AuthResponse>;
 

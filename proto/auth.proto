@@ -80,3 +80,18 @@ enum Role {
   Admin = 1;
   SuperAdmin = 3;
 }
+
+message UpdateUserRequest {
+  string user_id = 1;
+  UserUpdates updates = 2;
+}
+
+message UserUpdates {
+  optional Phone phone = 1;
+
+  optional Nostr nostr = 2;
+
+  optional Profile profile = 3;
+
+  repeated Role roles = 4;
+}
