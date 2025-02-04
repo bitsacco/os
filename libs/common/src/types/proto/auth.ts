@@ -34,6 +34,11 @@ export interface VerifyUserRequest {
   otp?: string | undefined;
 }
 
+export interface RecoverUserRequest {
+  phone?: string | undefined;
+  npub?: string | undefined;
+}
+
 export interface AuthRequest {
   token: string;
 }
@@ -76,6 +81,8 @@ export interface AuthServiceClient {
 
   verifyUser(request: VerifyUserRequest): Observable<AuthResponse>;
 
+  recoverUser(request: RecoverUserRequest): Observable<AuthResponse>;
+
   authenticate(request: AuthRequest): Observable<AuthResponse>;
 }
 
@@ -92,6 +99,10 @@ export interface AuthServiceController {
     request: VerifyUserRequest,
   ): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
 
+  recoverUser(
+    request: RecoverUserRequest,
+  ): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
+
   authenticate(
     request: AuthRequest,
   ): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
@@ -103,6 +114,7 @@ export function AuthServiceControllerMethods() {
       'loginUser',
       'registerUser',
       'verifyUser',
+      'recoverUser',
       'authenticate',
     ];
     for (const method of grpcMethods) {

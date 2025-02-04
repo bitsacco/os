@@ -19,6 +19,7 @@ import {
   UsersService,
   SmsServiceClient,
   SMS_SERVICE_NAME,
+  RecoverUserRequestDto,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 
@@ -78,6 +79,21 @@ export class AuthService {
 
       const token = this.createAuthToken(user);
       return { user, token };
+    } catch (e) {
+      this.logger.error(e);
+      throw new UnauthorizedException('Invalid credentials');
+    }
+  }
+
+  async recoverUser(req: RecoverUserRequestDto): Promise<AuthResponse> {
+    try {
+      const { user, authorized, otp } = await this.userService.verifyUser(req);
+
+      if (!authorized) {
+        await this.sendOtp(otp, req.phone, req.npub);
+      }
+
+      return { user };
     } catch (e) {
       this.logger.error(e);
       throw new UnauthorizedException('Invalid credentials');

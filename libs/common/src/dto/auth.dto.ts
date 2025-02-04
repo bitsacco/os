@@ -11,6 +11,7 @@ import {
   AuthRequest,
   IsStringifiedNumberConstraint,
   LoginUserRequest,
+  RecoverUserRequest,
   RegisterUserRequest,
   Role,
   VerifyUserRequest,
@@ -82,6 +83,25 @@ export class VerifyUserRequestDto implements VerifyUserRequest {
   @Validate(IsStringifiedNumberConstraint, [{ digits: 6, positive: true }])
   @ApiProperty({ example: '123456' })
   otp?: string;
+}
+
+export class RecoverUserRequestDto implements RecoverUserRequest {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  // @IsPhoneNumber()
+  @ApiProperty({
+    example: '254700000000',
+  })
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({
+    example: 'npub17k76drpaeaungjltz9zlrr89ua0rlawgzs8fasaar49w0mnytrssgtk09g',
+  })
+  npub?: string;
 }
 
 export class AuthRequestDto implements AuthRequest {

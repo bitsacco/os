@@ -1,10 +1,11 @@
 import {
   AUTH_SERVICE_NAME,
-  AuthRequest,
+  AuthRequestDto,
   AuthServiceClient,
-  LoginUserRequest,
-  RegisterUserRequest,
-  VerifyUserRequest,
+  LoginUserRequestDto,
+  RecoverUserRequestDto,
+  RegisterUserRequestDto,
+  VerifyUserRequestDto,
 } from '@bitsacco/common';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { type ClientGrpc } from '@nestjs/microservices';
@@ -19,19 +20,23 @@ export class AuthService implements OnModuleInit {
     this.client = this.grpc.getService<AuthServiceClient>(AUTH_SERVICE_NAME);
   }
 
-  loginUser(req: LoginUserRequest) {
+  loginUser(req: LoginUserRequestDto) {
     return this.client.loginUser(req);
   }
 
-  registerUser(req: RegisterUserRequest) {
+  registerUser(req: RegisterUserRequestDto) {
     return this.client.registerUser(req);
   }
 
-  verifyUser(req: VerifyUserRequest) {
+  verifyUser(req: VerifyUserRequestDto) {
     return this.client.verifyUser(req);
   }
 
-  authenticate(req: AuthRequest) {
+  recoverUser(req: RecoverUserRequestDto) {
+    return this.client.verifyUser(req);
+  }
+
+  authenticate(req: AuthRequestDto) {
     return this.client.authenticate(req);
   }
 }

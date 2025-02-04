@@ -8,6 +8,7 @@ import {
   AuthResponse,
   AuthTokenPayload,
   LoginUserRequestDto,
+  RecoverUserRequestDto,
   RegisterUserRequestDto,
   VerifyUserRequestDto,
 } from '@bitsacco/common';
@@ -69,6 +70,19 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const auth = this.authService.authenticate(req);
+    return this.setAuthCookie(auth, res);
+  }
+
+  @Post('recover')
+  @ApiOperation({ summary: 'Recover user account' })
+  @ApiBody({
+    type: RecoverUserRequestDto,
+  })
+  async recover(
+    @Body() req: RecoverUserRequestDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const auth = this.authService.recoverUser(req);
     return this.setAuthCookie(auth, res);
   }
 

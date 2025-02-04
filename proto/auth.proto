@@ -6,6 +6,7 @@ service AuthService {
   rpc LoginUser (LoginUserRequest) returns (AuthResponse) {}
   rpc RegisterUser (RegisterUserRequest) returns (AuthResponse) {}
   rpc VerifyUser (VerifyUserRequest) returns (AuthResponse) {}
+  rpc RecoverUser (RecoverUserRequest) returns (AuthResponse) {}
   rpc Authenticate (AuthRequest) returns (AuthResponse) {}
 }
 
@@ -26,6 +27,11 @@ message VerifyUserRequest {
   optional string phone = 1;
   optional string npub = 2;
   optional string otp = 3;
+}
+
+message RecoverUserRequest {
+  optional string phone = 1;
+  optional string npub = 2;
 }
 
 message AuthRequest {

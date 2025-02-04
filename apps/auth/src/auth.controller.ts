@@ -4,6 +4,7 @@ import {
   AuthRequestDto,
   AuthServiceControllerMethods,
   LoginUserRequestDto,
+  RecoverUserRequestDto,
   RegisterUserRequestDto,
   VerifyUserRequestDto,
 } from '@bitsacco/common';
@@ -27,6 +28,11 @@ export class AuthController {
   @GrpcMethod()
   verifyUser(req: VerifyUserRequestDto) {
     return this.authService.verifyUser(req);
+  }
+
+  @GrpcMethod()
+  recoverUser(req: RecoverUserRequestDto) {
+    return this.authService.recoverUser(req);
   }
 
   @GrpcMethod()
