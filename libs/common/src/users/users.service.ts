@@ -12,13 +12,31 @@ import {
   VerifyUserRequestDto,
 } from '../dto';
 
-export interface UserAuth {
+export interface PreUserAuth {
   user: User;
-  authorized: boolean;
+  authorized: false;
+  otp: string;
+}
+
+export interface PostUserAuth {
+  user: User;
+  authorized: true;
+}
+
+export interface UsersService {
+  validateUser(loginDto: LoginUserRequestDto): Promise<PostUserAuth>;
+
+  registerUser(registerDto: RegisterUserRequestDto): Promise<PreUserAuth>;
+
+  findUser(findDto: FindUserDto): Promise<User>;
+
+  verifyUser(verifyDto: VerifyUserRequestDto): Promise<PreUserAuth>;
+
+  listUsers(): Promise<User[]>;
 }
 
 @Injectable()
-export class UsersService {
+export class UsersService implements UsersService {
   private readonly logger = new Logger(UsersService.name);
 
   constructor(
@@ -32,7 +50,7 @@ export class UsersService {
     pin,
     phone,
     npub,
-  }: LoginUserRequestDto): Promise<UserAuth> {
+  }: LoginUserRequestDto): Promise<PostUserAuth> {
     const ud: UsersDocument = await this.queryUser({ phone, npub });
 
     const pinIsValid = await bcrypt.compare(pin, ud.pinHash);
@@ -51,7 +69,7 @@ export class UsersService {
     phone,
     npub,
     roles,
-  }: RegisterUserRequestDto): Promise<UserAuth & { otp: string }> {
+  }: RegisterUserRequestDto): Promise<PreUserAuth> {
     let salt = await bcrypt.genSalt(
       this.configService.getOrThrow('SALT_ROUNDS'),
     );
@@ -93,7 +111,7 @@ export class UsersService {
     otp,
     phone,
     npub,
-  }: VerifyUserRequestDto): Promise<UserAuth & { otp: string }> {
+  }: VerifyUserRequestDto): Promise<PreUserAuth | PostUserAuth> {
     let ud: UsersDocument = await this.queryUser({ phone, npub });
 
     if (!ud) {
@@ -135,7 +153,6 @@ export class UsersService {
     return {
       user: toUser(ud),
       authorized: true,
-      otp,
     };
   }
 
@@ -170,4 +187,16 @@ export class UsersService {
 
     return ud;
   }
+
+  async listUsers(): Promise<User[]> {
+    const uds = await this.users.find({});
+
+    return uds.map(toUser);
+  }
 }
+
+export const isPreUserAuth = (
+  auth: PreUserAuth | PostUserAuth,
+): auth is PreUserAuth => {
+  return !auth.authorized;
+};

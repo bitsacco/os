@@ -20,6 +20,7 @@ import {
   SmsServiceClient,
   SMS_SERVICE_NAME,
   RecoverUserRequestDto,
+  isPreUserAuth,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 
@@ -70,15 +71,15 @@ export class AuthService {
 
   async verifyUser(req: VerifyUserRequestDto): Promise<AuthResponse> {
     try {
-      const { user, authorized, otp } = await this.userService.verifyUser(req);
+      const auth = await this.userService.verifyUser(req);
 
-      if (!authorized) {
-        await this.sendOtp(otp, req.phone, req.npub);
-        return { user };
+      if (isPreUserAuth(auth)) {
+        await this.sendOtp(auth.otp, req.phone, req.npub);
+        return { user: auth.user };
       }
 
-      const token = this.createAuthToken(user);
-      return { user, token };
+      const token = this.createAuthToken(auth.user);
+      return { user: auth.user, token };
     } catch (e) {
       this.logger.error(e);
       throw new UnauthorizedException('Invalid credentials');
@@ -87,13 +88,13 @@ export class AuthService {
 
   async recoverUser(req: RecoverUserRequestDto): Promise<AuthResponse> {
     try {
-      const { user, authorized, otp } = await this.userService.verifyUser(req);
+      const auth = await this.userService.verifyUser(req);
 
-      if (!authorized) {
-        await this.sendOtp(otp, req.phone, req.npub);
+      if (isPreUserAuth(auth)) {
+        await this.sendOtp(auth.otp, req.phone, req.npub);
       }
 
-      return { user };
+      return { user: auth.user };
     } catch (e) {
       this.logger.error(e);
       throw new UnauthorizedException('Invalid credentials');
