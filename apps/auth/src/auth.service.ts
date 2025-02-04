@@ -72,7 +72,8 @@ export class AuthService {
       const { user, authorized, otp } = await this.userService.verifyUser(req);
 
       if (!authorized) {
-        this.sendOtp(otp, req.phone, req.npub);
+        await this.sendOtp(otp, req.phone, req.npub);
+        return { user };
       }
 
       const token = this.createAuthToken(user);

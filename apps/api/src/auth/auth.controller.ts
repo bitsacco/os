@@ -21,7 +21,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly jwtService: JwtService,
   ) {
-    this.logger.log('AuthController initialized');
+    this.logger.debug('AuthController initialized');
   }
 
   @Post('login')
@@ -55,7 +55,7 @@ export class AuthController {
     @Body() req: VerifyUserRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = await this.authService.verifyUser(req);
+    const auth = this.authService.verifyUser(req);
     return this.setAuthCookie(auth, res);
   }
 
@@ -73,13 +73,20 @@ export class AuthController {
   }
 
   private async setAuthCookie(auth: Observable<AuthResponse>, res: Response) {
-    return firstValueFrom(auth).then(({ token }) => {
-      const { user, expires } = this.jwtService.decode<AuthTokenPayload>(token);
+    return firstValueFrom(auth).then(({ user, token }: AuthResponse) => {
+      if (token) {
+        const { user: jwtUser, expires } =
+          this.jwtService.decode<AuthTokenPayload>(token);
 
-      res.cookie('Authentication', token, {
-        httpOnly: true,
-        expires: new Date(expires),
-      });
+        if (user.id !== jwtUser.id) {
+          this.logger.error('Invalid auth response');
+        }
+
+        res.cookie('Authentication', token, {
+          httpOnly: true,
+          expires: new Date(expires),
+        });
+      }
 
       return {
         user,
