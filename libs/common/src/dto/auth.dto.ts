@@ -2,10 +2,10 @@ import {
   IsArray,
   IsNotEmpty,
   IsOptional,
-  // IsPhoneNumber,
   IsString,
   Validate,
 } from 'class-validator';
+import { applyDecorators } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   AuthRequest,
@@ -17,27 +17,47 @@ import {
   VerifyUserRequest,
 } from '../types';
 
+const PinDecorators = () => {
+  return applyDecorators(
+    IsNotEmpty(),
+    IsString(),
+    Validate(IsStringifiedNumberConstraint, [{ digits: 6, positive: true }]),
+    ApiProperty({ example: '000000' }),
+  );
+};
+
+const PhoneDecorators = () => {
+  return applyDecorators(
+    IsOptional(),
+    IsString(),
+    IsNotEmpty(),
+    // @IsPhoneNumber()
+    ApiProperty({
+      example: '+254700000000',
+    }),
+  );
+};
+
+const NpubDecorators = () => {
+  return applyDecorators(
+    IsOptional(),
+    IsString(),
+    IsNotEmpty(),
+    ApiProperty({
+      example:
+        'npub17k76drpaeaungjltz9zlrr89ua0rlawgzs8fasaar49w0mnytrssgtk09g',
+    }),
+  );
+};
+
 class AuthRequestBase {
-  @IsNotEmpty()
-  @IsString()
-  @Validate(IsStringifiedNumberConstraint, [{ digits: 6, positive: true }])
-  @ApiProperty({ example: '000000' })
+  @PinDecorators()
   pin: string;
 
-  @IsOptional()
-  @IsString()
-  // @IsPhoneNumber()
-  @ApiProperty({
-    example: '254700000000',
-  })
+  @PhoneDecorators()
   phone?: string;
 
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty({
-    example: 'npub17k76drpaeaungjltz9zlrr89ua0rlawgzs8fasaar49w0mnytrssgtk09g',
-  })
+  @NpubDecorators()
   npub?: string;
 }
 
@@ -50,7 +70,6 @@ export class RegisterUserRequestDto
   implements RegisterUserRequest
 {
   @IsArray()
-  // @IsEnum({ each: true, type: Role })
   @ApiProperty({
     type: [Role],
     enum: Role,
@@ -60,47 +79,22 @@ export class RegisterUserRequestDto
 }
 
 export class VerifyUserRequestDto implements VerifyUserRequest {
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  // @IsPhoneNumber()
-  @ApiProperty({
-    example: '254700000000',
-  })
+  @PhoneDecorators()
   phone?: string;
 
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty({
-    example: 'npub17k76drpaeaungjltz9zlrr89ua0rlawgzs8fasaar49w0mnytrssgtk09g',
-  })
+  @NpubDecorators()
   npub?: string;
 
   @IsOptional()
-  @IsNotEmpty()
-  @IsString()
-  @Validate(IsStringifiedNumberConstraint, [{ digits: 6, positive: true }])
-  @ApiProperty({ example: '123456' })
+  @PinDecorators()
   otp?: string;
 }
 
 export class RecoverUserRequestDto implements RecoverUserRequest {
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  // @IsPhoneNumber()
-  @ApiProperty({
-    example: '254700000000',
-  })
+  @PhoneDecorators()
   phone?: string;
 
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty({
-    example: 'npub17k76drpaeaungjltz9zlrr89ua0rlawgzs8fasaar49w0mnytrssgtk09g',
-  })
+  @NpubDecorators()
   npub?: string;
 }
 
@@ -117,20 +111,9 @@ export class FindUserDto {
   @IsNotEmpty()
   id?: string;
 
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  // @IsPhoneNumber()
-  @ApiProperty({
-    example: '254700000000',
-  })
+  @PhoneDecorators()
   phone?: string;
 
-  @IsOptional()
-  @IsString()
-  @IsNotEmpty()
-  @ApiProperty({
-    example: 'npub17k76drpaeaungjltz9zlrr89ua0rlawgzs8fasaar49w0mnytrssgtk09g',
-  })
+  @NpubDecorators()
   npub?: string;
 }
