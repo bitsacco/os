@@ -51,7 +51,7 @@ export class UsersService {
     phone,
     npub,
     roles,
-  }: RegisterUserRequestDto): Promise<User> {
+  }: RegisterUserRequestDto): Promise<UserAuth & { otp: string }> {
     let salt = await bcrypt.genSalt(
       this.configService.getOrThrow('SALT_ROUNDS'),
     );
@@ -60,7 +60,7 @@ export class UsersService {
     const otp = generateOTP();
     this.logger.log(`OTP-${otp}`);
 
-    const user = await this.users.create({
+    const ud = await this.users.create({
       pinHash,
       otp,
       phone: phone && {
@@ -75,9 +75,13 @@ export class UsersService {
       roles,
     });
 
-    this.verifyUser({ otp, phone, npub });
+    const user = toUser(ud);
 
-    return toUser(user);
+    return {
+      user,
+      authorized: false,
+      otp,
+    };
   }
 
   async findUser(req: FindUserDto): Promise<User> {

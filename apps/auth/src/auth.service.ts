@@ -1,3 +1,4 @@
+import { firstValueFrom } from 'rxjs';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -32,9 +33,10 @@ export class AuthService {
     private readonly jwtService: JwtService,
     @Inject(SMS_SERVICE_NAME) private readonly smsGrpc: ClientGrpc,
   ) {
-    this.logger.log('AuthService initialized');
+    this.logger.debug('AuthService initialized');
     this.smsService =
       this.smsGrpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
+    this.logger.debug('SMS Service Connected');
   }
 
   async loginUser(req: LoginUserRequestDto): Promise<AuthResponse> {
@@ -51,7 +53,12 @@ export class AuthService {
 
   async registerUser(req: RegisterUserRequestDto): Promise<AuthResponse> {
     try {
-      const user = await this.userService.registerUser(req);
+      const { user, authorized, otp } =
+        await this.userService.registerUser(req);
+
+      if (!authorized) {
+        await this.sendOtp(otp, req.phone, req.npub);
+      }
 
       return { user };
     } catch (e) {
@@ -64,32 +71,11 @@ export class AuthService {
     try {
       const { user, authorized, otp } = await this.userService.verifyUser(req);
 
-      let token: string | undefined = undefined;
-      if (authorized) {
-        token = this.createAuthToken(user);
-      } else {
-      }
-
       if (!authorized) {
-        const { phone, npub } = req;
-
-        // send user otp for verification
-        if (phone) {
-          try {
-            this.smsService.sendSms({
-              message: otp,
-              receiver: phone,
-            });
-          } catch (e) {
-            this.logger.error(e);
-          }
-        }
-
-        if (npub) {
-          // send otp via nostr
-        }
+        this.sendOtp(otp, req.phone, req.npub);
       }
 
+      const token = this.createAuthToken(user);
       return { user, token };
     } catch (e) {
       this.logger.error(e);
@@ -127,5 +113,30 @@ export class AuthService {
     };
 
     return this.jwtService.sign(payload);
+  }
+
+  private async sendOtp(otp: string, phone?: string, npub?: string) {
+    // send user otp for verification
+    const message = `${otp} - This is your BITSACCO OTP. Stay protected, don't give this code or your login info to anyone.`;
+
+    if (phone) {
+      try {
+        this.logger.debug(`Initiating sms OTP send to ${phone}`);
+        const res = await firstValueFrom(
+          this.smsService.sendSms({
+            message,
+            receiver: phone,
+          }),
+        );
+        this.logger.debug(`SMS sent successfully: ${JSON.stringify(res)}`);
+      } catch (e) {
+        this.logger.error('SMS sending failed', e);
+      }
+    }
+
+    // send otp via nostr
+    if (npub) {
+      this.logger.debug(`Initiating nostr OTP send to ${npub}`);
+    }
   }
 }

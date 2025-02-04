@@ -24,6 +24,7 @@ services:
     command: bun dev auth
     restart: always
     depends_on:
+      - sms
       - mongodb
     env_file:
       - ./apps/auth/.dev.env

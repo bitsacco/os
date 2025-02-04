@@ -60,6 +60,6 @@ import { AuthService } from './auth.service';
     LoggerModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, UsersRepository, UsersService],
+  providers: [AuthService, UsersRepository, UsersService, ConfigService],
 })
 export class AuthModule {}
