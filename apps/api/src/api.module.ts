@@ -34,6 +34,7 @@ import { SolowalletService } from './solowallet/solowallet.service';
 import { SolowalletController } from './solowallet/solowallet.controller';
 import { AuthService } from './auth/auth.service';
 import { AuthController } from './auth/auth.controller';
+import { UsersController } from './users/users.controller';
 
 @Module({
   imports: [
@@ -154,6 +155,7 @@ import { AuthController } from './auth/auth.controller';
     SharesController,
     SolowalletController,
     AdminController,
+    UsersController,
   ],
   providers: [
     AuthService,
