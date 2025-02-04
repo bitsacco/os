@@ -1,4 +1,4 @@
-import * as bcrypt from 'bcryptjs';
+import * as argon2 from 'argon2';
 import {
   Injectable,
   InternalServerErrorException,
@@ -64,7 +64,7 @@ export class UsersService implements IUsersService {
   }: LoginUserRequestDto): Promise<PostUserAuth> {
     const ud: UsersDocument = await this.queryUser({ phone, npub });
 
-    const pinIsValid = await bcrypt.compare(pin, ud.pinHash);
+    const pinIsValid = await argon2.verify(ud.pinHash, pin);
     if (!pinIsValid) {
       throw new UnauthorizedException('Credentials are not valid.');
     }
@@ -81,10 +81,7 @@ export class UsersService implements IUsersService {
     npub,
     roles,
   }: RegisterUserRequestDto): Promise<PreUserAuth> {
-    let salt = await bcrypt.genSalt(
-      this.configService.getOrThrow('SALT_ROUNDS'),
-    );
-    const pinHash = await bcrypt.hash(pin, salt);
+    const pinHash = await argon2.hash(pin);
 
     const otp = generateOTP();
     this.logger.log(`OTP-${otp}`);
