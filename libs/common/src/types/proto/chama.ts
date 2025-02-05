@@ -18,11 +18,48 @@ export interface Chama {
   name: string;
   description?: string | undefined;
   members: ChamaMember[];
-  /** Id of member creating chama */
+  /** User ID of member creating the chama */
   createdBy: string;
 }
 
 export interface ChamaMember {
   userId: string;
   roles: ChamaMemberRole[];
+}
+
+export interface CreateChamaRequest {
+  name: string;
+  description?: string | undefined;
+  members: ChamaMember[];
+  createdBy: string;
+}
+
+export interface UpdateChamaRequest {
+  chamaId: string;
+  updates: ChamaUpdates | undefined;
+}
+
+export interface ChamaUpdates {
+  name?: string | undefined;
+  description?: string | undefined;
+  members: ChamaMember[];
+}
+
+export interface FindChamaRequest {
+  chamaId: string;
+}
+
+export interface FilterChamasRequest {
+  createdBy?: string | undefined;
+  withMemberId?: string | undefined;
+}
+
+export interface JoinChamaRequest {
+  chamaId: string;
+  memberInfo: ChamaMember | undefined;
+}
+
+export interface AddMembersRequest {
+  chamaId: string;
+  newMemberInfo: ChamaMember[];
 }

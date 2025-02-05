@@ -26,3 +26,40 @@ enum ChamaMemberRole {
   Admin = 1;
   ExternalAdmin = 3;
 }
+
+message CreateChamaRequest {
+  string name = 1;
+  optional string description = 2;
+  repeated ChamaMember members = 3;
+  string created_by = 4;
+}
+
+message UpdateChamaRequest {
+  string chama_id = 1;
+  ChamaUpdates updates = 2;
+}
+
+message ChamaUpdates {
+  optional string name = 1;
+  optional string description = 2;
+  repeated ChamaMember members = 3;
+}
+
+message FindChamaRequest {
+  string chama_id = 1;
+}
+
+message FilterChamasRequest {
+  optional string created_by = 1;
+  optional string with_member_id = 2;
+}
+
+message JoinChamaRequest {
+  string chama_id = 1;
+  ChamaMember member_info = 2;
+}
+
+message AddMembersRequest {
+  string chama_id = 1;
+  repeated ChamaMember new_member_info = 3;
+}

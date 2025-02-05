@@ -1,17 +1,28 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger } from '@nestjs/common';
+import {
+  AddMembersDto,
+  CreateChamaDto,
+  FilterChamasDto,
+  FindChamaDto,
+  JoinChamaDto,
+  UpdateChamaDto,
+} from '../dto';
+import { type Chama } from '../types';
 import { ChamasRepository } from './chamas.repository';
 
 export interface IChamasService {
-  createChama(): Promise<{}>;
+  createChama(req: CreateChamaDto): Promise<Chama>;
 
-  updateChama(id: string, updates: Object): Promise<{}>;
+  updateChama(req: UpdateChamaDto): Promise<Chama>;
 
-  findChama(): Promise<{}>;
+  joinChama(req: JoinChamaDto): Promise<Chama>;
 
-  listChamas(): Promise<{}[]>;
+  addMembers(req: AddMembersDto): Promise<Chama>;
 
-  joinChama(): Promise<{}[]>;
+  findChama(req: FindChamaDto): Promise<Chama>;
+
+  listChamas(req: FilterChamasDto): Promise<Chama[]>;
 }
 
 @Injectable()
@@ -20,23 +31,32 @@ export class ChamasService implements IChamasService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly users: ChamasRepository,
+    private readonly chamas: ChamasRepository,
   ) {
     this.logger.debug('ChamasService initialized');
   }
-  createChama(): Promise<{}> {
+
+  createChama(req: CreateChamaDto): Promise<Chama> {
     throw new Error('Method not implemented.');
   }
-  updateChama(id: string, updates: Object): Promise<{}> {
+
+  updateChama(req: UpdateChamaDto): Promise<Chama> {
     throw new Error('Method not implemented.');
   }
-  findChama(): Promise<{}> {
+
+  joinChama(): Promise<Chama> {
     throw new Error('Method not implemented.');
   }
-  listChamas(): Promise<{}[]> {
+
+  addMembers(): Promise<Chama> {
     throw new Error('Method not implemented.');
   }
-  joinChama(): Promise<{}[]> {
+
+  findChama(req: FindChamaDto): Promise<Chama> {
+    throw new Error('Method not implemented.');
+  }
+
+  listChamas(req: FilterChamasDto): Promise<Chama[]> {
     throw new Error('Method not implemented.');
   }
 }
