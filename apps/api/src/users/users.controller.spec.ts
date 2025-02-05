@@ -1,21 +1,12 @@
 import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { UsersController } from './users.controller';
-import {
-  UsersService,
-  UsersRepository,
-  SmsServiceClient,
-} from '@bitsacco/common';
-import { ConfigService } from '@nestjs/config';
-import { ClientGrpc } from '@nestjs/microservices';
+import { UsersService, UsersRepository } from '@bitsacco/common';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let service: UsersService;
   let mockUsersRepository: UsersRepository;
-  let serviceGenerator: ClientGrpc;
-  let mockSmsServiceClient: Partial<SmsServiceClient>;
-  let mockCfg: ConfigService;
 
   beforeEach(async () => {
     mockUsersRepository = {
@@ -26,23 +17,13 @@ describe('UsersController', () => {
       findOneAndDelete: jest.fn(),
     } as unknown as UsersRepository;
 
-    serviceGenerator = {
-      getService: jest.fn().mockReturnValue(mockSmsServiceClient),
-      getClientByServiceName: jest.fn().mockReturnValue(mockSmsServiceClient),
-    };
-
-    mockCfg = {
-      get: jest.fn(),
-      getOrThrow: jest.fn(),
-    } as unknown as ConfigService;
-
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [UsersController],
       providers: [
         {
           provide: UsersService,
           useFactory: () => {
-            return new UsersService(mockCfg, mockUsersRepository);
+            return new UsersService(mockUsersRepository);
           },
         },
       ],

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Logger, Param, Put } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Patch } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { UsersService, UserUpdatesDto } from '@bitsacco/common';
 
@@ -37,7 +37,7 @@ export class UsersController {
     return this.usersService.findUser({ npub });
   }
 
-  @Put('/update/:id')
+  @Patch('/update/:id')
   @ApiOperation({ summary: 'Update user' })
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiBody({ type: UserUpdatesDto })
