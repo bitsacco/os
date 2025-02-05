@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   CreateOnrampSwapDto,
   Currency,
@@ -193,8 +193,25 @@ export class SolowalletService {
   private async getPaginatedUserTxLedger({
     userId,
     pagination,
-  }: UserTxsRequestDto): Promise<PaginatedSolowalletTxsResponse> {
-    const allTx = await this.wallet.find({ userId }, { createdAt: -1 });
+    priority,
+  }: UserTxsRequestDto & {
+    priority?: string;
+  }): Promise<PaginatedSolowalletTxsResponse> {
+    let allTx = await this.wallet.find({ userId }, { createdAt: -1 });
+
+    if (priority) {
+      const priorityTx = allTx.find((tx) => tx._id.toString() === priority);
+      if (!priorityTx) {
+        throw new NotFoundException(
+          `Transaction with id ${priority} not found`,
+        );
+      }
+
+      allTx = [
+        priorityTx,
+        ...allTx.filter((tx) => tx._id.toString() !== priority),
+      ];
+    }
 
     const { page, size } = pagination;
     const pages = Math.ceil(allTx.length / size);
@@ -351,6 +368,7 @@ export class SolowalletService {
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
       pagination: { page: default_page, size: default_page_size },
+      priority: deposit._id,
     });
 
     const meta = await this.getWalletMeta(userId);
@@ -459,6 +477,7 @@ export class SolowalletService {
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
       pagination: { page: default_page, size: default_page_size },
+      priority: withdrawal._id,
     });
     const meta = await this.getWalletMeta(userId);
 
@@ -474,7 +493,7 @@ export class SolowalletService {
     const originTx = await this.wallet.findOne({ _id: txId });
     const { status, lightning, reference } = updates;
 
-    let { userId } = await this.wallet.findOneAndUpdate(
+    const { userId } = await this.wallet.findOneAndUpdate(
       { _id: txId },
       {
         status: status !== undefined ? status : originTx.status,
@@ -486,6 +505,7 @@ export class SolowalletService {
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
       pagination: { page: default_page, size: default_page_size },
+      priority: originTx._id,
     });
     const meta = await this.getWalletMeta(userId);
 
@@ -565,6 +585,7 @@ export class SolowalletService {
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
       pagination: { page: default_page, size: default_page_size },
+      priority: deposit._id,
     });
 
     const meta = await this.getWalletMeta(userId);
