@@ -92,6 +92,10 @@ export interface ContinueTxRequest {
   onramp?: OnrampSwapSource | undefined;
 }
 
+export interface FindTxRequest {
+  txId: string;
+}
+
 export interface SolowalletServiceClient {
   depositFunds(request: DepositFundsRequest): Observable<UserTxsResponse>;
 
@@ -102,6 +106,8 @@ export interface SolowalletServiceClient {
   updateTransaction(request: UpdateTxRequest): Observable<UserTxsResponse>;
 
   continueTransaction(request: ContinueTxRequest): Observable<UserTxsResponse>;
+
+  findTransaction(request: FindTxRequest): Observable<SolowalletTx>;
 }
 
 export interface SolowalletServiceController {
@@ -124,6 +130,10 @@ export interface SolowalletServiceController {
   continueTransaction(
     request: ContinueTxRequest,
   ): Promise<UserTxsResponse> | Observable<UserTxsResponse> | UserTxsResponse;
+
+  findTransaction(
+    request: FindTxRequest,
+  ): Promise<SolowalletTx> | Observable<SolowalletTx> | SolowalletTx;
 }
 
 export function SolowalletServiceControllerMethods() {
@@ -134,6 +144,7 @@ export function SolowalletServiceControllerMethods() {
       'userTransactions',
       'updateTransaction',
       'continueTransaction',
+      'findTransaction',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(

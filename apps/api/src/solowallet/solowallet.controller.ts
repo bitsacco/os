@@ -5,8 +5,8 @@ import {
   UserTxsRequestDto,
   WithdrawFundsRequestDto,
 } from '@bitsacco/common';
-import { Body, Controller, Logger, Post } from '@nestjs/common';
-import { ApiOperation, ApiBody } from '@nestjs/swagger';
+import { Body, Controller, Get, Logger, Param, Post } from '@nestjs/common';
+import { ApiOperation, ApiBody, ApiParam } from '@nestjs/swagger';
 import { SolowalletService } from './solowallet.service';
 
 @Controller('solowallet')
@@ -60,5 +60,12 @@ export class SolowalletController {
   })
   continueTransaction(@Body() req: ContinueTxRequestDto) {
     return this.walletService.continueTransaction(req);
+  }
+
+  @Get('/find/id/:id')
+  @ApiOperation({ summary: 'Get transaction by ID' })
+  @ApiParam({ name: 'id', description: 'Transaction ID' })
+  async findTransaction(@Param('id') id: string) {
+    return this.walletService.findTransaction({ txId: id });
   }
 }

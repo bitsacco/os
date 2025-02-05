@@ -1,6 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import {
   AbstractDocument,
+  FmInvoice,
+  SolowalletTx,
   TransactionStatus,
   TransactionType,
 } from '@bitsacco/common';
@@ -45,3 +47,43 @@ export const SolowalletSchema =
 
 // Ensure uniqueness only when paymentTracker is not null
 SolowalletSchema.index({ paymentTracker: 1 }, { unique: true, sparse: true });
+
+export function toSolowalletTx(doc: SolowalletDocument): SolowalletTx {
+  let lightning: FmInvoice;
+  try {
+    lightning = JSON.parse(doc.lightning);
+  } catch (error) {
+    this.logger.warn('Error parsing lightning invoice', error);
+    lightning = {
+      invoice: '',
+      operationId: '',
+    };
+  }
+
+  let status = TransactionStatus.UNRECOGNIZED;
+  try {
+    status = Number(doc.status) as TransactionStatus;
+  } catch (error) {
+    this.logger.warn('Error parsing transaction status', error);
+  }
+
+  let type = TransactionType.UNRECOGNIZED;
+  try {
+    type = Number(doc.type) as TransactionType;
+  } catch (error) {
+    this.logger.warn('Error parsing transaction type', error);
+  }
+
+  return {
+    status,
+    type,
+    lightning,
+    id: doc._id,
+    userId: doc.userId,
+    amountMsats: doc.amountMsats,
+    amountFiat: doc.amountFiat,
+    reference: doc.reference,
+    createdAt: doc.createdAt.toDateString(),
+    updatedAt: doc.updatedAt.toDateString(),
+  };
+}

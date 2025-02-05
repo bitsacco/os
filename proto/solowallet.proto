@@ -16,6 +16,8 @@ service SolowalletService {
   rpc UpdateTransaction(UpdateTxRequest) returns (UserTxsResponse) {}
 
   rpc ContinueTransaction(ContinueTxRequest) returns (UserTxsResponse) {}
+
+  rpc FindTransaction(FindTxRequest) returns (SolowalletTx) {}
 }
 
 message DepositFundsRequest {
@@ -121,4 +123,8 @@ message ContinueTxRequest {
   int32 amount_fiat = 3;
 
   optional swap.OnrampSwapSource onramp = 5;
+}
+
+message FindTxRequest {
+  string tx_id = 1;
 }

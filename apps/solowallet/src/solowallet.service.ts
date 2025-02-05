@@ -10,7 +10,6 @@ import {
   fiatToBtc,
   UserTxsResponse,
   UserTxsRequestDto,
-  FmInvoice,
   PaginatedSolowalletTxsResponse,
   QuoteDto,
   QuoteRequestDto,
@@ -29,11 +28,13 @@ import {
   ContinueTxRequestDto,
   default_page,
   default_page_size,
+  SolowalletTx,
+  FindTxRequestDto,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { catchError, firstValueFrom, map, of, tap } from 'rxjs';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { SolowalletDocument, SolowalletRepository } from './db';
+import { SolowalletDocument, SolowalletRepository, toSolowalletTx } from './db';
 
 @Injectable()
 export class SolowalletService {
@@ -221,43 +222,7 @@ export class SolowalletService {
 
     const transactions = allTx
       .slice(selectPage * size, (selectPage + 1) * size)
-      .map((tx) => {
-        let lightning: FmInvoice;
-        try {
-          lightning = JSON.parse(tx.lightning);
-        } catch (error) {
-          this.logger.warn('Error parsing lightning invoice', error);
-          lightning = {
-            invoice: '',
-            operationId: '',
-          };
-        }
-
-        let status = TransactionStatus.UNRECOGNIZED;
-        try {
-          status = Number(tx.status) as TransactionStatus;
-        } catch (error) {
-          this.logger.warn('Error parsing transaction status', error);
-        }
-
-        let type = TransactionType.UNRECOGNIZED;
-        try {
-          type = Number(tx.type) as TransactionType;
-        } catch (error) {
-          this.logger.warn('Error parsing transaction type', error);
-        }
-
-        return {
-          ...tx,
-          status,
-          type,
-          lightning,
-          paymentTracker: lightning.operationId,
-          id: tx._id,
-          createdAt: tx.createdAt.toDateString(),
-          updatedAt: tx.updatedAt.toDateString(),
-        };
-      });
+      .map(toSolowalletTx);
 
     return {
       transactions,
@@ -396,6 +361,11 @@ export class SolowalletService {
       ledger,
       meta,
     };
+  }
+
+  async findTransaction({ txId }: FindTxRequestDto): Promise<SolowalletTx> {
+    const doc = await this.wallet.findOne({ _id: txId });
+    return toSolowalletTx(doc);
   }
 
   async withdrawFunds({

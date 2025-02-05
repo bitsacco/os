@@ -23,6 +23,7 @@ import {
   SolowalletTxUpdates,
   TransactionStatus,
   ContinueTxRequest,
+  FindTxRequest,
 } from '../types';
 import { PaginatedRequestDto } from './lib.dto';
 
@@ -150,4 +151,12 @@ export class ContinueTxRequestDto implements ContinueTxRequest {
   @Type(() => OnrampSwapSourceDto)
   @ApiProperty({ type: OnrampSwapSourceDto })
   onramp?: OnrampSwapSourceDto;
+}
+
+export class FindTxRequestDto implements FindTxRequest {
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ example: 'c7137197-a6dc-46c3-98bd-9dc3a7d003a1' })
+  txId: string;
 }
