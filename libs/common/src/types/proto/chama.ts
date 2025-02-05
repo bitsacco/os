@@ -5,3 +5,24 @@
 // source: chama.proto
 
 /* eslint-disable */
+
+export enum ChamaMemberRole {
+  Member = 0,
+  Admin = 1,
+  ExternalAdmin = 3,
+  UNRECOGNIZED = -1,
+}
+
+export interface Chama {
+  id: string;
+  name: string;
+  description?: string | undefined;
+  members: ChamaMember[];
+  /** Id of member creating chama */
+  createdBy: string;
+}
+
+export interface ChamaMember {
+  userId: string;
+  roles: ChamaMemberRole[];
+}

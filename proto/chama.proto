@@ -1,3 +1,28 @@
 syntax = "proto3";
 
 package chama;
+
+message Chama {
+  string id = 1;
+
+  string name = 2;
+
+  optional string description = 3;
+
+  repeated ChamaMember members = 4;
+
+  // User ID of member creating the chama
+  string created_by = 5;
+}
+
+message ChamaMember {
+  string user_id = 1;
+
+  repeated ChamaMemberRole roles = 2;
+}
+
+enum ChamaMemberRole {
+  Member = 0;
+  Admin = 1;
+  ExternalAdmin = 3;
+}

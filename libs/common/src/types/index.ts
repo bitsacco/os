@@ -1,4 +1,5 @@
 export * from './proto/auth';
+export * from './proto/chama';
 export * from './proto/lib';
 export * from './proto/lightning';
 export * from './proto/swap';
