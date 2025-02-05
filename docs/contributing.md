@@ -60,6 +60,15 @@ $ bun test:cov
 
 ```
 
+## Building a new service
+
+To create a new service or app, you can use [nestjs cli]() helpers to modify the workspace as desired.
+Open a shell at the root and run the following command, assuming you have all the dependencies already installed
+
+```bash
+$ bunx nest
+```
+
 ## Working with GRPC
 
 We use [gRPC](https://grpc.io/) to communicate between services.
