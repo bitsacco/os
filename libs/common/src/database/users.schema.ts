@@ -4,8 +4,8 @@ import {
   type Nostr,
   type Phone,
   type Profile,
-  Role,
   type User,
+  Role,
 } from '../types';
 
 @Schema({ versionKey: false })
@@ -41,7 +41,14 @@ export class UsersDocument extends AbstractDocument {
   })
   profile?: Profile;
 
-  @Prop({ type: [{ type: String, enum: Object.values(Role) }], required: true })
+  @Prop({
+    type: [{ type: String, enum: Object.values(Role) }],
+    required: true,
+    validate: {
+      validator: (roles: Role[]) => roles.length > 0,
+      message: 'User must have at least one role',
+    },
+  })
   roles: Role[];
 }
 
