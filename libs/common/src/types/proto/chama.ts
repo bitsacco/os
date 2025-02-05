@@ -51,7 +51,7 @@ export interface FindChamaRequest {
 
 export interface FilterChamasRequest {
   createdBy?: string | undefined;
-  withMemberId?: string | undefined;
+  memberId?: string | undefined;
 }
 
 export interface JoinChamaRequest {
@@ -59,7 +59,7 @@ export interface JoinChamaRequest {
   memberInfo: ChamaMember | undefined;
 }
 
-export interface AddMembersRequest {
+export interface InvitemembersRequest {
   chamaId: string;
   newMemberInfo: ChamaMember[];
 }

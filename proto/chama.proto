@@ -51,7 +51,7 @@ message FindChamaRequest {
 
 message FilterChamasRequest {
   optional string created_by = 1;
-  optional string with_member_id = 2;
+  optional string member_id = 2;
 }
 
 message JoinChamaRequest {
@@ -59,7 +59,7 @@ message JoinChamaRequest {
   ChamaMember member_info = 2;
 }
 
-message AddMembersRequest {
+message InvitemembersRequest {
   string chama_id = 1;
   repeated ChamaMember new_member_info = 3;
 }

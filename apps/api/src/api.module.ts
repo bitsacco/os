@@ -6,6 +6,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
   AUTH_SERVICE_NAME,
+  ChamasDocument,
+  ChamasRepository,
+  ChamasSchema,
+  ChamasService,
   DatabaseModule,
   EVENTS_SERVICE_BUS,
   JwtAuthStrategy,
@@ -35,6 +39,7 @@ import { SolowalletController } from './solowallet/solowallet.controller';
 import { AuthService } from './auth/auth.service';
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
+import { ChamasController } from './chamas/chamas.controller';
 
 @Module({
   imports: [
@@ -145,6 +150,7 @@ import { UsersController } from './users/users.controller';
     DatabaseModule,
     DatabaseModule.forFeature([
       { name: UsersDocument.name, schema: UsersSchema },
+      { name: ChamasDocument.name, schema: ChamasSchema },
     ]),
   ],
   controllers: [
@@ -156,11 +162,14 @@ import { UsersController } from './users/users.controller';
     SolowalletController,
     AdminController,
     UsersController,
+    ChamasController,
   ],
   providers: [
     AuthService,
     UsersRepository,
+    ChamasRepository,
     UsersService,
+    ChamasService,
     SwapService,
     NostrService,
     SmsService,

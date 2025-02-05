@@ -6,7 +6,6 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { UsersRepository } from './users.repository';
 import { toUser, UsersDocument } from '../database';
 import { generateOTP } from '../utils';
@@ -50,10 +49,7 @@ export interface IUsersService {
 export class UsersService implements IUsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly users: UsersRepository,
-  ) {
+  constructor(private readonly users: UsersRepository) {
     this.logger.log('UsersService initialized');
   }
 

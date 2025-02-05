@@ -71,7 +71,7 @@ export class SwapController {
 
   @Get('onramp/find/:id')
   @ApiOperation({ summary: 'Find onramp transaction by ID' })
-  @ApiParam({ name: 'id', type: 'string', description: 'Transaction ID' })
+  @ApiParam({ name: 'id', type: String, description: 'Transaction ID' })
   findOnrampTransaction(@Param('id') id: string) {
     return this.swapService.findOnrampTransaction({ id });
   }

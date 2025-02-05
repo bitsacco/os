@@ -1,10 +1,9 @@
-import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  AddMembersDto,
   CreateChamaDto,
   FilterChamasDto,
   FindChamaDto,
+  InviteMembersDto,
   JoinChamaDto,
   UpdateChamaDto,
 } from '../dto';
@@ -18,21 +17,18 @@ export interface IChamasService {
 
   joinChama(req: JoinChamaDto): Promise<Chama>;
 
-  addMembers(req: AddMembersDto): Promise<Chama>;
+  inviteMembers(req: InviteMembersDto): Promise<Chama>;
 
   findChama(req: FindChamaDto): Promise<Chama>;
 
-  listChamas(req: FilterChamasDto): Promise<Chama[]>;
+  filterChamas(req: FilterChamasDto): Promise<Chama[]>;
 }
 
 @Injectable()
 export class ChamasService implements IChamasService {
   private readonly logger = new Logger(ChamasService.name);
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly chamas: ChamasRepository,
-  ) {
+  constructor(private readonly chamas: ChamasRepository) {
     this.logger.debug('ChamasService initialized');
   }
 
@@ -44,11 +40,11 @@ export class ChamasService implements IChamasService {
     throw new Error('Method not implemented.');
   }
 
-  joinChama(): Promise<Chama> {
+  joinChama(req: JoinChamaDto): Promise<Chama> {
     throw new Error('Method not implemented.');
   }
 
-  addMembers(): Promise<Chama> {
+  inviteMembers(req: InviteMembersDto): Promise<Chama> {
     throw new Error('Method not implemented.');
   }
 
@@ -56,7 +52,7 @@ export class ChamasService implements IChamasService {
     throw new Error('Method not implemented.');
   }
 
-  listChamas(req: FilterChamasDto): Promise<Chama[]> {
+  filterChamas(req: FilterChamasDto): Promise<Chama[]> {
     throw new Error('Method not implemented.');
   }
 }

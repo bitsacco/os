@@ -7,4 +7,5 @@ export * from './dto';
 export * from './database';
 export * from './fedimint';
 export * from './users';
+export * from './chamas';
 export * from './auth';
