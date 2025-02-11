@@ -27,10 +27,17 @@ export interface ChamaMember {
   roles: ChamaMemberRole[];
 }
 
+export interface ChamaInvite {
+  phoneNumber?: string | undefined;
+  nostrNpub?: string | undefined;
+  roles: ChamaMemberRole[];
+}
+
 export interface CreateChamaRequest {
   name: string;
   description?: string | undefined;
   members: ChamaMember[];
+  invites: ChamaInvite[];
   createdBy: string;
 }
 
@@ -59,7 +66,7 @@ export interface JoinChamaRequest {
   memberInfo: ChamaMember | undefined;
 }
 
-export interface InvitemembersRequest {
+export interface InviteMembersRequest {
   chamaId: string;
-  newMemberInfo: ChamaMember[];
+  invites: ChamaInvite[];
 }

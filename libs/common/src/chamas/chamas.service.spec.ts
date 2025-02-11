@@ -1,20 +1,22 @@
-import { ConfigService } from '@nestjs/config';
 import { TestingModule } from '@nestjs/testing';
-import { type ClientGrpc } from '@nestjs/microservices';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
-import { SmsServiceClient } from '../types';
 import { ChamasRepository } from './chamas.repository';
 import { ChamasService } from './chamas.service';
+import { ChamaMessageService } from './chamas.messaging';
+import { UsersService } from '../users';
 
 describe('ChamasService', () => {
-  let chamasService: ChamasService;
-  let mockChamasRepository: ChamasRepository;
-  let serviceGenerator: ClientGrpc;
-  let mockSmsServiceClient: Partial<SmsServiceClient>;
-  let mockCfg: ConfigService;
+  let chamaService: ChamasService;
+  let chamasRepository: ChamasRepository;
+  let messageService: ChamaMessageService;
+  let usersService: UsersService;
 
   beforeEach(async () => {
-    mockChamasRepository = {
+    messageService = {
+      sendChamaInvites: jest.fn(),
+    } as unknown as ChamaMessageService;
+
+    chamasRepository = {
       create: jest.fn(),
       find: jest.fn(),
       findOne: jest.fn(),
@@ -22,39 +24,38 @@ describe('ChamasService', () => {
       findOneAndDelete: jest.fn(),
     } as unknown as ChamasRepository;
 
-    serviceGenerator = {
-      getService: jest.fn().mockReturnValue(mockSmsServiceClient),
-      getClientByServiceName: jest.fn().mockReturnValue(mockSmsServiceClient),
-    };
-
-    mockCfg = {
-      get: jest.fn(),
-      getOrThrow: jest.fn(),
-    } as unknown as ConfigService;
+    usersService = {
+      validateUser: jest.fn(),
+      registerUser: jest.fn(),
+      findUser: jest.fn(),
+      verifyUser: jest.fn(),
+      updateUser: jest.fn(),
+      listUsers: jest.fn(),
+    } as unknown as UsersService;
 
     const module: TestingModule = await createTestingModuleWithValidation({
       providers: [
         {
           provide: ChamasRepository,
-          useValue: mockChamasRepository,
-        },
-        {
-          provide: ConfigService,
-          useValue: mockCfg,
+          useValue: chamasRepository,
         },
         {
           provide: ChamasService,
           useFactory: () => {
-            return new ChamasService(mockCfg, mockChamasRepository);
+            return new ChamasService(
+              chamasRepository,
+              usersService,
+              messageService,
+            );
           },
         },
       ],
     });
 
-    chamasService = module.get<ChamasService>(ChamasService);
+    chamaService = module.get<ChamasService>(ChamasService);
   });
 
   it('should be defined', () => {
-    expect(chamasService).toBeDefined();
+    expect(chamaService).toBeDefined();
   });
 });

@@ -111,6 +111,18 @@ export class UsersService implements IUsersService {
     return toUser(ud);
   }
 
+  async findUsersById(ids: Set<string>): Promise<User[]> {
+    if (!ids.size) return [];
+
+    const uds = await this.users.find({
+      where: {
+        id: { in: [...ids] },
+      },
+    });
+
+    return uds.map(toUser);
+  }
+
   async verifyUser({
     otp,
     phone,

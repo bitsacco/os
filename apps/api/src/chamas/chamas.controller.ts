@@ -61,11 +61,11 @@ export class ChamasController {
     return this.chamasService.inviteMembers(req);
   }
 
-  @Get('find/:id')
+  @Get('find/:chamaId')
   @ApiOperation({ summary: 'Find existing Chama by ID' })
   @ApiParam({ name: 'chamaId', description: 'Chama ID' })
-  async findChama(@Param('id') id: string) {
-    return this.chamasService.findChama({ chamaId: id });
+  async findChama(@Param('chamaId') chamaId: string) {
+    return this.chamasService.findChama({ chamaId });
   }
 
   @Get('filter')

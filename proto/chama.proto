@@ -17,8 +17,15 @@ message Chama {
 
 message ChamaMember {
   string user_id = 1;
+  repeated ChamaMemberRole roles = 3;
+}
 
-  repeated ChamaMemberRole roles = 2;
+message ChamaInvite {
+  optional string phone_number = 1;
+
+  optional string nostr_npub = 2;
+
+  repeated ChamaMemberRole roles = 3;
 }
 
 enum ChamaMemberRole {
@@ -31,7 +38,8 @@ message CreateChamaRequest {
   string name = 1;
   optional string description = 2;
   repeated ChamaMember members = 3;
-  string created_by = 4;
+  repeated ChamaInvite invites = 4;
+  string created_by = 5;
 }
 
 message UpdateChamaRequest {
@@ -59,7 +67,7 @@ message JoinChamaRequest {
   ChamaMember member_info = 2;
 }
 
-message InvitemembersRequest {
+message InviteMembersRequest {
   string chama_id = 1;
-  repeated ChamaMember new_member_info = 3;
+  repeated ChamaInvite invites = 3;
 }

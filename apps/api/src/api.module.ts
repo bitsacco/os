@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
   AUTH_SERVICE_NAME,
+  ChamaMessageService,
   ChamasDocument,
   ChamasRepository,
   ChamasSchema,
@@ -52,6 +53,7 @@ import { ChamasController } from './chamas/chamas.controller';
         NODE_ENV: Joi.string().required(),
         AUTH_GRPC_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
+        BITLY_TOKEN: Joi.string().required(),
         SWAP_GRPC_URL: Joi.string().required(),
         NOSTR_GRPC_URL: Joi.string().required(),
         SMS_GRPC_URL: Joi.string().required(),
@@ -168,6 +170,7 @@ import { ChamasController } from './chamas/chamas.controller';
     AuthService,
     UsersRepository,
     ChamasRepository,
+    ChamaMessageService,
     UsersService,
     ChamasService,
     SwapService,

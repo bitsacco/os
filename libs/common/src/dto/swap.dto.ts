@@ -29,6 +29,7 @@ import {
   QuoteRequest,
 } from '../types';
 import { TransformToCurrency } from './transforms';
+import { PhoneDecorators } from './decorators';
 
 export class QuoteRequestDto implements QuoteRequest {
   from: Currency;
@@ -49,11 +50,7 @@ export class QuoteDto {
 }
 
 export class MobileMoneyDto implements MobileMoney {
-  @IsString()
-  // @IsPhoneNumber()
-  @ApiProperty({
-    example: '254700000000',
-  })
+  @PhoneDecorators()
   phone: string;
 }
 

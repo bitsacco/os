@@ -10,6 +10,7 @@ import {
 } from 'class-validator';
 import { applyDecorators } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   AuthRequest,
   IsStringifiedNumberConstraint,
@@ -23,7 +24,7 @@ import {
   UserUpdates,
   VerifyUserRequest,
 } from '../types';
-import { Type } from 'class-transformer';
+import { PhoneDecorators, NpubDecorators } from './decorators';
 
 const PinDecorators = () => {
   return applyDecorators(
@@ -31,30 +32,6 @@ const PinDecorators = () => {
     IsString(),
     Validate(IsStringifiedNumberConstraint, [{ digits: 6, positive: true }]),
     ApiProperty({ example: '000000' }),
-  );
-};
-
-const PhoneDecorators = () => {
-  return applyDecorators(
-    IsOptional(),
-    IsString(),
-    IsNotEmpty(),
-    // @IsPhoneNumber()
-    ApiProperty({
-      example: '+254700000000',
-    }),
-  );
-};
-
-const NpubDecorators = () => {
-  return applyDecorators(
-    IsOptional(),
-    IsString(),
-    IsNotEmpty(),
-    ApiProperty({
-      example:
-        'npub17k76drpaeaungjltz9zlrr89ua0rlawgzs8fasaar49w0mnytrssgtk09g',
-    }),
   );
 };
 

@@ -15,15 +15,17 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import {
   ChamaMemberRole,
+  type ChamaInvite,
   type ChamaMember,
   type ChamaUpdates,
-  type InvitemembersRequest,
+  type InviteMembersRequest,
   type CreateChamaRequest,
   type FilterChamasRequest,
   type FindChamaRequest,
   type JoinChamaRequest,
   type UpdateChamaRequest,
 } from '../types';
+import { NpubDecorators, PhoneDecorators } from './decorators';
 
 // Decorator Factories
 const IsRequiredUUID = () => {
@@ -63,10 +65,41 @@ const IsMembers = (minSize: number, maxSize: number, isOptional = false) => {
     Type(() => ChamaMemberDto)(target, propertyKey);
   };
 };
+
+const IsInvites = (minSize: number, maxSize: number, isOptional = false) => {
+  return (target: any, propertyKey: string) => {
+    IsArray()(target, propertyKey);
+    if (isOptional) IsOptional()(target, propertyKey);
+    ValidateNested({ each: true })(target, propertyKey);
+    ArrayMinSize(minSize)(target, propertyKey);
+    ArrayMaxSize(maxSize)(target, propertyKey);
+    Type(() => ChamaInviteDto)(target, propertyKey);
+  };
+};
+
 class ChamaMemberDto implements ChamaMember {
   @IsRequiredUUID()
   @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
   userId: string;
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsEnum(ChamaMemberRole, { each: true })
+  @Transform(({ value }) => [...new Set(value)])
+  @ApiProperty({
+    example: [ChamaMemberRole.Member],
+    enum: ChamaMemberRole,
+    isArray: true,
+  })
+  roles: ChamaMemberRole[];
+}
+
+class ChamaInviteDto implements ChamaInvite {
+  @PhoneDecorators()
+  phoneNumber?: string;
+
+  @NpubDecorators()
+  nostrNpub?: string;
 
   @IsArray()
   @ArrayMinSize(1)
@@ -85,6 +118,10 @@ export class CreateChamaDto implements CreateChamaRequest {
   @ApiProperty({ example: 'Kenya Bitcoiners' })
   name: string;
 
+  @IsChamaName()
+  @ApiProperty({ example: 'Kenya Bitcoiners' })
+  description?: string;
+
   @IsMembers(1, 100)
   @ApiProperty({
     type: [ChamaMemberDto],
@@ -96,6 +133,12 @@ export class CreateChamaDto implements CreateChamaRequest {
     ],
   })
   members: ChamaMember[];
+
+  @IsInvites(0, 100)
+  @ApiProperty({
+    type: [ChamaInviteDto],
+  })
+  invites: ChamaInvite[];
 
   @IsRequiredUUID()
   @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
@@ -171,20 +214,14 @@ export class JoinChamaDto implements JoinChamaRequest {
   memberInfo: ChamaMember;
 }
 
-export class InviteMembersDto implements InvitemembersRequest {
+export class InviteMembersDto implements InviteMembersRequest {
   @IsRequiredUUID()
   @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
   chamaId: string;
 
-  @IsMembers(1, 50)
+  @IsInvites(1, 100, true)
   @ApiProperty({
-    type: [ChamaMemberDto],
-    example: [
-      {
-        userId: '7b158dfd-cb98-40b1-9ed2-a13006a9f670',
-        roles: [ChamaMemberRole.Member],
-      },
-    ],
+    type: [ChamaInviteDto],
   })
-  newMemberInfo: ChamaMember[];
+  invites: ChamaInvite[];
 }

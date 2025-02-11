@@ -1,4 +1,3 @@
-import { ConfigService } from '@nestjs/config';
 import { TestingModule } from '@nestjs/testing';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
@@ -11,7 +10,6 @@ describe('UsersService', () => {
   let mockUsersRepository: UsersRepository;
   let serviceGenerator: ClientGrpc;
   let mockSmsServiceClient: Partial<SmsServiceClient>;
-  let mockCfg: ConfigService;
 
   beforeEach(async () => {
     mockUsersRepository = {
@@ -27,11 +25,6 @@ describe('UsersService', () => {
       getClientByServiceName: jest.fn().mockReturnValue(mockSmsServiceClient),
     };
 
-    mockCfg = {
-      get: jest.fn(),
-      getOrThrow: jest.fn(),
-    } as unknown as ConfigService;
-
     const module: TestingModule = await createTestingModuleWithValidation({
       providers: [
         {
@@ -39,13 +32,9 @@ describe('UsersService', () => {
           useValue: mockUsersRepository,
         },
         {
-          provide: ConfigService,
-          useValue: mockCfg,
-        },
-        {
           provide: UsersService,
           useFactory: () => {
-            return new UsersService(mockCfg, mockUsersRepository);
+            return new UsersService(mockUsersRepository);
           },
         },
       ],

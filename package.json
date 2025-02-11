@@ -49,6 +49,7 @@
     "@nostr-dev-kit/ndk": "^2.10.6",
     "africastalking": "^0.7.0",
     "argon2": "^0.41.1",
+    "bitly": "^7.1.2",
     "cache-manager": "4.1.0",
     "cache-manager-redis-store": "^3.0.1",
     "class-transformer": "^0.5.1",

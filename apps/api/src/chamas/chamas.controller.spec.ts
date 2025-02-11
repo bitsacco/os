@@ -1,15 +1,22 @@
 import { TestingModule } from '@nestjs/testing';
-import { ChamasRepository, ChamasService } from '@bitsacco/common';
+import {
+  ChamasRepository,
+  ChamasService,
+  UsersService,
+} from '@bitsacco/common';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { ChamasController } from './chamas.controller';
+import { ChamaMessageService } from 'libs/common/src/chamas/chamas.messaging';
 
 describe('ChamasController', () => {
-  let controller: ChamasController;
-  let service: ChamasService;
-  let mockChamasRepository: ChamasRepository;
+  let chamaController: ChamasController;
+  let chamaService: ChamasService;
+  let messageService: ChamaMessageService;
+  let chamasRepository: ChamasRepository;
+  let usersService: UsersService;
 
   beforeEach(async () => {
-    mockChamasRepository = {
+    chamasRepository = {
       create: jest.fn(),
       find: jest.fn(),
       findOne: jest.fn(),
@@ -17,23 +24,37 @@ describe('ChamasController', () => {
       findOneAndDelete: jest.fn(),
     } as unknown as ChamasRepository;
 
+    usersService = {
+      validateUser: jest.fn(),
+      registerUser: jest.fn(),
+      findUser: jest.fn(),
+      verifyUser: jest.fn(),
+      updateUser: jest.fn(),
+      listUsers: jest.fn(),
+    } as unknown as UsersService;
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [ChamasController],
       providers: [
         {
           provide: ChamasService,
           useFactory: () => {
-            return new ChamasService(mockChamasRepository);
+            return new ChamasService(
+              chamasRepository,
+              usersService,
+              messageService,
+            );
           },
         },
       ],
     });
 
-    controller = module.get<ChamasController>(ChamasController);
-    service = module.get<ChamasService>(ChamasService);
+    chamaController = module.get<ChamasController>(ChamasController);
+    chamaService = module.get<ChamasService>(ChamasService);
   });
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
+    expect(chamaController).toBeDefined();
+    expect(chamaService).toBeDefined();
   });
 });
