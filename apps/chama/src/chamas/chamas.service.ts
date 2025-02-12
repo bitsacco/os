@@ -135,8 +135,8 @@ export class ChamasService {
       hunk.description = updates.description;
     }
 
-    if (updates.members) {
-      const registered = await this.resolveMembers(updates.members);
+    if (updates.addMembers) {
+      const registered = await this.resolveMembers(updates.addMembers);
       hunk.members = this.deduplicateMembers(cd.members, registered);
     }
 

@@ -24,6 +24,7 @@ import {
   type FindChamaRequest,
   type JoinChamaRequest,
   type UpdateChamaRequest,
+  type PaginatedRequest,
 } from '../types';
 import { NpubDecorators, PhoneDecorators } from './decorators';
 import { PaginatedRequestDto } from './lib.dto';
@@ -167,7 +168,7 @@ export class ChamaUpdatesDto implements ChamaUpdates {
       },
     ],
   })
-  members: ChamaMember[];
+  addMembers: ChamaMember[];
 }
 
 export class UpdateChamaDto implements UpdateChamaRequest {
@@ -207,7 +208,7 @@ export class FilterChamasDto implements FilterChamasRequest {
   @ValidateNested()
   @Type(() => PaginatedRequestDto)
   @ApiProperty({ type: PaginatedRequestDto })
-  pagination?: PaginatedRequestDto;
+  pagination?: PaginatedRequest;
 }
 
 export class JoinChamaDto implements JoinChamaRequest {
