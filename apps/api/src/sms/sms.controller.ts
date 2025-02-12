@@ -1,13 +1,20 @@
 import { ApiOperation, ApiBody } from '@nestjs/swagger';
-import { Body, Controller, Logger, Post } from '@nestjs/common';
-import { SendBulkSmsDto, SendSmsDto } from '@bitsacco/common';
-import { SmsService } from './sms.service';
+import { Body, Controller, Inject, Logger, Post } from '@nestjs/common';
+import {
+  SendBulkSmsDto,
+  SendSmsDto,
+  SMS_SERVICE_NAME,
+  SmsServiceClient,
+} from '@bitsacco/common';
+import { type ClientGrpc } from '@nestjs/microservices';
 
 @Controller('sms')
 export class SmsController {
+  private smsService: SmsServiceClient;
   private readonly logger = new Logger(SmsController.name);
 
-  constructor(private readonly smsService: SmsService) {
+  constructor(@Inject(SMS_SERVICE_NAME) private readonly grpc: ClientGrpc) {
+    this.smsService = this.grpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
     this.logger.log('SmsController initialized');
   }
 

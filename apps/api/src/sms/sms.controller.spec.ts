@@ -1,32 +1,34 @@
 import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { SmsController } from './sms.controller';
-import { SmsService } from './sms.service';
+import { type ClientGrpc } from '@nestjs/microservices';
+import { SMS_SERVICE_NAME, SmsServiceClient } from '@bitsacco/common';
 
 describe.skip('SmsController', () => {
-  let controller: SmsController;
-  let smsService: SmsService;
+  let serviceGenerator: ClientGrpc;
+  let smsController: SmsController;
+  let smsServiceClient: Partial<SmsServiceClient>;
 
   beforeEach(async () => {
+    serviceGenerator = {
+      getService: jest.fn().mockReturnValue(smsServiceClient),
+      getClientByServiceName: jest.fn().mockReturnValue(smsServiceClient),
+    };
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [SmsController],
       providers: [
         {
-          provide: SmsService,
-          useValue: {
-            sendSms: jest.fn(),
-            sendBulkSms: jest.fn(),
-          },
+          provide: SMS_SERVICE_NAME,
+          useValue: serviceGenerator,
         },
       ],
     });
 
-    controller = module.get<SmsController>(SmsController);
-    smsService = module.get<SmsService>(SmsService);
+    smsController = module.get<SmsController>(SmsController);
   });
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
-    expect(smsService).toBeDefined();
+    expect(smsController).toBeDefined();
   });
 });
