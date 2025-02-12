@@ -1,31 +1,40 @@
 import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { SolowalletController } from './solowallet.controller';
-import { SolowalletService } from './solowallet.service';
+import {
+  SOLOWALLET_SERVICE_NAME,
+  SolowalletServiceClient,
+} from '@bitsacco/common';
+import { type ClientGrpc } from '@nestjs/microservices';
 
 describe('SolowalletController', () => {
-  let controller: SolowalletController;
-  let walletService: SolowalletService;
+  let serviceGenerator: ClientGrpc;
+  let solowalletController: SolowalletController;
+  let solowalletServiceClient: Partial<SolowalletServiceClient>;
 
   beforeEach(async () => {
+    serviceGenerator = {
+      getService: jest.fn().mockReturnValue(solowalletServiceClient),
+      getClientByServiceName: jest
+        .fn()
+        .mockReturnValue(solowalletServiceClient),
+    };
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [SolowalletController],
       providers: [
         {
-          provide: SolowalletService,
-          useValue: {
-            depositFunds: jest.fn(),
-          },
+          provide: SOLOWALLET_SERVICE_NAME,
+          useValue: serviceGenerator,
         },
       ],
     });
 
-    controller = module.get<SolowalletController>(SolowalletController);
-    walletService = module.get<SolowalletService>(SolowalletService);
+    solowalletController =
+      module.get<SolowalletController>(SolowalletController);
   });
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
-    expect(walletService).toBeDefined();
+    expect(solowalletController).toBeDefined();
   });
 });

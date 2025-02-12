@@ -1,19 +1,36 @@
 import {
   ContinueTxRequestDto,
   DepositFundsRequestDto,
+  SOLOWALLET_SERVICE_NAME,
+  SolowalletServiceClient,
   UpdateTxDto,
   UserTxsRequestDto,
   WithdrawFundsRequestDto,
 } from '@bitsacco/common';
-import { Body, Controller, Get, Logger, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Logger,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { ApiOperation, ApiBody, ApiParam } from '@nestjs/swagger';
-import { SolowalletService } from './solowallet.service';
+import { type ClientGrpc } from '@nestjs/microservices';
 
 @Controller('solowallet')
 export class SolowalletController {
+  private walletService: SolowalletServiceClient;
   private readonly logger = new Logger(SolowalletController.name);
 
-  constructor(private readonly walletService: SolowalletService) {
+  constructor(
+    @Inject(SOLOWALLET_SERVICE_NAME)
+    private readonly grpc: ClientGrpc,
+  ) {
+    this.walletService = this.grpc.getService<SolowalletServiceClient>(
+      SOLOWALLET_SERVICE_NAME,
+    );
     this.logger.log('SolowalletController initialized');
   }
 

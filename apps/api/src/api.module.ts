@@ -30,7 +30,6 @@ import { SmsController } from './sms/sms.controller';
 import { SharesController } from './shares/shares.controller';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
-import { SolowalletService } from './solowallet/solowallet.service';
 import { SolowalletController } from './solowallet/solowallet.controller';
 import { AuthService } from './auth/auth.service';
 import { AuthController } from './auth/auth.controller';
@@ -179,7 +178,6 @@ import { ChamasController } from './chamas/chamas.controller';
     SwapService,
     NostrService,
     SmsService,
-    SolowalletService,
     AdminService,
     PhoneAuthStategy,
     NpubAuthStategy,
