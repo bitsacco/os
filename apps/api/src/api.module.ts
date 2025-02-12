@@ -23,7 +23,7 @@ import {
   UsersSchema,
   UsersService,
 } from '@bitsacco/common';
-import { SwapController, SwapService } from './swap';
+import { SwapController } from './swap';
 import { NostrController, NostrService } from './nostr';
 import { SmsService } from './sms/sms.service';
 import { SmsController } from './sms/sms.controller';
@@ -175,7 +175,6 @@ import { ChamasController } from './chamas/chamas.controller';
     AuthService,
     UsersRepository,
     UsersService,
-    SwapService,
     NostrService,
     SmsService,
     AdminService,

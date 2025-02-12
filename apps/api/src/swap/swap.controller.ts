@@ -10,7 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { object } from 'joi';
-import { ClientProxy } from '@nestjs/microservices';
+import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 import {
   Currency,
@@ -24,17 +24,21 @@ import {
   CreateOfframpSwapDto,
   default_page,
   default_page_size,
+  SwapServiceClient,
+  SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
-import { SwapService } from './swap.service';
 
 @Controller('swap')
 export class SwapController {
+  private swapService: SwapServiceClient;
   private readonly logger = new Logger(SwapController.name);
 
   constructor(
-    private readonly swapService: SwapService,
+    @Inject(SWAP_SERVICE_NAME) private readonly grpc: ClientGrpc,
     @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
   ) {
+    this.swapService =
+      this.grpc.getService<SwapServiceClient>(SWAP_SERVICE_NAME);
     this.logger.log('SwapController initialized');
   }
 
@@ -53,7 +57,7 @@ export class SwapController {
       throw new BadRequestException(es);
     }
 
-    return this.swapService.getOnrampQuote({
+    return this.swapService.getQuote({
       from,
       to: Currency.BTC,
       amount: amount?.toString(),
@@ -66,14 +70,14 @@ export class SwapController {
     type: CreateOnrampSwapDto,
   })
   postOnrampTransaction(@Body() req: CreateOnrampSwapDto) {
-    return this.swapService.postOnrampTransaction(req);
+    return this.swapService.createOnrampSwap(req);
   }
 
   @Get('onramp/find/:id')
   @ApiOperation({ summary: 'Find onramp transaction by ID' })
   @ApiParam({ name: 'id', type: String, description: 'Transaction ID' })
   findOnrampTransaction(@Param('id') id: string) {
-    return this.swapService.findOnrampTransaction({ id });
+    return this.swapService.findOnrampSwap({ id });
   }
 
   @Get('onramp/all')
@@ -94,7 +98,7 @@ export class SwapController {
     @Query('page') page: number = default_page,
     @Query('size') size: number = default_page_size,
   ) {
-    return this.swapService.getOnrampTransactions({
+    return this.swapService.listOnrampSwaps({
       page,
       size,
     });
@@ -115,7 +119,7 @@ export class SwapController {
       throw new BadRequestException(es);
     }
 
-    return this.swapService.getOfframpQuote({
+    return this.swapService.getQuote({
       to,
       from: Currency.BTC,
       amount: amount?.toString(),
@@ -128,14 +132,14 @@ export class SwapController {
     type: CreateOfframpSwapDto,
   })
   postOfframpTransaction(@Body() req: CreateOfframpSwapDto) {
-    return this.swapService.postOfframpTransaction(req);
+    return this.swapService.createOfframpSwap(req);
   }
 
   @Get('offramp/find/:id')
   @ApiOperation({ summary: 'Find offramp transaction by ID' })
   @ApiParam({ name: 'id', type: 'string', description: 'Transaction ID' })
   findOfframpTransaction(@Param('id') id: string) {
-    return this.swapService.findOfframpTransaction({ id });
+    return this.swapService.findOfframpSwap({ id });
   }
 
   @Get('offramp/all')
@@ -156,7 +160,7 @@ export class SwapController {
     @Query('page') page: number = 0,
     @Query('size') size: number = 100,
   ) {
-    return this.swapService.getOfframpTransactions({
+    return this.swapService.listOfframpSwaps({
       page,
       size,
     });
