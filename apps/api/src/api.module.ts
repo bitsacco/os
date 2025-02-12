@@ -138,8 +138,11 @@ import { ChamasController } from './chamas/chamas.controller';
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
           options: {
-            package: 'chama',
-            protoPath: join(__dirname, '../../../proto/chama.proto'),
+            package: ['chama', 'chamawallet'],
+            protoPath: [
+              join(__dirname, '../../../proto/chama.proto'),
+              join(__dirname, '../../../proto/chamawallet.proto'),
+            ],
             url: configService.getOrThrow<string>('CHAMA_GRPC_URL'),
           },
         }),

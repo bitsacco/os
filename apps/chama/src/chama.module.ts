@@ -15,9 +15,10 @@ import {
 } from '@bitsacco/common';
 import { ChamasDocument, ChamasRepository, ChamasSchema } from './chamas/db';
 import { ChamaMessageService } from './chamas/chamas.messaging';
-import { ChamasController } from './chamas/chamas.controller';
 import { ChamasService } from './chamas/chamas.service';
-
+import { ChamaWalletService } from './wallet/wallet.service';
+import { ChamaWalletController } from './wallet/wallet.controller';
+import { ChamaController } from './chama.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -62,12 +63,13 @@ import { ChamasService } from './chamas/chamas.service';
     ]),
     LoggerModule,
   ],
-  controllers: [ChamasController],
+  controllers: [ChamaController, ChamaWalletController],
   providers: [
     ConfigService,
     ChamasService,
     ChamasRepository,
     ChamaMessageService,
+    ChamaWalletService,
     UsersRepository,
     UsersService,
   ],

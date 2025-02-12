@@ -15,9 +15,12 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
-      package: 'chama',
+      package: ['chama', 'chamawallet'],
       url: chama_url,
-      protoPath: join(__dirname, '../../../proto/chama.proto'),
+      protoPath: [
+        join(__dirname, '../../../proto/chama.proto'),
+        join(__dirname, '../../../proto/chamawallet.proto'),
+      ],
       onLoadPackageDefinition: (pkg, server) => {
         new ReflectionService(pkg).addToServer(server);
       },

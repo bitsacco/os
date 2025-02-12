@@ -9,11 +9,11 @@ import {
   JoinChamaDto,
   UpdateChamaDto,
 } from '@bitsacco/common';
-import { ChamasService } from './chamas.service';
+import { ChamasService } from './chamas/chamas.service';
 
 @Controller()
 @ChamasServiceControllerMethods()
-export class ChamasController {
+export class ChamaController {
   constructor(private readonly chamasService: ChamasService) {}
 
   @GrpcMethod()

@@ -1,19 +1,19 @@
 import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
-import { ChamasController } from './chamas.controller';
-import { ChamasService } from './chamas.service';
+import { ChamaController } from './chama.controller';
+import { ChamasService } from './chamas/chamas.service';
 
-describe('ChamasController', () => {
-  let chamaController: ChamasController;
+describe('ChamaController', () => {
+  let chamaController: ChamaController;
   let chamaService: ChamasService;
 
   beforeEach(async () => {
     const app: TestingModule = await createTestingModuleWithValidation({
-      controllers: [ChamasController],
+      controllers: [ChamaController],
       providers: [ChamasService],
     });
 
-    chamaController = app.get<ChamasController>(ChamasController);
+    chamaController = app.get<ChamaController>(ChamaController);
     chamaService = app.get<ChamasService>(ChamasService);
   });
 });
