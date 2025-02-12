@@ -134,6 +134,7 @@ import { ChamasController } from './chamas/chamas.controller';
         inject: [ConfigService],
       },
       {
+        // references `chama` and `chamawallet` combined grpc client
         name: CHAMAS_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,

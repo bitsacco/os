@@ -12,7 +12,6 @@ import {
   Get,
   Inject,
   Logger,
-  OnModuleInit,
   Param,
   Patch,
   Post,

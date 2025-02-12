@@ -17,7 +17,6 @@ import { ChamasDocument, ChamasRepository, ChamasSchema } from './chamas/db';
 import { ChamaMessageService } from './chamas/chamas.messaging';
 import { ChamasService } from './chamas/chamas.service';
 import { ChamaWalletService } from './wallet/wallet.service';
-import { ChamaWalletController } from './wallet/wallet.controller';
 import { ChamaController } from './chama.controller';
 @Module({
   imports: [
@@ -63,7 +62,7 @@ import { ChamaController } from './chama.controller';
     ]),
     LoggerModule,
   ],
-  controllers: [ChamaController, ChamaWalletController],
+  controllers: [ChamaController],
   providers: [
     ConfigService,
     ChamasService,

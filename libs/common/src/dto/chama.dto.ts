@@ -5,7 +5,6 @@ import {
   IsNotEmpty,
   ArrayMaxSize,
   ArrayMinSize,
-  IsUUID,
   MaxLength,
   MinLength,
   ValidateNested,
@@ -27,24 +26,7 @@ import {
   type PaginatedRequest,
 } from '../types';
 import { NpubDecorators, PhoneDecorators } from './decorators';
-import { PaginatedRequestDto } from './lib.dto';
-
-// Decorator Factories
-const IsRequiredUUID = () => {
-  return (target: any, propertyKey: string) => {
-    IsString()(target, propertyKey);
-    IsNotEmpty()(target, propertyKey);
-    IsUUID()(target, propertyKey);
-  };
-};
-
-const IsOptionalUUID = () => {
-  return (target: any, propertyKey: string) => {
-    IsString()(target, propertyKey);
-    IsOptional()(target, propertyKey);
-    IsUUID()(target, propertyKey);
-  };
-};
+import { IsOptionalUUID, IsRequiredUUID, PaginatedRequestDto } from './lib.dto';
 
 const IsChamaName = (isOptional = false) => {
   return (target: any, propertyKey: string) => {

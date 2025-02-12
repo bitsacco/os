@@ -2,19 +2,32 @@ import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
   ChamasServiceControllerMethods,
+  ChamaWalletServiceControllerMethods,
+  ContinueDepositDto,
+  ContinueWithdrawDto,
   CreateChamaDto,
+  DepositDto,
   FilterChamasDto,
+  FilterTransactionsDto,
   FindChamaDto,
+  FindTransactionDto,
   InviteMembersDto,
   JoinChamaDto,
   UpdateChamaDto,
+  UpdateTransactionDto,
+  WithdrawFundsDto,
 } from '@bitsacco/common';
 import { ChamasService } from './chamas/chamas.service';
+import { ChamaWalletService } from './wallet/wallet.service';
 
 @Controller()
 @ChamasServiceControllerMethods()
+@ChamaWalletServiceControllerMethods()
 export class ChamaController {
-  constructor(private readonly chamasService: ChamasService) {}
+  constructor(
+    private readonly chamasService: ChamasService,
+    private readonly walletService: ChamaWalletService,
+  ) {}
 
   @GrpcMethod()
   createChama(request: CreateChamaDto) {
@@ -44,5 +57,40 @@ export class ChamaController {
   @GrpcMethod()
   filterChamas(request: FilterChamasDto) {
     return this.chamasService.filterChamas(request);
+  }
+
+  @GrpcMethod()
+  deposit(request: DepositDto) {
+    return this.walletService.deposit(request);
+  }
+
+  @GrpcMethod()
+  continueDeposit(request: ContinueDepositDto) {
+    return this.walletService.continueDeposit(request);
+  }
+
+  @GrpcMethod()
+  withdrawFunds(request: WithdrawFundsDto) {
+    return this.walletService.withdrawFunds(request);
+  }
+
+  @GrpcMethod()
+  continueWithdraw(request: ContinueWithdrawDto) {
+    return this.walletService.continueWithdraw(request);
+  }
+
+  @GrpcMethod()
+  updateTransaction(request: UpdateTransactionDto) {
+    return this.walletService.updateTransaction(request);
+  }
+
+  @GrpcMethod()
+  findTransaction(request: FindTransactionDto) {
+    return this.walletService.findTransaction(request);
+  }
+
+  @GrpcMethod()
+  filterTransactions(request: FilterTransactionsDto) {
+    return this.walletService.filterTransactions(request);
   }
 }
