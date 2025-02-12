@@ -30,7 +30,6 @@ import { SharesController } from './shares/shares.controller';
 import { AdminController } from './admin/admin.controller';
 import { AdminService } from './admin/admin.service';
 import { SolowalletController } from './solowallet/solowallet.controller';
-import { AuthService } from './auth/auth.service';
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
 import { ChamasController } from './chamas/chamas.controller';
@@ -171,7 +170,6 @@ import { ChamasController } from './chamas/chamas.controller';
     ChamasController,
   ],
   providers: [
-    AuthService,
     UsersRepository,
     UsersService,
     AdminService,

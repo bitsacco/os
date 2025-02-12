@@ -4,36 +4,36 @@ import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 
 import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
+import { type ClientGrpc } from '@nestjs/microservices';
+import { AUTH_SERVICE_NAME, AuthServiceClient } from '@bitsacco/common';
 
 describe('AuthController', () => {
-  let controller: AuthController;
-  let authService: AuthService;
+  let serviceGenerator: ClientGrpc;
+  let authController: AuthController;
+  let authServiceClient: Partial<AuthServiceClient>;
 
   beforeEach(async () => {
+    serviceGenerator = {
+      getService: jest.fn().mockReturnValue(authServiceClient),
+      getClientByServiceName: jest.fn().mockReturnValue(authServiceClient),
+    };
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [AuthController],
       providers: [
         ConfigService,
         {
-          provide: AuthService,
-          useValue: {
-            loginUser: jest.fn(),
-            registerUser: jest.fn(),
-            verifyUser: jest.fn(),
-            authenticate: jest.fn(),
-          },
+          provide: AUTH_SERVICE_NAME,
+          useValue: serviceGenerator,
         },
         JwtService,
       ],
     });
 
-    controller = module.get<AuthController>(AuthController);
-    authService = module.get<AuthService>(AuthService);
+    authController = module.get<AuthController>(AuthController);
   });
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
-    expect(authService).toBeDefined();
+    expect(authController).toBeDefined();
   });
 });

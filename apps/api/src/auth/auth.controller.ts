@@ -1,27 +1,33 @@
 import { type Response } from 'express';
 import { firstValueFrom, Observable } from 'rxjs';
-import { Body, Controller, Logger, Post, Res } from '@nestjs/common';
+import { Body, Controller, Inject, Logger, Post, Res } from '@nestjs/common';
 import { ApiBody, ApiOperation } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import {
+  AUTH_SERVICE_NAME,
   AuthRequestDto,
   AuthResponse,
+  AuthServiceClient,
   AuthTokenPayload,
   LoginUserRequestDto,
   RecoverUserRequestDto,
   RegisterUserRequestDto,
   VerifyUserRequestDto,
 } from '@bitsacco/common';
-import { AuthService } from './auth.service';
+import { type ClientGrpc } from '@nestjs/microservices';
 
 @Controller('auth')
 export class AuthController {
+  private authService: AuthServiceClient;
   private readonly logger = new Logger(AuthController.name);
 
   constructor(
-    private readonly authService: AuthService,
+    @Inject(AUTH_SERVICE_NAME)
+    private readonly grpc: ClientGrpc,
     private readonly jwtService: JwtService,
   ) {
+    this.authService =
+      this.grpc.getService<AuthServiceClient>(AUTH_SERVICE_NAME);
     this.logger.debug('AuthController initialized');
   }
 
