@@ -115,9 +115,7 @@ export class UsersService implements IUsersService {
     if (!ids.size) return [];
 
     const uds = await this.users.find({
-      where: {
-        id: { in: [...ids] },
-      },
+      _id: { $in: Array.from(ids) },
     });
 
     return uds.map(toUser);

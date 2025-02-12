@@ -23,12 +23,7 @@ import { ChamaMessageService } from './chamas.messaging';
 
 interface ChamaFilter {
   createdBy?: string;
-  members?: { $elemMatch: { memberId: string } };
-}
-
-interface ResolvedMembers {
-  registered: ChamaMember[];
-  nonRegistered: ChamaMember[];
+  members?: { $elemMatch: { userId: string } };
 }
 
 @Injectable()
@@ -50,7 +45,7 @@ export class ChamasService {
     invites,
     createdBy,
   }: CreateChamaDto): Promise<Chama> {
-    const { registered, nonRegistered } = await this.resolveMembers(members);
+    const registered = await this.resolveMembers(members);
 
     if (!registered.find((member) => member.userId === createdBy)) {
       throw new BadRequestException('Failed to create chama', {
@@ -58,10 +53,6 @@ export class ChamasService {
         description:
           'Seems the proposed chama creator, is not yet a registered member',
       });
-    }
-
-    if (nonRegistered.length) {
-      this.logger.error('Attempted to register unknown users as chama member');
     }
 
     const cd = await this.chamas.create({
@@ -79,9 +70,9 @@ export class ChamasService {
 
   private async resolveMembers(
     proposed: ChamaMember[],
-  ): Promise<ResolvedMembers> {
+  ): Promise<ChamaMember[]> {
     if (!proposed.length) {
-      return { registered: [], nonRegistered: [] };
+      return [];
     }
 
     const uniqueMembers = [
@@ -91,10 +82,12 @@ export class ChamasService {
     try {
       const userIds = uniqueMembers.map((member) => member.userId);
       const existingUsers = await this.users.findUsersById(new Set(userIds));
-
       const existingUserIds = new Set(existingUsers.map((user) => user.id));
 
-      return uniqueMembers.reduce<ResolvedMembers>(
+      const { registered, nonRegistered } = uniqueMembers.reduce<{
+        registered: ChamaMember[];
+        nonRegistered: ChamaMember[];
+      }>(
         (acc, member) => {
           if (existingUserIds.has(member.userId)) {
             acc.registered.push(member);
@@ -105,6 +98,14 @@ export class ChamasService {
         },
         { registered: [], nonRegistered: [] },
       );
+
+      if (nonRegistered.length) {
+        this.logger.error(
+          `Attempted to register ${nonRegistered.length} unknown users as chama members`,
+        );
+      }
+
+      return registered;
     } catch (error) {
       this.logger.error('Failed to resolve members', {
         error,
@@ -135,16 +136,8 @@ export class ChamasService {
     }
 
     if (updates.members) {
-      const { registered, nonRegistered } = await this.resolveMembers(
-        updates.members,
-      );
+      const registered = await this.resolveMembers(updates.members);
       hunk.members = this.deduplicateMembers(cd.members, registered);
-
-      if (nonRegistered.length) {
-        this.logger.error(
-          'Attempted to register unknown users as chama member',
-        );
-      }
     }
 
     const updatedChama = await this.chamas.findOneAndUpdate(
@@ -157,8 +150,9 @@ export class ChamasService {
 
   async joinChama({ chamaId, memberInfo }: JoinChamaDto): Promise<Chama> {
     const cd = await this.chamas.findOne({ _id: chamaId });
+    const registered = await this.resolveMembers([memberInfo]);
     const hunk: Partial<Chama> = {
-      members: this.deduplicateMembers(cd.members, [memberInfo]),
+      members: this.deduplicateMembers(cd.members, registered),
     };
 
     const updatedChama = await this.chamas.findOneAndUpdate(
@@ -194,7 +188,7 @@ export class ChamasService {
     }
 
     if (memberId) {
-      filter.members = { $elemMatch: { memberId: memberId } };
+      filter.members = { $elemMatch: { userId: memberId } };
     }
 
     const cds = await this.chamas.find(filter);
