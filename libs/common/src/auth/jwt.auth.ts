@@ -89,7 +89,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
           request?.Authentication ||
           request?.headers?.Authentication,
       ]),
-      secretOrKey: configService.get('JWT_SECRET'),
+      secretOrKey: configService.getOrThrow('JWT_SECRET'),
     });
   }
 

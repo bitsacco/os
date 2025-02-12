@@ -9,11 +9,11 @@ import {
   Logger,
 } from '@nestjs/common';
 import {
-  Chama,
-  ChamaInvite,
-  SMS_SERVICE_NAME,
   SmsServiceClient,
-} from '../types';
+  SMS_SERVICE_NAME,
+  type Chama,
+  type ChamaInvite,
+} from '@bitsacco/common';
 
 @Injectable()
 export class ChamaMessageService {
@@ -72,7 +72,7 @@ export class ChamaMessageService {
     });
     this.logger.log(token);
 
-    const chamaUrl = this.configService.getOrThrow('CHAMA_URL');
+    const chamaUrl = this.configService.getOrThrow('CHAMA_EXPERIENCE_URL');
     const link = await this.shortenLink(`${chamaUrl}/join/?t=${token}`);
 
     const invite = `Welcome to ${name} chama on BITSACCO. Click ${link} to join`;

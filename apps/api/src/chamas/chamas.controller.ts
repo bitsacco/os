@@ -1,28 +1,36 @@
 import {
   InviteMembersDto,
-  ChamasService,
   CreateChamaDto,
   JoinChamaDto,
   UpdateChamaDto,
+  ChamasServiceClient,
+  CHAMAS_SERVICE_NAME,
 } from '@bitsacco/common';
 import {
   Body,
   Controller,
   Get,
+  Inject,
   Logger,
+  OnModuleInit,
   Param,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
+import { type ClientGrpc } from '@nestjs/microservices';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 
 @Controller('chamas')
 export class ChamasController {
   private readonly logger = new Logger(ChamasController.name);
+  private chamasService: ChamasServiceClient;
 
-  constructor(private readonly chamasService: ChamasService) {
+  constructor(@Inject(CHAMAS_SERVICE_NAME) private readonly grpc: ClientGrpc) {
     this.logger.debug('ChamasController initialized');
+    this.chamasService =
+      this.grpc.getService<ChamasServiceClient>(CHAMAS_SERVICE_NAME);
+    this.logger.debug('ChamasController created');
   }
 
   @Post('create')

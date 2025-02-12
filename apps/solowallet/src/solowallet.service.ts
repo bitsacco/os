@@ -214,7 +214,10 @@ export class SolowalletService {
       ];
     }
 
-    const { page, size } = pagination;
+    const { page, size } = pagination || {
+      page: default_page,
+      size: default_page_size,
+    };
     const pages = Math.ceil(allTx.length / size);
 
     // select the last page if requested page exceeds total pages possible
@@ -333,7 +336,7 @@ export class SolowalletService {
 
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
-      pagination: pagination || { page: default_page, size: default_page_size },
+      pagination,
       priority: deposit._id,
     });
 
@@ -353,7 +356,7 @@ export class SolowalletService {
   }: UserTxsRequestDto): Promise<UserTxsResponse> {
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
-      pagination: pagination || { page: default_page, size: default_page_size },
+      pagination,
     });
     const meta = await this.getWalletMeta(userId);
 
@@ -448,7 +451,7 @@ export class SolowalletService {
 
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
-      pagination: pagination || { page: default_page, size: default_page_size },
+      pagination,
       priority: withdrawal._id,
     });
     const meta = await this.getWalletMeta(userId);
@@ -476,7 +479,7 @@ export class SolowalletService {
 
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
-      pagination: pagination || { page: default_page, size: default_page_size },
+      pagination,
       priority: originTx._id,
     });
     const meta = await this.getWalletMeta(userId);
@@ -557,7 +560,7 @@ export class SolowalletService {
 
     const ledger = await this.getPaginatedUserTxLedger({
       userId,
-      pagination: pagination || { page: default_page, size: default_page_size },
+      pagination,
       priority: deposit._id,
     });
 

@@ -30,15 +30,11 @@ import { AuthService } from './auth.service';
         SALT_ROUNDS: Joi.number().required(),
       }),
     }),
-    DatabaseModule,
-    DatabaseModule.forFeature([
-      { name: UsersDocument.name, schema: UsersSchema },
-    ]),
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: `${configService.get('JWT_EXPIRATION')}s`,
+          expiresIn: `${configService.getOrThrow('JWT_EXPIRATION')}s`,
         },
       }),
       inject: [ConfigService],
@@ -56,6 +52,10 @@ import { AuthService } from './auth.service';
         }),
         inject: [ConfigService],
       },
+    ]),
+    DatabaseModule,
+    DatabaseModule.forFeature([
+      { name: UsersDocument.name, schema: UsersSchema },
     ]),
     LoggerModule,
   ],

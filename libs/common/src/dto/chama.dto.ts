@@ -26,6 +26,7 @@ import {
   type UpdateChamaRequest,
 } from '../types';
 import { NpubDecorators, PhoneDecorators } from './decorators';
+import { PaginatedRequestDto } from './lib.dto';
 
 // Decorator Factories
 const IsRequiredUUID = () => {
@@ -201,6 +202,12 @@ export class FilterChamasDto implements FilterChamasRequest {
     required: false,
   })
   memberId?: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PaginatedRequestDto)
+  @ApiProperty({ type: PaginatedRequestDto })
+  pagination?: PaginatedRequestDto;
 }
 
 export class JoinChamaDto implements JoinChamaRequest {

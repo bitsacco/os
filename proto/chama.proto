@@ -1,6 +1,17 @@
 syntax = "proto3";
 
+import "lib.proto";
+
 package chama;
+
+service ChamasService {
+  rpc CreateChama(CreateChamaRequest) returns (Chama);
+  rpc UpdateChama(UpdateChamaRequest) returns (Chama);
+  rpc JoinChama(JoinChamaRequest) returns (Chama);
+  rpc InviteMembers(InviteMembersRequest) returns (Chama);
+  rpc FindChama(FindChamaRequest) returns (Chama);
+  rpc FilterChamas(FilterChamasRequest) returns (PaginatedFilterChamasResponse);
+}
 
 message Chama {
   string id = 1;
@@ -60,6 +71,18 @@ message FindChamaRequest {
 message FilterChamasRequest {
   optional string created_by = 1;
   optional string member_id = 2;
+  reserved 3,4,5,6,7,8,9,10;
+  optional lib.PaginatedRequest pagination = 11;
+}
+
+message PaginatedFilterChamasResponse {
+  repeated Chama chamas = 1;
+  // Current page offset
+  int32 page = 2;
+  // Number of items return per page
+  int32 size = 3;
+  // Number of pages given the current page size
+  int32 pages = 4;
 }
 
 message JoinChamaRequest {

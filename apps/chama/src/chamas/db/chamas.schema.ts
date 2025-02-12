@@ -1,6 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { AbstractDocument } from './abstract.schema';
-import { type Chama, type ChamaMember, ChamaMemberRole } from '../types';
+import {
+  AbstractDocument,
+  type ChamaMember,
+  type Chama,
+  ChamaMemberRole,
+} from '@bitsacco/common';
 
 @Schema()
 class ChamaMemberDocument extends AbstractDocument implements ChamaMember {

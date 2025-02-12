@@ -5,6 +5,9 @@
 // source: chama.proto
 
 /* eslint-disable */
+import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
+import { Observable } from 'rxjs';
+import { PaginatedRequest } from './lib';
 
 export enum ChamaMemberRole {
   Member = 0,
@@ -59,6 +62,17 @@ export interface FindChamaRequest {
 export interface FilterChamasRequest {
   createdBy?: string | undefined;
   memberId?: string | undefined;
+  pagination?: PaginatedRequest | undefined;
+}
+
+export interface PaginatedFilterChamasResponse {
+  chamas: Chama[];
+  /** Current page offset */
+  page: number;
+  /** Number of items return per page */
+  size: number;
+  /** Number of pages given the current page size */
+  pages: number;
 }
 
 export interface JoinChamaRequest {
@@ -70,3 +84,86 @@ export interface InviteMembersRequest {
   chamaId: string;
   invites: ChamaInvite[];
 }
+
+export interface ChamasServiceClient {
+  createChama(request: CreateChamaRequest): Observable<Chama>;
+
+  updateChama(request: UpdateChamaRequest): Observable<Chama>;
+
+  joinChama(request: JoinChamaRequest): Observable<Chama>;
+
+  inviteMembers(request: InviteMembersRequest): Observable<Chama>;
+
+  findChama(request: FindChamaRequest): Observable<Chama>;
+
+  filterChamas(
+    request: FilterChamasRequest,
+  ): Observable<PaginatedFilterChamasResponse>;
+}
+
+export interface ChamasServiceController {
+  createChama(
+    request: CreateChamaRequest,
+  ): Promise<Chama> | Observable<Chama> | Chama;
+
+  updateChama(
+    request: UpdateChamaRequest,
+  ): Promise<Chama> | Observable<Chama> | Chama;
+
+  joinChama(
+    request: JoinChamaRequest,
+  ): Promise<Chama> | Observable<Chama> | Chama;
+
+  inviteMembers(
+    request: InviteMembersRequest,
+  ): Promise<Chama> | Observable<Chama> | Chama;
+
+  findChama(
+    request: FindChamaRequest,
+  ): Promise<Chama> | Observable<Chama> | Chama;
+
+  filterChamas(
+    request: FilterChamasRequest,
+  ):
+    | Promise<PaginatedFilterChamasResponse>
+    | Observable<PaginatedFilterChamasResponse>
+    | PaginatedFilterChamasResponse;
+}
+
+export function ChamasServiceControllerMethods() {
+  return function (constructor: Function) {
+    const grpcMethods: string[] = [
+      'createChama',
+      'updateChama',
+      'joinChama',
+      'inviteMembers',
+      'findChama',
+      'filterChamas',
+    ];
+    for (const method of grpcMethods) {
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(
+        constructor.prototype,
+        method,
+      );
+      GrpcMethod('ChamasService', method)(
+        constructor.prototype[method],
+        method,
+        descriptor,
+      );
+    }
+    const grpcStreamMethods: string[] = [];
+    for (const method of grpcStreamMethods) {
+      const descriptor: any = Reflect.getOwnPropertyDescriptor(
+        constructor.prototype,
+        method,
+      );
+      GrpcStreamMethod('ChamasService', method)(
+        constructor.prototype[method],
+        method,
+        descriptor,
+      );
+    }
+  };
+}
+
+export const CHAMAS_SERVICE_NAME = 'ChamasService';

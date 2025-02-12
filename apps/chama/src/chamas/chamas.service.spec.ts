@@ -1,9 +1,9 @@
 import { TestingModule } from '@nestjs/testing';
+import { UsersService } from '@bitsacco/common';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
-import { ChamasRepository } from './chamas.repository';
-import { ChamasService } from './chamas.service';
 import { ChamaMessageService } from './chamas.messaging';
-import { UsersService } from '../users';
+import { ChamasService } from './chamas.service';
+import { ChamasRepository } from './db';
 
 describe('ChamasService', () => {
   let chamaService: ChamasService;
@@ -44,8 +44,8 @@ describe('ChamasService', () => {
           useFactory: () => {
             return new ChamasService(
               chamasRepository,
-              usersService,
               messageService,
+              usersService,
             );
           },
         },

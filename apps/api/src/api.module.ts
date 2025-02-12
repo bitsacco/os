@@ -6,11 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
   AUTH_SERVICE_NAME,
-  ChamaMessageService,
-  ChamasDocument,
-  ChamasRepository,
-  ChamasSchema,
-  ChamasService,
+  CHAMAS_SERVICE_NAME,
   DatabaseModule,
   EVENTS_SERVICE_BUS,
   JwtAuthStrategy,
@@ -52,16 +48,16 @@ import { ChamasController } from './chamas/chamas.controller';
         PORT: Joi.string().required(),
         NODE_ENV: Joi.string().required(),
         AUTH_GRPC_URL: Joi.string().required(),
-        JWT_SECRET: Joi.string().required(),
-        BITLY_TOKEN: Joi.string().required(),
         SWAP_GRPC_URL: Joi.string().required(),
         NOSTR_GRPC_URL: Joi.string().required(),
         SMS_GRPC_URL: Joi.string().required(),
         SHARES_GRPC_URL: Joi.string().required(),
         SOLOWALLET_GRPC_URL: Joi.string().required(),
+        CHAMA_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
         DATABASE_URL: Joi.string().required(),
+        JWT_SECRET: Joi.string().required(),
       }),
     }),
     ClientsModule.registerAsync([
@@ -138,6 +134,18 @@ import { ChamasController } from './chamas/chamas.controller';
         inject: [ConfigService],
       },
       {
+        name: CHAMAS_SERVICE_NAME,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'chama',
+            protoPath: join(__dirname, '../../../proto/chama.proto'),
+            url: configService.getOrThrow<string>('CHAMA_GRPC_URL'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
@@ -152,7 +160,6 @@ import { ChamasController } from './chamas/chamas.controller';
     DatabaseModule,
     DatabaseModule.forFeature([
       { name: UsersDocument.name, schema: UsersSchema },
-      { name: ChamasDocument.name, schema: ChamasSchema },
     ]),
   ],
   controllers: [
@@ -169,10 +176,7 @@ import { ChamasController } from './chamas/chamas.controller';
   providers: [
     AuthService,
     UsersRepository,
-    ChamasRepository,
-    ChamaMessageService,
     UsersService,
-    ChamasService,
     SwapService,
     NostrService,
     SmsService,

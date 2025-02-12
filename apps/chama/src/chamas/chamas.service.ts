@@ -5,17 +5,20 @@ import {
   Logger,
 } from '@nestjs/common';
 import {
+  type Chama,
+  type ChamaMember,
+  type PaginatedFilterChamasResponse,
+  default_page,
+  default_page_size,
   CreateChamaDto,
   FilterChamasDto,
   FindChamaDto,
   InviteMembersDto,
   JoinChamaDto,
   UpdateChamaDto,
-} from '../dto';
-import { toChama } from '../database';
-import { type ChamaInvite, type ChamaMember, type Chama } from '../types';
-import { UsersService } from '../users';
-import { ChamasRepository } from './chamas.repository';
+  UsersService,
+} from '@bitsacco/common';
+import { ChamasRepository, toChama } from './db';
 import { ChamaMessageService } from './chamas.messaging';
 
 interface ChamaFilter {
@@ -34,8 +37,8 @@ export class ChamasService {
 
   constructor(
     private readonly chamas: ChamasRepository,
-    private readonly users: UsersService,
     private readonly messenger: ChamaMessageService,
+    private readonly users: UsersService,
   ) {
     this.logger.debug('ChamasService initialized');
   }
@@ -182,7 +185,8 @@ export class ChamasService {
   async filterChamas({
     createdBy,
     memberId,
-  }: FilterChamasDto): Promise<Chama[]> {
+    pagination,
+  }: FilterChamasDto): Promise<PaginatedFilterChamasResponse> {
     const filter: ChamaFilter = {};
 
     if (createdBy) {
@@ -195,6 +199,24 @@ export class ChamasService {
 
     const cds = await this.chamas.find(filter);
 
-    return cds.map(toChama);
+    const { page, size } = pagination || {
+      page: default_page,
+      size: default_page_size,
+    };
+    const pages = Math.ceil(cds.length / size);
+
+    // select the last page if requested page exceeds total pages possible
+    const selectPage = page > pages ? pages - 1 : page;
+
+    const chamas = cds
+      .slice(selectPage * size, (selectPage + 1) * size)
+      .map(toChama);
+
+    return {
+      chamas,
+      page: selectPage,
+      size,
+      pages,
+    };
   }
 }
