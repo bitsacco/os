@@ -1,16 +1,21 @@
 import { ApiOperation, ApiBody } from '@nestjs/swagger';
-import { Body, Controller, Logger, Post } from '@nestjs/common';
+import { Body, Controller, Inject, Logger, Post } from '@nestjs/common';
 import {
   ConfigureNostrRelaysDto,
+  NOSTR_SERVICE_NAME,
+  NostrServiceClient,
   SendEncryptedNostrDmDto,
 } from '@bitsacco/common';
-import { NostrService } from './nostr.service';
+import { type ClientGrpc } from '@nestjs/microservices';
 
 @Controller('nostr')
 export class NostrController {
+  private nostrService: NostrServiceClient;
   private readonly logger = new Logger(NostrController.name);
 
-  constructor(private readonly nostrService: NostrService) {
+  constructor(@Inject(NOSTR_SERVICE_NAME) private readonly grpc: ClientGrpc) {
+    this.nostrService =
+      this.grpc.getService<NostrServiceClient>(NOSTR_SERVICE_NAME);
     this.logger.log('NostrController initialized');
   }
 
@@ -20,7 +25,7 @@ export class NostrController {
     type: ConfigureNostrRelaysDto,
   })
   configureNostrRelays(@Body() req: ConfigureNostrRelaysDto) {
-    return this.nostrService.configureNostrRelays(req);
+    return this.nostrService.configureTrustedNostrRelays(req);
   }
 
   @Post('dm')
@@ -29,6 +34,6 @@ export class NostrController {
     type: SendEncryptedNostrDmDto,
   })
   send(@Body() req: SendEncryptedNostrDmDto) {
-    return this.nostrService.sendEncryptedNostrDm(req);
+    return this.nostrService.sendEncryptedNostrDirectMessage(req);
   }
 }

@@ -2,32 +2,34 @@ import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 
 import { NostrController } from './nostr.controller';
-import { NostrService } from './nostr.service';
+import { type ClientGrpc } from '@nestjs/microservices';
+import { NOSTR_SERVICE_NAME, NostrServiceClient } from '@bitsacco/common';
 
 describe('NostrController', () => {
-  let controller: NostrController;
-  let nostrService: NostrService;
+  let serviceGenerator: ClientGrpc;
+  let nostrController: NostrController;
+  let nostrServiceClient: Partial<NostrServiceClient>;
 
   beforeEach(async () => {
+    serviceGenerator = {
+      getService: jest.fn().mockReturnValue(nostrServiceClient),
+      getClientByServiceName: jest.fn().mockReturnValue(nostrServiceClient),
+    };
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [NostrController],
       providers: [
         {
-          provide: NostrService,
-          useValue: {
-            sendEncryptedNostrDm: jest.fn(),
-            configureNostrRelays: jest.fn(),
-          },
+          provide: NOSTR_SERVICE_NAME,
+          useValue: serviceGenerator,
         },
       ],
     });
 
-    controller = module.get<NostrController>(NostrController);
-    nostrService = module.get<NostrService>(NostrService);
+    nostrController = module.get<NostrController>(NostrController);
   });
 
   it('should be defined', () => {
-    expect(controller).toBeDefined();
-    expect(nostrService).toBeDefined();
+    expect(nostrController).toBeDefined();
   });
 });

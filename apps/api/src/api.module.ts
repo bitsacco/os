@@ -24,7 +24,7 @@ import {
   UsersService,
 } from '@bitsacco/common';
 import { SwapController } from './swap';
-import { NostrController, NostrService } from './nostr';
+import { NostrController } from './nostr';
 import { SmsController } from './sms/sms.controller';
 import { SharesController } from './shares/shares.controller';
 import { AdminController } from './admin/admin.controller';
@@ -174,7 +174,6 @@ import { ChamasController } from './chamas/chamas.controller';
     AuthService,
     UsersRepository,
     UsersService,
-    NostrService,
     AdminService,
     PhoneAuthStategy,
     NpubAuthStategy,
