@@ -7,15 +7,14 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
-import { PaginatedRequest, TransactionStatus } from './lib';
+import {
+  FindTxRequest,
+  PaginatedRequest,
+  TransactionStatus,
+  TransactionType,
+} from './lib';
 import { Bolt11 } from './lightning';
 import { OfframpSwapTarget, OnrampSwapSource } from './swap';
-
-export enum TransactionType {
-  DEPOSIT = 0,
-  WITHDRAW = 1,
-  UNRECOGNIZED = -1,
-}
 
 export interface DepositFundsRequest {
   userId: string;
@@ -94,10 +93,6 @@ export interface ContinueTxRequest {
   amountFiat: number;
   onramp?: OnrampSwapSource | undefined;
   pagination?: PaginatedRequest | undefined;
-}
-
-export interface FindTxRequest {
-  txId: string;
 }
 
 export interface SolowalletServiceClient {

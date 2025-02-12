@@ -18,3 +18,12 @@ message PaginatedRequest {
   // Number of items to be return per page
   int32 size = 1;
 }
+
+message FindTxRequest {
+  string tx_id = 1;
+}
+
+enum TransactionType {
+  DEPOSIT = 0;
+  WITHDRAW = 1;
+}

@@ -1,8 +1,8 @@
 syntax = "proto3";
 
 import "lib.proto";
-import "swap.proto";
 import "lightning.proto";
+import "swap.proto";
 
 package solowallet;
 
@@ -17,7 +17,7 @@ service SolowalletService {
 
   rpc ContinueTransaction(ContinueTxRequest) returns (UserTxsResponse) {}
 
-  rpc FindTransaction(FindTxRequest) returns (SolowalletTx) {}
+  rpc FindTransaction(lib.FindTxRequest) returns (SolowalletTx) {}
 }
 
 message DepositFundsRequest {
@@ -66,11 +66,6 @@ message UserTxsResponse {
   string user_id = 4;
 }
 
-enum TransactionType {
-  DEPOSIT = 0;
-  WITHDRAW = 1;
-}
-
 message SolowalletTx {
   string id = 1;
 
@@ -84,7 +79,7 @@ message SolowalletTx {
 
   lightning.Bolt11 lightning = 6;
 
-  TransactionType type = 7;
+  lib.TransactionType type = 7;
 
   reserved 8, 9;
 
@@ -139,8 +134,4 @@ message ContinueTxRequest {
   reserved 5,6,7,8,9,10;
 
   optional lib.PaginatedRequest pagination = 11;
-}
-
-message FindTxRequest {
-  string tx_id = 1;
 }

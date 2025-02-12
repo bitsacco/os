@@ -15,6 +15,12 @@ export enum TransactionStatus {
   UNRECOGNIZED = -1,
 }
 
+export enum TransactionType {
+  DEPOSIT = 0,
+  WITHDRAW = 1,
+  UNRECOGNIZED = -1,
+}
+
 export interface Empty {}
 
 export interface PaginatedRequest {
@@ -22,4 +28,8 @@ export interface PaginatedRequest {
   page: number;
   /** Number of items to be return per page */
   size: number;
+}
+
+export interface FindTxRequest {
+  txId: string;
 }

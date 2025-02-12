@@ -1,0 +1,205 @@
+syntax = "proto3";
+
+import "lib.proto";
+import "lightning.proto";
+import "swap.proto";
+
+package chamawallet;
+
+
+service ChamaWalletService {
+  rpc Deposit(ChamaDepositRequest) returns (ChamaTxsResponse){}
+
+  rpc ContinueDeposit(ChamaContinueDepositRequest) returns (ChamaTxsResponse) {}
+
+  rpc WithdrawFunds(ChamaWithdrawRequest) returns (ChamaTxsResponse){}
+
+  rpc ContinueWithdraw(ChamaContinueWithdrawRequest) returns (ChamaTxsResponse) {}
+
+  rpc UpdateTransaction(ChamaTxUpdateRequest) returns (ChamaTxsResponse) {}
+
+  rpc FindTransaction(lib.FindTxRequest) returns (ChamaWalletTx) {}
+
+  rpc FilterTransactions(ChamaTxsFilterRequest) returns (PaginatedChamaTxsResponse){}
+}
+
+
+message ChamaWalletTx {
+  string id = 1;
+
+  string member_id = 2;
+
+  string chama_id = 3;
+
+  ChamaTxStatus status = 4;
+
+  int32 amount_msats = 5;
+
+  optional int32 amount_fiat = 6;
+
+  lightning.Bolt11 lightning = 7;
+
+  lib.TransactionType type = 8;
+
+  repeated ChamaTxReview reviews = 9;
+
+  string reference = 10;
+
+  string createdAt = 11;
+
+  optional string updatedAt = 12;
+}
+
+enum ChamaTxStatus {
+  PENDING = 0;
+  PROCESSING = 1;
+  FAILED = 2;
+  COMPLETE = 3;
+  APPROVED = 4;
+  REJECTED = 5;
+}
+
+message ChamaTxReview {
+  string member_id = 1;
+  Review review = 2;
+}
+
+enum Review {
+  REJECT = 0;
+  APPROVE = 1;
+}
+
+message ChamaDepositRequest {
+  string member_id = 1;
+
+  string chama_id = 2;
+
+  int32 amount_fiat = 3;
+
+  string reference = 4;
+
+  optional swap.OnrampSwapSource onramp = 5;
+
+  // Add more optional funding sources, like direct lightning deposit
+  reserved 6,7,8,9,10;
+
+  optional lib.PaginatedRequest pagination = 11;
+}
+
+message ChamaContinueDepositRequest {
+  string tx_id = 1;
+
+  int32 amount_fiat = 2;
+
+  string reference = 3;
+
+  optional swap.OnrampSwapSource onramp = 4;
+
+  // Add more optional funding sources, like direct lightning deposit
+  reserved 5,6,7,8,9,10;
+
+  optional lib.PaginatedRequest pagination = 11;
+}
+
+message ChamaWithdrawRequest {
+  string member_id = 1;
+
+  string chama_id = 2;
+
+  int32 amountFiat = 3;
+
+  string reference = 4;
+
+  optional swap.OfframpSwapTarget offramp = 5;
+
+  optional lightning.Bolt11 lightning = 6;
+
+  // Add more optional withdrawal targets, like bolt12 or lnurl address
+
+  reserved 7,8,9,10;
+
+  optional lib.PaginatedRequest pagination = 11;
+}
+
+message ChamaContinueWithdrawRequest {
+  string tx_id = 1;
+
+  int32 amount_fiat = 2;
+
+  string reference = 3;
+
+  optional swap.OfframpSwapTarget offramp = 4;
+
+  optional lightning.Bolt11 lightning = 5;
+
+  // Add more optional funding sources, like direct lightning deposit
+  reserved 6,7,8,9,10;
+
+  optional lib.PaginatedRequest pagination = 11;
+}
+
+message ChamaTxsFilterRequest {
+  optional string member_id = 1;
+
+  optional string chama_id = 2;
+
+  reserved 3,4,5,6,7,8,9,10;
+
+  optional lib.PaginatedRequest pagination = 11;
+}
+
+message ChamaTxsResponse {
+  optional string tx_id = 1;
+
+  PaginatedChamaTxsResponse ledger = 2;
+
+  optional ChamaTxGroupMeta group_meta = 3;
+
+  optional ChamaTxMemberMeta member_meta = 4;
+}
+
+message ChamaTxGroupMeta {
+  int32 group_deposits = 1;
+
+  float group_withdrawals = 2;
+
+  int32 current_balance = 3;
+}
+
+message ChamaTxMemberMeta {
+  int32 member_deposits = 1;
+
+  float member_withdrawals = 2;
+
+  int32 current_balance = 3;
+}
+
+message PaginatedChamaTxsResponse {
+  repeated ChamaWalletTx transactions = 1;
+  // Current page offset
+  int32 page = 2;
+  // Number of items return per page
+  int32 size = 3;
+  // Number of pages given the current page size
+  int32 pages = 4;
+}
+
+message ChamaTxUpdateRequest {
+  string tx_id = 1;
+
+  ChamaTxUpdates updates = 2;
+
+  reserved 3,4,5,6,7,8,9,10;
+
+  optional lib.PaginatedRequest pagination = 11;
+}
+
+message ChamaTxUpdates {
+  optional ChamaTxStatus status = 1;
+
+  optional int32 amount_msats = 2;
+
+  repeated ChamaTxReview reviews = 3;
+
+  optional string reference = 4;
+}
