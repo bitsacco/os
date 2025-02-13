@@ -8,6 +8,7 @@ import {
   ChamaWalletServiceClient,
   CHAMA_WALLET_SERVICE_NAME,
   UpdateChamaTransactionDto,
+  ChamaContinueWithdrawDto,
 } from '@bitsacco/common';
 import {
   Body,
@@ -107,6 +108,15 @@ export class ChamasController {
       memberId,
       createdBy,
     });
+  }
+
+  @Post('tx/withdraw/continue')
+  @ApiOperation({ summary: 'Continue Chama withdrawal transaction' })
+  @ApiBody({
+    type: ChamaContinueWithdrawDto,
+  })
+  async continueWithdraw(@Body() req: ChamaContinueWithdrawDto) {
+    return this.wallet.continueWithdraw(req);
   }
 
   @Patch('tx/update')

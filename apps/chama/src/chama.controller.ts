@@ -1,10 +1,10 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
+  ChamaContinueWithdrawDto,
   ChamasServiceControllerMethods,
   ChamaWalletServiceControllerMethods,
   ContinueDepositDto,
-  ContinueWithdrawDto,
   CreateChamaDto,
   DepositDto,
   FilterChamasDto,
@@ -75,7 +75,7 @@ export class ChamaController {
   }
 
   @GrpcMethod()
-  continueWithdraw(request: ContinueWithdrawDto) {
+  continueWithdraw(request: ChamaContinueWithdrawDto) {
     return this.walletService.continueWithdraw(request);
   }
 
