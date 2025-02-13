@@ -108,6 +108,13 @@ export class ChamasController {
     });
   }
 
+  @Get('find/tx/:id')
+  @ApiOperation({ summary: 'Find Chama transaction by ID' })
+  @ApiParam({ name: 'txId', description: 'Transaction ID' })
+  async findTransaction(@Param('txId') txId: string) {
+    return this.wallet.findTransaction({ txId });
+  }
+
   @Get('tx/filter')
   @ApiOperation({ summary: 'Filter chama transactions' })
   @ApiQuery({

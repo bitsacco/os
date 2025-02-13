@@ -66,12 +66,6 @@ export class UpdateTransactionDto {
   status: ChamaTxStatus;
 }
 
-export class FindTransactionDto {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
-  transactionId: string;
-}
-
 export class FilterChamaTransactionsDto implements ChamaTxsFilterRequest {
   @IsOptional()
   @IsRequiredUUID()

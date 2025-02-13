@@ -10,7 +10,7 @@ import {
   FilterChamasDto,
   FilterChamaTransactionsDto,
   FindChamaDto,
-  FindTransactionDto,
+  FindTxRequestDto,
   InviteMembersDto,
   JoinChamaDto,
   UpdateChamaDto,
@@ -85,7 +85,7 @@ export class ChamaController {
   }
 
   @GrpcMethod()
-  findTransaction(request: FindTransactionDto) {
+  findTransaction(request: FindTxRequestDto) {
     return this.walletService.findTransaction(request);
   }
 
