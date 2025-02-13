@@ -56,7 +56,7 @@ export interface ChamaDepositRequest {
   memberId: string;
   chamaId: string;
   amountFiat: number;
-  reference: string;
+  reference?: string | undefined;
   onramp?: OnrampSwapSource | undefined;
   pagination?: PaginatedRequest | undefined;
 }
@@ -64,7 +64,7 @@ export interface ChamaDepositRequest {
 export interface ChamaContinueDepositRequest {
   txId: string;
   amountFiat: number;
-  reference: string;
+  reference?: string | undefined;
   onramp?: OnrampSwapSource | undefined;
   pagination?: PaginatedRequest | undefined;
 }
@@ -73,7 +73,7 @@ export interface ChamaWithdrawRequest {
   memberId: string;
   chamaId: string;
   amountFiat: number;
-  reference: string;
+  reference?: string | undefined;
   offramp?: OfframpSwapTarget | undefined;
   lightning?: Bolt11 | undefined;
   pagination?: PaginatedRequest | undefined;
@@ -82,7 +82,7 @@ export interface ChamaWithdrawRequest {
 export interface ChamaContinueWithdrawRequest {
   txId: string;
   amountFiat: number;
-  reference: string;
+  reference?: string | undefined;
   offramp?: OfframpSwapTarget | undefined;
   lightning?: Bolt11 | undefined;
   pagination?: PaginatedRequest | undefined;
@@ -143,7 +143,7 @@ export interface ChamaWalletServiceClient {
     request: ChamaContinueDepositRequest,
   ): Observable<ChamaTxsResponse>;
 
-  withdrawFunds(request: ChamaWithdrawRequest): Observable<ChamaTxsResponse>;
+  withdraw(request: ChamaWithdrawRequest): Observable<ChamaTxsResponse>;
 
   continueWithdraw(
     request: ChamaContinueWithdrawRequest,
@@ -175,7 +175,7 @@ export interface ChamaWalletServiceController {
     | Observable<ChamaTxsResponse>
     | ChamaTxsResponse;
 
-  withdrawFunds(
+  withdraw(
     request: ChamaWithdrawRequest,
   ):
     | Promise<ChamaTxsResponse>
@@ -213,7 +213,7 @@ export function ChamaWalletServiceControllerMethods() {
     const grpcMethods: string[] = [
       'deposit',
       'continueDeposit',
-      'withdrawFunds',
+      'withdraw',
       'continueWithdraw',
       'updateTransaction',
       'findTransaction',

@@ -137,7 +137,7 @@ export class ChamasController {
     type: ChamaWithdrawDto,
   })
   async withdraw(@Body() req: ChamaWithdrawDto) {
-    return this.wallet.withdrawFunds(req);
+    return this.wallet.withdraw(req);
   }
 
   @Post('tx/withdraw/continue')

@@ -19,7 +19,7 @@ export class ChamaWalletService {
     throw new NotImplementedException('continueDeposit method not implemented');
   }
 
-  withdrawFunds(request: ChamaWithdrawDto) {
+  withdraw(request: ChamaWithdrawDto) {
     throw new NotImplementedException('withdrawFunds method not implemented');
   }
 

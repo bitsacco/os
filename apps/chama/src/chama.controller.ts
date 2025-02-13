@@ -70,8 +70,8 @@ export class ChamaController {
   }
 
   @GrpcMethod()
-  withdrawFunds(request: ChamaWithdrawDto) {
-    return this.walletService.withdrawFunds(request);
+  withdraw(request: ChamaWithdrawDto) {
+    return this.walletService.withdraw(request);
   }
 
   @GrpcMethod()

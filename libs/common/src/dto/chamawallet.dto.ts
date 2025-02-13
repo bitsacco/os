@@ -18,96 +18,99 @@ import {
   type ChamaTxUpdateRequest,
   type ChamaTxUpdates,
   type PaginatedRequest,
-  ChamaContinueWithdrawRequest,
-  Bolt11,
-  OfframpSwapTarget,
-  ChamaWithdrawRequest,
-  ChamaContinueDepositRequest,
-  OnrampSwapSource,
-  ChamaDepositRequest,
+  type ChamaContinueWithdrawRequest,
+  type Bolt11,
+  type OfframpSwapTarget,
+  type ChamaWithdrawRequest,
+  type ChamaContinueDepositRequest,
+  type OnrampSwapSource,
+  type ChamaDepositRequest,
 } from '../types';
 import {
   Bolt11InvoiceDto,
   OfframpSwapTargetDto,
   OnrampSwapSourceDto,
 } from './swap.dto';
+import { applyDecorators } from '@nestjs/common';
 
-export class ChamaDepositDto implements ChamaDepositRequest {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
-  memberId: string;
+const MemberIdDecorator = () => {
+  return applyDecorators(
+    IsRequiredUUID(),
+    ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' }),
+  );
+};
 
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
-  chamaId: string;
+const AmountFiatDecorator = () => {
+  return applyDecorators(IsNumber(), ApiProperty({ example: 2 }));
+};
 
-  @IsNumber()
-  @ApiProperty({ example: 2 })
+const ReferenceDecorator = () => {
+  return applyDecorators(
+    IsString(),
+    Type(() => String),
+    ApiProperty(),
+  );
+};
+
+const PaginationDecorator = () => {
+  return applyDecorators(
+    IsOptional(),
+    ValidateNested(),
+    Type(() => PaginatedRequestDto),
+    ApiProperty({ type: PaginatedRequestDto }),
+  );
+};
+
+class ChamaBaseDto {
+  @PaginationDecorator()
+  pagination?: PaginatedRequest;
+}
+
+class ChamaTransactionBaseDto extends ChamaBaseDto {
+  @AmountFiatDecorator()
   amountFiat: number;
 
-  @IsString()
-  @Type(() => String)
-  @ApiProperty()
+  @ReferenceDecorator()
   reference: string;
+}
 
+class ChamaMemberBaseDto extends ChamaTransactionBaseDto {
+  @MemberIdDecorator()
+  memberId: string;
+
+  @MemberIdDecorator()
+  chamaId: string;
+}
+
+export class ChamaDepositDto
+  extends ChamaMemberBaseDto
+  implements ChamaDepositRequest
+{
   @IsOptional()
   @ValidateNested()
   @Type(() => OnrampSwapSourceDto)
   @ApiProperty({ type: OnrampSwapSourceDto })
   onramp?: OnrampSwapSource;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => PaginatedRequestDto)
-  @ApiProperty({ type: PaginatedRequestDto })
-  pagination?: PaginatedRequest;
 }
 
-export class ChamaContinueDepositDto implements ChamaContinueDepositRequest {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+export class ChamaContinueDepositDto
+  extends ChamaTransactionBaseDto
+  implements ChamaContinueDepositRequest
+{
+  @MemberIdDecorator()
   txId: string;
-
-  @IsNumber()
-  @ApiProperty({ example: 2 })
-  amountFiat: number;
-
-  @IsString()
-  @Type(() => String)
-  @ApiProperty()
-  reference: string;
 
   @IsNotEmpty()
   @ValidateNested()
   @Type(() => OnrampSwapSourceDto)
   @ApiProperty({ type: OnrampSwapSourceDto })
   onramp?: OnrampSwapSource;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => PaginatedRequestDto)
-  @ApiProperty({ type: PaginatedRequestDto })
-  pagination?: PaginatedRequest;
 }
 
-export class ChamaWithdrawDto implements ChamaWithdrawRequest {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
-  memberId: string;
-
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
-  chamaId: string;
-
-  @IsNumber()
-  @ApiProperty({ example: 2 })
-  amountFiat: number;
-
-  @IsString()
-  @Type(() => String)
-  @ApiProperty()
-  reference: string;
-
+export class ChamaWithdrawDto
+  extends ChamaMemberBaseDto
+  implements ChamaWithdrawRequest
+{
   @ValidateNested()
   @Type(() => OfframpSwapTargetDto)
   @ApiProperty({ type: OfframpSwapTargetDto })
@@ -117,29 +120,20 @@ export class ChamaWithdrawDto implements ChamaWithdrawRequest {
   @Type(() => Bolt11InvoiceDto)
   @ApiProperty({ type: Bolt11InvoiceDto })
   lightning?: Bolt11;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => PaginatedRequestDto)
-  @ApiProperty({ type: PaginatedRequestDto })
-  pagination?: PaginatedRequest;
 }
 
-export class ChamaContinueWithdrawDto implements ChamaContinueWithdrawRequest {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+export class ChamaContinueWithdrawDto
+  extends ChamaBaseDto
+  implements ChamaContinueWithdrawRequest
+{
+  @MemberIdDecorator()
   txId: string;
 
-  @IsOptional()
-  @IsNumber()
-  @ApiProperty({ example: 2 })
+  @AmountFiatDecorator()
   amountFiat: number;
 
-  @IsOptional()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty()
-  reference: string;
+  @ReferenceDecorator()
+  reference?: string;
 
   @ValidateNested()
   @Type(() => OfframpSwapTargetDto)
@@ -150,17 +144,10 @@ export class ChamaContinueWithdrawDto implements ChamaContinueWithdrawRequest {
   @Type(() => Bolt11InvoiceDto)
   @ApiProperty({ type: Bolt11InvoiceDto })
   lightning?: Bolt11;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => PaginatedRequestDto)
-  @ApiProperty({ type: PaginatedRequestDto })
-  pagination?: PaginatedRequest;
 }
 
 export class ChamaTxReviewDto implements ChamaTxReview {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  @MemberIdDecorator()
   memberId: string;
 
   @IsOptional()
@@ -183,55 +170,36 @@ export class ChamaTxUpdatesDto implements ChamaTxUpdates {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ChamaTxReviewDto)
-  @ApiProperty({
-    type: [ChamaTxReviewDto],
-  })
+  @ApiProperty({ type: [ChamaTxReviewDto] })
   reviews: ChamaTxReview[];
 
   @IsOptional()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty()
+  @ReferenceDecorator()
   reference?: string;
 }
 
-export class UpdateChamaTransactionDto implements ChamaTxUpdateRequest {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+export class UpdateChamaTransactionDto
+  extends ChamaBaseDto
+  implements ChamaTxUpdateRequest
+{
+  @MemberIdDecorator()
   txId: string;
 
   @ValidateNested()
   @Type(() => ChamaTxUpdatesDto)
   @ApiProperty({ type: ChamaTxUpdatesDto })
   updates: ChamaTxUpdates;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => PaginatedRequestDto)
-  @ApiProperty({ type: PaginatedRequestDto })
-  pagination?: PaginatedRequest;
 }
 
-export class FilterChamaTransactionsDto implements ChamaTxsFilterRequest {
+export class FilterChamaTransactionsDto
+  extends ChamaBaseDto
+  implements ChamaTxsFilterRequest
+{
   @IsOptional()
-  @IsRequiredUUID()
-  @ApiProperty({
-    example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670',
-    required: false,
-  })
+  @MemberIdDecorator()
   memberId?: string;
 
   @IsOptional()
-  @IsRequiredUUID()
-  @ApiProperty({
-    example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670',
-    required: false,
-  })
+  @MemberIdDecorator()
   chamaId?: string;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => PaginatedRequestDto)
-  @ApiProperty({ type: PaginatedRequestDto })
-  pagination?: PaginatedRequest;
 }
