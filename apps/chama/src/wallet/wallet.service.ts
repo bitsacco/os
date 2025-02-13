@@ -1,4 +1,5 @@
 import {
+  ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
   ChamaWithdrawDto,
   FilterChamaTransactionsDto,
@@ -13,7 +14,7 @@ export class ChamaWalletService {
     throw new NotImplementedException('deposit method not implemented');
   }
 
-  continueDeposit(request: any) {
+  continueDeposit(request: ChamaContinueDepositDto) {
     throw new NotImplementedException('continueDeposit method not implemented');
   }
 
