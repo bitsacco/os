@@ -4,6 +4,7 @@ import {
   ChamaContinueWithdrawDto,
   ChamasServiceControllerMethods,
   ChamaWalletServiceControllerMethods,
+  ChamaWithdrawDto,
   ContinueDepositDto,
   CreateChamaDto,
   DepositDto,
@@ -15,7 +16,6 @@ import {
   JoinChamaDto,
   UpdateChamaDto,
   UpdateChamaTransactionDto,
-  WithdrawFundsDto,
 } from '@bitsacco/common';
 import { ChamasService } from './chamas/chamas.service';
 import { ChamaWalletService } from './wallet/wallet.service';
@@ -70,7 +70,7 @@ export class ChamaController {
   }
 
   @GrpcMethod()
-  withdrawFunds(request: WithdrawFundsDto) {
+  withdrawFunds(request: ChamaWithdrawDto) {
     return this.walletService.withdrawFunds(request);
   }
 

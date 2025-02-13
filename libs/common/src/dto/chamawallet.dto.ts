@@ -21,6 +21,7 @@ import {
   ChamaContinueWithdrawRequest,
   Bolt11,
   OfframpSwapTarget,
+  ChamaWithdrawRequest,
 } from '../types';
 import { Bolt11InvoiceDto, OfframpSwapTargetDto } from './swap.dto';
 
@@ -45,19 +46,39 @@ export class ContinueDepositDto {
   transactionId: string;
 }
 
-export class WithdrawFundsDto {
+export class ChamaWithdrawDto implements ChamaWithdrawRequest {
+  @IsRequiredUUID()
+  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  memberId: string;
+
   @IsRequiredUUID()
   @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
   chamaId: string;
 
   @IsNumber()
-  @Min(0)
-  @ApiProperty({ example: 1000 })
-  amount: number;
+  @ApiProperty({ example: 2 })
+  amountFiat: number;
 
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
-  userId: string;
+  @IsString()
+  @Type(() => String)
+  @ApiProperty()
+  reference: string;
+
+  @ValidateNested()
+  @Type(() => OfframpSwapTargetDto)
+  @ApiProperty({ type: OfframpSwapTargetDto })
+  offramp?: OfframpSwapTarget;
+
+  @ValidateNested()
+  @Type(() => Bolt11InvoiceDto)
+  @ApiProperty({ type: Bolt11InvoiceDto })
+  lightning?: Bolt11;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PaginatedRequestDto)
+  @ApiProperty({ type: PaginatedRequestDto })
+  pagination?: PaginatedRequest;
 }
 
 export class ChamaContinueWithdrawDto implements ChamaContinueWithdrawRequest {
@@ -85,10 +106,6 @@ export class ChamaContinueWithdrawDto implements ChamaContinueWithdrawRequest {
   @Type(() => Bolt11InvoiceDto)
   @ApiProperty({ type: Bolt11InvoiceDto })
   lightning?: Bolt11;
-
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
-  transactionId: string;
 
   @IsOptional()
   @ValidateNested()
