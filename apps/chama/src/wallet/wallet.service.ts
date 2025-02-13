@@ -1,3 +1,4 @@
+import { FilterChamaTransactionsDto } from '@bitsacco/common';
 import { Injectable, NotImplementedException } from '@nestjs/common';
 
 @Injectable()
@@ -30,7 +31,7 @@ export class ChamaWalletService {
     throw new NotImplementedException('findTransaction method not implemented');
   }
 
-  filterTransactions(request: any) {
+  filterTransactions(request: FilterChamaTransactionsDto) {
     throw new NotImplementedException(
       'filterTransactions method not implemented',
     );

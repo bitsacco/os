@@ -9,8 +9,8 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { IsRequiredUUID, PaginatedRequestDto } from './lib.dto';
 import {
+  ChamaTxsFilterRequest,
   ChamaTxStatus,
-  TransactionType,
   type PaginatedRequest,
 } from '../types';
 
@@ -72,7 +72,15 @@ export class FindTransactionDto {
   transactionId: string;
 }
 
-export class FilterTransactionsDto {
+export class FilterChamaTransactionsDto implements ChamaTxsFilterRequest {
+  @IsOptional()
+  @IsRequiredUUID()
+  @ApiProperty({
+    example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670',
+    required: false,
+  })
+  memberId?: string;
+
   @IsOptional()
   @IsRequiredUUID()
   @ApiProperty({
@@ -80,30 +88,6 @@ export class FilterTransactionsDto {
     required: false,
   })
   chamaId?: string;
-
-  @IsOptional()
-  @IsRequiredUUID()
-  @ApiProperty({
-    example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670',
-    required: false,
-  })
-  userId?: string;
-
-  @IsOptional()
-  @IsEnum(TransactionType)
-  @ApiProperty({
-    enum: TransactionType,
-    required: false,
-  })
-  type?: TransactionType;
-
-  @IsOptional()
-  @IsEnum(ChamaTxStatus)
-  @ApiProperty({
-    enum: ChamaTxStatus,
-    required: false,
-  })
-  status?: ChamaTxStatus;
 
   @IsOptional()
   @ValidateNested()

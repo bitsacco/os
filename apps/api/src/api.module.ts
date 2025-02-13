@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
   AUTH_SERVICE_NAME,
+  CHAMA_WALLET_SERVICE_NAME,
   CHAMAS_SERVICE_NAME,
   DatabaseModule,
   EVENTS_SERVICE_BUS,
@@ -130,16 +131,24 @@ import { ChamasController } from './chamas/chamas.controller';
         inject: [ConfigService],
       },
       {
-        // references `chama` and `chamawallet` combined grpc client
         name: CHAMAS_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
           options: {
-            package: ['chama', 'chamawallet'],
-            protoPath: [
-              join(__dirname, '../../../proto/chama.proto'),
-              join(__dirname, '../../../proto/chamawallet.proto'),
-            ],
+            package: 'chama',
+            protoPath: join(__dirname, '../../../proto/chama.proto'),
+            url: configService.getOrThrow<string>('CHAMA_GRPC_URL'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: CHAMA_WALLET_SERVICE_NAME,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'chamawallet',
+            protoPath: [join(__dirname, '../../../proto/chamawallet.proto')],
             url: configService.getOrThrow<string>('CHAMA_GRPC_URL'),
           },
         }),

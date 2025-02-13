@@ -1,26 +1,40 @@
 import { TestingModule } from '@nestjs/testing';
-import { CHAMAS_SERVICE_NAME, ChamasServiceClient } from '@bitsacco/common';
+import {
+  CHAMA_WALLET_SERVICE_NAME,
+  CHAMAS_SERVICE_NAME,
+  ChamasServiceClient,
+  ChamaWalletServiceClient,
+} from '@bitsacco/common';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
-import { type ClientGrpc } from '@nestjs/microservices';
 import { ChamasController } from './chamas.controller';
 
 describe('ChamasController', () => {
-  let serviceGenerator: ClientGrpc;
   let chamaController: ChamasController;
+
   let chamasServiceClient: Partial<ChamasServiceClient>;
+  let chamaWalletServiceClient: Partial<ChamaWalletServiceClient>;
 
   beforeEach(async () => {
-    serviceGenerator = {
-      getService: jest.fn().mockReturnValue(chamasServiceClient),
-      getClientByServiceName: jest.fn().mockReturnValue(chamasServiceClient),
-    };
-
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [ChamasController],
       providers: [
         {
           provide: CHAMAS_SERVICE_NAME,
-          useValue: serviceGenerator,
+          useValue: {
+            getService: jest.fn().mockReturnValue(chamasServiceClient),
+            getClientByServiceName: jest
+              .fn()
+              .mockReturnValue(chamasServiceClient),
+          },
+        },
+        {
+          provide: CHAMA_WALLET_SERVICE_NAME,
+          useValue: {
+            getService: jest.fn().mockReturnValue(chamaWalletServiceClient),
+            getClientByServiceName: jest
+              .fn()
+              .mockReturnValue(chamaWalletServiceClient),
+          },
         },
       ],
     });

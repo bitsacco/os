@@ -8,7 +8,7 @@ import {
   CreateChamaDto,
   DepositDto,
   FilterChamasDto,
-  FilterTransactionsDto,
+  FilterChamaTransactionsDto,
   FindChamaDto,
   FindTransactionDto,
   InviteMembersDto,
@@ -90,7 +90,7 @@ export class ChamaController {
   }
 
   @GrpcMethod()
-  filterTransactions(request: FilterTransactionsDto) {
+  filterTransactions(request: FilterChamaTransactionsDto) {
     return this.walletService.filterTransactions(request);
   }
 }

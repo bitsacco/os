@@ -5,6 +5,8 @@ import {
   UpdateChamaDto,
   ChamasServiceClient,
   CHAMAS_SERVICE_NAME,
+  ChamaWalletServiceClient,
+  CHAMA_WALLET_SERVICE_NAME,
 } from '@bitsacco/common';
 import {
   Body,
@@ -23,12 +25,19 @@ import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
 @Controller('chamas')
 export class ChamasController {
   private readonly logger = new Logger(ChamasController.name);
-  private chamasService: ChamasServiceClient;
+  private chamas: ChamasServiceClient;
+  private wallet: ChamaWalletServiceClient;
 
-  constructor(@Inject(CHAMAS_SERVICE_NAME) private readonly grpc: ClientGrpc) {
+  constructor(
+    @Inject(CHAMAS_SERVICE_NAME) private readonly chamasGrpc: ClientGrpc,
+    @Inject(CHAMA_WALLET_SERVICE_NAME) private readonly walletGrpc: ClientGrpc,
+  ) {
     this.logger.debug('ChamasController initialized');
-    this.chamasService =
-      this.grpc.getService<ChamasServiceClient>(CHAMAS_SERVICE_NAME);
+    this.chamas =
+      this.chamasGrpc.getService<ChamasServiceClient>(CHAMAS_SERVICE_NAME);
+    this.wallet = this.walletGrpc.getService<ChamaWalletServiceClient>(
+      CHAMA_WALLET_SERVICE_NAME,
+    );
     this.logger.debug('ChamasController created');
   }
 
@@ -38,7 +47,7 @@ export class ChamasController {
     type: CreateChamaDto,
   })
   async createChama(@Body() req: CreateChamaDto) {
-    return this.chamasService.createChama(req);
+    return this.chamas.createChama(req);
   }
 
   @Patch('update')
@@ -47,7 +56,7 @@ export class ChamasController {
     type: UpdateChamaDto,
   })
   async updateChama(@Body() req: UpdateChamaDto) {
-    return this.chamasService.updateChama(req);
+    return this.chamas.updateChama(req);
   }
 
   @Post('join')
@@ -56,7 +65,7 @@ export class ChamasController {
     type: JoinChamaDto,
   })
   async joinChama(@Body() req: JoinChamaDto) {
-    return this.chamasService.joinChama(req);
+    return this.chamas.joinChama(req);
   }
 
   @Post('invite')
@@ -65,14 +74,14 @@ export class ChamasController {
     type: InviteMembersDto,
   })
   async inviteMembers(@Body() req: InviteMembersDto) {
-    return this.chamasService.inviteMembers(req);
+    return this.chamas.inviteMembers(req);
   }
 
   @Get('find/:chamaId')
   @ApiOperation({ summary: 'Find existing Chama by ID' })
   @ApiParam({ name: 'chamaId', description: 'Chama ID' })
   async findChama(@Param('chamaId') chamaId: string) {
-    return this.chamasService.findChama({ chamaId });
+    return this.chamas.findChama({ chamaId });
   }
 
   @Get('filter')
@@ -93,9 +102,33 @@ export class ChamasController {
     @Query('memberId') memberId: string,
     @Query('createdBy') createdBy: string,
   ) {
-    return this.chamasService.filterChamas({
+    return this.chamas.filterChamas({
       memberId,
       createdBy,
+    });
+  }
+
+  @Get('tx/filter')
+  @ApiOperation({ summary: 'Filter chama transactions' })
+  @ApiQuery({
+    name: 'memberId',
+    type: String,
+    required: false,
+    description: 'chama member id',
+  })
+  @ApiQuery({
+    name: 'chamaId',
+    type: String,
+    required: false,
+    description: 'chama id',
+  })
+  async filterTransactions(
+    @Query('memberId') memberId: string,
+    @Query('chamaId') chamaId: string,
+  ) {
+    return this.wallet.filterTransactions({
+      memberId,
+      chamaId,
     });
   }
 }
