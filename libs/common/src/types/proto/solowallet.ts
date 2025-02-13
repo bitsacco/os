@@ -8,13 +8,14 @@
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
 import {
+  Bolt11,
   FindTxRequest,
+  OfframpSwapTarget,
+  OnrampSwapSource,
   PaginatedRequest,
   TransactionStatus,
   TransactionType,
 } from './lib';
-import { Bolt11 } from './lightning';
-import { OfframpSwapTarget, OnrampSwapSource } from './swap';
 
 export interface DepositFundsRequest {
   userId: string;

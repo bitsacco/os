@@ -7,9 +7,14 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
-import { FindTxRequest, PaginatedRequest, TransactionType } from './lib';
-import { Bolt11 } from './lightning';
-import { OfframpSwapTarget, OnrampSwapSource } from './swap';
+import {
+  Bolt11,
+  FindTxRequest,
+  OfframpSwapTarget,
+  OnrampSwapSource,
+  PaginatedRequest,
+  TransactionType,
+} from './lib';
 
 export enum ChamaTxStatus {
   PENDING = 0,

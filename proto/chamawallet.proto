@@ -1,8 +1,6 @@
 syntax = "proto3";
 
 import "lib.proto";
-import "lightning.proto";
-import "swap.proto";
 
 package chamawallet;
 
@@ -37,7 +35,7 @@ message ChamaWalletTx {
 
   optional int32 amount_fiat = 6;
 
-  lightning.Bolt11 lightning = 7;
+  lib.Bolt11 lightning = 7;
 
   lib.TransactionType type = 8;
 
@@ -78,7 +76,7 @@ message ChamaDepositRequest {
 
   string reference = 4;
 
-  optional swap.OnrampSwapSource onramp = 5;
+  optional lib.OnrampSwapSource onramp = 5;
 
   // Add more optional funding sources, like direct lightning deposit
   reserved 6,7,8,9,10;
@@ -93,7 +91,7 @@ message ChamaContinueDepositRequest {
 
   string reference = 3;
 
-  optional swap.OnrampSwapSource onramp = 4;
+  optional lib.OnrampSwapSource onramp = 4;
 
   // Add more optional funding sources, like direct lightning deposit
   reserved 5,6,7,8,9,10;
@@ -110,9 +108,9 @@ message ChamaWithdrawRequest {
 
   string reference = 4;
 
-  optional swap.OfframpSwapTarget offramp = 5;
+  optional lib.OfframpSwapTarget offramp = 5;
 
-  optional lightning.Bolt11 lightning = 6;
+  optional lib.Bolt11 lightning = 6;
 
   // Add more optional withdrawal targets, like bolt12 or lnurl address
 
@@ -128,9 +126,9 @@ message ChamaContinueWithdrawRequest {
 
   string reference = 3;
 
-  optional swap.OfframpSwapTarget offramp = 4;
+  optional lib.OfframpSwapTarget offramp = 4;
 
-  optional lightning.Bolt11 lightning = 5;
+  optional lib.Bolt11 lightning = 5;
 
   // Add more optional funding sources, like direct lightning deposit
   reserved 6,7,8,9,10;

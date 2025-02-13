@@ -1,7 +1,6 @@
 syntax = "proto3";
 
 import "lib.proto";
-import "lightning.proto";
 
 package swap;
 
@@ -32,9 +31,9 @@ service SwapService {
 // QuoteRequest: Represents a request for a currency swap quote.
 message QuoteRequest {
   // Currency to swap from
-  Currency from = 1;
+  lib.Currency from = 1;
   // Currency to swap to
-  Currency to = 2;
+  lib.Currency to = 2;
 
   reserved 3, 4, 5, 6, 7, 8, 9;
 
@@ -48,9 +47,9 @@ message QuoteResponse {
   // Unique identifier for the quote
   string id = 1;
   // Currency being swapped from
-  Currency from = 2;
+  lib.Currency from = 2;
   // Currency being swapped to
-  Currency to = 3;
+  lib.Currency to = 3;
   // Exchange rate for the swap
   string rate = 4;
   // Expiry time (UNIX) for the quote
@@ -93,23 +92,10 @@ message OnrampSwapRequest {
   reserved 4, 5, 6, 7, 8, 9;
 
   // Source of the swap
-  OnrampSwapSource source = 10;
+  lib.OnrampSwapSource source = 10;
 
   // Target of the swap
-  OnrampSwapTarget target = 11;
-}
-
-message OnrampSwapSource {
-  // Currency code for the target currency
-  Currency currency = 1;
-
-  // Target destination
-  MobileMoney origin = 2;
-}
-
-message OnrampSwapTarget {
-  // Lightning protocol payout
-  lightning.Bolt11 payout = 2;
+  lib.OnrampSwapTarget target = 11;
 }
 
 message OfframpSwapRequest {
@@ -125,32 +111,14 @@ message OfframpSwapRequest {
   string amount_fiat = 3;
 
   // Target of the swap
-  OfframpSwapTarget target = 4;
+  lib.OfframpSwapTarget target = 4;
 }
 
-message OfframpSwapTarget {
-  // Currency code for the target currency
-  Currency currency = 1;
-
-  // Mobile money payout destination
-  MobileMoney payout = 2;
-}
-
-message MobileMoney {
-  // Phone number for the mobile money offramp
-  string phone = 1;
-}
 
 // FindSwapRequest: Represents a request to find a swap.
 message FindSwapRequest {
   // Unique identifier for the swap
   string id = 1;
-}
-
-// Currency: Enum representing supported currencies.
-enum Currency {
-  BTC = 0;
-  KES = 1;
 }
 
 message PaginatedSwapResponse {

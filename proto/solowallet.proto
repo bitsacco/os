@@ -1,8 +1,6 @@
 syntax = "proto3";
 
 import "lib.proto";
-import "lightning.proto";
-import "swap.proto";
 
 package solowallet;
 
@@ -27,7 +25,7 @@ message DepositFundsRequest {
 
   string reference = 3;
 
-  optional swap.OnrampSwapSource onramp = 4;
+  optional lib.OnrampSwapSource onramp = 4;
 
   // Add more optional funding sources, like direct lightning deposit
   reserved 5,6,7,8,9,10;
@@ -42,9 +40,9 @@ message WithdrawFundsRequest {
 
   string reference = 3;
 
-  optional swap.OfframpSwapTarget offramp = 4;
+  optional lib.OfframpSwapTarget offramp = 4;
 
-  optional lightning.Bolt11 lightning = 5;
+  optional lib.Bolt11 lightning = 5;
 
   // Add more optional withdrawal targets, like bolt12 or lnurl address
 
@@ -77,7 +75,7 @@ message SolowalletTx {
 
   optional int32 amount_fiat = 5;
 
-  lightning.Bolt11 lightning = 6;
+  lib.Bolt11 lightning = 6;
 
   lib.TransactionType type = 7;
 
@@ -118,7 +116,7 @@ message UpdateTxRequest {
 
 message SolowalletTxUpdates {
   optional lib.TransactionStatus status = 1;
-  optional lightning.Bolt11 lightning = 2;
+  optional lib.Bolt11 lightning = 2;
   optional string reference = 3;
 }
 
@@ -129,7 +127,7 @@ message ContinueTxRequest {
 
   int32 amount_fiat = 3;
 
-  optional swap.OnrampSwapSource onramp = 4;
+  optional lib.OnrampSwapSource onramp = 4;
 
   reserved 5,6,7,8,9,10;
 

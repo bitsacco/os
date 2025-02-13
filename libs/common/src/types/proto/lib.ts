@@ -21,6 +21,13 @@ export enum TransactionType {
   UNRECOGNIZED = -1,
 }
 
+/** Currency: Enum representing supported currencies. */
+export enum Currency {
+  BTC = 0,
+  KES = 1,
+  UNRECOGNIZED = -1,
+}
+
 export interface Empty {}
 
 export interface PaginatedRequest {
@@ -32,4 +39,39 @@ export interface PaginatedRequest {
 
 export interface FindTxRequest {
   txId: string;
+}
+
+export interface OnrampSwapSource {
+  /** Currency code for the target currency */
+  currency: Currency;
+  /** Target destination */
+  origin: MobileMoney | undefined;
+}
+
+export interface OnrampSwapTarget {
+  /** Lightning protocol payout */
+  payout: Bolt11 | undefined;
+}
+
+export interface OfframpSwapTarget {
+  /** Currency code for the target currency */
+  currency: Currency;
+  /** Mobile money payout destination */
+  payout: MobileMoney | undefined;
+}
+
+export interface MobileMoney {
+  /** Phone number for the mobile money offramp */
+  phone: string;
+}
+
+export interface Bolt11 {
+  /** Bolt11 lightning invoice */
+  invoice: string;
+}
+
+export interface FmInvoice {
+  /** Fallback invoice */
+  invoice: string;
+  operationId: string;
 }

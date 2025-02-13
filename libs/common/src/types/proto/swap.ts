@@ -7,15 +7,14 @@
 /* eslint-disable */
 import { GrpcMethod, GrpcStreamMethod } from '@nestjs/microservices';
 import { Observable } from 'rxjs';
-import { PaginatedRequest, TransactionStatus } from './lib';
-import { Bolt11 } from './lightning';
-
-/** Currency: Enum representing supported currencies. */
-export enum Currency {
-  BTC = 0,
-  KES = 1,
-  UNRECOGNIZED = -1,
-}
+import {
+  Currency,
+  OfframpSwapTarget,
+  OnrampSwapSource,
+  OnrampSwapTarget,
+  PaginatedRequest,
+  TransactionStatus,
+} from './lib';
 
 /** QuoteRequest: Represents a request for a currency swap quote. */
 export interface QuoteRequest {
@@ -88,18 +87,6 @@ export interface OnrampSwapRequest {
   target: OnrampSwapTarget | undefined;
 }
 
-export interface OnrampSwapSource {
-  /** Currency code for the target currency */
-  currency: Currency;
-  /** Target destination */
-  origin: MobileMoney | undefined;
-}
-
-export interface OnrampSwapTarget {
-  /** Lightning protocol payout */
-  payout: Bolt11 | undefined;
-}
-
 export interface OfframpSwapRequest {
   /**
    * Optional reference to a quote.
@@ -115,18 +102,6 @@ export interface OfframpSwapRequest {
   amountFiat: string;
   /** Target of the swap */
   target: OfframpSwapTarget | undefined;
-}
-
-export interface OfframpSwapTarget {
-  /** Currency code for the target currency */
-  currency: Currency;
-  /** Mobile money payout destination */
-  payout: MobileMoney | undefined;
-}
-
-export interface MobileMoney {
-  /** Phone number for the mobile money offramp */
-  phone: string;
 }
 
 /** FindSwapRequest: Represents a request to find a swap. */

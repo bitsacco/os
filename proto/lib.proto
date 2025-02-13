@@ -27,3 +27,48 @@ enum TransactionType {
   DEPOSIT = 0;
   WITHDRAW = 1;
 }
+
+message OnrampSwapSource {
+  // Currency code for the target currency
+  Currency currency = 1;
+
+  // Target destination
+  MobileMoney origin = 2;
+}
+
+message OnrampSwapTarget {
+  // Lightning protocol payout
+  Bolt11 payout = 2;
+}
+
+
+message OfframpSwapTarget {
+  // Currency code for the target currency
+  Currency currency = 1;
+
+  // Mobile money payout destination
+  MobileMoney payout = 2;
+}
+
+message MobileMoney {
+  // Phone number for the mobile money offramp
+  string phone = 1;
+}
+
+// Currency: Enum representing supported currencies.
+enum Currency {
+  BTC = 0;
+  KES = 1;
+}
+
+message Bolt11 {
+  // Bolt11 lightning invoice
+  string invoice = 1;
+}
+
+message FmInvoice {
+  // Fallback invoice
+  string invoice = 1;
+
+  string operationId = 2;
+}

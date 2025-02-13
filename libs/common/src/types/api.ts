@@ -1,4 +1,4 @@
-import { Currency } from './proto/swap';
+import { Currency } from './proto/lib';
 
 export type SupportedCurrencyType = Extract<Currency, 'KES' | 'BTC'>;
 
