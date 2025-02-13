@@ -3,11 +3,11 @@ import { GrpcMethod } from '@nestjs/microservices';
 import {
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
+  ChamaDepositDto,
   ChamasServiceControllerMethods,
   ChamaWalletServiceControllerMethods,
   ChamaWithdrawDto,
   CreateChamaDto,
-  DepositDto,
   FilterChamasDto,
   FilterChamaTransactionsDto,
   FindChamaDto,
@@ -60,7 +60,7 @@ export class ChamaController {
   }
 
   @GrpcMethod()
-  deposit(request: DepositDto) {
+  deposit(request: ChamaDepositDto) {
     return this.walletService.deposit(request);
   }
 

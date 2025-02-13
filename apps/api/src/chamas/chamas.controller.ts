@@ -11,6 +11,7 @@ import {
   ChamaContinueWithdrawDto,
   ChamaContinueDepositDto,
   ChamaWithdrawDto,
+  ChamaDepositDto,
 } from '@bitsacco/common';
 import {
   Body,
@@ -110,6 +111,15 @@ export class ChamasController {
       memberId,
       createdBy,
     });
+  }
+
+  @Post('tx/deposit')
+  @ApiOperation({ summary: 'Chama deposit transaction' })
+  @ApiBody({
+    type: ChamaDepositDto,
+  })
+  async deposit(@Body() req: ChamaDepositDto) {
+    return this.wallet.deposit(req);
   }
 
   @Post('tx/deposit/continue')

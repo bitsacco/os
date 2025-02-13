@@ -4,7 +4,6 @@ import {
   IsEnum,
   IsOptional,
   ValidateNested,
-  Min,
   IsArray,
   IsString,
   IsNotEmpty,
@@ -25,6 +24,7 @@ import {
   ChamaWithdrawRequest,
   ChamaContinueDepositRequest,
   OnrampSwapSource,
+  ChamaDepositRequest,
 } from '../types';
 import {
   Bolt11InvoiceDto,
@@ -32,19 +32,35 @@ import {
   OnrampSwapSourceDto,
 } from './swap.dto';
 
-export class DepositDto {
+export class ChamaDepositDto implements ChamaDepositRequest {
+  @IsRequiredUUID()
+  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  memberId: string;
+
   @IsRequiredUUID()
   @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
   chamaId: string;
 
   @IsNumber()
-  @Min(0)
-  @ApiProperty({ example: 1000 })
-  amount: number;
+  @ApiProperty({ example: 2 })
+  amountFiat: number;
 
-  @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
-  userId: string;
+  @IsString()
+  @Type(() => String)
+  @ApiProperty()
+  reference: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => OnrampSwapSourceDto)
+  @ApiProperty({ type: OnrampSwapSourceDto })
+  onramp?: OnrampSwapSource;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PaginatedRequestDto)
+  @ApiProperty({ type: PaginatedRequestDto })
+  pagination?: PaginatedRequest;
 }
 
 export class ChamaContinueDepositDto implements ChamaContinueDepositRequest {

@@ -1,6 +1,7 @@
 import {
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
+  ChamaDepositDto,
   ChamaWithdrawDto,
   FilterChamaTransactionsDto,
   FindTxRequestDto,
@@ -10,7 +11,7 @@ import { Injectable, NotImplementedException } from '@nestjs/common';
 
 @Injectable()
 export class ChamaWalletService {
-  deposit(request: any) {
+  deposit(request: ChamaDepositDto) {
     throw new NotImplementedException('deposit method not implemented');
   }
 
