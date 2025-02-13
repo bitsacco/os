@@ -14,7 +14,7 @@ import {
   InviteMembersDto,
   JoinChamaDto,
   UpdateChamaDto,
-  UpdateTransactionDto,
+  UpdateChamaTransactionDto,
   WithdrawFundsDto,
 } from '@bitsacco/common';
 import { ChamasService } from './chamas/chamas.service';
@@ -80,7 +80,7 @@ export class ChamaController {
   }
 
   @GrpcMethod()
-  updateTransaction(request: UpdateTransactionDto) {
+  updateTransaction(request: UpdateChamaTransactionDto) {
     return this.walletService.updateTransaction(request);
   }
 

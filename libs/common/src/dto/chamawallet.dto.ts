@@ -5,12 +5,18 @@ import {
   IsOptional,
   ValidateNested,
   Min,
+  IsArray,
+  IsString,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsRequiredUUID, PaginatedRequestDto } from './lib.dto';
 import {
-  ChamaTxsFilterRequest,
+  Review,
   ChamaTxStatus,
+  type ChamaTxReview,
+  type ChamaTxsFilterRequest,
+  type ChamaTxUpdateRequest,
+  type ChamaTxUpdates,
   type PaginatedRequest,
 } from '../types';
 
@@ -56,14 +62,58 @@ export class ContinueWithdrawDto {
   transactionId: string;
 }
 
-export class UpdateTransactionDto {
+export class ChamaTxReviewDto implements ChamaTxReview {
   @IsRequiredUUID()
   @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
-  transactionId: string;
+  memberId: string;
 
+  @IsOptional()
+  @IsEnum(Review)
+  @ApiProperty({ enum: Review })
+  review: Review;
+}
+
+export class ChamaTxUpdatesDto implements ChamaTxUpdates {
+  @IsOptional()
   @IsEnum(ChamaTxStatus)
   @ApiProperty({ enum: ChamaTxStatus })
-  status: ChamaTxStatus;
+  status?: ChamaTxStatus;
+
+  @IsOptional()
+  @IsNumber()
+  @ApiProperty({ example: 2 })
+  amountMsats?: number;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ChamaTxReviewDto)
+  @ApiProperty({
+    type: [ChamaTxReviewDto],
+  })
+  reviews: ChamaTxReview[];
+
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty()
+  reference?: string;
+}
+
+export class UpdateChamaTransactionDto implements ChamaTxUpdateRequest {
+  @IsRequiredUUID()
+  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  txId: string;
+
+  @ValidateNested()
+  @Type(() => ChamaTxUpdatesDto)
+  @ApiProperty({ type: ChamaTxUpdatesDto })
+  updates: ChamaTxUpdates;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PaginatedRequestDto)
+  @ApiProperty({ type: PaginatedRequestDto })
+  pagination?: PaginatedRequest;
 }
 
 export class FilterChamaTransactionsDto implements ChamaTxsFilterRequest {

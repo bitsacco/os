@@ -7,6 +7,7 @@ import {
   CHAMAS_SERVICE_NAME,
   ChamaWalletServiceClient,
   CHAMA_WALLET_SERVICE_NAME,
+  UpdateChamaTransactionDto,
 } from '@bitsacco/common';
 import {
   Body,
@@ -106,6 +107,15 @@ export class ChamasController {
       memberId,
       createdBy,
     });
+  }
+
+  @Patch('tx/update')
+  @ApiOperation({ summary: 'Update Chama transaction' })
+  @ApiBody({
+    type: UpdateChamaTransactionDto,
+  })
+  async updateTransaction(@Body() req: UpdateChamaTransactionDto) {
+    return this.wallet.updateTransaction(req);
   }
 
   @Get('find/tx/:id')
