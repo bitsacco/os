@@ -363,11 +363,11 @@ export class ChamaWalletService {
   ): Promise<number> {
     let transactions: number = 0;
     const filter: ChamaTxFilter & {
-      status: ChamaTxStatus.COMPLETE;
-      type: TransactionType;
+      status: String;
+      type: String;
     } = {
-      status: ChamaTxStatus.COMPLETE,
-      type: type,
+      status: ChamaTxStatus.COMPLETE.toString(),
+      type: type.toString(),
     };
 
     if (memberId) {
