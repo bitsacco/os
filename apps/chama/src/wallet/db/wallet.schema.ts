@@ -67,29 +67,29 @@ export function toChamaWalletTx(doc: ChamaWalletDocument): ChamaWalletTx {
     };
   }
 
-  // let status = ChamaTxStatus.UNRECOGNIZED;
-  // try {
-  //   status = Number(doc.status) as ChamaTxStatus;
-  // } catch (error) {
-  //   this.logger.warn('Error parsing transaction status', error);
-  // }
+  let status = ChamaTxStatus.UNRECOGNIZED;
+  try {
+    status = Number(doc.status) as ChamaTxStatus;
+  } catch (error) {
+    this.logger.warn('Error parsing transaction status', error);
+  }
 
-  // let type = TransactionType.UNRECOGNIZED;
-  // try {
-  //   type = Number(doc.type) as TransactionType;
-  // } catch (error) {
-  //   this.logger.warn('Error parsing transaction type', error);
-  // }
+  let type = TransactionType.UNRECOGNIZED;
+  try {
+    type = Number(doc.type) as TransactionType;
+  } catch (error) {
+    this.logger.warn('Error parsing transaction type', error);
+  }
 
   return {
+    status,
+    type,
     lightning,
     id: doc._id,
     memberId: doc.memberId,
     chamaId: doc.chamaId,
-    status: doc.status,
     amountMsats: doc.amountMsats,
     amountFiat: doc.amountFiat,
-    type: doc.type,
     reviews: doc.reviews,
     reference: doc.reference,
     createdAt: doc.createdAt.toDateString(),

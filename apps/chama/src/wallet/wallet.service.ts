@@ -145,8 +145,93 @@ export class ChamaWalletService {
     };
   }
 
-  continueDeposit(request: ChamaContinueDepositDto) {
-    throw new NotImplementedException('continueDeposit method not implemented');
+  async continueDeposit({
+    txId,
+    amountFiat,
+    reference,
+    onramp,
+    pagination,
+  }: ChamaContinueDepositDto) {
+    const txd = await this.wallet.findOne({ _id: txId });
+
+    if (
+      txd.status === ChamaTxStatus.COMPLETE ||
+      txd.status === ChamaTxStatus.PROCESSING
+    ) {
+      throw new Error('Transaction is processing or complete');
+    }
+
+    const { quote, amountMsats } = await getQuote(
+      {
+        from: onramp?.currency || Currency.KES,
+        to: Currency.BTC,
+        amount: amountFiat.toString(),
+      },
+      this.swapService,
+      this.logger,
+    );
+
+    const lightning = await this.fedimintService.invoice(
+      amountMsats,
+      txd.reference,
+    );
+
+    const { status } = onramp
+      ? await initiateOnrampSwap(
+          {
+            quote,
+            amountFiat: amountFiat.toString(),
+            reference,
+            source: onramp,
+            target: {
+              payout: lightning,
+            },
+          },
+          this.swapService,
+          this.logger,
+        )
+      : {
+          status: TransactionStatus.PENDING,
+        };
+
+    this.logger.log(`Status: ${status}`);
+    const deposit = await this.wallet.findOneAndUpdate(
+      {
+        _id: txId,
+      },
+      {
+        amountMsats,
+        amountFiat,
+        lightning: JSON.stringify(lightning),
+        paymentTracker: lightning.operationId,
+        status,
+      },
+    );
+
+    // listen for payment
+    this.fedimintService.receive(
+      ReceiveContext.SOLOWALLET,
+      lightning.operationId,
+    );
+
+    const ledger = await this.getPaginatedChamaTransactions({
+      memberId: txd.memberId,
+      chamaId: txd.chamaId,
+      pagination,
+      priority: deposit._id,
+    });
+
+    const { groupMeta, memberMeta } = await this.getWalletMeta(
+      txd.memberId,
+      txd.chamaId,
+    );
+
+    return {
+      txId: deposit._id,
+      ledger,
+      groupMeta,
+      memberMeta,
+    };
   }
 
   withdraw(request: ChamaWithdrawDto) {
