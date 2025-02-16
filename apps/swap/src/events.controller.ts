@@ -1,7 +1,7 @@
 import { Controller, Logger } from '@nestjs/common';
 import { EventPattern } from '@nestjs/microservices';
 import { process_swap_update } from '@bitsacco/common';
-import { MpesaCollectionUpdateDto } from './dto';
+import { MpesaCollectionUpdateDto } from './intasend/intasend.dto';
 import { SwapService } from './swap.service';
 
 @Controller('events')

@@ -18,7 +18,9 @@ import {
   Controller,
   Get,
   Inject,
+  InternalServerErrorException,
   Logger,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -26,6 +28,7 @@ import {
 } from '@nestjs/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { string } from 'joi';
 
 @Controller('chamas')
 export class ChamasController {
@@ -158,7 +161,7 @@ export class ChamasController {
     return this.wallet.updateTransaction(req);
   }
 
-  @Get('find/tx/:id')
+  @Get('find/tx/:txId')
   @ApiOperation({ summary: 'Find Chama transaction by ID' })
   @ApiParam({ name: 'txId', description: 'Transaction ID' })
   async findTransaction(@Param('txId') txId: string) {

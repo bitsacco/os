@@ -1,6 +1,5 @@
 import {
   Currency,
-  QuoteRequest,
   QuoteResponse,
   TransactionStatus,
   CreateOnrampSwapDto,
@@ -26,17 +25,20 @@ import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { IntasendService } from './intasend/intasend.service';
-import { MpesaCollectionUpdateDto, MpesaPaymentUpdateDto } from './dto';
-import { MpesaTransactionState } from './intasend/intasend.types';
-import { FxService } from './fx/fx.service';
 import {
   MpesaOnrampSwapDocument,
   MpesaOnrampSwapRepository,
   MpesaOfframpSwapRepository,
   SwapTransactionState,
 } from '../db';
-import { isMpesaCollectionUpdate } from './dto/utils';
+import { FxService } from './fx/fx.service';
+import { IntasendService } from './intasend/intasend.service';
+import { MpesaTransactionState } from './intasend/intasend.types';
+import {
+  MpesaCollectionUpdateDto,
+  MpesaPaymentUpdateDto,
+  isMpesaCollectionUpdate,
+} from './intasend/intasend.dto';
 
 @Injectable()
 export class SwapService {

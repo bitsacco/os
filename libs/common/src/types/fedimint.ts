@@ -3,6 +3,7 @@ export enum ReceiveContext {
   FUNDING,
   OFFRAMP,
   SOLOWALLET,
+  CHAMAWALLET,
 }
 
 export interface ReceivePaymentSuccessEvent {

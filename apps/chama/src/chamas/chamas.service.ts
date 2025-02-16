@@ -21,11 +21,6 @@ import {
 import { ChamasRepository, toChama } from './db';
 import { ChamaMessageService } from './chamas.messaging';
 
-interface ChamaFilter {
-  createdBy?: string;
-  members?: { $elemMatch: { userId: string } };
-}
-
 @Injectable()
 export class ChamasService {
   private readonly logger = new Logger(ChamasService.name);
@@ -213,4 +208,9 @@ export class ChamasService {
       pages,
     };
   }
+}
+
+interface ChamaFilter {
+  createdBy?: string;
+  members?: { $elemMatch: { userId: string } };
 }

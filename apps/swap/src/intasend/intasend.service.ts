@@ -8,11 +8,11 @@ import {
   PaymentStatusCode,
 } from './intasend.types';
 import {
+  SendSTKPushDto,
+  SendMpesaDto,
   MpesaCollectionUpdateDto,
   MpesaPaymentUpdateDto,
-  SendSTKPushDto,
-} from '../dto';
-import { SendMpesaDto } from '../dto/send-mpesa.dto';
+} from './intasend.dto';
 
 @Injectable()
 export class IntasendService {
