@@ -244,10 +244,42 @@ export class ChamaWalletService {
     );
   }
 
-  updateTransaction(request: UpdateChamaTransactionDto) {
-    throw new NotImplementedException(
-      'updateTransaction method not implemented',
+  async updateTransaction({
+    txId,
+    updates,
+    pagination,
+  }: UpdateChamaTransactionDto) {
+    const txd = await this.wallet.findOne({ _id: txId });
+    const { status, amountMsats, reviews, reference } = updates;
+
+    await this.wallet.findOneAndUpdate(
+      { _id: txId },
+      {
+        status: status !== undefined ? status : txd.status,
+        amountMsats: amountMsats !== undefined ? amountMsats : txd.amountMsats,
+        reviews: reviews !== undefined ? reviews : txd.reviews,
+        reference: reference ?? txd.reference,
+      },
     );
+
+    const ledger = await this.getPaginatedChamaTransactions({
+      memberId: txd.memberId,
+      chamaId: txd.chamaId,
+      pagination,
+      priority: txId,
+    });
+
+    const { groupMeta, memberMeta } = await this.getWalletMeta(
+      txd.memberId,
+      txd.chamaId,
+    );
+
+    return {
+      txId,
+      ledger,
+      groupMeta,
+      memberMeta,
+    };
   }
 
   async findTransaction({ txId }: FindTxRequestDto) {
