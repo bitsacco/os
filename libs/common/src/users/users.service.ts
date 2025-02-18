@@ -15,7 +15,7 @@ import {
   RegisterUserRequestDto,
   FindUserDto,
   VerifyUserRequestDto,
-  UserUpdatesDto,
+  UpdateUserRequestDto,
 } from '../dto';
 
 export interface PreUserAuth {
@@ -40,7 +40,7 @@ export interface IUsersService {
 
   verifyUser(verifyDto: VerifyUserRequestDto): Promise<UserAuth>;
 
-  updateUser(id: string, updates: UserUpdatesDto): Promise<UserAuth>;
+  updateUser(requestDto: UpdateUserRequestDto): Promise<UserAuth>;
 
   listUsers(): Promise<User[]>;
 }
@@ -170,10 +170,13 @@ export class UsersService implements IUsersService {
     };
   }
 
-  async updateUser(id: string, updates: UserUpdatesDto): Promise<UserAuth> {
-    let ud: UsersDocument = await this.queryUser({ id });
+  async updateUser({
+    userId,
+    updates,
+  }: UpdateUserRequestDto): Promise<UserAuth> {
+    let ud: UsersDocument = await this.queryUser({ id: userId });
     if (!ud) {
-      throw new NotFoundException(`User with id ${id} not found`);
+      throw new NotFoundException(`User with id ${userId} not found`);
     }
 
     const hunk: Partial<User> = {};
@@ -203,7 +206,10 @@ export class UsersService implements IUsersService {
       hunk.roles = updates.roles;
     }
 
-    const updatedUser = await this.users.findOneAndUpdate({ _id: id }, hunk);
+    const updatedUser = await this.users.findOneAndUpdate(
+      { _id: userId },
+      hunk,
+    );
 
     if (!updatedUser) {
       throw new InternalServerErrorException('Failed to update user');

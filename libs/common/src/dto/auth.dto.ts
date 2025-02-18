@@ -21,6 +21,7 @@ import {
   RecoverUserRequest,
   RegisterUserRequest,
   Role,
+  UpdateUserRequest,
   UserUpdates,
   VerifyUserRequest,
 } from '../types';
@@ -155,6 +156,20 @@ export class UserUpdatesDto implements UserUpdates {
 
   @IsArray()
   @IsEnum(Role, { each: true })
-  @ApiProperty({ type: [Role], enum: Role })
+  @ApiProperty({ type: [String], enum: Role, isArray: true })
   roles: Role[];
+}
+
+export class UpdateUserRequestDto implements UpdateUserRequest {
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  userId: string;
+
+  @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => UserUpdatesDto)
+  @ApiProperty({ type: UserUpdatesDto, required: true })
+  updates: UserUpdates;
 }

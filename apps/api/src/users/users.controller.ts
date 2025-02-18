@@ -1,6 +1,10 @@
 import { Body, Controller, Get, Logger, Param, Patch } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
-import { UsersService, UserUpdatesDto } from '@bitsacco/common';
+import {
+  UpdateUserRequestDto,
+  UsersService,
+  UserUpdatesDto,
+} from '@bitsacco/common';
 
 @Controller('users')
 export class UsersController {
@@ -37,11 +41,10 @@ export class UsersController {
     return this.usersService.findUser({ npub });
   }
 
-  @Patch('/update/:id')
+  @Patch('/update')
   @ApiOperation({ summary: 'Update user' })
-  @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiBody({ type: UserUpdatesDto })
-  async updateUser(@Param('id') id: string, @Body() updates: UserUpdatesDto) {
-    return this.usersService.updateUser(id, updates);
+  @ApiBody({ type: UpdateUserRequestDto })
+  async updateUser(@Body() request: UpdateUserRequestDto) {
+    return this.usersService.updateUser(request);
   }
 }

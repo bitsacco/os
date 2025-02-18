@@ -173,14 +173,14 @@ import { ChamasController } from './chamas/chamas.controller';
   ],
   controllers: [
     AuthController,
+    UsersController,
     SwapController,
     NostrController,
     SmsController,
     SharesController,
     SolowalletController,
-    AdminController,
-    UsersController,
     ChamasController,
+    AdminController,
   ],
   providers: [
     UsersRepository,
