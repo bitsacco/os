@@ -104,13 +104,13 @@ export interface ChamaTxsResponse {
 export interface ChamaTxGroupMeta {
   groupDeposits: number;
   groupWithdrawals: number;
-  currentBalance: number;
+  groupBalance: number;
 }
 
 export interface ChamaTxMemberMeta {
   memberDeposits: number;
   memberWithdrawals: number;
-  currentBalance: number;
+  memberBalance: number;
 }
 
 export interface PaginatedChamaTxsResponse {
@@ -136,6 +136,41 @@ export interface ChamaTxUpdates {
   reference?: string | undefined;
 }
 
+export interface ChamaTxMetaRequest {
+  /**
+   * list one or more chamas whose transaction meta is to be aggregated
+   * if empty, we aggregate meta for all chamas
+   */
+  selectChamaId: string[];
+  /**
+   * list one or more members whose transaction meta will be ggregated across all chamas requested
+   * if empty, we aggregate meta for all members in all chamas listed by `select_chama_id`
+   */
+  selectMemberId: string[];
+  /** `true`, to skip aggregating member meta. overrides `select_member_id` behavior */
+  skipMemberMeta?: boolean | undefined;
+}
+
+export interface MemberMeta {
+  /** selected member id */
+  memberId: string;
+  /** transaction meta for the selected member */
+  memberMeta: ChamaTxMemberMeta | undefined;
+}
+
+export interface ChamaMeta {
+  /** selected chama id */
+  chamaId: string;
+  /** transaction meta for the group */
+  groupMeta: ChamaTxGroupMeta | undefined;
+  /** empty if `skip_memeber_meta` is `true` */
+  memberMeta: MemberMeta[];
+}
+
+export interface ChamaTxMetaResponse {
+  meta: ChamaMeta[];
+}
+
 export interface ChamaWalletServiceClient {
   deposit(request: ChamaDepositRequest): Observable<ChamaTxsResponse>;
 
@@ -158,6 +193,10 @@ export interface ChamaWalletServiceClient {
   filterTransactions(
     request: ChamaTxsFilterRequest,
   ): Observable<PaginatedChamaTxsResponse>;
+
+  aggregateWalletMeta(
+    request: ChamaTxMetaRequest,
+  ): Observable<ChamaTxMetaResponse>;
 }
 
 export interface ChamaWalletServiceController {
@@ -206,6 +245,13 @@ export interface ChamaWalletServiceController {
     | Promise<PaginatedChamaTxsResponse>
     | Observable<PaginatedChamaTxsResponse>
     | PaginatedChamaTxsResponse;
+
+  aggregateWalletMeta(
+    request: ChamaTxMetaRequest,
+  ):
+    | Promise<ChamaTxMetaResponse>
+    | Observable<ChamaTxMetaResponse>
+    | ChamaTxMetaResponse;
 }
 
 export function ChamaWalletServiceControllerMethods() {
@@ -218,6 +264,7 @@ export function ChamaWalletServiceControllerMethods() {
       'updateTransaction',
       'findTransaction',
       'filterTransactions',
+      'aggregateWalletMeta',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(

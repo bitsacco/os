@@ -6,10 +6,9 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UsersRepository } from './users.repository';
 import { toUser, UsersDocument } from '../database';
 import { generateOTP } from '../utils';
-import { User } from '../types';
+import { type User } from '../types';
 import {
   LoginUserRequestDto,
   RegisterUserRequestDto,
@@ -17,6 +16,7 @@ import {
   VerifyUserRequestDto,
   UpdateUserRequestDto,
 } from '../dto';
+import { UsersRepository } from './users.repository';
 
 export interface PreUserAuth {
   user: User;

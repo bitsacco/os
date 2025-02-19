@@ -7,6 +7,7 @@ import {
   IsArray,
   IsString,
   IsNotEmpty,
+  IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsRequiredUUID, PaginatedRequestDto } from './lib.dto';
@@ -25,6 +26,7 @@ import {
   type ChamaContinueDepositRequest,
   type OnrampSwapSource,
   type ChamaDepositRequest,
+  type ChamaTxMetaRequest,
 } from '../types';
 import {
   Bolt11InvoiceDto,
@@ -202,4 +204,18 @@ export class FilterChamaTransactionsDto
   @IsOptional()
   @MemberIdDecorator()
   chamaId?: string;
+}
+
+export class AggregateChamaTransactionsDto implements ChamaTxMetaRequest {
+  @IsArray()
+  @IsString({ each: true })
+  selectChamaId: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  selectMemberId: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  skipMemberMeta?: boolean;
 }

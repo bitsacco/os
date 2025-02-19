@@ -12,18 +12,18 @@ import { applyDecorators } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
-  AuthRequest,
   IsStringifiedNumberConstraint,
-  LoginUserRequest,
+  Role,
+  type AuthRequest,
+  type LoginUserRequest,
   type Nostr,
   type Phone,
   type Profile,
-  RecoverUserRequest,
-  RegisterUserRequest,
-  Role,
-  UpdateUserRequest,
-  UserUpdates,
-  VerifyUserRequest,
+  type RecoverUserRequest,
+  type RegisterUserRequest,
+  type UpdateUserRequest,
+  type UserUpdates,
+  type VerifyUserRequest,
 } from '../types';
 import { PhoneDecorators, NpubDecorators } from './decorators';
 

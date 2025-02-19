@@ -6,6 +6,7 @@ import {
   NotImplementedException,
 } from '@nestjs/common';
 import {
+  AggregateChamaTransactionsDto,
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
   ChamaDepositDto,
@@ -28,6 +29,9 @@ import {
   TransactionStatus,
   TransactionType,
   UpdateChamaTransactionDto,
+  UsersService,
+  type ChamaMeta,
+  type MemberMeta,
   type ChamaTxGroupMeta,
   type ChamaTxMemberMeta,
   type ReceivePaymentFailureEvent,
@@ -35,6 +39,7 @@ import {
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { ChamasService } from '../chamas/chamas.service';
 import { ChamaWalletRepository, toChamaWalletTx } from './db';
 
 @Injectable()
@@ -47,6 +52,8 @@ export class ChamaWalletService {
     private readonly fedimintService: FedimintService,
     private readonly eventEmitter: EventEmitter2,
     @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
+    private readonly chamas: ChamasService,
+    private readonly users: UsersService,
   ) {
     this.swapService =
       this.swapGrpc.getService<SwapServiceClient>(SWAP_SERVICE_NAME);
@@ -335,10 +342,14 @@ export class ChamaWalletService {
       ];
     }
 
-    const { page, size } = pagination || {
+    let { page, size } = pagination || {
       page: default_page,
       size: default_page_size,
     };
+
+    // if size is set to 0, we should return all available data in a single page
+    size = size || allTxds.length;
+
     const pages = Math.ceil(allTxds.length / size);
 
     // select the last page if requested page exceeds total pages possible
@@ -354,6 +365,143 @@ export class ChamaWalletService {
       size,
       pages,
     };
+  }
+
+  async aggregateWalletMeta({
+    selectChamaId,
+    selectMemberId,
+    skipMemberMeta,
+  }: AggregateChamaTransactionsDto) {
+    const chamaIds = selectChamaId?.length
+      ? selectChamaId
+      : (
+          await this.chamas.filterChamas({
+            pagination: {
+              page: 0,
+              size: 0, // flag to all chama data in a single page
+            },
+          })
+        ).chamas.map((chama) => chama.id);
+
+    const meta: ChamaMeta[] = await Promise.all(
+      chamaIds.map(async (chamaId) => {
+        const groupMeta: ChamaTxGroupMeta =
+          await this.getGroupWalletMeta(chamaId);
+
+        let memberIds = skipMemberMeta ? [] : selectMemberId;
+        if (!selectMemberId?.length && !skipMemberMeta) {
+          try {
+            memberIds = (await this.chamas.findChama({ chamaId })).members.map(
+              (member) => member.userId,
+            );
+          } catch (e) {
+            this.logger.error(`Chama with id ${chamaId} not found`);
+            memberIds = [];
+          }
+        }
+
+        const memberMeta: MemberMeta[] = await Promise.all(
+          memberIds.map(async (memberId) => {
+            const memberMeta = await this.getMemberWalletMeta(
+              chamaId,
+              memberId,
+            );
+            return {
+              memberId,
+              memberMeta,
+            };
+          }),
+        );
+
+        return {
+          chamaId,
+          groupMeta,
+          memberMeta,
+        };
+      }),
+    );
+
+    return {
+      meta,
+    };
+  }
+
+  private async getWalletMeta(
+    chamaId?: string,
+    memberId?: string,
+  ): Promise<{
+    groupMeta: ChamaTxGroupMeta;
+    memberMeta: ChamaTxMemberMeta;
+  }> {
+    const groupMeta = await this.getGroupWalletMeta(chamaId);
+    const memberMeta = await this.getMemberWalletMeta(chamaId, memberId);
+    return {
+      groupMeta,
+      memberMeta,
+    };
+  }
+
+  private async getGroupWalletMeta(
+    chamaId?: string,
+  ): Promise<ChamaTxGroupMeta> {
+    try {
+      const groupDeposits = await this.aggregateTransactions(
+        TransactionType.DEPOSIT,
+        chamaId,
+      );
+      const groupWithdrawals = await this.aggregateTransactions(
+        TransactionType.WITHDRAW,
+        chamaId,
+      );
+
+      const groupBalance = groupDeposits - groupWithdrawals;
+
+      return {
+        groupDeposits,
+        groupWithdrawals,
+        groupBalance,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      return {
+        groupDeposits: 0,
+        groupWithdrawals: 0,
+        groupBalance: 0,
+      };
+    }
+  }
+
+  private async getMemberWalletMeta(
+    chamaId?: string,
+    memberId?: string,
+  ): Promise<ChamaTxMemberMeta> {
+    try {
+      const memberDeposits = await this.aggregateTransactions(
+        TransactionType.DEPOSIT,
+        chamaId,
+        memberId,
+      );
+      const memberWithdrawals = await this.aggregateTransactions(
+        TransactionType.WITHDRAW,
+        chamaId,
+        memberId,
+      );
+
+      const memberBalance = memberDeposits - memberWithdrawals;
+
+      return {
+        memberDeposits,
+        memberWithdrawals,
+        memberBalance,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      return {
+        memberDeposits: 0,
+        memberWithdrawals: 0,
+        memberBalance: 0,
+      };
+    }
   }
 
   private async aggregateTransactions(
@@ -392,52 +540,16 @@ export class ChamaWalletService {
           },
         ])
         .then((result) => {
-          return result[0].totalMsats || 0;
+          this.logger.log(`AGGREGATION RESULT: ${JSON.stringify(result)}`);
+          return result[0]?.totalMsats || 0;
         });
     } catch (e) {
-      this.logger.error('Error aggregating transactions', e);
+      this.logger.error(
+        `Error aggregating transactions: type: ${type}, chamaId: ${chamaId}, memberId: ${memberId}, error: ${e}`,
+      );
     }
 
     return transactions;
-  }
-
-  private async getWalletMeta(
-    chamaId?: string,
-    memberId?: string,
-  ): Promise<{
-    groupMeta: ChamaTxGroupMeta;
-    memberMeta: ChamaTxMemberMeta;
-  }> {
-    const groupDeposits = await this.aggregateTransactions(
-      TransactionType.DEPOSIT,
-    );
-    const groupWithdrawals = await this.aggregateTransactions(
-      TransactionType.WITHDRAW,
-    );
-
-    const groupMeta = {
-      groupDeposits,
-      groupWithdrawals,
-      currentBalance: groupDeposits - groupWithdrawals,
-    };
-
-    const memberDeposits = await this.aggregateTransactions(
-      TransactionType.DEPOSIT,
-    );
-    const memberWithdrawals = await this.aggregateTransactions(
-      TransactionType.WITHDRAW,
-    );
-
-    const memberMeta = {
-      memberDeposits,
-      memberWithdrawals,
-      currentBalance: memberDeposits - memberWithdrawals,
-    };
-
-    return {
-      groupMeta,
-      memberMeta,
-    };
   }
 
   @OnEvent(fedimint_receive_success)

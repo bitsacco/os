@@ -12,6 +12,7 @@ import {
   ChamaContinueDepositDto,
   ChamaWithdrawDto,
   ChamaDepositDto,
+  AggregateChamaTransactionsDto,
 } from '@bitsacco/common';
 import {
   Body,
@@ -187,5 +188,14 @@ export class ChamasController {
       memberId,
       chamaId,
     });
+  }
+
+  @Post('tx/aggregate/')
+  @ApiOperation({ summary: 'Aggregate chama transactions' })
+  @ApiBody({
+    type: AggregateChamaTransactionsDto,
+  })
+  async aggregateTransactions(@Body() req: AggregateChamaTransactionsDto) {
+    return this.wallet.aggregateWalletMeta(req);
   }
 }

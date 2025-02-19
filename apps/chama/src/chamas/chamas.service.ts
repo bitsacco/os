@@ -20,7 +20,6 @@ import {
 } from '@bitsacco/common';
 import { ChamasRepository, toChama } from './db';
 import { ChamaMessageService } from './chamas.messaging';
-
 @Injectable()
 export class ChamasService {
   private readonly logger = new Logger(ChamasService.name);
@@ -188,10 +187,14 @@ export class ChamasService {
 
     const cds = await this.chamas.find(filter);
 
-    const { page, size } = pagination || {
+    let { page, size } = pagination || {
       page: default_page,
       size: default_page_size,
     };
+
+    // if size is set to 0, we should return all available data in a single page
+    size = size || cds.length;
+
     const pages = Math.ceil(cds.length / size);
 
     // select the last page if requested page exceeds total pages possible

@@ -1,6 +1,7 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import {
+  AggregateChamaTransactionsDto,
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
   ChamaDepositDto,
@@ -92,5 +93,29 @@ export class ChamaController {
   @GrpcMethod()
   filterTransactions(request: FilterChamaTransactionsDto) {
     return this.walletService.filterTransactions(request);
+  }
+
+  @GrpcMethod()
+  async aggregateWalletMeta({
+    selectChamaId,
+    selectMemberId,
+    skipMemberMeta,
+  }: AggregateChamaTransactionsDto) {
+    const chamaIds = selectChamaId?.length
+      ? selectChamaId
+      : (
+          await this.chamasService.filterChamas({
+            pagination: {
+              page: 0,
+              size: 0, // flag to all chama data in a single page
+            },
+          })
+        ).chamas.map((chama) => chama.id);
+
+    return this.walletService.aggregateWalletMeta({
+      selectChamaId: chamaIds,
+      selectMemberId,
+      skipMemberMeta,
+    });
   }
 }

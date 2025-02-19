@@ -19,6 +19,8 @@ service ChamaWalletService {
   rpc FindTransaction(lib.FindTxRequest) returns (ChamaWalletTx) {}
 
   rpc FilterTransactions(ChamaTxsFilterRequest) returns (PaginatedChamaTxsResponse){}
+
+  rpc AggregateWalletMeta(ChamaTxMetaRequest) returns (ChamaTxMetaResponse) {}
 }
 
 
@@ -161,7 +163,7 @@ message ChamaTxGroupMeta {
 
   float group_withdrawals = 2;
 
-  int32 current_balance = 3;
+  int32 group_balance = 3;
 }
 
 message ChamaTxMemberMeta {
@@ -169,7 +171,7 @@ message ChamaTxMemberMeta {
 
   float member_withdrawals = 2;
 
-  int32 current_balance = 3;
+  int32 member_balance = 3;
 }
 
 message PaginatedChamaTxsResponse {
@@ -200,4 +202,42 @@ message ChamaTxUpdates {
   repeated ChamaTxReview reviews = 3;
 
   optional string reference = 4;
+}
+
+message ChamaTxMetaRequest {
+  // list one or more chamas whose transaction meta is to be aggregated
+  // if empty, we aggregate meta for all chamas
+  repeated string select_chama_id = 1;
+
+  // list one or more members whose transaction meta will be ggregated across all chamas requested
+  // if empty, we aggregate meta for all members in all chamas listed by `select_chama_id`
+  repeated string select_member_id = 2;
+
+  // `true`, to skip aggregating member meta. overrides `select_member_id` behavior
+  optional bool skip_member_meta = 3;
+}
+
+message MemberMeta {
+  // selected member id
+  string member_id = 1;
+
+  // transaction meta for the selected member
+  ChamaTxMemberMeta member_meta = 2;
+}
+
+
+message ChamaMeta {
+  // selected chama id
+  string chama_id = 1;
+
+  // transaction meta for the group
+  ChamaTxGroupMeta group_meta = 2;
+
+  // empty if `skip_memeber_meta` is `true`
+  repeated MemberMeta member_meta = 3;
+}
+
+
+message ChamaTxMetaResponse {
+  repeated ChamaMeta meta = 1;
 }
