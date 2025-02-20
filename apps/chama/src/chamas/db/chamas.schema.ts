@@ -10,7 +10,6 @@ import {
 class ChamaMemberDocument extends AbstractDocument implements ChamaMember {
   @Prop({
     index: true,
-    unique: true,
     required: true,
   })
   userId: string;
