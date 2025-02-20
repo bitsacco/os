@@ -7,6 +7,7 @@ import {
   type ChamaWalletTx,
   type FmInvoice,
 } from '@bitsacco/common';
+import { Logger } from '@nestjs/common';
 
 @Schema({ versionKey: false })
 export class ChamaWalletDocument extends AbstractDocument {
@@ -55,12 +56,17 @@ export const ChamaWalletSchema =
 // Ensure uniqueness only when paymentTracker is not null
 ChamaWalletSchema.index({ paymentTracker: 1 }, { unique: true, sparse: true });
 
-export function toChamaWalletTx(doc: ChamaWalletDocument): ChamaWalletTx {
+export function toChamaWalletTx(
+  doc: ChamaWalletDocument,
+  logger: Logger,
+): ChamaWalletTx {
   let lightning: FmInvoice;
   try {
     lightning = JSON.parse(doc.lightning);
   } catch (error) {
-    this.logger.warn('Error parsing lightning invoice', error);
+    logger.warn(
+      `Error parsing lightning invoice: ${doc.lightning}, error: ${error}`,
+    );
     lightning = {
       invoice: '',
       operationId: '',
@@ -71,14 +77,30 @@ export function toChamaWalletTx(doc: ChamaWalletDocument): ChamaWalletTx {
   try {
     status = Number(doc.status) as ChamaTxStatus;
   } catch (error) {
-    this.logger.warn('Error parsing transaction status', error);
+    logger.warn(`Error parsing transaction status ${error}`);
   }
 
   let type = TransactionType.UNRECOGNIZED;
   try {
     type = Number(doc.type) as TransactionType;
   } catch (error) {
-    this.logger.warn('Error parsing transaction type', error);
+    logger.warn(`Error parsing transaction type ${error}`);
+  }
+
+  let createdAt: string;
+  try {
+    createdAt = doc.createdAt.toDateString();
+  } catch (error) {
+    logger.warn(`Error parsing transaction createdAt ${error}`);
+    createdAt = doc.createdAt.toString();
+  }
+
+  let updatedAt: string;
+  try {
+    updatedAt = doc.updatedAt.toDateString();
+  } catch (error) {
+    logger.warn(`Error parsing transaction updatedAt ${error}`);
+    updatedAt = doc.updatedAt.toString();
   }
 
   return {
@@ -92,7 +114,7 @@ export function toChamaWalletTx(doc: ChamaWalletDocument): ChamaWalletTx {
     amountFiat: doc.amountFiat,
     reviews: doc.reviews,
     reference: doc.reference,
-    createdAt: doc.createdAt.toDateString(),
-    updatedAt: doc.updatedAt.toDateString(),
+    createdAt,
+    updatedAt,
   };
 }

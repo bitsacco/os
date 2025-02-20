@@ -292,7 +292,7 @@ export class ChamaWalletService {
   async findTransaction({ txId }: FindTxRequestDto) {
     try {
       const txd = await this.wallet.findOne({ _id: txId });
-      return toChamaWalletTx(txd);
+      return toChamaWalletTx(txd, this.logger);
     } catch (e) {
       this.logger.error(e);
       throw e;
@@ -357,7 +357,7 @@ export class ChamaWalletService {
 
     const transactions = allTxds
       .slice(selectPage * size, (selectPage + 1) * size)
-      .map(toChamaWalletTx);
+      .map((txd) => toChamaWalletTx(txd, this.logger));
 
     return {
       transactions,
@@ -525,6 +525,8 @@ export class ChamaWalletService {
     if (chamaId) {
       filter.chamaId = chamaId;
     }
+
+    this.logger.log(`AGGREGATION FILTER : ${JSON.stringify(filter)}`);
 
     try {
       transactions = await this.wallet
