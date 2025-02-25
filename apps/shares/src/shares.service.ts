@@ -90,19 +90,10 @@ export class SharesService {
       status: SharesTxStatus.PROPOSED,
     });
 
-    const sharesTransactions = await this.getPaginatedShareTx(
-      { userId },
-      { page: default_page, size: default_page_size },
-    );
-
-    const offers = await this.getSharesOffers();
-
-    return {
+    return this.userSharesTransactions({
       userId,
-      shareHoldings: quantity,
-      shares: sharesTransactions,
-      offers,
-    };
+      pagination: { page: default_page, size: default_page_size },
+    });
   }
 
   async transferShares({
@@ -162,21 +153,10 @@ export class SharesService {
       },
     );
 
-    const txShares = await this.getPaginatedShareTx(
-      { userId },
-      { page: default_page, size: default_page_size },
-    );
-
-    const offers = await this.getSharesOffers();
-
-    this.logger.log(`Share offers: ${JSON.stringify(offers)}`);
-
-    return {
+    return this.userSharesTransactions({
       userId,
-      shareHoldings: quantity,
-      shares: txShares,
-      offers,
-    };
+      pagination: { page: default_page, size: default_page_size },
+    });
   }
 
   async userSharesTransactions({
