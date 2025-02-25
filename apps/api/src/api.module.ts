@@ -28,8 +28,6 @@ import { SwapController } from './swap';
 import { NostrController } from './nostr';
 import { SmsController } from './sms/sms.controller';
 import { SharesController } from './shares/shares.controller';
-import { AdminController } from './admin/admin.controller';
-import { AdminService } from './admin/admin.service';
 import { SolowalletController } from './solowallet/solowallet.controller';
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
@@ -180,12 +178,10 @@ import { ChamasController } from './chamas/chamas.controller';
     SharesController,
     SolowalletController,
     ChamasController,
-    AdminController,
   ],
   providers: [
     UsersRepository,
     UsersService,
-    AdminService,
     PhoneAuthStategy,
     NpubAuthStategy,
     JwtAuthStrategy,
