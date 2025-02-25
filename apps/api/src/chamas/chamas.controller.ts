@@ -13,6 +13,7 @@ import {
   ChamaWithdrawDto,
   ChamaDepositDto,
   AggregateChamaTransactionsDto,
+  JwtAuthGuard,
 } from '@bitsacco/common';
 import {
   Body,
@@ -24,11 +25,18 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { type ClientGrpc } from '@nestjs/microservices';
-import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
-
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 @Controller('chamas')
+@UseGuards(JwtAuthGuard)
 export class ChamasController {
   private readonly logger = new Logger(ChamasController.name);
   private chamas: ChamasServiceClient;
@@ -48,6 +56,7 @@ export class ChamasController {
   }
 
   @Post('create')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Create new Chama' })
   @ApiBody({
     type: CreateChamaDto,
@@ -57,6 +66,7 @@ export class ChamasController {
   }
 
   @Patch('update')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update existing Chama' })
   @ApiBody({
     type: UpdateChamaDto,
@@ -66,6 +76,7 @@ export class ChamasController {
   }
 
   @Post('join')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Join existing Chama' })
   @ApiBody({
     type: JoinChamaDto,
@@ -75,6 +86,7 @@ export class ChamasController {
   }
 
   @Post('invite')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Invite members to existing Chama' })
   @ApiBody({
     type: InviteMembersDto,
@@ -84,6 +96,7 @@ export class ChamasController {
   }
 
   @Get('find/:chamaId')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Find existing Chama by ID' })
   @ApiParam({ name: 'chamaId', description: 'Chama ID' })
   async findChama(@Param('chamaId') chamaId: string) {
@@ -91,6 +104,7 @@ export class ChamasController {
   }
 
   @Get('filter/')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Filter existing Chamas by queries' })
   @ApiQuery({
     name: 'memberId',
@@ -115,6 +129,7 @@ export class ChamasController {
   }
 
   @Post('tx/deposit')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Chama deposit transaction' })
   @ApiBody({
     type: ChamaDepositDto,
@@ -124,6 +139,7 @@ export class ChamasController {
   }
 
   @Post('tx/deposit/continue')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Continue Chama deposit transaction' })
   @ApiBody({
     type: ChamaContinueDepositDto,
@@ -133,6 +149,7 @@ export class ChamasController {
   }
 
   @Post('tx/withdraw')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Chama withdrawal transaction' })
   @ApiBody({
     type: ChamaWithdrawDto,
@@ -142,6 +159,7 @@ export class ChamasController {
   }
 
   @Post('tx/withdraw/continue')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Continue Chama withdrawal transaction' })
   @ApiBody({
     type: ChamaContinueWithdrawDto,
@@ -151,6 +169,7 @@ export class ChamasController {
   }
 
   @Patch('tx/update')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update Chama transaction' })
   @ApiBody({
     type: UpdateChamaTransactionDto,
@@ -160,6 +179,7 @@ export class ChamasController {
   }
 
   @Get('tx/find/:txId')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Find Chama transaction by ID' })
   @ApiParam({ name: 'txId', description: 'Transaction ID' })
   async findTransaction(@Param('txId') txId: string) {
@@ -167,6 +187,7 @@ export class ChamasController {
   }
 
   @Get('tx/filter/')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Filter chama transactions' })
   @ApiQuery({
     name: 'memberId',
@@ -191,6 +212,7 @@ export class ChamasController {
   }
 
   @Post('tx/aggregate/')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Aggregate chama transactions' })
   @ApiBody({
     type: AggregateChamaTransactionsDto,

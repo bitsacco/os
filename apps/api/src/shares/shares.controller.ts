@@ -1,6 +1,7 @@
 import {
   default_page,
   default_page_size,
+  JwtAuthGuard,
   OfferSharesDto,
   PaginatedRequestDto,
   SHARES_SERVICE_NAME,
@@ -18,11 +19,19 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiOperation, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { type ClientGrpc } from '@nestjs/microservices';
 
 @Controller('shares')
+@UseGuards(JwtAuthGuard)
 export class SharesController {
   private sharesService: SharesServiceClient;
   private readonly logger = new Logger(SharesController.name);
@@ -34,6 +43,7 @@ export class SharesController {
   }
 
   @Post('offer')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Offer Bitsacco shares' })
   @ApiBody({
     type: OfferSharesDto,
@@ -43,12 +53,14 @@ export class SharesController {
   }
 
   @Get('offers')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'List all share offers' })
   getShareOffers() {
     return this.sharesService.getSharesOffers({});
   }
 
   @Post('subscribe')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Subscribe Bitsacco shares' })
   @ApiBody({
     type: SubscribeSharesDto,
@@ -58,6 +70,7 @@ export class SharesController {
   }
 
   @Post('transfer')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Transfer Bitsacco shares' })
   @ApiBody({
     type: TransferSharesDto,
@@ -67,6 +80,7 @@ export class SharesController {
   }
 
   @Post('update')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update Bitsacco shares' })
   @ApiBody({
     type: UpdateSharesDto,
@@ -76,12 +90,14 @@ export class SharesController {
   }
 
   @Get('transactions')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'List all Bitsacco share transactions' })
   allSharesTransactions() {
     return this.sharesService.allSharesTransactions({});
   }
 
   @Get('transactions/:userId')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'List all Bitsacco share transactions for user with given ID',
   })
@@ -113,6 +129,7 @@ export class SharesController {
   }
 
   @Get('transactions/find/:sharesId')
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Find Bitsacco shares transaction with given ID',
   })

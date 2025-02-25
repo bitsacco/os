@@ -8,10 +8,17 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { object } from 'joi';
 import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
-import { ApiBody, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import {
   Currency,
   mapToCurrency,
@@ -26,6 +33,7 @@ import {
   default_page_size,
   SwapServiceClient,
   SWAP_SERVICE_NAME,
+  JwtAuthGuard,
 } from '@bitsacco/common';
 
 @Controller('swap')
@@ -65,6 +73,8 @@ export class SwapController {
   }
 
   @Post('onramp')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Post onramp transaction' })
   @ApiBody({
     type: CreateOnrampSwapDto,
@@ -74,6 +84,8 @@ export class SwapController {
   }
 
   @Get('onramp/find/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Find onramp transaction by ID' })
   @ApiParam({ name: 'id', type: String, description: 'Transaction ID' })
   findOnrampTransaction(@Param('id') id: string) {
@@ -81,6 +93,8 @@ export class SwapController {
   }
 
   @Get('onramp/all')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'List onramp swaps' })
   @ApiQuery({
     name: 'page',
@@ -127,6 +141,8 @@ export class SwapController {
   }
 
   @Post('offramp')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Post offramp transaction' })
   @ApiBody({
     type: CreateOfframpSwapDto,
@@ -136,6 +152,8 @@ export class SwapController {
   }
 
   @Get('offramp/find/:id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Find offramp transaction by ID' })
   @ApiParam({ name: 'id', type: 'string', description: 'Transaction ID' })
   findOfframpTransaction(@Param('id') id: string) {
@@ -143,6 +161,8 @@ export class SwapController {
   }
 
   @Get('offramp/all')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'List all offramp swaps' })
   @ApiQuery({
     name: 'page',

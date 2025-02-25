@@ -1,6 +1,14 @@
-import { ApiOperation, ApiBody } from '@nestjs/swagger';
-import { Body, Controller, Inject, Logger, Post } from '@nestjs/common';
+import { ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import {
+  Body,
+  Controller,
+  Inject,
+  Logger,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  JwtAuthGuard,
   SendBulkSmsDto,
   SendSmsDto,
   SMS_SERVICE_NAME,
@@ -9,6 +17,7 @@ import {
 import { type ClientGrpc } from '@nestjs/microservices';
 
 @Controller('sms')
+@UseGuards(JwtAuthGuard)
 export class SmsController {
   private smsService: SmsServiceClient;
   private readonly logger = new Logger(SmsController.name);
@@ -19,6 +28,7 @@ export class SmsController {
   }
 
   @Post('send-message')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Send a single sms' })
   @ApiBody({
     type: SendSmsDto,
@@ -28,6 +38,7 @@ export class SmsController {
   }
 
   @Post('send-bulk-message')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Send multiple sms' })
   @ApiBody({
     type: SendBulkSmsDto,

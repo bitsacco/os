@@ -1,7 +1,15 @@
-import { ApiOperation, ApiBody } from '@nestjs/swagger';
-import { Body, Controller, Inject, Logger, Post } from '@nestjs/common';
+import { ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Inject,
+  Logger,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import {
   ConfigureNostrRelaysDto,
+  JwtAuthGuard,
   NOSTR_SERVICE_NAME,
   NostrServiceClient,
   SendEncryptedNostrDmDto,
@@ -9,6 +17,7 @@ import {
 import { type ClientGrpc } from '@nestjs/microservices';
 
 @Controller('nostr')
+@UseGuards(JwtAuthGuard)
 export class NostrController {
   private nostrService: NostrServiceClient;
   private readonly logger = new Logger(NostrController.name);
@@ -20,6 +29,7 @@ export class NostrController {
   }
 
   @Post('relays')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Configure nostr relays' })
   @ApiBody({
     type: ConfigureNostrRelaysDto,
@@ -29,6 +39,7 @@ export class NostrController {
   }
 
   @Post('dm')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Send encrypted nostr dm' })
   @ApiBody({
     type: SendEncryptedNostrDmDto,

@@ -1,12 +1,26 @@
-import { Body, Controller, Get, Logger, Param, Patch } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiParam } from '@nestjs/swagger';
 import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+} from '@nestjs/swagger';
+import {
+  JwtAuthGuard,
   UpdateUserRequestDto,
   UsersService,
-  UserUpdatesDto,
 } from '@bitsacco/common';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   private readonly logger = new Logger(UsersController.name);
 
@@ -15,12 +29,14 @@ export class UsersController {
   }
 
   @Get('all')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'List all users' })
   async listUsers() {
     return this.usersService.listUsers();
   }
 
   @Get('/find/id/:id')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiParam({ name: 'id', description: 'User ID' })
   async findUserById(@Param('id') id: string) {
@@ -28,6 +44,7 @@ export class UsersController {
   }
 
   @Get('/find/phone/:phone')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user by phone' })
   @ApiParam({ name: 'phone', description: 'User phone' })
   async findUserByPhone(@Param('phone') phone: string) {
@@ -35,6 +52,7 @@ export class UsersController {
   }
 
   @Get('/find/npub/:npub')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user by npub' })
   @ApiParam({ name: 'npub', description: 'User npub' })
   async findUserByNpub(@Param('npub') npub: string) {
@@ -42,6 +60,7 @@ export class UsersController {
   }
 
   @Patch('/update')
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Update user' })
   @ApiBody({ type: UpdateUserRequestDto })
   async updateUser(@Body() request: UpdateUserRequestDto) {

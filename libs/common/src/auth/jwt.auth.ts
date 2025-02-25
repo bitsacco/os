@@ -41,10 +41,11 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const jwt =
-      context.switchToHttp().getRequest().cookies?.Authentication ||
-      context.switchToHttp().getRequest().headers?.authentication;
+      context.switchToHttp().getRequest().cookies?.Authorization ||
+      context.switchToHttp().getRequest().headers?.authorization;
 
     if (!jwt) {
+      this.logger.error('No JWT token found');
       return false;
     }
 
@@ -52,11 +53,12 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
 
     return this.authService
       .authenticate({
-        token: jwt,
+        token: jwt.replace('Bearer ', ''),
       })
       .pipe(
         tap(({ token }) => {
           const { user } = this.jwtService.decode<AuthTokenPayload>(token);
+
           // if (roles) {
           //   for (const role of roles) {
           //     if (!user.roles?.includes(role)) {

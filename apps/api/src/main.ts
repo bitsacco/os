@@ -49,6 +49,7 @@ function setupOpenAPI(app: INestApplication, path: string) {
       'MIT',
       'https://github.com/bitsacco/opensource/blob/main/LICENSE',
     )
+    .addBearerAuth()
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, options);
 
