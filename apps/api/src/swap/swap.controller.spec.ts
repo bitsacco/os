@@ -6,7 +6,10 @@ import {
   SWAP_SERVICE_NAME,
   SwapServiceClient,
 } from '@bitsacco/common';
-import { createTestingModuleWithValidation } from '@bitsacco/testing';
+import {
+  createTestingModuleWithValidation,
+  provideJwtAuthStrategyMocks,
+} from '@bitsacco/testing';
 import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
 
 import { SwapController } from './swap.controller';
@@ -31,6 +34,8 @@ describe('SwapController', () => {
       getClientByServiceName: jest.fn().mockReturnValue(swapServiceClient),
     };
 
+    const jwtAuthMocks = provideJwtAuthStrategyMocks();
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [SwapController],
       providers: [
@@ -44,6 +49,7 @@ describe('SwapController', () => {
             emit: jest.fn(),
           },
         },
+        ...jwtAuthMocks,
       ],
     });
 

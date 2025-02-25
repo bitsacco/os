@@ -5,7 +5,10 @@ import {
   ChamasServiceClient,
   ChamaWalletServiceClient,
 } from '@bitsacco/common';
-import { createTestingModuleWithValidation } from '@bitsacco/testing';
+import {
+  createTestingModuleWithValidation,
+  provideJwtAuthStrategyMocks,
+} from '@bitsacco/testing';
 import { ChamasController } from './chamas.controller';
 
 describe('ChamasController', () => {
@@ -15,6 +18,8 @@ describe('ChamasController', () => {
   let chamaWalletServiceClient: Partial<ChamaWalletServiceClient>;
 
   beforeEach(async () => {
+    const jwtAuthMocks = provideJwtAuthStrategyMocks();
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [ChamasController],
       providers: [
@@ -36,6 +41,7 @@ describe('ChamasController', () => {
               .mockReturnValue(chamaWalletServiceClient),
           },
         },
+        ...jwtAuthMocks,
       ],
     });
 

@@ -1,5 +1,8 @@
 import { TestingModule } from '@nestjs/testing';
-import { createTestingModuleWithValidation } from '@bitsacco/testing';
+import {
+  createTestingModuleWithValidation,
+  provideJwtAuthStrategyMocks,
+} from '@bitsacco/testing';
 import { SolowalletController } from './solowallet.controller';
 import {
   SOLOWALLET_SERVICE_NAME,
@@ -20,6 +23,8 @@ describe('SolowalletController', () => {
         .mockReturnValue(solowalletServiceClient),
     };
 
+    const jwtAuthMocks = provideJwtAuthStrategyMocks();
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [SolowalletController],
       providers: [
@@ -27,6 +32,7 @@ describe('SolowalletController', () => {
           provide: SOLOWALLET_SERVICE_NAME,
           useValue: serviceGenerator,
         },
+        ...jwtAuthMocks,
       ],
     });
 

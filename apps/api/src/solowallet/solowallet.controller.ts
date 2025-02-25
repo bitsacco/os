@@ -1,12 +1,10 @@
 import {
   ContinueTxRequestDto,
-  CurrentUser,
   DepositFundsRequestDto,
   JwtAuthGuard,
   SOLOWALLET_SERVICE_NAME,
   SolowalletServiceClient,
   UpdateTxDto,
-  User,
   UserTxsRequestDto,
   WithdrawFundsRequestDto,
 } from '@bitsacco/common';
@@ -50,7 +48,7 @@ export class SolowalletController {
   @ApiBody({
     type: DepositFundsRequestDto,
   })
-  depositFunds(@CurrentUser() user: User, @Body() req: DepositFundsRequestDto) {
+  depositFunds(@Body() req: DepositFundsRequestDto) {
     return this.walletService.depositFunds(req);
   }
 
@@ -60,10 +58,7 @@ export class SolowalletController {
   @ApiBody({
     type: WithdrawFundsRequestDto,
   })
-  withdrawFunds(
-    @CurrentUser() user: User,
-    @Body() req: WithdrawFundsRequestDto,
-  ) {
+  withdrawFunds(@Body() req: WithdrawFundsRequestDto) {
     return this.walletService.withdrawFunds(req);
   }
 
@@ -73,7 +68,7 @@ export class SolowalletController {
   @ApiBody({
     type: UserTxsRequestDto,
   })
-  userTransactions(@CurrentUser() user: User, @Body() req: UserTxsRequestDto) {
+  userTransactions(@Body() req: UserTxsRequestDto) {
     return this.walletService.userTransactions(req);
   }
 

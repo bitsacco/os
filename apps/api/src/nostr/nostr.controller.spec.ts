@@ -1,5 +1,8 @@
 import { TestingModule } from '@nestjs/testing';
-import { createTestingModuleWithValidation } from '@bitsacco/testing';
+import {
+  createTestingModuleWithValidation,
+  provideJwtAuthStrategyMocks,
+} from '@bitsacco/testing';
 
 import { NostrController } from './nostr.controller';
 import { type ClientGrpc } from '@nestjs/microservices';
@@ -16,6 +19,8 @@ describe('NostrController', () => {
       getClientByServiceName: jest.fn().mockReturnValue(nostrServiceClient),
     };
 
+    const jwtAuthMocks = provideJwtAuthStrategyMocks();
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [NostrController],
       providers: [
@@ -23,6 +28,7 @@ describe('NostrController', () => {
           provide: NOSTR_SERVICE_NAME,
           useValue: serviceGenerator,
         },
+        ...jwtAuthMocks,
       ],
     });
 

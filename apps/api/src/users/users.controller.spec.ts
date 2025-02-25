@@ -1,5 +1,8 @@
 import { TestingModule } from '@nestjs/testing';
-import { createTestingModuleWithValidation } from '@bitsacco/testing';
+import {
+  createTestingModuleWithValidation,
+  provideJwtAuthStrategyMocks,
+} from '@bitsacco/testing';
 import { UsersController } from './users.controller';
 import { UsersService, UsersRepository } from '@bitsacco/common';
 
@@ -17,6 +20,7 @@ describe('UsersController', () => {
       findOneAndDelete: jest.fn(),
     } as unknown as UsersRepository;
 
+    const jwtAuthMocks = provideJwtAuthStrategyMocks();
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [UsersController],
       providers: [
@@ -26,6 +30,7 @@ describe('UsersController', () => {
             return new UsersService(mockUsersRepository);
           },
         },
+        ...jwtAuthMocks,
       ],
     });
 

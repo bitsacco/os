@@ -1,5 +1,8 @@
 import { TestingModule } from '@nestjs/testing';
-import { createTestingModuleWithValidation } from '@bitsacco/testing';
+import {
+  createTestingModuleWithValidation,
+  provideJwtAuthStrategyMocks,
+} from '@bitsacco/testing';
 import { SmsController } from './sms.controller';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { SMS_SERVICE_NAME, SmsServiceClient } from '@bitsacco/common';
@@ -15,6 +18,8 @@ describe.skip('SmsController', () => {
       getClientByServiceName: jest.fn().mockReturnValue(smsServiceClient),
     };
 
+    const jwtAuthMocks = provideJwtAuthStrategyMocks();
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [SmsController],
       providers: [
@@ -22,6 +27,7 @@ describe.skip('SmsController', () => {
           provide: SMS_SERVICE_NAME,
           useValue: serviceGenerator,
         },
+        ...jwtAuthMocks,
       ],
     });
 

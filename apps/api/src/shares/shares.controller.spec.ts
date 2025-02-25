@@ -1,6 +1,9 @@
 import { TestingModule } from '@nestjs/testing';
 import { SHARES_SERVICE_NAME, SharesServiceClient } from '@bitsacco/common';
-import { createTestingModuleWithValidation } from '@bitsacco/testing';
+import {
+  createTestingModuleWithValidation,
+  provideJwtAuthStrategyMocks,
+} from '@bitsacco/testing';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { SharesController } from './shares.controller';
 
@@ -15,6 +18,8 @@ describe.skip('SharesController', () => {
       getClientByServiceName: jest.fn().mockReturnValue(sharesServiceClient),
     };
 
+    const jwtAuthMocks = provideJwtAuthStrategyMocks();
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [SharesController],
       providers: [
@@ -22,6 +27,7 @@ describe.skip('SharesController', () => {
           provide: SHARES_SERVICE_NAME,
           useValue: serviceGenerator,
         },
+        ...jwtAuthMocks,
       ],
     });
 
