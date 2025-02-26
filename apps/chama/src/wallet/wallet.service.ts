@@ -511,8 +511,8 @@ export class ChamaWalletService {
   ): Promise<number> {
     let transactions: number = 0;
     const filter: ChamaTxFilter & {
-      status: String;
-      type: String;
+      status: string;
+      type: string;
     } = {
       status: ChamaTxStatus.COMPLETE.toString(),
       type: type.toString(),

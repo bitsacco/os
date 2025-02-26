@@ -17,7 +17,7 @@ export async function createTestingModuleWithValidation(metadata: any) {
 
 export function provideJwtAuthStrategyMocks() {
   let authServiceClient: Partial<AuthServiceClient>;
-  let serviceGenerator: ClientGrpc = {
+  const serviceGenerator: ClientGrpc = {
     getService: jest.fn().mockReturnValue(authServiceClient),
     getClientByServiceName: jest.fn().mockReturnValue(authServiceClient),
   } as unknown as ClientGrpc;

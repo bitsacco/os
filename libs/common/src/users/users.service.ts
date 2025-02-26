@@ -174,7 +174,7 @@ export class UsersService implements IUsersService {
     userId,
     updates,
   }: UpdateUserRequestDto): Promise<UserAuth> {
-    let ud: UsersDocument = await this.queryUser({ id: userId });
+    const ud: UsersDocument = await this.queryUser({ id: userId });
     if (!ud) {
       throw new NotFoundException(`User with id ${userId} not found`);
     }
