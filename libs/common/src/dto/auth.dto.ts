@@ -1,5 +1,6 @@
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -20,7 +21,11 @@ import {
   type Phone,
   type Profile,
   type RecoverUserRequest,
+  type RefreshTokenRequest,
   type RegisterUserRequest,
+  type RevokeTokenRequest,
+  type RevokeTokenResponse,
+  type TokensResponse,
   type UpdateUserRequest,
   type UserUpdates,
   type VerifyUserRequest,
@@ -172,4 +177,51 @@ export class UpdateUserRequestDto implements UpdateUserRequest {
   @Type(() => UserUpdatesDto)
   @ApiProperty({ type: UserUpdatesDto, required: true })
   updates: UserUpdates;
+}
+
+export class RefreshTokenRequestDto implements RefreshTokenRequest {
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({
+    description: 'The refresh token to use for getting new tokens',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  refreshToken: string;
+}
+
+export class TokensResponseDto implements TokensResponse {
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({
+    description: 'The new access token',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  accessToken: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({
+    description: 'The new refresh token',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  refreshToken: string;
+}
+
+export class RevokeTokenRequestDto implements RevokeTokenRequest {
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({
+    description: 'The refresh token to revoke',
+    example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+  })
+  refreshToken: string;
+}
+
+export class RevokeTokenResponseDto implements RevokeTokenResponse {
+  @IsBoolean()
+  @ApiProperty({
+    description: 'Whether the token was successfully revoked',
+    example: true,
+  })
+  success: boolean;
 }
