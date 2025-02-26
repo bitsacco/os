@@ -47,6 +47,7 @@
     "@nestjs/sequelize": "^10.0.1",
     "@nestjs/swagger": "^7.4.2",
     "@nostr-dev-kit/ndk": "^2.10.6",
+    "@types/uuid": "^10.0.0",
     "africastalking": "^0.7.0",
     "argon2": "^0.41.1",
     "bitly": "^7.1.2",
@@ -71,7 +72,8 @@
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
     "sequelize-typescript": "^2.1.6",
-    "ts-proto": "^2.2.4"
+    "ts-proto": "^2.2.4",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
