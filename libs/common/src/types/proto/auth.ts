@@ -46,6 +46,24 @@ export interface AuthRequest {
 export interface AuthResponse {
   user: User | undefined;
   token?: string | undefined;
+  refreshToken?: string | undefined;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface TokensResponse {
+  accessToken: string;
+  refreshToken: string;
+}
+
+export interface RevokeTokenRequest {
+  refreshToken: string;
+}
+
+export interface RevokeTokenResponse {
+  success: boolean;
 }
 
 export interface User {
@@ -96,6 +114,10 @@ export interface AuthServiceClient {
   recoverUser(request: RecoverUserRequest): Observable<AuthResponse>;
 
   authenticate(request: AuthRequest): Observable<AuthResponse>;
+
+  refreshToken(request: RefreshTokenRequest): Observable<TokensResponse>;
+
+  revokeToken(request: RevokeTokenRequest): Observable<RevokeTokenResponse>;
 }
 
 export interface AuthServiceController {
@@ -118,6 +140,17 @@ export interface AuthServiceController {
   authenticate(
     request: AuthRequest,
   ): Promise<AuthResponse> | Observable<AuthResponse> | AuthResponse;
+
+  refreshToken(
+    request: RefreshTokenRequest,
+  ): Promise<TokensResponse> | Observable<TokensResponse> | TokensResponse;
+
+  revokeToken(
+    request: RevokeTokenRequest,
+  ):
+    | Promise<RevokeTokenResponse>
+    | Observable<RevokeTokenResponse>
+    | RevokeTokenResponse;
 }
 
 export function AuthServiceControllerMethods() {
@@ -128,6 +161,8 @@ export function AuthServiceControllerMethods() {
       'verifyUser',
       'recoverUser',
       'authenticate',
+      'refreshToken',
+      'revokeToken',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(
