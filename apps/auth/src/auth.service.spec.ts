@@ -114,7 +114,7 @@ describe('AuthService', () => {
 
       expect(result).toEqual({
         user: mockUser,
-        token: mockTokens.accessToken,
+        accessToken: mockTokens.accessToken,
         refreshToken: mockTokens.refreshToken,
       });
 
@@ -266,7 +266,7 @@ describe('AuthService', () => {
 
       expect(result).toEqual({
         user: mockUser,
-        token: mockTokens.accessToken,
+        accessToken: mockTokens.accessToken,
         refreshToken: mockTokens.refreshToken,
       });
 
@@ -327,14 +327,14 @@ describe('AuthService', () => {
         .mockResolvedValue(tokenPayload);
 
       const authRequest = {
-        token: 'valid-token',
+        accessToken: 'valid-token',
       };
 
       const result = await authService.authenticate(authRequest);
 
       expect(result).toEqual({
         user: mockUser,
-        token: 'valid-token',
+        accessToken: 'valid-token',
       });
 
       expect(tokenService.verifyAccessToken).toHaveBeenCalledWith(
@@ -354,7 +354,7 @@ describe('AuthService', () => {
         .mockResolvedValue(tokenPayload);
 
       const authRequest = {
-        token: 'expired-token',
+        accessToken: 'expired-token',
       };
 
       await expect(authService.authenticate(authRequest)).rejects.toThrow(
@@ -376,7 +376,7 @@ describe('AuthService', () => {
         .mockRejectedValue(new Error('User not found'));
 
       const authRequest = {
-        token: 'valid-token',
+        accessToken: 'valid-token',
       };
 
       await expect(authService.authenticate(authRequest)).rejects.toThrow(

@@ -40,12 +40,12 @@ export interface RecoverUserRequest {
 }
 
 export interface AuthRequest {
-  token: string;
+  accessToken: string;
 }
 
 export interface AuthResponse {
   user: User | undefined;
-  token?: string | undefined;
+  accessToken?: string | undefined;
   refreshToken?: string | undefined;
 }
 

@@ -9,6 +9,7 @@ import {
   AuthTokenPayload,
   Role,
   User,
+  VerifyUserRequestDto,
 } from '@bitsacco/common';
 import { AuthController } from './auth.controller';
 
@@ -43,7 +44,7 @@ describe('AuthController', () => {
       loginUser: jest.fn().mockReturnValue(
         of({
           user: mockUser,
-          token: mockAccessToken,
+          accessToken: mockAccessToken,
           refreshToken: mockRefreshToken,
         }),
       ),
@@ -51,14 +52,14 @@ describe('AuthController', () => {
       verifyUser: jest.fn().mockReturnValue(
         of({
           user: mockUser,
-          token: mockAccessToken,
+          accessToken: mockAccessToken,
           refreshToken: mockRefreshToken,
         }),
       ),
       authenticate: jest.fn().mockReturnValue(
         of({
           user: mockUser,
-          token: mockAccessToken,
+          accessToken: mockAccessToken,
         }),
       ),
       recoverUser: jest.fn().mockReturnValue(of({ user: mockUser })),
@@ -166,7 +167,7 @@ describe('AuthController', () => {
         cookie: jest.fn(),
       };
 
-      const verifyRequest = {
+      const verifyRequest: VerifyUserRequestDto = {
         phone: '+1234567890',
         otp: '123456',
       };
@@ -193,7 +194,7 @@ describe('AuthController', () => {
       };
 
       const authRequest = {
-        token: 'valid-token',
+        accessToken: 'valid-token',
       };
 
       const result = await controller.authenticate(

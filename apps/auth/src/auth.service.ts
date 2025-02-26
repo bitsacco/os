@@ -45,7 +45,7 @@ export class AuthService {
       if (authorized) {
         const { accessToken, refreshToken } =
           await this.tokenService.generateTokens(user);
-        return { user, token: accessToken, refreshToken };
+        return { user, accessToken, refreshToken };
       }
 
       return { user };
@@ -82,7 +82,7 @@ export class AuthService {
 
       const { accessToken, refreshToken } =
         await this.tokenService.generateTokens(auth.user);
-      return { user: auth.user, token: accessToken, refreshToken };
+      return { user: auth.user, accessToken, refreshToken };
     } catch (e) {
       this.logger.error(e);
       throw new UnauthorizedException('Invalid credentials');
@@ -104,13 +104,13 @@ export class AuthService {
     }
   }
 
-  async authenticate({ token }: AuthRequest): Promise<AuthResponse> {
+  async authenticate({ accessToken }: AuthRequest): Promise<AuthResponse> {
     try {
       // We should modify TokenService to add a method for verifying access tokens
       // For now we'll delegate this to the tokenService by adjusting our approach
 
       // First, verify that the user exists
-      const tokenData = await this.tokenService.verifyAccessToken(token);
+      const tokenData = await this.tokenService.verifyAccessToken(accessToken);
       const { user, expires } = tokenData;
 
       if (expires < new Date()) {
@@ -123,7 +123,7 @@ export class AuthService {
         throw new UnauthorizedException('Invalid user');
       }
 
-      return { user, token };
+      return { user, accessToken };
     } catch (error) {
       this.logger.error(`Token verification failed: ${error.message}`);
       throw new UnauthorizedException('Invalid token');

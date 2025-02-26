@@ -186,17 +186,17 @@ export class AuthController {
 
   private async setAuthCookies(auth: Observable<AuthResponse>, res: Response) {
     return firstValueFrom(auth).then(
-      ({ user, token, refreshToken }: AuthResponse) => {
-        if (token) {
+      ({ user, accessToken, refreshToken }: AuthResponse) => {
+        if (accessToken) {
           const { user: jwtUser, expires } =
-            this.jwtService.decode<AuthTokenPayload>(token);
+            this.jwtService.decode<AuthTokenPayload>(accessToken);
 
           if (user.id !== jwtUser.id) {
             this.logger.error('Invalid auth response');
           }
 
           // Set access token cookie
-          res.cookie('Authentication', token, {
+          res.cookie('Authentication', accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
@@ -218,7 +218,7 @@ export class AuthController {
         // Don't send the tokens back in the response body for security
         return {
           user,
-          authenticated: !!token,
+          authenticated: !!accessToken,
         };
       },
     );

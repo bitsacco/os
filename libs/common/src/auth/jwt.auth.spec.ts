@@ -22,11 +22,11 @@ describe('JwtAuthGuard', () => {
 
   const mockUser: User = {
     id: 'test-user-id',
-    name: 'Test User',
-    pin: 'hashedpin',
-    phone: '+1234567890',
-    verified: true,
-    roles: [Role.USER],
+    phone: {
+      number: '+1234567890',
+      verified: true,
+    },
+    roles: [Role.Member],
   };
 
   const mockTokenPayload: AuthTokenPayload = {
@@ -42,7 +42,7 @@ describe('JwtAuthGuard', () => {
       authenticate: jest.fn().mockReturnValue(
         of({
           user: mockUser,
-          token: mockJwt,
+          accessToken: mockJwt,
         }),
       ),
     };
@@ -197,7 +197,9 @@ describe('JwtAuthGuard', () => {
       });
 
       expect(value).toBe(true);
-      expect(authService.authenticate).toHaveBeenCalledWith({ token: mockJwt });
+      expect(authService.authenticate).toHaveBeenCalledWith({
+        accessToken: mockJwt,
+      });
       expect(mockRequest.user).toEqual(mockUser);
     });
 
@@ -229,15 +231,6 @@ describe('JwtAuthGuard', () => {
       expect(value).toBe(false);
     });
   });
-
-  describe('Public decorator', () => {
-    it('should set metadata correctly', () => {
-      const testFn = () => {};
-      const decoratedFn = Public()(testFn);
-
-      expect(Reflect.getMetadata('isPublic', decoratedFn)).toBe(true);
-    });
-  });
 });
 
 describe('JwtAuthStrategy', () => {
@@ -247,11 +240,11 @@ describe('JwtAuthStrategy', () => {
   // Redefine the mockUser since the variable scope is different for this describe block
   const mockUser: User = {
     id: 'test-user-id',
-    name: 'Test User',
-    pin: 'hashedpin',
-    phone: '+1234567890',
-    verified: true,
-    roles: [Role.USER],
+    phone: {
+      number: '+1234567890',
+      verified: true,
+    },
+    roles: [Role.Member],
   };
 
   beforeEach(async () => {

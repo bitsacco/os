@@ -97,7 +97,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
       // If local verification fails, fallback to gRPC auth service validation
       return this.authService
         .authenticate({
-          token: jwt,
+          accessToken: jwt,
         })
         .pipe(
           tap(({ user }) => {

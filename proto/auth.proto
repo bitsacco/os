@@ -37,12 +37,12 @@ message RecoverUserRequest {
 }
 
 message AuthRequest {
-  string token = 1;
+  string accessToken = 1;
 }
 
 message AuthResponse {
   User user = 1;
-  optional string token = 2;
+  optional string accessToken = 2;
   optional string refreshToken = 3;
 }
 

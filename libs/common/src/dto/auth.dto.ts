@@ -93,7 +93,7 @@ export class AuthRequestDto implements AuthRequest {
   @IsString()
   @IsNotEmpty()
   @ApiProperty()
-  token: string;
+  accessToken: string;
 }
 
 export class FindUserDto {
