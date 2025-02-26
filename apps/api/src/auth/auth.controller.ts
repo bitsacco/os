@@ -1,7 +1,16 @@
-import { type Response } from 'express';
+import { type Request, type Response } from 'express';
 import { firstValueFrom, Observable } from 'rxjs';
-import { Body, Controller, Inject, Logger, Post, Res } from '@nestjs/common';
-import { ApiBody, ApiOperation } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Inject,
+  Logger,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import {
   AUTH_SERVICE_NAME,
@@ -11,7 +20,11 @@ import {
   AuthTokenPayload,
   LoginUserRequestDto,
   RecoverUserRequestDto,
+  RefreshTokenRequestDto,
   RegisterUserRequestDto,
+  RevokeTokenRequestDto,
+  RevokeTokenResponseDto,
+  TokensResponseDto,
   VerifyUserRequestDto,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
@@ -41,7 +54,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const auth = this.authService.loginUser(req);
-    return this.setAuthCookie(auth, res);
+    return this.setAuthCookies(auth, res);
   }
 
   @Post('register')
@@ -54,7 +67,7 @@ export class AuthController {
   }
 
   @Post('verify')
-  @ApiOperation({ summary: 'Register user' })
+  @ApiOperation({ summary: 'Verify user' })
   @ApiBody({
     type: VerifyUserRequestDto,
   })
@@ -63,7 +76,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const auth = this.authService.verifyUser(req);
-    return this.setAuthCookie(auth, res);
+    return this.setAuthCookies(auth, res);
   }
 
   @Post('authenticate')
@@ -76,7 +89,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const auth = this.authService.authenticate(req);
-    return this.setAuthCookie(auth, res);
+    return this.setAuthCookies(auth, res);
   }
 
   @Post('recover')
@@ -89,29 +102,125 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const auth = this.authService.recoverUser(req);
-    return this.setAuthCookie(auth, res);
+    return this.setAuthCookies(auth, res);
   }
 
-  private async setAuthCookie(auth: Observable<AuthResponse>, res: Response) {
-    return firstValueFrom(auth).then(({ user, token }: AuthResponse) => {
-      if (token) {
-        const { user: jwtUser, expires } =
-          this.jwtService.decode<AuthTokenPayload>(token);
+  @Post('refresh')
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Tokens refreshed successfully',
+    type: TokensResponseDto,
+  })
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.RefreshToken;
 
-        if (user.id !== jwtUser.id) {
-          this.logger.error('Invalid auth response');
+    if (!refreshToken) {
+      throw new UnauthorizedException('No refresh token provided');
+    }
+
+    const refreshRequest: RefreshTokenRequestDto = { refreshToken };
+    const tokensResponse = this.authService.refreshToken(refreshRequest);
+
+    return firstValueFrom(tokensResponse).then(
+      ({ accessToken, refreshToken }) => {
+        // Set the new access token cookie
+        const accessTokenPayload =
+          this.jwtService.decode<AuthTokenPayload>(accessToken);
+        res.cookie('Authentication', accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          expires: new Date(accessTokenPayload.expires),
+        });
+
+        // Set the new refresh token cookie
+        res.cookie('RefreshToken', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/auth/refresh', // Only sent to refresh endpoint
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+
+        return {
+          success: true,
+          message: 'Tokens refreshed successfully',
+        };
+      },
+    );
+  }
+
+  @Post('logout')
+  @ApiOperation({ summary: 'Logout user and revoke refresh token' })
+  @ApiResponse({
+    status: 200,
+    description: 'Logged out successfully',
+    type: RevokeTokenResponseDto,
+  })
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.RefreshToken;
+    let success = true;
+
+    if (refreshToken) {
+      // Attempt to revoke the token
+      const revokeRequest: RevokeTokenRequestDto = { refreshToken };
+      const response = await firstValueFrom(
+        this.authService.revokeToken(revokeRequest),
+      );
+      success = response.success;
+    }
+
+    // Clear cookies regardless of token revocation success
+    res.clearCookie('Authentication');
+    res.clearCookie('RefreshToken');
+
+    return {
+      success,
+      message: 'Logged out successfully',
+    };
+  }
+
+  private async setAuthCookies(auth: Observable<AuthResponse>, res: Response) {
+    return firstValueFrom(auth).then(
+      ({ user, token, refreshToken }: AuthResponse) => {
+        if (token) {
+          const { user: jwtUser, expires } =
+            this.jwtService.decode<AuthTokenPayload>(token);
+
+          if (user.id !== jwtUser.id) {
+            this.logger.error('Invalid auth response');
+          }
+
+          // Set access token cookie
+          res.cookie('Authentication', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            expires: new Date(expires),
+          });
+
+          // Set refresh token cookie if available
+          if (refreshToken) {
+            res.cookie('RefreshToken', refreshToken, {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              path: '/auth/refresh', // Only sent to refresh endpoint
+              maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+            });
+          }
         }
 
-        res.cookie('Authentication', token, {
-          httpOnly: true,
-          expires: new Date(expires),
-        });
-      }
-
-      return {
-        user,
-        token,
-      };
-    });
+        // Don't send the tokens back in the response body for security
+        return {
+          user,
+          authenticated: !!token,
+        };
+      },
+    );
   }
 }
