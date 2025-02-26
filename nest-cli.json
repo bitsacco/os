@@ -17,7 +17,8 @@
       "entryFile": "index",
       "sourceRoot": "libs/common/src",
       "compilerOptions": {
-        "tsConfigPath": "libs/common/tsconfig.lib.json"
+        "tsConfigPath": "libs/common/tsconfig.lib.json",
+        "declaration": true
       }
     },
     "api": {

@@ -1,7 +1,10 @@
 import { of, throwError } from 'rxjs';
 import { ClientGrpc } from '@nestjs/microservices';
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
+import {
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import {
   UsersService,
   SmsServiceClient,
@@ -141,14 +144,18 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException when validation fails', async () => {
-      jest.spyOn(usersService, 'validateUser').mockRejectedValue(new Error('Invalid credentials'));
+      jest
+        .spyOn(usersService, 'validateUser')
+        .mockRejectedValue(new Error('Invalid credentials'));
 
       const loginRequest = {
         phone: '+1234567890',
         pin: '1234',
       };
 
-      await expect(authService.loginUser(loginRequest)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.loginUser(loginRequest)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -160,10 +167,10 @@ describe('AuthService', () => {
         otp: '123456',
       });
 
-      const registerRequest: RegisterUserRequestDto= {
+      const registerRequest: RegisterUserRequestDto = {
         phone: '+1234567890',
         pin: '123456',
-        roles: [Role.Member]
+        roles: [Role.Member],
       };
 
       const result = await authService.registerUser(registerRequest);
@@ -184,10 +191,10 @@ describe('AuthService', () => {
         otp: '123456',
       });
 
-      const registerRequest: RegisterUserRequestDto= {
+      const registerRequest: RegisterUserRequestDto = {
         phone: '+1234567890',
         pin: '123456',
-        roles: [Role.Member]
+        roles: [Role.Member],
       };
 
       const result = await authService.registerUser(registerRequest);
@@ -206,7 +213,7 @@ describe('AuthService', () => {
         authorized: false,
         otp: '123456',
       });
-      
+
       // Mock SMS failure
       (smsService.sendSms as jest.Mock).mockImplementation(() => {
         return throwError(() => new Error('SMS sending failed'));
@@ -215,8 +222,7 @@ describe('AuthService', () => {
       const registerRequest: RegisterUserRequestDto = {
         phone: '+1234567890',
         pin: '123456',
-        roles: [Role.Member]
-        
+        roles: [Role.Member],
       };
 
       // Should still return successfully despite SMS failure
@@ -228,15 +234,19 @@ describe('AuthService', () => {
     });
 
     it('should throw InternalServerErrorException when registration fails', async () => {
-      jest.spyOn(usersService, 'registerUser').mockRejectedValue(new Error('Registration failed'));
+      jest
+        .spyOn(usersService, 'registerUser')
+        .mockRejectedValue(new Error('Registration failed'));
 
       const registerRequest: RegisterUserRequestDto = {
         phone: '+1234567890',
         pin: '1234',
-        roles: [Role.Member]
+        roles: [Role.Member],
       };
 
-      await expect(authService.registerUser(registerRequest)).rejects.toThrow(InternalServerErrorException);
+      await expect(authService.registerUser(registerRequest)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -270,7 +280,7 @@ describe('AuthService', () => {
         authorized: false,
         otp: '654321',
       };
-      
+
       jest.spyOn(usersService, 'verifyUser').mockResolvedValue(preAuth);
 
       const verifyRequest = {
@@ -290,14 +300,18 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException when verification fails', async () => {
-      jest.spyOn(usersService, 'verifyUser').mockRejectedValue(new Error('Verification failed'));
+      jest
+        .spyOn(usersService, 'verifyUser')
+        .mockRejectedValue(new Error('Verification failed'));
 
       const verifyRequest = {
         phone: '+1234567890',
         otp: '123456',
       };
 
-      await expect(authService.verifyUser(verifyRequest)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.verifyUser(verifyRequest)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -307,8 +321,10 @@ describe('AuthService', () => {
         user: mockUser,
         expires: new Date(Date.now() + 3600 * 1000), // 1 hour from now
       };
-      
-      jest.spyOn(tokenService, 'verifyAccessToken').mockResolvedValue(tokenPayload);
+
+      jest
+        .spyOn(tokenService, 'verifyAccessToken')
+        .mockResolvedValue(tokenPayload);
 
       const authRequest = {
         token: 'valid-token',
@@ -321,7 +337,9 @@ describe('AuthService', () => {
         token: 'valid-token',
       });
 
-      expect(tokenService.verifyAccessToken).toHaveBeenCalledWith('valid-token');
+      expect(tokenService.verifyAccessToken).toHaveBeenCalledWith(
+        'valid-token',
+      );
       expect(usersService.findUser).toHaveBeenCalledWith({ id: mockUser.id });
     });
 
@@ -330,14 +348,18 @@ describe('AuthService', () => {
         user: mockUser,
         expires: new Date(Date.now() - 1000), // Expired
       };
-      
-      jest.spyOn(tokenService, 'verifyAccessToken').mockResolvedValue(tokenPayload);
+
+      jest
+        .spyOn(tokenService, 'verifyAccessToken')
+        .mockResolvedValue(tokenPayload);
 
       const authRequest = {
         token: 'expired-token',
       };
 
-      await expect(authService.authenticate(authRequest)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.authenticate(authRequest)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException when user no longer exists', async () => {
@@ -345,15 +367,21 @@ describe('AuthService', () => {
         user: mockUser,
         expires: new Date(Date.now() + 3600 * 1000),
       };
-      
-      jest.spyOn(tokenService, 'verifyAccessToken').mockResolvedValue(tokenPayload);
-      jest.spyOn(usersService, 'findUser').mockRejectedValue(new Error('User not found'));
+
+      jest
+        .spyOn(tokenService, 'verifyAccessToken')
+        .mockResolvedValue(tokenPayload);
+      jest
+        .spyOn(usersService, 'findUser')
+        .mockRejectedValue(new Error('User not found'));
 
       const authRequest = {
         token: 'valid-token',
       };
 
-      await expect(authService.authenticate(authRequest)).rejects.toThrow(UnauthorizedException);
+      await expect(authService.authenticate(authRequest)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -362,7 +390,9 @@ describe('AuthService', () => {
       const result = await authService.refreshToken('valid-refresh-token');
 
       expect(result).toEqual(mockTokens);
-      expect(tokenService.refreshTokens).toHaveBeenCalledWith('valid-refresh-token');
+      expect(tokenService.refreshTokens).toHaveBeenCalledWith(
+        'valid-refresh-token',
+      );
     });
   });
 
@@ -371,7 +401,9 @@ describe('AuthService', () => {
       const result = await authService.revokeToken('valid-refresh-token');
 
       expect(result).toBe(true);
-      expect(tokenService.revokeToken).toHaveBeenCalledWith('valid-refresh-token');
+      expect(tokenService.revokeToken).toHaveBeenCalledWith(
+        'valid-refresh-token',
+      );
     });
   });
 });

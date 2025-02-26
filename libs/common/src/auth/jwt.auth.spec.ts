@@ -3,11 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { of, throwError } from 'rxjs';
-import {
-  JwtAuthGuard,
-  JwtAuthStrategy,
-  Public,
-} from './jwt.auth';
+import { JwtAuthGuard, JwtAuthStrategy, Public } from './jwt.auth';
 import {
   AUTH_SERVICE_NAME,
   AuthServiceClient,
@@ -47,7 +43,7 @@ describe('JwtAuthGuard', () => {
         of({
           user: mockUser,
           token: mockJwt,
-        })
+        }),
       ),
     };
 
@@ -121,7 +117,10 @@ describe('JwtAuthGuard', () => {
 
       const result = guard.canActivate(mockContext as any);
       expect(result).toBe(true);
-      expect(reflector.get).toHaveBeenCalledWith('isPublic', expect.any(Object));
+      expect(reflector.get).toHaveBeenCalledWith(
+        'isPublic',
+        expect.any(Object),
+      );
     });
 
     it('should verify token locally and set user in request', () => {
@@ -138,7 +137,7 @@ describe('JwtAuthGuard', () => {
       };
 
       const result = guard.canActivate(mockContext as any);
-      
+
       expect(result).toBe(true);
       expect(jwtService.verify).toHaveBeenCalledWith(mockJwt);
       expect(mockRequest.user).toEqual(mockUser);
@@ -166,7 +165,7 @@ describe('JwtAuthGuard', () => {
     // Skip this test for now as it requires deeper mocking of the JwtAuthGuard internals
     it.skip('should check for required roles', () => {
       // We need to mock the guard's internal roles check logic
-      // This is challenging since it's not directly accessible 
+      // This is challenging since it's not directly accessible
       // Will revisit in a future PR
     });
 
@@ -188,15 +187,15 @@ describe('JwtAuthGuard', () => {
       };
 
       const result = guard.canActivate(mockContext as any) as any;
-      
+
       // Should return an Observable
       expect(result.subscribe).toBeDefined();
-      
+
       // Extract value from observable
       const value = await new Promise((resolve) => {
         result.subscribe(resolve);
       });
-      
+
       expect(value).toBe(true);
       expect(authService.authenticate).toHaveBeenCalledWith({ token: mockJwt });
       expect(mockRequest.user).toEqual(mockUser);
@@ -206,9 +205,9 @@ describe('JwtAuthGuard', () => {
       jest.spyOn(jwtService, 'verify').mockImplementation(() => {
         throw new Error('Invalid token');
       });
-      
+
       (authService.authenticate as jest.Mock).mockReturnValueOnce(
-        throwError(() => new Error('Authentication failed'))
+        throwError(() => new Error('Authentication failed')),
       );
 
       const mockContext = {
@@ -221,12 +220,12 @@ describe('JwtAuthGuard', () => {
       };
 
       const result = guard.canActivate(mockContext as any) as any;
-      
+
       // Extract value from observable
       const value = await new Promise((resolve) => {
         result.subscribe(resolve);
       });
-      
+
       expect(value).toBe(false);
     });
   });
@@ -235,7 +234,7 @@ describe('JwtAuthGuard', () => {
     it('should set metadata correctly', () => {
       const testFn = () => {};
       const decoratedFn = Public()(testFn);
-      
+
       expect(Reflect.getMetadata('isPublic', decoratedFn)).toBe(true);
     });
   });
@@ -294,11 +293,11 @@ describe('JwtAuthStrategy', () => {
       // Create auth token payload for this test
       const authTokenPayload = {
         user: mockUser,
-        expires: new Date(Date.now() + 3600 * 1000)
+        expires: new Date(Date.now() + 3600 * 1000),
       };
-      
+
       const result = await strategy.validate(authTokenPayload);
-      
+
       expect(result).toEqual(mockUser);
       expect(usersService.findUser).toHaveBeenCalledWith({ id: mockUser.id });
     });
@@ -307,12 +306,16 @@ describe('JwtAuthStrategy', () => {
       // Create auth token payload for this test
       const authTokenPayload = {
         user: mockUser,
-        expires: new Date(Date.now() + 3600 * 1000)
+        expires: new Date(Date.now() + 3600 * 1000),
       };
-      
-      jest.spyOn(usersService, 'findUser').mockRejectedValueOnce(new Error('User not found'));
-      
-      await expect(strategy.validate(authTokenPayload)).rejects.toThrow(UnauthorizedException);
+
+      jest
+        .spyOn(usersService, 'findUser')
+        .mockRejectedValueOnce(new Error('User not found'));
+
+      await expect(strategy.validate(authTokenPayload)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

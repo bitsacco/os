@@ -10,6 +10,10 @@
 - Test coverage: `bun test --coverage`
 - Run development: `bun dev`
 
+## Publishing Commands
+- Package @bitsacco/common: `cd libs/common && ./package.sh`
+- Publish to npm: Create a tag with format `common-v*` (e.g. `common-v0.1.1`) or trigger the GitHub Actions workflow manually
+
 ## Code Style Guidelines
 - Use **NestJS** patterns with controllers, services, and modules
 - Imports: Absolute imports using paths in tsconfig.json (`@bitsacco/common`, `@bitsacco/testing`)

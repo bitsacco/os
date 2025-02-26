@@ -23,7 +23,7 @@ describe('AuthController', () => {
       number: '+1234567890',
       verified: false,
     },
-    roles: [Role.Member, Role.Admin]
+    roles: [Role.Member, Role.Admin],
   };
 
   const mockAccessToken = 'access-token-123';
@@ -37,7 +37,7 @@ describe('AuthController', () => {
   beforeEach(async () => {
     // Reset mocks
     jest.clearAllMocks();
-    
+
     // Create mock for AuthServiceClient
     authService = {
       loginUser: jest.fn().mockReturnValue(
@@ -45,36 +45,30 @@ describe('AuthController', () => {
           user: mockUser,
           token: mockAccessToken,
           refreshToken: mockRefreshToken,
-        })
+        }),
       ),
-      registerUser: jest.fn().mockReturnValue(
-        of({ user: mockUser })
-      ),
+      registerUser: jest.fn().mockReturnValue(of({ user: mockUser })),
       verifyUser: jest.fn().mockReturnValue(
         of({
           user: mockUser,
           token: mockAccessToken,
           refreshToken: mockRefreshToken,
-        })
+        }),
       ),
       authenticate: jest.fn().mockReturnValue(
         of({
           user: mockUser,
           token: mockAccessToken,
-        })
+        }),
       ),
-      recoverUser: jest.fn().mockReturnValue(
-        of({ user: mockUser })
-      ),
+      recoverUser: jest.fn().mockReturnValue(of({ user: mockUser })),
       refreshToken: jest.fn().mockReturnValue(
         of({
           accessToken: mockAccessToken,
           refreshToken: mockRefreshToken,
-        })
+        }),
       ),
-      revokeToken: jest.fn().mockReturnValue(
-        of({ success: true })
-      ),
+      revokeToken: jest.fn().mockReturnValue(of({ success: true })),
     };
 
     // Mock JWT service to decode tokens
@@ -134,7 +128,7 @@ describe('AuthController', () => {
         mockAccessToken,
         expect.objectContaining({
           httpOnly: true,
-        })
+        }),
       );
       expect(mockResponse.cookie).toHaveBeenCalledWith(
         'RefreshToken',
@@ -142,7 +136,7 @@ describe('AuthController', () => {
         expect.objectContaining({
           httpOnly: true,
           path: '/auth/refresh',
-        })
+        }),
       );
     });
   });
@@ -153,7 +147,7 @@ describe('AuthController', () => {
         name: 'Test User',
         phone: '+1234567890',
         pin: '123456',
-        roles: [Role.Member]
+        roles: [Role.Member],
       };
 
       const result = await firstValueFrom(controller.register(registerRequest));
@@ -177,7 +171,10 @@ describe('AuthController', () => {
         otp: '123456',
       };
 
-      const result = await controller.verify(verifyRequest, mockResponse as any);
+      const result = await controller.verify(
+        verifyRequest,
+        mockResponse as any,
+      );
 
       expect(result).toEqual({
         user: mockUser,
@@ -199,7 +196,10 @@ describe('AuthController', () => {
         token: 'valid-token',
       };
 
-      const result = await controller.authenticate(authRequest, mockResponse as any);
+      const result = await controller.authenticate(
+        authRequest,
+        mockResponse as any,
+      );
 
       expect(result).toEqual({
         user: mockUser,
@@ -223,7 +223,10 @@ describe('AuthController', () => {
         cookie: jest.fn(),
       };
 
-      const result = await controller.refresh(mockRequest as any, mockResponse as any);
+      const result = await controller.refresh(
+        mockRequest as any,
+        mockResponse as any,
+      );
 
       expect(result).toEqual({
         success: true,
@@ -233,17 +236,17 @@ describe('AuthController', () => {
       expect(authService.refreshToken).toHaveBeenCalledWith({
         refreshToken: mockRefreshToken,
       });
-      
+
       expect(mockResponse.cookie).toHaveBeenCalledTimes(2);
       expect(mockResponse.cookie).toHaveBeenCalledWith(
         'Authentication',
         mockAccessToken,
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(mockResponse.cookie).toHaveBeenCalledWith(
         'RefreshToken',
         mockRefreshToken,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -257,7 +260,7 @@ describe('AuthController', () => {
       };
 
       await expect(
-        controller.refresh(mockRequest as any, mockResponse as any)
+        controller.refresh(mockRequest as any, mockResponse as any),
       ).rejects.toThrow(UnauthorizedException);
 
       expect(authService.refreshToken).not.toHaveBeenCalled();
@@ -276,7 +279,10 @@ describe('AuthController', () => {
         clearCookie: jest.fn(),
       };
 
-      const result = await controller.logout(mockRequest as any, mockResponse as any);
+      const result = await controller.logout(
+        mockRequest as any,
+        mockResponse as any,
+      );
 
       expect(result).toEqual({
         success: true,
@@ -286,7 +292,7 @@ describe('AuthController', () => {
       expect(authService.revokeToken).toHaveBeenCalledWith({
         refreshToken: mockRefreshToken,
       });
-      
+
       expect(mockResponse.clearCookie).toHaveBeenCalledTimes(2);
       expect(mockResponse.clearCookie).toHaveBeenCalledWith('Authentication');
       expect(mockResponse.clearCookie).toHaveBeenCalledWith('RefreshToken');
@@ -301,7 +307,10 @@ describe('AuthController', () => {
         clearCookie: jest.fn(),
       };
 
-      const result = await controller.logout(mockRequest as any, mockResponse as any);
+      const result = await controller.logout(
+        mockRequest as any,
+        mockResponse as any,
+      );
 
       expect(result).toEqual({
         success: true,
@@ -326,7 +335,7 @@ describe('AuthController', () => {
       // Use the private method via any type cast for testing
       const result = await (controller as any).setAuthCookies(
         authResponse,
-        mockResponse
+        mockResponse,
       );
 
       expect(result).toEqual({

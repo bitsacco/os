@@ -43,7 +43,9 @@ describe('TokenRepository', () => {
     }).compile();
 
     repository = module.get<TokenRepository>(TokenRepository);
-    tokenModel = module.get<Model<TokenDocument>>(getModelToken(TokenDocument.name));
+    tokenModel = module.get<Model<TokenDocument>>(
+      getModelToken(TokenDocument.name),
+    );
   });
 
   it('should be defined', () => {
@@ -56,7 +58,7 @@ describe('TokenRepository', () => {
       jest.spyOn(repository, 'findOne').mockResolvedValueOnce(mockTokenDoc);
 
       const result = await repository.findByTokenId(mockTokenId);
-      
+
       expect(result).toEqual(mockTokenDoc);
       expect(repository.findOne).toHaveBeenCalledWith({ tokenId: mockTokenId });
     });
@@ -65,14 +67,16 @@ describe('TokenRepository', () => {
   describe('revokeToken', () => {
     it('should revoke a token by ID', async () => {
       // Mock the findOneAndUpdate method
-      jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValueOnce(mockTokenDoc);
+      jest
+        .spyOn(repository, 'findOneAndUpdate')
+        .mockResolvedValueOnce(mockTokenDoc);
 
       const result = await repository.revokeToken(mockTokenId);
-      
+
       expect(result).toBe(true);
       expect(repository.findOneAndUpdate).toHaveBeenCalledWith(
         { tokenId: mockTokenId },
-        { revoked: true }
+        { revoked: true },
       );
     });
 
@@ -80,7 +84,7 @@ describe('TokenRepository', () => {
       jest.spyOn(repository, 'findOneAndUpdate').mockResolvedValueOnce(null);
 
       const result = await repository.revokeToken(mockTokenId);
-      
+
       expect(result).toBe(false);
     });
   });
@@ -92,11 +96,11 @@ describe('TokenRepository', () => {
       } as any);
 
       const result = await repository.revokeAllUserTokens(mockUserId);
-      
+
       expect(result).toBe(true);
       expect(tokenModel.updateMany).toHaveBeenCalledWith(
         { userId: mockUserId, revoked: false },
-        { revoked: true }
+        { revoked: true },
       );
     });
 
@@ -106,7 +110,7 @@ describe('TokenRepository', () => {
       } as any);
 
       const result = await repository.revokeAllUserTokens(mockUserId);
-      
+
       expect(result).toBe(false);
     });
   });
@@ -118,7 +122,7 @@ describe('TokenRepository', () => {
       } as any);
 
       const result = await repository.cleanupExpiredTokens();
-      
+
       expect(result).toBe(5);
       expect(tokenModel.deleteMany).toHaveBeenCalledWith({
         expires: { $lt: expect.any(Date) },

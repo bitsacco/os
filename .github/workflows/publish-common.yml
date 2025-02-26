@@ -1,0 +1,63 @@
+name: Publish @bitsacco/common
+
+on:
+  push:
+    tags:
+      - 'common-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Package version (e.g. 0.1.0)'
+        required: true
+        default: ''
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build package
+        run: |
+          cd libs/common
+          chmod +x package.sh
+          ./package.sh
+      
+      - name: Set version from tag or input
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION=$(echo ${{ github.ref_name }} | sed 's/common-v//')
+            echo "Using version from tag: $VERSION"
+          else
+            VERSION=${{ github.event.inputs.version }}
+            echo "Using input version: $VERSION"
+          fi
+          cd libs/common/npm-package
+          npm version $VERSION --no-git-tag-version
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      
+      - name: Publish to npm
+        run: |
+          cd libs/common/npm-package
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      
+      - name: Create GitHub Release
+        if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+        uses: softprops/action-gh-release@v1
+        with:
+          name: '@bitsacco/common v${{ env.VERSION }}'
+          body: 'Release of @bitsacco/common version ${{ env.VERSION }}'
+          draft: false
+          prerelease: false

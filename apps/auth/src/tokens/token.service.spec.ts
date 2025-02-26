@@ -24,10 +24,7 @@ describe('TokenService', () => {
       number: '+1234567890',
       verified: true,
     },
-    roles: [
-      Role.Member,
-      Role.Admin
-    ]
+    roles: [Role.Member, Role.Admin],
   };
 
   const mockTokenId = 'test-token-id';
@@ -47,12 +44,12 @@ describe('TokenService', () => {
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     revoked: false,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    
+
     // Create mocks
     const mockJwtService = {
       sign: jest.fn().mockImplementation((payload) => {
@@ -132,12 +129,12 @@ describe('TokenService', () => {
   describe('generateTokens', () => {
     it('should generate access and refresh tokens', async () => {
       const result = await tokenService.generateTokens(mockUser);
-      
+
       expect(result).toEqual({
         accessToken: mockAccessToken,
         refreshToken: mockRefreshToken,
       });
-      
+
       expect(jwtService.sign).toHaveBeenCalledTimes(2);
       expect(tokenRepository.create).toHaveBeenCalledWith({
         userId: mockUser.id,
@@ -151,12 +148,12 @@ describe('TokenService', () => {
   describe('verifyAccessToken', () => {
     it('should verify a valid access token', async () => {
       const result = await tokenService.verifyAccessToken(mockAccessToken);
-      
+
       expect(result).toEqual({
         user: mockUser,
         expires: expect.any(Date),
       });
-      
+
       expect(jwtService.verify).toHaveBeenCalledWith(mockAccessToken);
     });
 
@@ -164,22 +161,22 @@ describe('TokenService', () => {
       jest.spyOn(jwtService, 'verify').mockImplementation(() => {
         throw new Error('Invalid token');
       });
-      
-      await expect(tokenService.verifyAccessToken('invalid-token'))
-        .rejects
-        .toThrow(UnauthorizedException);
+
+      await expect(
+        tokenService.verifyAccessToken('invalid-token'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
   describe('refreshTokens', () => {
     it('should refresh tokens successfully', async () => {
       const result = await tokenService.refreshTokens(mockRefreshToken);
-      
+
       expect(result).toEqual({
         accessToken: mockAccessToken,
         refreshToken: mockRefreshToken,
       });
-      
+
       expect(jwtService.verify).toHaveBeenCalledWith(mockRefreshToken);
       expect(tokenRepository.findByTokenId).toHaveBeenCalledWith(mockTokenId);
       expect(tokenRepository.revokeToken).toHaveBeenCalledWith(mockTokenId);
@@ -191,9 +188,10 @@ describe('TokenService', () => {
         ...mockTokenDoc,
         revoked: true,
       });
-      
-      await expect(tokenService.refreshTokens(mockRefreshToken))
-        .rejects.toThrow(UnauthorizedException);
+
+      await expect(
+        tokenService.refreshTokens(mockRefreshToken),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when refresh token is expired', async () => {
@@ -201,27 +199,27 @@ describe('TokenService', () => {
         ...mockTokenDoc,
         expires: new Date(Date.now() - 1000), // Expired
       });
-      
-      await expect(tokenService.refreshTokens(mockRefreshToken))
-        .rejects
-        .toThrow(UnauthorizedException);
+
+      await expect(
+        tokenService.refreshTokens(mockRefreshToken),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw NotFoundException when user no longer exists', async () => {
       jest.spyOn(usersService, 'findUser').mockImplementation(() => {
         throw new Error('User not found');
       });
-      
-      await expect(tokenService.refreshTokens(mockRefreshToken))
-        .rejects
-        .toThrow(UnauthorizedException);
+
+      await expect(
+        tokenService.refreshTokens(mockRefreshToken),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
   describe('revokeToken', () => {
     it('should revoke a valid token', async () => {
       const result = await tokenService.revokeToken(mockRefreshToken);
-      
+
       expect(result).toBe(true);
       expect(jwtService.verify).toHaveBeenCalledWith(mockRefreshToken);
       expect(tokenRepository.findByTokenId).toHaveBeenCalledWith(mockTokenId);
@@ -233,18 +231,18 @@ describe('TokenService', () => {
         ...mockTokenDoc,
         revoked: true,
       });
-      
+
       const result = await tokenService.revokeToken(mockRefreshToken);
-      
+
       expect(result).toBe(true);
       expect(tokenRepository.revokeToken).not.toHaveBeenCalled();
     });
 
     it('should return false when token is not found', async () => {
       jest.spyOn(tokenRepository, 'findByTokenId').mockResolvedValue(null);
-      
+
       const result = await tokenService.revokeToken(mockRefreshToken);
-      
+
       expect(result).toBe(false);
       expect(tokenRepository.revokeToken).not.toHaveBeenCalled();
     });
@@ -253,9 +251,9 @@ describe('TokenService', () => {
       jest.spyOn(jwtService, 'verify').mockImplementation(() => {
         throw new Error('Invalid token');
       });
-      
+
       const result = await tokenService.revokeToken('invalid-token');
-      
+
       expect(result).toBe(false);
       expect(tokenRepository.revokeToken).not.toHaveBeenCalled();
     });
@@ -264,17 +262,21 @@ describe('TokenService', () => {
   describe('revokeAllUserTokens', () => {
     it('should revoke all user tokens', async () => {
       const result = await tokenService.revokeAllUserTokens(mockUser.id);
-      
+
       expect(result).toBe(true);
-      expect(tokenRepository.revokeAllUserTokens).toHaveBeenCalledWith(mockUser.id);
+      expect(tokenRepository.revokeAllUserTokens).toHaveBeenCalledWith(
+        mockUser.id,
+      );
     });
   });
 
   describe('cleanupExpiredTokens', () => {
     it('should clean up expired tokens', async () => {
       // We need to access the private method, this is just for testing
-      const result = await (tokenService as any).tokenRepository.cleanupExpiredTokens();
-      
+      const result = await (
+        tokenService as any
+      ).tokenRepository.cleanupExpiredTokens();
+
       expect(result).toBe(5);
       expect(tokenRepository.cleanupExpiredTokens).toHaveBeenCalled();
     });
