@@ -12,9 +12,13 @@ import {
   UsersRepository,
   UsersSchema,
   UsersService,
+  TokenDocument,
+  TokenSchema,
+  TokenRepository,
 } from '@bitsacco/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { TokenService } from './tokens/token.service';
 
 @Module({
   imports: [
@@ -27,6 +31,7 @@ import { AuthService } from './auth.service';
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION: Joi.string().required(),
+        REFRESH_TOKEN_EXPIRATION_DAYS: Joi.number().default(7),
         SALT_ROUNDS: Joi.number().required(),
       }),
     }),
@@ -56,10 +61,18 @@ import { AuthService } from './auth.service';
     DatabaseModule,
     DatabaseModule.forFeature([
       { name: UsersDocument.name, schema: UsersSchema },
+      { name: TokenDocument.name, schema: TokenSchema },
     ]),
     LoggerModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, UsersRepository, UsersService, ConfigService],
+  providers: [
+    AuthService,
+    UsersRepository,
+    UsersService,
+    ConfigService,
+    TokenRepository,
+    TokenService,
+  ],
 })
 export class AuthModule {}

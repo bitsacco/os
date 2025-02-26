@@ -1,6 +1,4 @@
 import { firstValueFrom } from 'rxjs';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import {
   Inject,
   Injectable,
@@ -11,18 +9,18 @@ import {
 import {
   AuthRequest,
   AuthResponse,
-  AuthTokenPayload,
   LoginUserRequestDto,
   RegisterUserRequestDto,
   VerifyUserRequestDto,
-  User,
   UsersService,
   SmsServiceClient,
   SMS_SERVICE_NAME,
   RecoverUserRequestDto,
   isPreUserAuth,
+  TokenResponse,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
+import { TokenService } from './tokens/token.service';
 
 @Injectable()
 export class AuthService {
@@ -30,9 +28,8 @@ export class AuthService {
   private readonly smsService: SmsServiceClient;
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly userService: UsersService,
-    private readonly jwtService: JwtService,
+    private readonly tokenService: TokenService,
     @Inject(SMS_SERVICE_NAME) private readonly smsGrpc: ClientGrpc,
   ) {
     this.logger.debug('AuthService initialized');
@@ -44,9 +41,14 @@ export class AuthService {
   async loginUser(req: LoginUserRequestDto): Promise<AuthResponse> {
     try {
       const { user, authorized } = await this.userService.validateUser(req);
-      const token = authorized ? this.createAuthToken(user) : undefined;
 
-      return { user, token };
+      if (authorized) {
+        const { accessToken, refreshToken } =
+          await this.tokenService.generateTokens(user);
+        return { user, token: accessToken, refreshToken };
+      }
+
+      return { user };
     } catch (e) {
       this.logger.error(e);
       throw new UnauthorizedException('Invalid credentials');
@@ -78,8 +80,9 @@ export class AuthService {
         return { user: auth.user };
       }
 
-      const token = this.createAuthToken(auth.user);
-      return { user: auth.user, token };
+      const { accessToken, refreshToken } =
+        await this.tokenService.generateTokens(auth.user);
+      return { user: auth.user, token: accessToken, refreshToken };
     } catch (e) {
       this.logger.error(e);
       throw new UnauthorizedException('Invalid credentials');
@@ -102,35 +105,37 @@ export class AuthService {
   }
 
   async authenticate({ token }: AuthRequest): Promise<AuthResponse> {
-    const { user, expires } = this.jwtService.verify<AuthTokenPayload>(token);
-
-    if (expires < new Date()) {
-      throw new UnauthorizedException('Token expired');
-    }
-
     try {
-      await this.userService.findUser({
-        id: user.id,
-      });
-    } catch {
-      throw new UnauthorizedException('Invalid user');
-    }
+      // We should modify TokenService to add a method for verifying access tokens
+      // For now we'll delegate this to the tokenService by adjusting our approach
 
-    return { user, token };
+      // First, verify that the user exists
+      const tokenData = await this.tokenService.verifyAccessToken(token);
+      const { user, expires } = tokenData;
+
+      if (expires < new Date()) {
+        throw new UnauthorizedException('Token expired');
+      }
+
+      try {
+        await this.userService.findUser({ id: user.id });
+      } catch {
+        throw new UnauthorizedException('Invalid user');
+      }
+
+      return { user, token };
+    } catch (error) {
+      this.logger.error(`Token verification failed: ${error.message}`);
+      throw new UnauthorizedException('Invalid token');
+    }
   }
 
-  private createAuthToken(user: User) {
-    const expires = new Date();
-    expires.setSeconds(
-      expires.getSeconds() + this.configService.get('JWT_EXPIRATION'),
-    );
+  async refreshToken(refreshToken: string): Promise<TokenResponse> {
+    return this.tokenService.refreshTokens(refreshToken);
+  }
 
-    const payload: AuthTokenPayload = {
-      user,
-      expires,
-    };
-
-    return this.jwtService.sign(payload);
+  async revokeToken(refreshToken: string): Promise<boolean> {
+    return this.tokenService.revokeToken(refreshToken);
   }
 
   private async sendOtp(otp: string, phone?: string, npub?: string) {
