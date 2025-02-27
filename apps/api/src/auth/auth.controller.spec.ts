@@ -1,4 +1,3 @@
-import * as Bowser from 'bowser';
 import { JwtService } from '@nestjs/jwt';
 import { firstValueFrom, of } from 'rxjs';
 import { TestingModule } from '@nestjs/testing';
@@ -43,15 +42,6 @@ describe('AuthController', () => {
 
     // Mock getAccessToken for test cases that need it
     jest.spyOn({ getAccessToken }, 'getAccessToken');
-
-    // Mock Bowser for isBrowserRequest checks
-    jest.spyOn(Bowser, 'getParser').mockImplementation((userAgent) => {
-      return {
-        getBrowserName: () => {
-          return userAgent?.includes('Chrome') ? 'Chrome' : undefined;
-        }
-      } as any;
-    });
 
     // Create mock for AuthServiceClient
     authService = {
@@ -130,7 +120,7 @@ describe('AuthController', () => {
   });
 
   describe('login', () => {
-    it('should set auth cookies and return minimal response for browser clients', async () => {
+    it('should set auth cookies and return tokens in the response', async () => {
       const mockResponse = {
         cookie: jest.fn(),
       };
@@ -140,14 +130,12 @@ describe('AuthController', () => {
         pin: '1234',
       };
 
-      const browserRequest = {
-        headers: {
-          'user-agent': 'Mozilla/5.0 Chrome/96.0.4664.110 Safari/537.36',
-        },
+      const request = {
+        headers: {},
       };
 
       const result = await controller.login(
-        browserRequest as any,
+        request as any,
         loginRequest,
         mockResponse as any,
       );
@@ -155,6 +143,8 @@ describe('AuthController', () => {
       expect(result).toEqual({
         user: mockUser,
         authenticated: true,
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken,
       });
 
       expect(authService.loginUser).toHaveBeenCalledWith(loginRequest);
@@ -178,39 +168,6 @@ describe('AuthController', () => {
           path: '/auth/refresh',
         }),
       );
-    });
-
-    it('should return tokens in body for non-browser clients', async () => {
-      const mockResponse = {
-        cookie: jest.fn(),
-      };
-
-      const loginRequest = {
-        phone: '+1234567890',
-        pin: '1234',
-      };
-
-      const nonBrowserRequest = {
-        headers: {
-          'user-agent': 'Mobile App',
-        },
-      };
-
-      const result = await controller.login(
-        nonBrowserRequest as any,
-        loginRequest,
-        mockResponse as any,
-      );
-
-      expect(result).toEqual({
-        user: mockUser,
-        authenticated: true,
-        accessToken: mockAccessToken,
-        refreshToken: mockRefreshToken,
-      });
-
-      expect(authService.loginUser).toHaveBeenCalledWith(loginRequest);
-      expect(mockResponse.cookie).not.toHaveBeenCalled();
     });
   });
 
@@ -236,7 +193,7 @@ describe('AuthController', () => {
   });
 
   describe('verify', () => {
-    it('should set auth cookies for browser clients', async () => {
+    it('should set auth cookies and return tokens in the response', async () => {
       const mockResponse = {
         cookie: jest.fn(),
       };
@@ -246,14 +203,12 @@ describe('AuthController', () => {
         otp: '123456',
       };
 
-      const browserRequest = {
-        headers: {
-          'user-agent': 'Mozilla/5.0 Chrome/96.0.4664.110 Safari/537.36',
-        },
+      const request = {
+        headers: {},
       };
 
       const result = await controller.verify(
-        browserRequest as any,
+        request as any,
         verifyRequest,
         mockResponse as any,
       );
@@ -261,6 +216,8 @@ describe('AuthController', () => {
       expect(result).toEqual({
         user: mockUser,
         authenticated: true,
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken,
       });
 
       expect(authService.verifyUser).toHaveBeenCalledWith(verifyRequest);
@@ -274,44 +231,11 @@ describe('AuthController', () => {
           sameSite: 'none',
         }),
       );
-    });
-
-    it('should return tokens in body for non-browser clients', async () => {
-      const mockResponse = {
-        cookie: jest.fn(),
-      };
-
-      const verifyRequest: VerifyUserRequestDto = {
-        phone: '+1234567890',
-        otp: '123456',
-      };
-
-      const nonBrowserRequest = {
-        headers: {
-          'user-agent': 'Mobile App',
-        },
-      };
-
-      const result = await controller.verify(
-        nonBrowserRequest as any,
-        verifyRequest,
-        mockResponse as any,
-      );
-
-      expect(result).toEqual({
-        user: mockUser,
-        authenticated: true,
-        accessToken: mockAccessToken,
-        refreshToken: mockRefreshToken,
-      });
-
-      expect(authService.verifyUser).toHaveBeenCalledWith(verifyRequest);
-      expect(mockResponse.cookie).not.toHaveBeenCalled();
     });
   });
 
   describe('recover', () => {
-    it('should set auth cookies for browser clients', async () => {
+    it('should set auth cookies and return tokens in the response', async () => {
       const mockResponse = {
         cookie: jest.fn(),
       };
@@ -321,14 +245,12 @@ describe('AuthController', () => {
         pin: '123456',
       };
 
-      const browserRequest = {
-        headers: {
-          'user-agent': 'Mozilla/5.0 Chrome/96.0.4664.110 Safari/537.36',
-        },
+      const request = {
+        headers: {},
       };
 
       const result = await controller.recover(
-        browserRequest as any,
+        request as any,
         recoverRequest,
         mockResponse as any,
       );
@@ -336,6 +258,8 @@ describe('AuthController', () => {
       expect(result).toEqual({
         user: mockUser,
         authenticated: true,
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken,
       });
 
       expect(authService.recoverUser).toHaveBeenCalledWith(recoverRequest);
@@ -350,52 +274,17 @@ describe('AuthController', () => {
         }),
       );
     });
-
-    it('should return tokens in body for non-browser clients', async () => {
-      const mockResponse = {
-        cookie: jest.fn(),
-      };
-
-      const recoverRequest: RecoverUserRequestDto = {
-        phone: '+1234567890',
-        pin: '123456',
-      };
-
-      const nonBrowserRequest = {
-        headers: {
-          'user-agent': 'Mobile App',
-        },
-      };
-
-      const result = await controller.recover(
-        nonBrowserRequest as any,
-        recoverRequest,
-        mockResponse as any,
-      );
-
-      expect(result).toEqual({
-        user: mockUser,
-        authenticated: true,
-        accessToken: mockAccessToken,
-        refreshToken: mockRefreshToken,
-      });
-
-      expect(authService.recoverUser).toHaveBeenCalledWith(recoverRequest);
-      expect(mockResponse.cookie).not.toHaveBeenCalled();
-    });
   });
 
   describe('authenticate', () => {
-    it('should set auth cookies and return user with authentication status when cookies are used', async () => {
+    it('should set auth cookies and return tokens in the response', async () => {
       const mockResponse = {
         cookie: jest.fn(),
       };
 
       const authRequest = {
         cookies: { Authentication: mockAccessToken },
-        headers: {
-          'user-agent': 'Mozilla/5.0 Chrome/96.0.4664.110 Safari/537.36',
-        },
+        headers: {},
       };
 
       // Mock getAccessToken to return the token from cookies
@@ -411,46 +300,13 @@ describe('AuthController', () => {
       expect(result).toEqual({
         user: mockUser,
         authenticated: true,
+        accessToken: mockAccessToken,
       });
 
       expect(authService.authenticate).toHaveBeenCalledWith({
         accessToken: mockAccessToken,
       });
       expect(mockResponse.cookie).toHaveBeenCalledTimes(1);
-    });
-
-    it('should return tokens in response body for non-browser clients', async () => {
-      const mockResponse = {
-        cookie: jest.fn(),
-      };
-
-      const authRequest = {
-        headers: {
-          authorization: `Bearer ${mockAccessToken}`,
-          'user-agent': 'Mobile App',
-        },
-      };
-
-      // Mock getAccessToken to return the token from bearer auth
-      jest
-        .spyOn({ getAccessToken }, 'getAccessToken')
-        .mockReturnValueOnce(mockAccessToken);
-
-      const result = await controller.authenticate(
-        authRequest as any,
-        mockResponse as any,
-      );
-
-      expect(result).toEqual({
-        user: mockUser,
-        authenticated: true,
-        accessToken: mockAccessToken,
-      });
-
-      expect(authService.authenticate).toHaveBeenCalledWith({
-        accessToken: mockAccessToken,
-      });
-      expect(mockResponse.cookie).not.toHaveBeenCalled();
     });
 
     it('should throw UnauthorizedException when no access token is provided', async () => {
@@ -612,7 +468,7 @@ describe('AuthController', () => {
       expect(mockResponse.cookie).not.toHaveBeenCalled();
     });
 
-    it('should set cookies for browser requests', async () => {
+    it('should set cookies and return tokens in the response', async () => {
       const mockResponse = {
         cookie: jest.fn(),
       };
@@ -623,59 +479,25 @@ describe('AuthController', () => {
         refreshToken: mockRefreshToken,
       });
 
-      const browserRequest = {
-        headers: {
-          'user-agent': 'Mozilla/5.0 Chrome/96.0.4664.110 Safari/537.36',
-        },
+      const request = {
+        headers: {},
       };
 
       // Use the private method via any type cast for testing
       const result = await (controller as any).setAuthCookies(
         authResponse,
-        browserRequest as any,
+        request as any,
         mockResponse,
       );
 
       expect(result).toEqual({
         user: mockUser,
         authenticated: true,
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken,
       });
 
       expect(mockResponse.cookie).toHaveBeenCalledTimes(2);
-    });
-
-    it('should return tokens for non-browser requests', async () => {
-      const mockResponse = {
-        cookie: jest.fn(),
-      };
-
-      const authResponse = of({
-        user: mockUser,
-        accessToken: mockAccessToken,
-        refreshToken: mockRefreshToken,
-      });
-
-      const nonBrowserRequest = {
-        headers: {
-          'user-agent': 'Mobile App',
-        },
-      };
-
-      // Use the private method via any type cast for testing
-      const result = await (controller as any).setAuthCookies(
-        authResponse,
-        nonBrowserRequest as any,
-        mockResponse,
-      );
-
-      expect(result).toEqual({
-        user: mockUser,
-        authenticated: true,
-        accessToken: mockAccessToken,
-        refreshToken: mockRefreshToken,
-      });
-
-      expect(mockResponse.cookie).not.toHaveBeenCalled();
     });
   });
 });

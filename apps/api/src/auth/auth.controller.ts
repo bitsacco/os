@@ -1,4 +1,3 @@
-import * as Bowser from 'bowser';
 import { firstValueFrom, Observable } from 'rxjs';
 import { type Request, type Response } from 'express';
 import {
@@ -206,33 +205,25 @@ export class AuthController {
             this.logger.error('Invalid auth response');
           }
 
-          // Set cookies for browser requests
-          if (this.isBrowserRequest(req)) {
-            res.cookie('Authentication', accessToken, {
+          // Always set cookies
+          res.cookie('Authentication', accessToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'none',
+            expires: new Date(expires),
+          });
+
+          if (refreshToken) {
+            res.cookie('RefreshToken', refreshToken, {
               httpOnly: true,
               secure: true,
               sameSite: 'none',
-              expires: new Date(expires),
+              path: '/auth/refresh',
+              maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             });
-
-            if (refreshToken) {
-              res.cookie('RefreshToken', refreshToken, {
-                httpOnly: true,
-                secure: true,
-                sameSite: 'none',
-                path: '/auth/refresh',
-                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-              });
-            }
-
-            // Return minimal response for browser
-            return {
-              user,
-              authenticated: true,
-            };
           }
 
-          // Return tokens in body for non-browser clients
+          // Always return tokens in the response
           return {
             user,
             authenticated: true,
@@ -247,10 +238,5 @@ export class AuthController {
         };
       },
     );
-  }
-
-  private isBrowserRequest(req: Request): boolean {
-    const browser = Bowser.getParser(req.headers?.['user-agent']);
-    return browser.getBrowserName() !== undefined;
   }
 }
