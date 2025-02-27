@@ -91,13 +91,12 @@ export class AuthService {
 
   async recoverUser(req: RecoverUserRequestDto): Promise<AuthResponse> {
     try {
-      const auth = await this.userService.verifyUser(req);
+      const auth = await this.userService.recoverUser(req);
 
-      if (isPreUserAuth(auth)) {
-        await this.sendOtp(auth.otp, req.phone, req.npub);
-      }
+      const { accessToken, refreshToken } =
+        await this.tokenService.generateTokens(auth.user);
 
-      return { user: auth.user };
+      return { user: auth.user, accessToken, refreshToken };
     } catch (e) {
       this.logger.error(e);
       throw new UnauthorizedException('Invalid credentials');

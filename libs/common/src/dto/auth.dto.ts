@@ -81,13 +81,7 @@ export class VerifyUserRequestDto implements VerifyUserRequest {
   otp?: string;
 }
 
-export class RecoverUserRequestDto implements RecoverUserRequest {
-  @PhoneDecorators()
-  phone?: string;
-
-  @NpubDecorators()
-  npub?: string;
-}
+export class RecoverUserRequestDto extends AuthRequestBase {}
 
 export class AuthRequestDto implements AuthRequest {
   @IsString()

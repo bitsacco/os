@@ -15,6 +15,7 @@ import {
   FindUserDto,
   VerifyUserRequestDto,
   UpdateUserRequestDto,
+  RecoverUserRequestDto,
 } from '../dto';
 import { UsersRepository } from './users.repository';
 
@@ -35,6 +36,8 @@ export interface IUsersService {
   validateUser(loginDto: LoginUserRequestDto): Promise<PostUserAuth>;
 
   registerUser(registerDto: RegisterUserRequestDto): Promise<PreUserAuth>;
+
+  recoverUser(recoverDto: RecoverUserRequestDto): Promise<PostUserAuth>;
 
   findUser(findDto: FindUserDto): Promise<User>;
 
@@ -103,6 +106,32 @@ export class UsersService implements IUsersService {
       user,
       authorized: false,
       otp,
+    };
+  }
+
+  async recoverUser({
+    pin,
+    phone,
+    npub,
+  }: RecoverUserRequestDto): Promise<PostUserAuth> {
+    let ud: UsersDocument = await this.queryUser({ phone, npub });
+
+    if (!ud) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const pinHash = await argon2.hash(pin);
+
+    ud = await this.users.findOneAndUpdate(
+      { _id: ud._id },
+      {
+        pinHash,
+      },
+    );
+
+    return {
+      user: toUser(ud),
+      authorized: true,
     };
   }
 

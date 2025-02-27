@@ -13,7 +13,7 @@ service AuthService {
 }
 
 message LoginUserRequest {
-  optional string pin = 1;
+  string pin = 1;
   optional string phone = 2;
   optional string npub = 3;
 }
@@ -32,8 +32,9 @@ message VerifyUserRequest {
 }
 
 message RecoverUserRequest {
-  optional string phone = 1;
-  optional string npub = 2;
+  string pin = 1;
+  optional string phone = 2;
+  optional string npub = 3;
 }
 
 message AuthRequest {

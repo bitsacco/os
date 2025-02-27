@@ -16,7 +16,7 @@ export enum Role {
 }
 
 export interface LoginUserRequest {
-  pin?: string | undefined;
+  pin: string;
   phone?: string | undefined;
   npub?: string | undefined;
 }
@@ -35,6 +35,7 @@ export interface VerifyUserRequest {
 }
 
 export interface RecoverUserRequest {
+  pin: string;
   phone?: string | undefined;
   npub?: string | undefined;
 }
