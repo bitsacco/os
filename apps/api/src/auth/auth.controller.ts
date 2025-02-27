@@ -1,4 +1,4 @@
-import Bowser from 'bowser';
+import * as Bowser from 'bowser';
 import { firstValueFrom, Observable } from 'rxjs';
 import { type Request, type Response } from 'express';
 import {

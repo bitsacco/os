@@ -1,6 +1,7 @@
-import { TestingModule } from '@nestjs/testing';
+import * as Bowser from 'bowser';
 import { JwtService } from '@nestjs/jwt';
 import { firstValueFrom, of } from 'rxjs';
+import { TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import {
@@ -14,7 +15,6 @@ import {
   getAccessToken,
 } from '@bitsacco/common';
 import { AuthController } from './auth.controller';
-import Bowser from 'bowser';
 
 describe('AuthController', () => {
   let controller: AuthController;
