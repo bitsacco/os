@@ -43,14 +43,9 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const request = context.switchToHttp().getRequest();
-    // Try to get the token from cookies first, then headers
-    const jwt =
-      request.cookies?.Authentication ||
-      (request.headers?.authorization
-        ? request.headers.authorization.replace('Bearer ', '')
-        : null);
+    const accessToken = getAccessToken(request);
 
-    if (!jwt) {
+    if (!accessToken) {
       this.logger.error('No access token found');
       return false;
     }
@@ -69,7 +64,8 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
 
     try {
       // Verify token locally first to avoid unnecessary gRPC calls
-      const tokenPayload = this.jwtService.verify<AuthTokenPayload>(jwt);
+      const tokenPayload =
+        this.jwtService.verify<AuthTokenPayload>(accessToken);
 
       // Check if token is expired
       if (new Date(tokenPayload.expires) < new Date()) {
@@ -97,7 +93,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
       // If local verification fails, fallback to gRPC auth service validation
       return this.authService
         .authenticate({
-          accessToken: jwt,
+          accessToken,
         })
         .pipe(
           tap(({ user }) => {
@@ -143,4 +139,22 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid user');
     }
   }
+}
+
+export function getAccessToken(request: any) {
+  if (request?.cookies) {
+    return request.cookies['Authentication'];
+  }
+
+  const authHeader = request?.headers?.cookie;
+  if (authHeader) {
+    const cookies = authHeader.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {});
+    return cookies['Authentication'];
+  }
+
+  return null;
 }

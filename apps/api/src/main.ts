@@ -63,7 +63,8 @@ function setupOpenAPI(app: INestApplication, path: string) {
 function setupCORS(app: INestApplication) {
   const allowedOrigins = [
     'https://bitsacco.com',
-    'http://localhost:*',
+    'http://localhost:3000',
+    'http://localhost:3001',
     'http://127.0.0.1:*',
     'http://0.0.0.0:*',
   ];
@@ -75,7 +76,17 @@ function setupCORS(app: INestApplication) {
     },
     methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: 'Content-Type, Accept, Authorization',
-    exposedHeaders: 'X-Session-Id',
+    allowedHeaders: [
+      'Content-Type',
+      'Accept',
+      'Authorization',
+      'Cookie',
+      'Origin',
+      'X-Requested-With',
+      'Access-Control-Allow-Headers',
+      'Access-Control-Allow-Origin',
+      'Access-Control-Allow-Credentials',
+    ].join(','),
+    exposedHeaders: ['X-Session-Id', 'Set-Cookie'].join(', '),
   });
 }

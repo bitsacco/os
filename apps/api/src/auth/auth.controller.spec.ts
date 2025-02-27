@@ -15,7 +15,6 @@ import { AuthController } from './auth.controller';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let jwtService: JwtService;
   let authService: Partial<AuthServiceClient>;
 
   const mockUser: User = {
@@ -75,7 +74,13 @@ describe('AuthController', () => {
     // Mock JWT service to decode tokens
     const mockJwtService = {
       decode: jest.fn().mockImplementation(() => mockTokenPayload),
-    };
+      options: {},
+      logger: {},
+      sign: jest.fn(),
+      signAsync: jest.fn(),
+      verify: jest.fn(),
+      verifyAsync: jest.fn(),
+    } as unknown as JwtService;
 
     // Mock gRPC client
     const mockGrpcClient = {
@@ -97,7 +102,6 @@ describe('AuthController', () => {
     });
 
     controller = module.get<AuthController>(AuthController);
-    jwtService = module.get<JwtService>(JwtService);
   });
 
   it('should be defined', () => {
@@ -194,11 +198,11 @@ describe('AuthController', () => {
       };
 
       const authRequest = {
-        accessToken: 'valid-token',
+        cookies: { Authentication: mockAccessToken },
       };
 
       const result = await controller.authenticate(
-        authRequest,
+        authRequest as any,
         mockResponse as any,
       );
 
@@ -207,7 +211,9 @@ describe('AuthController', () => {
         authenticated: true,
       });
 
-      expect(authService.authenticate).toHaveBeenCalledWith(authRequest);
+      expect(authService.authenticate).toHaveBeenCalledWith({
+        accessToken: mockAccessToken,
+      });
       expect(mockResponse.cookie).toHaveBeenCalledTimes(1); // Only access token, no refresh token
     });
   });

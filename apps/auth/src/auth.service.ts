@@ -7,7 +7,6 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import {
-  AuthRequest,
   AuthResponse,
   LoginUserRequestDto,
   RegisterUserRequestDto,
@@ -18,6 +17,7 @@ import {
   RecoverUserRequestDto,
   isPreUserAuth,
   TokenResponse,
+  AuthRequestDto,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { TokenService } from './tokens/token.service';
@@ -104,7 +104,7 @@ export class AuthService {
     }
   }
 
-  async authenticate({ accessToken }: AuthRequest): Promise<AuthResponse> {
+  async authenticate({ accessToken }: AuthRequestDto): Promise<AuthResponse> {
     try {
       // We should modify TokenService to add a method for verifying access tokens
       // For now we'll delegate this to the tokenService by adjusting our approach

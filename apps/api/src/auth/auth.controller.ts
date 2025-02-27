@@ -14,10 +14,10 @@ import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import {
   AUTH_SERVICE_NAME,
-  AuthRequestDto,
   AuthResponse,
   AuthServiceClient,
   AuthTokenPayload,
+  getAccessToken,
   LoginUserRequestDto,
   RecoverUserRequestDto,
   RefreshTokenRequestDto,
@@ -81,14 +81,17 @@ export class AuthController {
 
   @Post('authenticate')
   @ApiOperation({ summary: 'Authenticate user' })
-  @ApiBody({
-    type: AuthRequestDto,
-  })
   async authenticate(
-    @Body() req: AuthRequestDto,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = this.authService.authenticate(req);
+    // Get access and refresh tokens from cookies
+    const accessToken = getAccessToken(req);
+
+    if (!accessToken) {
+      throw new UnauthorizedException('Authentication tokens not found');
+    }
+    const auth = this.authService.authenticate({ accessToken });
     return this.setAuthCookies(auth, res);
   }
 
@@ -198,8 +201,8 @@ export class AuthController {
           // Set access token cookie
           res.cookie('Authentication', accessToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: true,
+            sameSite: 'none',
             expires: new Date(expires),
           });
 
@@ -207,8 +210,8 @@ export class AuthController {
           if (refreshToken) {
             res.cookie('RefreshToken', refreshToken, {
               httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'lax',
+              secure: true,
+              sameSite: 'none',
               path: '/auth/refresh', // Only sent to refresh endpoint
               maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             });
