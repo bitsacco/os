@@ -11,11 +11,14 @@ import {
 import {
   LightningInvoiceResponse,
   LightningPayResponse,
+  LnUrlWithdrawPoint,
   ReceiveContext,
   WithFederationId,
   WithGatewayId,
 } from '@bitsacco/common';
 import { decode } from 'light-bolt11-decoder';
+import * as crypto from 'crypto';
+import { bech32 } from 'bech32';
 
 @Injectable()
 export class FedimintService {
@@ -195,11 +198,83 @@ export class FedimintService {
         });
       });
   }
+
+  /**
+   * Creates an LNURL-withdraw endpoint and returns the encoded LNURL
+   * @param maxWithdrawableMsats Maximum amount in millisatoshis that can be withdrawn
+   * @param minWithdrawableMsats Minimum amount in millisatoshis that can be withdrawn (optional)
+   * @param defaultDescription Default description for the withdrawal (optional)
+   * @param expirySeconds Time in seconds until this withdraw request expires (default: 1 hour)
+   * @returns Object containing LNURL details for generating a QR code
+   */
+  async createLnUrlWithdrawPoint(
+    maxWithdrawableMsats: number,
+    minWithdrawableMsats: number = 0,
+    defaultDescription: string = 'Bitsacco LNURL Withdraw',
+    expirySeconds: number = 3600,
+  ): Promise<LnUrlWithdrawPoint> {
+    this.logger.log(
+      `Creating LNURL withdraw request for max ${maxWithdrawableMsats} msats`,
+    );
+
+    try {
+      const callback = this.configService.getOrThrow('LNURL_CALLBACK');
+
+      const timestamp = new Date().getTime();
+      const k1 =
+        crypto.randomBytes(32).toString('hex') + timestamp.toString(16);
+
+      const expiresAt = Math.floor(timestamp / 1000) + expirySeconds;
+      const params = new URLSearchParams({
+        callback,
+        k1: k1,
+        maxWithdrawable: maxWithdrawableMsats.toString(),
+        minWithdrawable: minWithdrawableMsats.toString(),
+        defaultDescription,
+        tag: 'withdrawRequest',
+      });
+
+      const lnurl = this.createBech32Encoding(
+        `${callback}?${params.toString()}`,
+      );
+
+      this.logger.log(`Created LNURL withdraw with k1: ${k1}`);
+      return {
+        lnurl,
+        k1,
+        callback,
+        expiresAt,
+      };
+    } catch (error) {
+      this.logger.error('Failed to create LNURL withdrawal', error);
+      throw new Error(`LNURL withdrawal creation failed: ${error.message}`);
+    }
+  }
+
+  private createBech32Encoding(url: string): string {
+    // Convert URL string to 5-bit words
+    const words = bech32.toWords(Buffer.from(url, 'utf8'));
+
+    // Encode with bech32 using 'fm' as the human-readable part (prefix)
+    // You can change 'fm' to another prefix that makes sense for your application
+    const encoded = bech32.encode('lnurl1', words);
+
+    return encoded;
+  }
 }
 
-interface FlatDecodedInvoice {
+export interface FlatDecodedInvoice {
   paymentHash: string;
   amountMsats: string;
   description: string;
   timestamp: number;
+}
+
+export interface LnurlWithdrawParams {
+  tag: string;
+  callbackUrl: string;
+  k1: string;
+  defaultDescription: string;
+  minWithdrawable: number;
+  maxWithdrawable: number;
 }

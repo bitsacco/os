@@ -77,15 +77,26 @@ export class WithdrawFundsRequestDto implements WithdrawFundsRequest {
   @ApiProperty()
   reference: string;
 
+  @IsOptional()
   @ValidateNested()
   @Type(() => OfframpSwapTargetDto)
-  @ApiProperty({ type: OfframpSwapTargetDto })
+  @ApiProperty({ type: OfframpSwapTargetDto, required: false })
   offramp?: OfframpSwapTargetDto;
 
+  @IsOptional()
   @ValidateNested()
   @Type(() => Bolt11InvoiceDto)
-  @ApiProperty({ type: Bolt11InvoiceDto })
+  @ApiProperty({ type: Bolt11InvoiceDto, required: false })
   lightning?: Bolt11InvoiceDto;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @ApiProperty({
+    type: Boolean,
+    required: false,
+    description: 'request LNURL withdrawal',
+  })
+  lnurlRequest?: boolean;
 
   @IsOptional()
   @ValidateNested()
@@ -183,4 +194,12 @@ export class FindTxRequestDto implements FindTxRequest {
   @Type(() => String)
   @ApiProperty({ example: 'c7137197-a6dc-46c3-98bd-9dc3a7d003a1' })
   txId: string;
+}
+
+export class LnUrlWithdrawStatusRequestDto {
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ description: 'ID of the withdrawal to check' })
+  withdrawId: string;
 }

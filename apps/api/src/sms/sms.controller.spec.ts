@@ -7,7 +7,7 @@ import { SmsController } from './sms.controller';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { SMS_SERVICE_NAME, SmsServiceClient } from '@bitsacco/common';
 
-describe.skip('SmsController', () => {
+describe('SmsController', () => {
   let serviceGenerator: ClientGrpc;
   let smsController: SmsController;
   let smsServiceClient: Partial<SmsServiceClient>;

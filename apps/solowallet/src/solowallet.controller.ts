@@ -10,11 +10,15 @@ import {
   FindTxRequestDto,
 } from '@bitsacco/common';
 import { SolowalletService } from './solowallet.service';
+import { FedimintService } from '@bitsacco/common';
 
 @Controller()
 @SolowalletServiceControllerMethods()
 export class SolowalletController {
-  constructor(private readonly solowalletService: SolowalletService) {}
+  constructor(
+    private readonly solowalletService: SolowalletService,
+    private readonly fedimintService: FedimintService,
+  ) {}
 
   @GrpcMethod()
   depositFunds(request: DepositFundsRequestDto) {
@@ -44,5 +48,11 @@ export class SolowalletController {
   @GrpcMethod()
   findTransaction(request: FindTxRequestDto) {
     return this.solowalletService.findTransaction(request);
+  }
+
+  // This would typically be exposed as a REST API endpoint instead of gRPC
+  // since it needs to be accessible to Lightning wallets scanning the QR code
+  processLnUrlWithdrawCallback(k1: string, pr: string) {
+    return this.solowalletService.processLnUrlWithdrawCallback(k1, pr);
   }
 }

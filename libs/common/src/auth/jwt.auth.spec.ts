@@ -162,13 +162,6 @@ describe('JwtAuthGuard', () => {
       expect(result).toBe(false);
     });
 
-    // Skip this test for now as it requires deeper mocking of the JwtAuthGuard internals
-    it.skip('should check for required roles', () => {
-      // We need to mock the guard's internal roles check logic
-      // This is challenging since it's not directly accessible
-      // Will revisit in a future PR
-    });
-
     it('should fallback to gRPC auth service when local verification fails', async () => {
       jest.spyOn(jwtService, 'verify').mockImplementation(() => {
         throw new Error('Invalid token');

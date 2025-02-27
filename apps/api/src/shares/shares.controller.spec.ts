@@ -7,7 +7,7 @@ import {
 import { type ClientGrpc } from '@nestjs/microservices';
 import { SharesController } from './shares.controller';
 
-describe.skip('SharesController', () => {
+describe('SharesController', () => {
   let serviceGenerator: ClientGrpc;
   let sharesController: SharesController;
   let sharesServiceClient: Partial<SharesServiceClient>;

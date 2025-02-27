@@ -52,6 +52,7 @@
     "@types/uuid": "^10.0.0",
     "africastalking": "^0.7.0",
     "argon2": "^0.41.1",
+    "bech32": "^2.0.0",
     "bitly": "^7.1.2",
     "bowser": "^2.11.0",
     "cache-manager": "4.1.0",
@@ -81,6 +82,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@golevelup/ts-jest": "^0.6.2",
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.0.0",

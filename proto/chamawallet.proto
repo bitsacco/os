@@ -37,7 +37,7 @@ message ChamaWalletTx {
 
   optional int32 amount_fiat = 6;
 
-  lib.Bolt11 lightning = 7;
+  lib.FmLightning lightning = 7;
 
   lib.TransactionType type = 8;
 

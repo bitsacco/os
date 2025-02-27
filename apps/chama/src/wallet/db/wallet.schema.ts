@@ -2,10 +2,12 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import {
   AbstractDocument,
   ChamaTxStatus,
+  parseFmLightning,
+  parseTransactionStatus,
+  parseTransactionType,
   TransactionType,
   type ChamaTxReview,
   type ChamaWalletTx,
-  type FmInvoice,
 } from '@bitsacco/common';
 import { Logger } from '@nestjs/common';
 
@@ -60,33 +62,6 @@ export function toChamaWalletTx(
   doc: ChamaWalletDocument,
   logger: Logger,
 ): ChamaWalletTx {
-  let lightning: FmInvoice;
-  try {
-    lightning = JSON.parse(doc.lightning);
-  } catch (error) {
-    logger.warn(
-      `Error parsing lightning invoice: ${doc.lightning}, error: ${error}`,
-    );
-    lightning = {
-      invoice: '',
-      operationId: '',
-    };
-  }
-
-  let status = ChamaTxStatus.UNRECOGNIZED;
-  try {
-    status = Number(doc.status) as ChamaTxStatus;
-  } catch (error) {
-    logger.warn(`Error parsing transaction status ${error}`);
-  }
-
-  let type = TransactionType.UNRECOGNIZED;
-  try {
-    type = Number(doc.type) as TransactionType;
-  } catch (error) {
-    logger.warn(`Error parsing transaction type ${error}`);
-  }
-
   let createdAt: string;
   try {
     createdAt = doc.createdAt.toDateString();
@@ -104,9 +79,6 @@ export function toChamaWalletTx(
   }
 
   return {
-    status,
-    type,
-    lightning,
     id: doc._id,
     memberId: doc.memberId,
     chamaId: doc.chamaId,
@@ -114,6 +86,13 @@ export function toChamaWalletTx(
     amountFiat: doc.amountFiat,
     reviews: doc.reviews,
     reference: doc.reference,
+    status: parseTransactionStatus<ChamaTxStatus>(
+      doc.status.toString(),
+      ChamaTxStatus.UNRECOGNIZED,
+      logger,
+    ),
+    type: parseTransactionType(doc.type.toString(), logger),
+    lightning: parseFmLightning(doc.lightning, logger),
     createdAt,
     updatedAt,
   };
