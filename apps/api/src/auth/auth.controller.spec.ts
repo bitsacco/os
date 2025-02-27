@@ -14,6 +14,7 @@ import {
   getAccessToken,
 } from '@bitsacco/common';
 import { AuthController } from './auth.controller';
+import Bowser from 'bowser';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -42,6 +43,15 @@ describe('AuthController', () => {
 
     // Mock getAccessToken for test cases that need it
     jest.spyOn({ getAccessToken }, 'getAccessToken');
+
+    // Mock Bowser for isBrowserRequest checks
+    jest.spyOn(Bowser, 'getParser').mockImplementation((userAgent) => {
+      return {
+        getBrowserName: () => {
+          return userAgent?.includes('Chrome') ? 'Chrome' : undefined;
+        }
+      } as any;
+    });
 
     // Create mock for AuthServiceClient
     authService = {

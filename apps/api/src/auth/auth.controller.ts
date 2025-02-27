@@ -1,5 +1,6 @@
-import { type Request, type Response } from 'express';
+import Bowser from 'bowser';
 import { firstValueFrom, Observable } from 'rxjs';
+import { type Request, type Response } from 'express';
 import {
   Body,
   Controller,
@@ -249,11 +250,7 @@ export class AuthController {
   }
 
   private isBrowserRequest(req: Request): boolean {
-    const userAgent = req.headers?.['user-agent'] || '';
-    return (
-      userAgent.includes('Mozilla/') ||
-      userAgent.includes('Chrome/') ||
-      userAgent.includes('Safari/')
-    );
+    const browser = Bowser.getParser(req.headers?.['user-agent']);
+    return browser.getBrowserName() !== undefined;
   }
 }
