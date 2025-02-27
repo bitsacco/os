@@ -23,6 +23,7 @@ import {
   ApiBody,
   ApiParam,
   ApiBearerAuth,
+  ApiCookieAuth,
 } from '@nestjs/swagger';
 import { type ClientGrpc } from '@nestjs/microservices';
 
@@ -44,6 +45,7 @@ export class SolowalletController {
 
   @Post('deposit')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Deposit funds to Solowallet' })
   @ApiBody({
     type: DepositFundsRequestDto,
@@ -54,6 +56,7 @@ export class SolowalletController {
 
   @Post('withdraw')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Withdraw funds from Solowallet' })
   @ApiBody({
     type: WithdrawFundsRequestDto,
@@ -64,6 +67,7 @@ export class SolowalletController {
 
   @Post('transactions')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Find Solowallet user transactions' })
   @ApiBody({
     type: UserTxsRequestDto,
@@ -74,6 +78,7 @@ export class SolowalletController {
 
   @Post('update')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Update Solowallet transaction' })
   @ApiBody({
     type: UpdateTxDto,
@@ -84,6 +89,7 @@ export class SolowalletController {
 
   @Post('continue')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Continue Solowallet transaction' })
   @ApiBody({
     type: ContinueTxRequestDto,
@@ -94,6 +100,7 @@ export class SolowalletController {
 
   @Get('/find/id/:id')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Get transaction by ID' })
   @ApiParam({ name: 'id', description: 'Transaction ID' })
   async findTransaction(@Param('id') id: string) {

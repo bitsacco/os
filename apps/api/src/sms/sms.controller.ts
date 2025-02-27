@@ -1,4 +1,9 @@
-import { ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiBody,
+  ApiBearerAuth,
+  ApiCookieAuth,
+} from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -29,6 +34,7 @@ export class SmsController {
 
   @Post('send-message')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Send a single sms' })
   @ApiBody({
     type: SendSmsDto,
@@ -39,6 +45,7 @@ export class SmsController {
 
   @Post('send-bulk-message')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Send multiple sms' })
   @ApiBody({
     type: SendBulkSmsDto,

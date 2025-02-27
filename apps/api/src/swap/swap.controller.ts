@@ -14,6 +14,7 @@ import { object } from 'joi';
 import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import {
   ApiBearerAuth,
+  ApiCookieAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -75,6 +76,7 @@ export class SwapController {
   @Post('onramp')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Post onramp transaction' })
   @ApiBody({
     type: CreateOnrampSwapDto,
@@ -86,6 +88,7 @@ export class SwapController {
   @Get('onramp/find/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Find onramp transaction by ID' })
   @ApiParam({ name: 'id', type: String, description: 'Transaction ID' })
   findOnrampTransaction(@Param('id') id: string) {
@@ -95,6 +98,7 @@ export class SwapController {
   @Get('onramp/all')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'List onramp swaps' })
   @ApiQuery({
     name: 'page',
@@ -143,6 +147,7 @@ export class SwapController {
   @Post('offramp')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Post offramp transaction' })
   @ApiBody({
     type: CreateOfframpSwapDto,
@@ -154,6 +159,7 @@ export class SwapController {
   @Get('offramp/find/:id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Find offramp transaction by ID' })
   @ApiParam({ name: 'id', type: 'string', description: 'Transaction ID' })
   findOfframpTransaction(@Param('id') id: string) {
@@ -163,6 +169,7 @@ export class SwapController {
   @Get('offramp/all')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'List all offramp swaps' })
   @ApiQuery({
     name: 'page',

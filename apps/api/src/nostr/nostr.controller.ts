@@ -1,4 +1,9 @@
-import { ApiOperation, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiBody,
+  ApiBearerAuth,
+  ApiCookieAuth,
+} from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -30,6 +35,7 @@ export class NostrController {
 
   @Post('relays')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Configure nostr relays' })
   @ApiBody({
     type: ConfigureNostrRelaysDto,
@@ -40,6 +46,7 @@ export class NostrController {
 
   @Post('dm')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Send encrypted nostr dm' })
   @ApiBody({
     type: SendEncryptedNostrDmDto,

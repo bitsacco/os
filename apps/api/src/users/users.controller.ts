@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiCookieAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -30,6 +31,7 @@ export class UsersController {
 
   @Get('all')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'List all users' })
   async listUsers() {
     return this.usersService.listUsers();
@@ -37,6 +39,7 @@ export class UsersController {
 
   @Get('/find/id/:id')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Get user by ID' })
   @ApiParam({ name: 'id', description: 'User ID' })
   async findUserById(@Param('id') id: string) {
@@ -45,6 +48,7 @@ export class UsersController {
 
   @Get('/find/phone/:phone')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Get user by phone' })
   @ApiParam({ name: 'phone', description: 'User phone' })
   async findUserByPhone(@Param('phone') phone: string) {
@@ -53,6 +57,7 @@ export class UsersController {
 
   @Get('/find/npub/:npub')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Get user by npub' })
   @ApiParam({ name: 'npub', description: 'User npub' })
   async findUserByNpub(@Param('npub') npub: string) {
@@ -61,6 +66,7 @@ export class UsersController {
 
   @Patch('/update')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Update user' })
   @ApiBody({ type: UpdateUserRequestDto })
   async updateUser(@Body() request: UpdateUserRequestDto) {

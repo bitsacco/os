@@ -119,15 +119,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
     private readonly usersService: UsersService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (request: any) =>
-          request?.cookies?.Authentication ||
-          request?.Authentication ||
-          request?.headers?.Authentication ||
-          (request?.headers?.authorization
-            ? request.headers.authorization.replace('Bearer ', '')
-            : null),
-      ]),
+      jwtFromRequest: ExtractJwt.fromExtractors([getAccessToken]),
       secretOrKey: configService.getOrThrow('JWT_SECRET'),
     });
   }
@@ -146,14 +138,20 @@ export function getAccessToken(request: any) {
     return request.cookies['Authentication'];
   }
 
-  const authHeader = request?.headers?.cookie;
-  if (authHeader) {
-    const cookies = authHeader.split(';').reduce((acc, cookie) => {
+  const cookieHeader = request?.headers?.cookie;
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
       const [key, value] = cookie.trim().split('=');
       acc[key] = value;
       return acc;
     }, {});
     return cookies['Authentication'];
+  }
+
+  const authHeader = request?.headers?.authorization;
+  const prefix = 'Bearer ';
+  if (authHeader && authHeader.startsWith(prefix)) {
+    return authHeader.replace(prefix, '');
   }
 
   return null;

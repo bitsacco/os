@@ -50,11 +50,12 @@ export class AuthController {
     type: LoginUserRequestDto,
   })
   async login(
-    @Body() req: LoginUserRequestDto,
+    @Req() req: Request,
+    @Body() body: LoginUserRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = this.authService.loginUser(req);
-    return this.setAuthCookies(auth, res);
+    const auth = this.authService.loginUser(body);
+    return this.setAuthCookies(auth, req, res);
   }
 
   @Post('register')
@@ -62,8 +63,8 @@ export class AuthController {
   @ApiBody({
     type: RegisterUserRequestDto,
   })
-  register(@Body() req: RegisterUserRequestDto) {
-    return this.authService.registerUser(req);
+  register(@Req() req: Request, @Body() body: RegisterUserRequestDto) {
+    return this.authService.registerUser(body);
   }
 
   @Post('verify')
@@ -72,11 +73,12 @@ export class AuthController {
     type: VerifyUserRequestDto,
   })
   async verify(
-    @Body() req: VerifyUserRequestDto,
+    @Req() req: Request,
+    @Body() body: VerifyUserRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = this.authService.verifyUser(req);
-    return this.setAuthCookies(auth, res);
+    const auth = this.authService.verifyUser(body);
+    return this.setAuthCookies(auth, req, res);
   }
 
   @Post('authenticate')
@@ -92,7 +94,7 @@ export class AuthController {
       throw new UnauthorizedException('Authentication tokens not found');
     }
     const auth = this.authService.authenticate({ accessToken });
-    return this.setAuthCookies(auth, res);
+    return this.setAuthCookies(auth, req, res);
   }
 
   @Post('recover')
@@ -101,11 +103,12 @@ export class AuthController {
     type: RecoverUserRequestDto,
   })
   async recover(
-    @Body() req: RecoverUserRequestDto,
+    @Req() req: Request,
+    @Body() body: RecoverUserRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = this.authService.recoverUser(req);
-    return this.setAuthCookies(auth, res);
+    const auth = this.authService.recoverUser(body);
+    return this.setAuthCookies(auth, req, res);
   }
 
   @Post('refresh')
@@ -187,7 +190,11 @@ export class AuthController {
     };
   }
 
-  private async setAuthCookies(auth: Observable<AuthResponse>, res: Response) {
+  private async setAuthCookies(
+    auth: Observable<AuthResponse>,
+    req: Request,
+    res: Response,
+  ) {
     return firstValueFrom(auth).then(
       ({ user, accessToken, refreshToken }: AuthResponse) => {
         if (accessToken) {
@@ -198,32 +205,55 @@ export class AuthController {
             this.logger.error('Invalid auth response');
           }
 
-          // Set access token cookie
-          res.cookie('Authentication', accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-            expires: new Date(expires),
-          });
-
-          // Set refresh token cookie if available
-          if (refreshToken) {
-            res.cookie('RefreshToken', refreshToken, {
+          // Set cookies for browser requests
+          if (this.isBrowserRequest(req)) {
+            res.cookie('Authentication', accessToken, {
               httpOnly: true,
               secure: true,
               sameSite: 'none',
-              path: '/auth/refresh', // Only sent to refresh endpoint
-              maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+              expires: new Date(expires),
             });
+
+            if (refreshToken) {
+              res.cookie('RefreshToken', refreshToken, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'none',
+                path: '/auth/refresh',
+                maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+              });
+            }
+
+            // Return minimal response for browser
+            return {
+              user,
+              authenticated: true,
+            };
           }
+
+          // Return tokens in body for non-browser clients
+          return {
+            user,
+            authenticated: true,
+            accessToken,
+            refreshToken,
+          };
         }
 
-        // Don't send the tokens back in the response body for security
         return {
           user,
-          authenticated: !!accessToken,
+          authenticated: false,
         };
       },
+    );
+  }
+
+  private isBrowserRequest(req: Request): boolean {
+    const userAgent = req.headers?.['user-agent'] || '';
+    return (
+      userAgent.includes('Mozilla/') ||
+      userAgent.includes('Chrome/') ||
+      userAgent.includes('Safari/')
     );
   }
 }

@@ -27,6 +27,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiBearerAuth,
+  ApiCookieAuth,
 } from '@nestjs/swagger';
 import { type ClientGrpc } from '@nestjs/microservices';
 
@@ -44,6 +45,7 @@ export class SharesController {
 
   @Post('offer')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Offer Bitsacco shares' })
   @ApiBody({
     type: OfferSharesDto,
@@ -54,6 +56,7 @@ export class SharesController {
 
   @Get('offers')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'List all share offers' })
   getShareOffers() {
     return this.sharesService.getSharesOffers({});
@@ -61,6 +64,7 @@ export class SharesController {
 
   @Post('subscribe')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Subscribe Bitsacco shares' })
   @ApiBody({
     type: SubscribeSharesDto,
@@ -71,6 +75,7 @@ export class SharesController {
 
   @Post('transfer')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Transfer Bitsacco shares' })
   @ApiBody({
     type: TransferSharesDto,
@@ -81,6 +86,7 @@ export class SharesController {
 
   @Post('update')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'Update Bitsacco shares' })
   @ApiBody({
     type: UpdateSharesDto,
@@ -91,6 +97,7 @@ export class SharesController {
 
   @Get('transactions')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({ summary: 'List all Bitsacco share transactions' })
   allSharesTransactions() {
     return this.sharesService.allSharesTransactions({});
@@ -98,6 +105,7 @@ export class SharesController {
 
   @Get('transactions/:userId')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({
     summary: 'List all Bitsacco share transactions for user with given ID',
   })
@@ -130,6 +138,7 @@ export class SharesController {
 
   @Get('transactions/find/:sharesId')
   @ApiBearerAuth()
+  @ApiCookieAuth()
   @ApiOperation({
     summary: 'Find Bitsacco shares transaction with given ID',
   })
