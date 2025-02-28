@@ -1,63 +1,102 @@
+import { TestingModule } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/mongoose';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { createTestingModuleWithValidation } from '@bitsacco/testing';
+import {
+  TransactionStatus,
+  TransactionType,
+  FedimintService,
+  SWAP_SERVICE_NAME,
+} from '@bitsacco/common';
+import { Logger } from '@nestjs/common';
+
 import { SolowalletService } from './solowallet.service';
-import { TransactionStatus, TransactionType } from '@bitsacco/common';
+import { SolowalletDocument, SolowalletRepository } from './db';
 
 describe('SolowalletService', () => {
+  let app: TestingModule;
   let service: SolowalletService;
+  let repository: SolowalletRepository;
+  let fedimintService: FedimintService;
+  let eventEmitter: EventEmitter2;
 
-  // Define mock implementations
-  const mockRepository = {
-    create: jest.fn(),
-    find: jest.fn().mockResolvedValue([]),
-    findOne: jest.fn(),
-    findOneAndUpdate: jest.fn(),
-    aggregate: jest.fn().mockResolvedValue([{ totalMsats: 1000000 }]),
-  };
+  // Mock model
+  class MockModel {
+    constructor(private data: any) {}
+    static find = jest.fn().mockResolvedValue([]);
+    static findOne = jest.fn();
+    static findOneAndUpdate = jest.fn();
+    static create = jest.fn();
+    static aggregate = jest.fn().mockResolvedValue([{ totalMsats: 1000000 }]);
+    save = jest.fn().mockResolvedValue(this.data);
+  }
 
-  const mockFedimintService = {
-    pay: jest.fn().mockResolvedValue({ operationId: 'test-op-id', fee: 1000 }),
-    decode: jest
-      .fn()
-      .mockResolvedValue({ amountMsats: '50000', description: 'Test invoice' }),
-    invoice: jest.fn().mockResolvedValue({
-      invoice: 'test-invoice',
-      operationId: 'test-op-id',
-    }),
-    receive: jest.fn(),
-    createLnUrlWithdrawPoint: jest.fn().mockResolvedValue({
-      lnurl: 'lnurl1dp68gurn8ghj7ctsdyhxkmmvd9sxsctvdskcgty049x',
-      k1: 'test-k1',
-      callback: 'https://bitsacco.com/lnurl/callback',
-      expiresAt: 1677777777,
-    }),
-  };
+  // Set up mocks before running tests
+  beforeAll(async () => {
+    const mockFedimintService = {
+      pay: jest
+        .fn()
+        .mockResolvedValue({ operationId: 'test-op-id', fee: 1000 }),
+      decode: jest.fn().mockResolvedValue({
+        amountMsats: '50000',
+        description: 'Test invoice',
+      }),
+      invoice: jest.fn().mockResolvedValue({
+        invoice: 'test-invoice',
+        operationId: 'test-op-id',
+      }),
+      receive: jest.fn(),
+      createLnUrlWithdrawPoint: jest.fn().mockResolvedValue({
+        lnurl: 'lnurl1dp68gurn8ghj7ctsdyhxkmmvd9sxsctvdskcgty049x',
+        k1: 'test-k1',
+        callback: 'https://bitsacco.com/lnurl/callback',
+        expiresAt: 1677777777,
+      }),
+    };
 
-  const mockEventEmitter = {
-    on: jest.fn(),
-    emit: jest.fn(),
-  };
+    const mockSwapService = {
+      getService: jest.fn().mockReturnValue({
+        getQuote: jest.fn().mockResolvedValue({
+          amountMsats: 50000,
+          quote: { id: 'quote-id', exchangeRate: 1.0 },
+        }),
+      }),
+    };
 
-  const mockSwapClient = {
-    getQuote: jest.fn().mockResolvedValue({
-      amountMsats: 50000,
-      quote: { id: 'quote-id', exchangeRate: 1.0 },
-    }),
-  };
+    // Create testing module
+    app = await createTestingModuleWithValidation({
+      imports: [],
+      providers: [
+        SolowalletService,
+        SolowalletRepository,
+        {
+          provide: getModelToken(SolowalletDocument.name),
+          useValue: MockModel,
+        },
+        {
+          provide: FedimintService,
+          useValue: mockFedimintService,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: {
+            on: jest.fn(),
+            emit: jest.fn(),
+          },
+        },
+        {
+          provide: SWAP_SERVICE_NAME,
+          useValue: mockSwapService,
+        },
+        Logger,
+      ],
+    });
 
-  const mockGrpcClient = {
-    getService: jest.fn().mockReturnValue(mockSwapClient),
-  };
-
-  beforeEach(() => {
-    // Reset mocks
-    jest.clearAllMocks();
-
-    // Create service instance with mocked dependencies
-    service = new SolowalletService(
-      mockRepository,
-      mockFedimintService,
-      mockEventEmitter as any,
-      mockGrpcClient as any,
-    );
+    // Get service and mocks from the testing module
+    service = app.get<SolowalletService>(SolowalletService);
+    repository = app.get<SolowalletRepository>(SolowalletRepository);
+    fedimintService = app.get<FedimintService>(FedimintService);
+    eventEmitter = app.get<EventEmitter2>(EventEmitter2);
 
     // Mock internal service methods
     jest.spyOn(service as any, 'getPaginatedUserTxLedger').mockResolvedValue({
@@ -73,8 +112,8 @@ describe('SolowalletService', () => {
       currentBalance: 949000,
     });
 
-    // Setup consistent repository response for withdrawals
-    mockRepository.create.mockImplementation((data) => {
+    // Setup repository mocks
+    jest.spyOn(repository, 'create').mockImplementation((data: any) => {
       const isLnurl = JSON.stringify(data.lightning).includes('lnurl');
       return Promise.resolve({
         _id: isLnurl ? 'lnurl-withdrawal-id' : 'test-withdrawal-id',
@@ -88,12 +127,19 @@ describe('SolowalletService', () => {
         reference: data.reference,
         createdAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as SolowalletDocument);
     });
+  });
+
+  beforeEach(() => {
+    // Reset mocks before each test
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+    expect(repository).toBeDefined();
+    expect(fedimintService).toBeDefined();
   });
 
   describe('withdrawFunds', () => {
@@ -107,15 +153,15 @@ describe('SolowalletService', () => {
 
       expect(result).toBeDefined();
       expect(result.txId).toBe('test-withdrawal-id');
-      expect(mockFedimintService.pay).toHaveBeenCalledWith(
+      expect(fedimintService.pay).toHaveBeenCalledWith(
         'lnbc500n1p3zg5k2pp5...',
       );
-      expect(mockFedimintService.decode).toHaveBeenCalledWith(
+      expect(fedimintService.decode).toHaveBeenCalledWith(
         'lnbc500n1p3zg5k2pp5...',
       );
 
-      // Verify wallet.create was called with correct params
-      expect(mockRepository.create).toHaveBeenCalledWith(
+      // Verify repository.create was called with correct params
+      expect(repository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           userId: 'test-user',
           amountMsats: 51000, // 50000 + 1000 fee
@@ -128,9 +174,11 @@ describe('SolowalletService', () => {
 
     it('should throw an error when lightning invoice amount exceeds balance', async () => {
       // Mock decode to return a large amount
-      mockFedimintService.decode.mockResolvedValueOnce({
+      jest.spyOn(fedimintService, 'decode').mockResolvedValueOnce({
         amountMsats: '2000000', // Exceeds the 949000 balance
         description: 'Large invoice',
+        paymentHash: '',
+        timestamp: Date.now(),
       });
 
       await expect(
@@ -143,7 +191,7 @@ describe('SolowalletService', () => {
       ).rejects.toThrow('Invoice amount exceeds available balance');
 
       // Verify that no withdrawal was created
-      expect(mockRepository.create).not.toHaveBeenCalled();
+      expect(repository.create).not.toHaveBeenCalled();
     });
   });
 });
