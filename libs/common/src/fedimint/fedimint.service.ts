@@ -130,7 +130,7 @@ export class FedimintService {
   async pay(invoice: string): Promise<{ operationId: string; fee: number }> {
     this.logger.log(`Paying Invoice : ${invoice}`);
 
-    const foo = await this.post<
+    const res = await this.post<
       { paymentInfo: string } & WithFederationId & WithGatewayId,
       unknown
     >('/ln/pay', {
@@ -139,9 +139,9 @@ export class FedimintService {
       gatewayId: this.gatewayId,
     });
 
-    this.logger.log(foo);
+    this.logger.log(`Lightning pay response : ${JSON.stringify(res)}`);
     const { operationId, fee }: LightningPayResponse =
-      foo as LightningPayResponse;
+      res as LightningPayResponse;
 
     this.logger.log(`Paid Invoice : ${invoice} : ${operationId}`);
     return {
@@ -219,24 +219,61 @@ export class FedimintService {
 
     try {
       const callback = this.configService.getOrThrow('LNURL_CALLBACK');
+      const k1 = crypto.randomBytes(16).toString('hex');
 
       const timestamp = new Date().getTime();
-      const k1 =
-        crypto.randomBytes(32).toString('hex') + timestamp.toString(16);
-
       const expiresAt = Math.floor(timestamp / 1000) + expirySeconds;
+
+      const shortDescription =
+        defaultDescription.length > 20
+          ? defaultDescription.substring(0, 20)
+          : defaultDescription;
+
+      // Create params - Use shorter parameter names where possible
+      // (standard LNURL params cannot be changed though)
       const params = new URLSearchParams({
         callback,
         k1: k1,
         maxWithdrawable: maxWithdrawableMsats.toString(),
         minWithdrawable: minWithdrawableMsats.toString(),
-        defaultDescription,
+        defaultDescription: shortDescription,
         tag: 'withdrawRequest',
       });
 
-      const lnurl = this.createBech32Encoding(
-        `${callback}?${params.toString()}`,
-      );
+      const url = `${callback}?${params.toString()}`;
+
+      if (url.length > 800) {
+        this.logger.warn(
+          `URL is too long (${url.length} chars), simplifying parameters`,
+        );
+
+        // Create a simplified params set with just the essential parameters
+        const simplifiedParams = new URLSearchParams({
+          callback,
+          k1: k1,
+          maxWithdrawable: maxWithdrawableMsats.toString(),
+          tag: 'withdrawRequest',
+        });
+
+        const simplifiedUrl = `${callback}?${simplifiedParams.toString()}`;
+        this.logger.log(
+          `Simplified URL length: ${simplifiedUrl.length} characters`,
+        );
+
+        // Encode the simplified URL
+        const lnurl = this.createBech32Encoding(simplifiedUrl);
+
+        this.logger.log(`Created simplified LNURL withdraw with k1: ${k1}`);
+        return {
+          lnurl,
+          k1,
+          callback,
+          expiresAt,
+        };
+      }
+
+      // Encode the URL in bech32 format
+      const lnurl = this.createBech32Encoding(url);
 
       this.logger.log(`Created LNURL withdraw with k1: ${k1}`);
       return {
@@ -252,14 +289,29 @@ export class FedimintService {
   }
 
   private createBech32Encoding(url: string): string {
-    // Convert URL string to 5-bit words
-    const words = bech32.toWords(Buffer.from(url, 'utf8'));
+    try {
+      // Debug log to help with troubleshooting
+      this.logger.debug(`Encoding URL (length: ${url.length}): ${url}`);
 
-    // Encode with bech32 using 'fm' as the human-readable part (prefix)
-    // You can change 'fm' to another prefix that makes sense for your application
-    const encoded = bech32.encode('lnurl1', words);
+      // Check if URL is too long for bech32 encoding
+      // bech32 has a limit of 90 characters for the data part (excluding hrp)
+      // but when considering the 5-bit encoding, this can support roughly 500-600 bytes
+      if (url.length > 1000) {
+        throw new Error(
+          `URL is too long (${url.length} chars) for bech32 encoding`,
+        );
+      }
 
-    return encoded;
+      // Convert URL string to 5-bit words
+      const words = bech32.toWords(Buffer.from(url, 'utf8'));
+
+      // Encode with bech32 using 'lnurl1' as the human-readable part (prefix)
+      return bech32.encode('lnurl', words, 1023);
+    } catch (error) {
+      // Log and rethrow with more context
+      this.logger.error(`Failed to create bech32 encoding: ${error.message}`);
+      throw new Error(`Exceeds length limit (URL: ${url.length} chars)`);
+    }
   }
 }
 

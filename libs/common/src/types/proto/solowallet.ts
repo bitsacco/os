@@ -11,6 +11,7 @@ import {
   Bolt11,
   FindTxRequest,
   FmLightning,
+  LnUrlWithdrawResponse,
   OfframpSwapTarget,
   OnrampSwapSource,
   PaginatedRequest,
@@ -99,6 +100,14 @@ export interface ContinueTxRequest {
   pagination?: PaginatedRequest | undefined;
 }
 
+/** Request object for processing LNURL withdrawals */
+export interface ProcessLnUrlWithdrawRequest {
+  /** The k1 parameter used to identify the withdrawal request */
+  k1: string;
+  /** The bolt11 invoice from the receiving wallet (the "pr" parameter) */
+  pr: string;
+}
+
 export interface SolowalletServiceClient {
   depositFunds(request: DepositFundsRequest): Observable<UserTxsResponse>;
 
@@ -111,6 +120,12 @@ export interface SolowalletServiceClient {
   continueTransaction(request: ContinueTxRequest): Observable<UserTxsResponse>;
 
   findTransaction(request: FindTxRequest): Observable<SolowalletTx>;
+
+  /** Process LNURL withdrawal request from a Lightning wallet */
+
+  processLnUrlWithdraw(
+    request: ProcessLnUrlWithdrawRequest,
+  ): Observable<LnUrlWithdrawResponse>;
 }
 
 export interface SolowalletServiceController {
@@ -137,6 +152,15 @@ export interface SolowalletServiceController {
   findTransaction(
     request: FindTxRequest,
   ): Promise<SolowalletTx> | Observable<SolowalletTx> | SolowalletTx;
+
+  /** Process LNURL withdrawal request from a Lightning wallet */
+
+  processLnUrlWithdraw(
+    request: ProcessLnUrlWithdrawRequest,
+  ):
+    | Promise<LnUrlWithdrawResponse>
+    | Observable<LnUrlWithdrawResponse>
+    | LnUrlWithdrawResponse;
 }
 
 export function SolowalletServiceControllerMethods() {
@@ -148,6 +172,7 @@ export function SolowalletServiceControllerMethods() {
       'updateTransaction',
       'continueTransaction',
       'findTransaction',
+      'processLnUrlWithdraw',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(

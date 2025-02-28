@@ -16,6 +16,9 @@ service SolowalletService {
   rpc ContinueTransaction(ContinueTxRequest) returns (UserTxsResponse) {}
 
   rpc FindTransaction(lib.FindTxRequest) returns (SolowalletTx) {}
+  
+  // Process LNURL withdrawal request from a Lightning wallet
+  rpc ProcessLnUrlWithdraw(ProcessLnUrlWithdrawRequest) returns (lib.LnUrlWithdrawResponse) {}
 }
 
 message DepositFundsRequest {
@@ -136,4 +139,13 @@ message ContinueTxRequest {
   optional string reference = 10;
 
   optional lib.PaginatedRequest pagination = 11;
+}
+
+// Request object for processing LNURL withdrawals
+message ProcessLnUrlWithdrawRequest {
+  // The k1 parameter used to identify the withdrawal request
+  string k1 = 1;
+
+  // The bolt11 invoice from the receiving wallet (the "pr" parameter)
+  string pr = 2;
 }

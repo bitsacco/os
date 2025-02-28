@@ -27,6 +27,7 @@ import {
   initiateOfframpSwap,
   initiateOnrampSwap,
   FmLightning,
+  parseTransactionStatus,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -621,11 +622,48 @@ export class SolowalletService {
   }
 
   /**
+   * Find a pending LNURL withdrawal transaction by k1 value
+   * @param k1 The k1 identifier from the LNURL withdrawal request
+   * @returns The transaction document if found, null otherwise
+   */
+  async findPendingLnurlWithdrawal(k1: string): Promise<SolowalletTx | null> {
+    this.logger.log(`Looking for pending withdrawal with k1: ${k1}`);
+
+    try {
+      // Find transaction by paymentTracker (which stores the k1 value)
+      const doc = await this.wallet.findOne({
+        paymentTracker: k1,
+        type: TransactionType.WITHDRAW.toString(),
+      });
+
+      if (!doc) {
+        this.logger.log(`No withdrawal found with k1: ${k1}`);
+        return null;
+      }
+
+      const status = parseTransactionStatus<TransactionStatus>(
+        doc.status.toString(),
+        TransactionStatus.UNRECOGNIZED,
+        this.logger,
+      );
+
+      this.logger.log(`TRANSACTION STATUS: ${status}`);
+      if (status !== TransactionStatus.PENDING) {
+        throw new Error('Transaction is not pending');
+      }
+
+      return toSolowalletTx(doc, this.logger);
+    } catch (error) {
+      this.logger.error(
+        `Error finding pending withdrawal: ${error.message}`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  /**
    * Handle an LNURL withdraw callback when a user scans the QR code
-   * This method is no longer used - LNURL callbacks are handled in the API service
-   * using the continueTransaction mechanism instead.
-   *
-   * @deprecated Use continueTransaction in API service instead
    */
   async processLnUrlWithdrawCallback(
     k1: string,

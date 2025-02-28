@@ -32,6 +32,7 @@ import { HttpModule } from '@nestjs/axios';
         FEDIMINT_CLIENTD_PASSWORD: Joi.string().required(),
         FEDIMINT_FEDERATION_ID: Joi.string().required(),
         FEDIMINT_GATEWAY_ID: Joi.string().required(),
+        LNURL_CALLBACK: Joi.string().required(),
       }),
     }),
     DatabaseModule,
