@@ -6,6 +6,7 @@ import {
   DatabaseModule,
   FedimintService,
   LoggerModule,
+  MonitoringModule,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -41,6 +42,7 @@ import { HttpModule } from '@nestjs/axios';
     ]),
     LoggerModule,
     HttpModule,
+    MonitoringModule,
     ClientsModule.registerAsync([
       {
         name: SWAP_SERVICE_NAME,

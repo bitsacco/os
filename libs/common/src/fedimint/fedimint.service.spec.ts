@@ -123,7 +123,7 @@ describe('FedimintService', () => {
             useValue: mockEventEmitter,
           },
         ],
-      }).compile();
+      });
       
       fedimintService = module.get<FedimintService>(FedimintService);
     });
@@ -211,7 +211,7 @@ async function createFedimintService(mockCfg: jest.Mocked<ConfigService>) {
         },
       },
     ],
-  }).compile();
+  });
 
   return module.get<FedimintService>(FedimintService);
 }

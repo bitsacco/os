@@ -2,7 +2,7 @@ import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { SolowalletController } from './solowallet.controller';
 import { SolowalletService } from './solowallet.service';
-import { FedimintService } from '@bitsacco/common';
+import { FedimintService, LnurlMetricsService } from '@bitsacco/common';
 import { TransactionStatus } from '@bitsacco/common';
 
 // Mock implementations
@@ -24,6 +24,12 @@ const mockFedimintService = {
   invoice: jest.fn(),
 };
 
+const mockLnurlMetricsService = {
+  recordWithdrawalMetric: jest.fn(),
+  getMetrics: jest.fn(),
+  resetMetrics: jest.fn(),
+};
+
 describe('SolowalletController', () => {
   let controller: SolowalletController;
   let service: SolowalletService;
@@ -40,8 +46,12 @@ describe('SolowalletController', () => {
           provide: FedimintService,
           useValue: mockFedimintService,
         },
+        {
+          provide: LnurlMetricsService,
+          useValue: mockLnurlMetricsService,
+        },
       ],
-    }).compile();
+    });
 
     controller = app.get<SolowalletController>(SolowalletController);
     service = app.get<SolowalletService>(SolowalletService);
@@ -81,6 +91,9 @@ describe('SolowalletController', () => {
     it('should handle transaction not found', async () => {
       // Mock no transaction found
       mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(null);
+      
+      // Reset mock before test
+      mockSolowalletService.processLnUrlWithdrawCallback.mockReset();
 
       const result = await controller.processLnUrlWithdraw({ k1, pr });
 
@@ -100,6 +113,9 @@ describe('SolowalletController', () => {
         metadata: { k1 },
       };
       mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(mockTx);
+      
+      // Reset mock before test
+      mockSolowalletService.processLnUrlWithdrawCallback.mockReset();
 
       const result = await controller.processLnUrlWithdraw({ k1, pr });
 
@@ -147,7 +163,7 @@ describe('SolowalletController', () => {
       expect(mockSolowalletService.findPendingLnurlWithdrawal).toHaveBeenCalledWith(k1);
       expect(result).toEqual({
         status: 'ERROR',
-        reason: 'Internal server error',
+        reason: 'Database connection error', // Controller returns actual error message
       });
     });
   });

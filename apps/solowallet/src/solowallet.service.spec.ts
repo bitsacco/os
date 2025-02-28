@@ -6,6 +6,7 @@ import {
   TransactionStatus,
   TransactionType,
   FedimintService,
+  LnurlMetricsService,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
 import { Logger } from '@nestjs/common';
@@ -87,6 +88,14 @@ describe('SolowalletService', () => {
         {
           provide: SWAP_SERVICE_NAME,
           useValue: mockSwapService,
+        },
+        {
+          provide: LnurlMetricsService,
+          useValue: {
+            recordWithdrawalMetric: jest.fn(),
+            getMetrics: jest.fn(),
+            resetMetrics: jest.fn(),
+          },
         },
         Logger,
       ],
