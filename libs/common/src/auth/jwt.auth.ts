@@ -43,7 +43,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
     context: ExecutionContext,
   ): boolean | Promise<boolean> | Observable<boolean> {
     const request = context.switchToHttp().getRequest();
-    const accessToken = getAccessToken(request);
+    const accessToken = getAccessToken(request, this.logger);
 
     if (!accessToken) {
       this.logger.error('No access token found');
@@ -114,12 +114,15 @@ export const Public = () => SetMetadata('isPublic', true);
 
 @Injectable()
 export class JwtAuthStrategy extends PassportStrategy(Strategy) {
+  private readonly logger = new Logger(JwtAuthStrategy.name);
   constructor(
     configService: ConfigService,
     private readonly usersService: UsersService,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([getAccessToken]),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (request: any) => getAccessToken(request, this.logger),
+      ]),
       secretOrKey: configService.getOrThrow('JWT_SECRET'),
     });
   }
@@ -133,9 +136,16 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
   }
 }
 
-export function getAccessToken(request: any) {
+export function getAccessToken(request: any, logger: Logger) {
   if (request?.cookies) {
-    return request.cookies['Authentication'];
+    const authCookie = request.cookies['Authentication'];
+
+    if (authCookie) {
+      logger.log(`Request Authentication Cookie Present ${authCookie}`);
+      return authCookie;
+    } else {
+      logger.log('Request Authentication Cookie Missing');
+    }
   }
 
   const cookieHeader = request?.headers?.cookie;
@@ -145,13 +155,23 @@ export function getAccessToken(request: any) {
       acc[key] = value;
       return acc;
     }, {});
-    return cookies['Authentication'];
+
+    const authCookie = cookies['Authentication'];
+
+    if (authCookie) {
+      logger.log(`Header Authentication Cookie Present ${authCookie}`);
+      return authCookie;
+    } else {
+      logger.log('Header Authentication Cookie Missing');
+    }
   }
 
   const authHeader = request?.headers?.authorization;
   const prefix = 'Bearer ';
   if (authHeader && authHeader.startsWith(prefix)) {
-    return authHeader.replace(prefix, '');
+    const bearerToken = authHeader.replace(prefix, '');
+    logger.log(`Bearer Token Present ${bearerToken}`);
+    return bearerToken;
   }
 
   return null;

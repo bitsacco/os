@@ -88,7 +88,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     // Get access and refresh tokens from cookies
-    const accessToken = getAccessToken(req);
+    const accessToken = getAccessToken(req, this.logger);
 
     if (!accessToken) {
       throw new UnauthorizedException('Authentication tokens not found');
