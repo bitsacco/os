@@ -132,13 +132,32 @@ export class SolowalletController {
   async lnurl(@Query('k1') k1: string, @Query('pr') pr: string) {
     this.logger.log(`Received LNURL withdrawal request with k1: ${k1}`);
 
+    // Validate input parameters
+    if (!k1 || k1.length < 10) {
+      this.logger.warn(`Invalid k1 parameter: ${k1}`);
+      return {
+        status: 'ERROR',
+        reason: 'Invalid or missing k1 parameter',
+      };
+    }
+
+    if (!pr) {
+      this.logger.warn(`Invalid or missing bolt11 invoice: ${pr}`);
+      return {
+        status: 'ERROR',
+        reason: 'Invalid or missing lightning invoice',
+      };
+    }
+
     try {
+      // Process the LNURL withdrawal using the gRPC service
       const response = await firstValueFrom(
         this.walletService.processLnUrlWithdraw({ k1, pr }),
       );
 
       this.logger.log(`LNURL withdrawal response: ${JSON.stringify(response)}`);
 
+      // Return a response that complies with the LNURL-withdraw specification
       return {
         status: response.status,
         ...(response.reason && { reason: response.reason }),
@@ -149,9 +168,28 @@ export class SolowalletController {
         error.stack,
       );
 
+      // Handle different error types more specifically
+      if (error.message?.includes('not found')) {
+        return {
+          status: 'ERROR',
+          reason: 'Withdrawal request not found or expired',
+        };
+      } else if (error.message?.includes('expired')) {
+        return {
+          status: 'ERROR',
+          reason: 'Withdrawal request has expired',
+        };
+      } else if (error.message?.includes('invoice')) {
+        return {
+          status: 'ERROR',
+          reason: 'Invalid lightning invoice',
+        };
+      }
+
+      // Generic error fallback that doesn't expose internal details
       return {
         status: 'ERROR',
-        reason: error.message || 'An internal error occurred',
+        reason: 'An error occurred while processing the withdrawal',
       };
     }
   }
