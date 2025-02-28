@@ -6,6 +6,7 @@ import {
   fedimint_receive_failure,
   fedimint_receive_success,
   FedimintService,
+  LnurlMetricsService,
   UserTxsResponse,
   UserTxsRequestDto,
   PaginatedSolowalletTxsResponse,
@@ -42,6 +43,7 @@ export class SolowalletService {
     private readonly wallet: SolowalletRepository,
     private readonly fedimintService: FedimintService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly metricsService: LnurlMetricsService,
     @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
   ) {
     this.logger.log('SolowalletService created');
@@ -616,7 +618,7 @@ export class SolowalletService {
     await this.wallet.findOneAndUpdate(
       { paymentTracker: operationId },
       {
-        state: TransactionStatus.FAILED,
+        status: TransactionStatus.FAILED, // Changed from 'state' to 'status' to fix bug
       },
     );
   }
@@ -670,7 +672,10 @@ export class SolowalletService {
     pr: string,
   ): Promise<{ success: boolean; message: string; txId?: string }> {
     this.logger.log(`Processing LNURL withdraw callback with k1: ${k1}`);
-
+    
+    // Start timing the operation for metrics
+    const startTime = Date.now();
+    
     try {
       // 1. Find the pending withdrawal record using the k1 value
       const withdrawal = await this.wallet.findOne({
@@ -725,6 +730,14 @@ export class SolowalletService {
         `LNURL withdrawal successfully completed for ID: ${updatedWithdrawal._id}`,
       );
 
+      // Record successful metric
+      const duration = Date.now() - startTime;
+      this.metricsService.recordWithdrawalMetric({
+        success: true,
+        duration,
+        amount: withdrawal.amount,
+      });
+      
       return {
         success: true,
         message: 'Withdrawal successful',
@@ -732,6 +745,15 @@ export class SolowalletService {
       };
     } catch (error) {
       this.logger.error('Failed to process LNURL withdraw callback', error);
+      
+      // Record failed metric with error type
+      const duration = Date.now() - startTime;
+      this.metricsService.recordWithdrawalMetric({
+        success: false,
+        duration,
+        errorType: error.message || 'Unknown error',
+      });
+      
       return {
         success: false,
         message: error.message,
