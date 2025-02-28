@@ -672,10 +672,10 @@ export class SolowalletService {
     pr: string,
   ): Promise<{ success: boolean; message: string; txId?: string }> {
     this.logger.log(`Processing LNURL withdraw callback with k1: ${k1}`);
-    
+
     // Start timing the operation for metrics
     const startTime = Date.now();
-    
+
     try {
       // 1. Find the pending withdrawal record using the k1 value
       const withdrawal = await this.wallet.findOne({
@@ -735,9 +735,10 @@ export class SolowalletService {
       this.metricsService.recordWithdrawalMetric({
         success: true,
         duration,
-        amount: withdrawal.amount,
+        amountMsats: updatedWithdrawal.amountMsats,
+        amountFiat: updatedWithdrawal.amountFiat,
       });
-      
+
       return {
         success: true,
         message: 'Withdrawal successful',
@@ -745,7 +746,7 @@ export class SolowalletService {
       };
     } catch (error) {
       this.logger.error('Failed to process LNURL withdraw callback', error);
-      
+
       // Record failed metric with error type
       const duration = Date.now() - startTime;
       this.metricsService.recordWithdrawalMetric({
@@ -753,7 +754,7 @@ export class SolowalletService {
         duration,
         errorType: error.message || 'Unknown error',
       });
-      
+
       return {
         success: false,
         message: error.message,

@@ -5,7 +5,8 @@ export interface LnurlMetric {
   success: boolean;
   duration: number;
   errorType?: string;
-  amount?: number;
+  amountMsats?: number;
+  amountFiat?: number;
 }
 
 export const LNURL_WITHDRAW_METRIC = 'lnurl:withdraw';
@@ -18,7 +19,7 @@ export const LNURL_WITHDRAW_METRIC = 'lnurl:withdraw';
 @Injectable()
 export class LnurlMetricsService {
   private readonly logger = new Logger(LnurlMetricsService.name);
-  
+
   // Simple in-memory metrics for demonstration
   private metrics = {
     totalWithdraws: 0,
@@ -26,7 +27,8 @@ export class LnurlMetricsService {
     failedWithdraws: 0,
     averageDuration: 0,
     errorTypes: {} as Record<string, number>,
-    totalWithdrawAmount: 0,
+    totalWithdrawAmountMsats: 0,
+    totalWithdrawAmountFiat: 0,
   };
 
   constructor(private eventEmitter: EventEmitter2) {
@@ -40,38 +42,43 @@ export class LnurlMetricsService {
   recordWithdrawalMetric(metric: LnurlMetric): void {
     // Increment total counter
     this.metrics.totalWithdraws++;
-    
+
     // Track success/failure
     if (metric.success) {
       this.metrics.successfulWithdraws++;
-      if (metric.amount) {
-        this.metrics.totalWithdrawAmount += metric.amount;
+      if (metric.amountMsats) {
+        this.metrics.totalWithdrawAmountMsats += metric.amountMsats;
+      }
+      if (metric.amountFiat) {
+        this.metrics.totalWithdrawAmountFiat += metric.amountFiat;
       }
     } else {
       this.metrics.failedWithdraws++;
       // Track error types
       if (metric.errorType) {
-        this.metrics.errorTypes[metric.errorType] = 
+        this.metrics.errorTypes[metric.errorType] =
           (this.metrics.errorTypes[metric.errorType] || 0) + 1;
       }
     }
-    
+
     // Update average duration using running average formula
-    this.metrics.averageDuration = 
-      (this.metrics.averageDuration * (this.metrics.totalWithdraws - 1) + metric.duration) / 
+    this.metrics.averageDuration =
+      (this.metrics.averageDuration * (this.metrics.totalWithdraws - 1) +
+        metric.duration) /
       this.metrics.totalWithdraws;
-    
+
     // Emit event for potential subscribers
     this.eventEmitter.emit(LNURL_WITHDRAW_METRIC, {
       ...metric,
       timestamp: new Date().toISOString(),
     });
-    
+
     // Log the metric for monitoring
     this.logger.log(
       `LNURL metric - Success: ${metric.success}, Duration: ${metric.duration}ms${
         metric.errorType ? `, Error: ${metric.errorType}` : ''
-      }${metric.amount ? `, Amount: ${metric.amount}` : ''}`,
+      }${metric.amountMsats ? `, Amount (msats): ${metric.amountMsats}` : ''}
+      ${metric.amountFiat ? `, Amount (KES): ${metric.amountFiat}` : ''}`,
     );
   }
 
@@ -82,9 +89,11 @@ export class LnurlMetricsService {
   getMetrics() {
     return {
       ...this.metrics,
-      successRate: this.metrics.totalWithdraws > 0 
-        ? (this.metrics.successfulWithdraws / this.metrics.totalWithdraws) * 100 
-        : 0,
+      successRate:
+        this.metrics.totalWithdraws > 0
+          ? (this.metrics.successfulWithdraws / this.metrics.totalWithdraws) *
+            100
+          : 0,
     };
   }
 
@@ -98,7 +107,8 @@ export class LnurlMetricsService {
       failedWithdraws: 0,
       averageDuration: 0,
       errorTypes: {},
-      totalWithdrawAmount: 0,
+      totalWithdrawAmountMsats: 0,
+      totalWithdrawAmountFiat: 0,
     };
   }
 }
