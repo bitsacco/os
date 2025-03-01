@@ -93,6 +93,9 @@ export class IntasendService {
     challenge,
   }: MpesaPaymentUpdateDto): Promise<MpesaTracker> {
     this.checkUpdateChallenge(challenge);
+    this.logger.log(
+      `Processing payment update for file_id: ${file_id}, status_code: ${status_code}`,
+    );
 
     let batch: MpesaTransactionState;
     switch (status_code) {
@@ -118,18 +121,30 @@ export class IntasendService {
         break;
     }
 
-    let state: MpesaTransactionState;
-    if (batch === MpesaTransactionState.Complete) {
+    let state = batch; // Default to batch state if no individual transaction state is determined
+
+    if (batch === MpesaTransactionState.Complete && transactions.length > 0) {
+      this.logger.log(`Batch complete, checking individual transaction status`);
+
       if (transactions.length !== 1) {
-        this.logger.error('Invalid transaction update. Expected 1 transaction');
-        throw new Error('Rejected mpesa transaction update');
+        this.logger.warn(
+          `Expected 1 transaction, but got ${transactions.length}`,
+        );
       }
 
       const tx = transactions[0];
+      this.logger.log(
+        `Transaction status: ${tx.status}, status_code: ${tx.status_code}`,
+      );
+
       switch (tx.status_code) {
         case PaymentStatusCode.TP101:
         case PaymentStatusCode.TP102:
-          throw new Error('Transaction should not be pending or processing');
+          this.logger.warn(
+            'Transaction still shows as pending or processing despite batch being complete',
+          );
+          state = MpesaTransactionState.Processing;
+          break;
         case PaymentStatusCode.TF103:
         case PaymentStatusCode.TF104:
         case PaymentStatusCode.TF105:
@@ -144,10 +159,17 @@ export class IntasendService {
           state = MpesaTransactionState.Processing;
           break;
         case PaymentStatusCode.TR109:
-          state = MpesaTransactionState.Retry;
+          state = MpesaTransactionState.Processing;
           break;
+        default:
+          this.logger.warn(
+            `Unknown transaction status code: ${tx.status_code}, defaulting to batch state: ${batch}`,
+          );
+          state = batch;
       }
     }
+
+    this.logger.log(`Final state determined: ${state}`);
 
     return {
       id: file_id,

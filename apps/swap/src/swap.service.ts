@@ -414,23 +414,35 @@ export class SwapService {
     const mpesa =
       await this.intasendService.getMpesaTrackerFromPaymentUpdate(update);
 
+    this.logger.log(
+      `Looking for offramp swap with paymentTracker: ${update.file_id}`,
+    );
     const swap = await this.offramp.findOne({
       paymentTracker: update.file_id,
     });
 
     if (!swap) {
-      throw new Error('Failed to create or update swap');
+      this.logger.error(
+        `No offramp swap found with paymentTracker: ${update.file_id}`,
+      );
+      throw new Error('Failed to find swap for update');
     }
 
-    await this.offramp.findOneAndUpdate(
+    this.logger.log(`Found swap: ${swap._id}, current state: ${swap.state}`);
+    const newState = mapMpesaTxStateToSwapTxState(mpesa.state);
+
+    this.logger.log(`Updating swap state from ${swap.state} to ${newState}`);
+    const updatedSwap = await this.offramp.findOneAndUpdate(
       { _id: swap._id },
       {
-        state: mapMpesaTxStateToSwapTxState(mpesa.state),
+        state: newState,
       },
     );
 
-    this.logger.log('Swap Updated');
-    return;
+    this.logger.log(
+      `Swap ${swap._id} updated successfully to state: ${newState}`,
+    );
+    return updatedSwap;
   }
 
   @OnEvent(fedimint_receive_success)
