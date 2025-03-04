@@ -4,16 +4,10 @@ import { Logger } from '@nestjs/common';
 // Create a logger for the seeders
 const logger = new Logger('SeedersDB');
 
-// Load database connection string from env files
-function loadDatabaseUrl(): string {
-  return 'mongodb://bs:password@localhost:27017';
-}
-
 // Connect to MongoDB
 export async function connectToDatabase() {
   try {
-    const dbUrl = loadDatabaseUrl();
-    await mongoose.connect(dbUrl);
+    await mongoose.connect('mongodb://bs:password@localhost:27017');
     logger.log('Connected to MongoDB');
     return mongoose.connection;
   } catch (error) {
@@ -41,25 +35,25 @@ export async function registerSchemas() {
 
     // Import User schema
     const { UsersSchema } = await import(
-      '../libs/common/src/database/users.schema'
+      '../../libs/common/src/database/users.schema'
     );
 
     // Import Shares schemas
     const { SharesOfferSchema, SharesSchema } = await import(
-      '../apps/shares/src/db/shares.schema'
+      '../../apps/shares/src/db/shares.schema'
     );
 
     // Import Chama schemas
     const { ChamasSchema } = await import(
-      '../apps/chama/src/chamas/db/chamas.schema'
+      '../../apps/chama/src/chamas/db/chamas.schema'
     );
     const { ChamaWalletSchema } = await import(
-      '../apps/chama/src/wallet/db/wallet.schema'
+      '../../apps/chama/src/wallet/db/wallet.schema'
     );
 
     // Import Solowallet schema
     const { SolowalletSchema } = await import(
-      '../apps/solowallet/src/db/solowallet.schema'
+      '../../apps/solowallet/src/db/solowallet.schema'
     );
 
     logger.log('Registering models...');

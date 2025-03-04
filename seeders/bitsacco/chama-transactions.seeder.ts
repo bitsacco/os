@@ -15,7 +15,7 @@ import {
   generateLightningInvoice,
   generateReference,
   randomSelect,
-} from './utils';
+} from '../utils';
 
 /**
  * Seed chama wallet transactions

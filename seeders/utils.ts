@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { TransactionType } from './types';
+import { TransactionType } from './bitsacco/types';
 import * as argon2 from 'argon2';
 
 /**
@@ -8,6 +8,11 @@ import * as argon2 from 'argon2';
 export function generateId(): string {
   return uuidv4();
 }
+
+/**
+ * Generate a specific UUID
+ */
+export const generateSpecifiedId = (id: string): string => id;
 
 /**
  * Generate a random phone number in Kenya format

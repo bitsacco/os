@@ -1,5 +1,5 @@
 import { SharesOffer } from './types';
-import { generateId, randomDateString } from './utils';
+import { generateId, randomDateString } from '../utils';
 
 /**
  * Seed shares offers

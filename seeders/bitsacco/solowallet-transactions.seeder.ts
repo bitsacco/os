@@ -12,7 +12,7 @@ import {
   kesToMsats,
   generateLightningInvoice,
   generateReference,
-} from './utils';
+} from '../utils';
 
 /**
  * Seed solowallet transactions

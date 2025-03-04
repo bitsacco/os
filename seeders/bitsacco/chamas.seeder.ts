@@ -1,5 +1,5 @@
 import { User, Chama, ChamaMember, ChamaMemberRole } from './types';
-import { generateId, randomSelect } from './utils';
+import { generateId, randomSelect } from '../utils';
 
 /**
  * Seed chamas

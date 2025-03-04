@@ -1,5 +1,5 @@
 import { User, SharesOffer, SharesTx, SharesTxStatus } from './types';
-import { generateId, randomDateString, randomSelect } from './utils';
+import { generateId, randomDateString, randomSelect } from '../utils';
 
 /**
  * Seed user share transactions

@@ -1,5 +1,5 @@
 import { User, Role } from './types';
-import { generateId, generateNpub, hashPin } from './utils';
+import { generateId, generateNpub, hashPin } from '../utils';
 import { Logger } from '@nestjs/common';
 
 const logger = new Logger('UsersSeed');
@@ -18,7 +18,7 @@ export async function seedUsers(): Promise<User[]> {
       {
         id: generateId(),
         phone: {
-          number: '+254700123456',
+          number: '+254708083339',
           verified: true,
         },
         nostr: {
@@ -26,12 +26,12 @@ export async function seedUsers(): Promise<User[]> {
           verified: true,
         },
         profile: {
-          name: 'Admin User',
+          name: 'Jodom',
           avatar_url: 'https://example.com/avatars/admin.jpg',
         },
         roles: [Role.Member, Role.Admin, Role.SuperAdmin],
       },
-      '123456',
+      '000000',
     ],
 
     // User 2 - Admin with phone only (PIN: 111111)
@@ -39,11 +39,11 @@ export async function seedUsers(): Promise<User[]> {
       {
         id: generateId(),
         phone: {
-          number: '+254701234567',
+          number: '+254703291347',
           verified: true,
         },
         profile: {
-          name: 'Phone Admin',
+          name: 'Isaack',
         },
         roles: [Role.Member, Role.Admin],
       },

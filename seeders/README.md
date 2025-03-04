@@ -6,31 +6,32 @@ This directory contains scripts to seed the Bitsacco OS database with test data.
 
 The seeders are organized by entity type:
 
-- `users.seeder.ts` - Seeds user accounts
-- `shares-offers.seeder.ts` - Seeds share offers
-- `user-shares.seeder.ts` - Seeds user share subscriptions
-- `chamas.seeder.ts` - Seeds chamas and memberships
-- `chama-transactions.seeder.ts` - Seeds chama wallet transactions
-- `solowallet-transactions.seeder.ts` - Seeds solowallet transactions
+- bitsacco
+  - `users.seeder.ts` - Seeds user accounts
+  - `shares-offers.seeder.ts` - Seeds share offers
+  - `user-shares.seeder.ts` - Seeds user share subscriptions
+  - `chamas.seeder.ts` - Seeds chamas and memberships
+  - `chama-transactions.seeder.ts` - Seeds chama wallet transactions
+  - `solowallet-transactions.seeder.ts` - Seeds solowallet transactions
+  - `types.ts` - Common type definitions
+  - `db.ts` - Database connection and schema management
 
 Common utilities and types are in:
 
 - `utils.ts` - Helper functions
-- `types.ts` - Common type definitions
-- `db.ts` - Database connection and schema management
 
 ## Usage
-
-Make sure the MongoDB database specified in the environment files (`apps/**/.dev.env`) is running. The seeders will use the `DATABASE_URL` variable from these files to connect to MongoDB.
 
 The seeders can be run directly from the command line using the following npm scripts:
 
 ```bash
 # Seed the database with test data
-bun seed
+bun bitsacco:seed
+bun featbit:seed
 
 # Clean seeded data from the database
-bun seed:clean
+bun bitsacco:clean
+bun featbit:clean
 ```
 
 ## Seeded Data
@@ -48,15 +49,15 @@ The seeders create the following data:
 
 The seeder creates users with predefined PINs that can be used to log in and test the application:
 
-| User Type | Phone Number | PIN | Roles |
-|-----------|--------------|-----|-------|
-| Super Admin | 254700123456 | 123456 | Member, Admin, SuperAdmin |
-| Phone Admin | 254701234567 | 111111 | Member, Admin |
-| Nostr Admin | (npub only) | 222222 | Member, Admin |
-| Phone Member | 254702345678 | 333333 | Member |
-| Nostr Member | (npub only) | 444444 | Member |
-| Complete Member | 254703456789 | 555555 | Member |
-| Unverified Member | 254704567890 | 666666 | Member |
+| User Type         | Phone Number | PIN    | Roles                     |
+| ----------------- | ------------ | ------ | ------------------------- |
+| Super Admin       | 254708083339 | 000000 | Member, Admin, SuperAdmin |
+| Phone Admin       | 254703291347 | 111111 | Member, Admin             |
+| Nostr Admin       | (npub only)  | 222222 | Member, Admin             |
+| Phone Member      | 254702345678 | 333333 | Member                    |
+| Nostr Member      | (npub only)  | 444444 | Member                    |
+| Complete Member   | 254703456789 | 555555 | Member                    |
+| Unverified Member | 254704567890 | 666666 | Member                    |
 
 When the seeder is run, you can view the terminal output for the full user details including npub values that are randomly generated.
 
@@ -76,6 +77,7 @@ The seeders maintain the following relationships:
 The seeder scripts reuse the actual MongoDB schemas from the respective apps rather than defining duplicate schemas:
 
 1. The `db.ts` file dynamically imports schema definitions from:
+
    - `libs/common/src/database/users.schema.ts`
    - `apps/shares/src/db/shares.schema.ts`
    - `apps/chama/src/chamas/db/chamas.schema.ts`
@@ -83,6 +85,7 @@ The seeder scripts reuse the actual MongoDB schemas from the respective apps rat
    - `apps/solowallet/src/db/solowallet.schema.ts`
 
 2. The process follows these steps:
+
    - Reads environment files to extract `DATABASE_URL`
    - Connects to MongoDB database
    - Imports and registers schemas from the app modules

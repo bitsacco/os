@@ -37,11 +37,7 @@ services:
       context: .
       dockerfile: ./apps/swap/Dockerfile
       target: development
-    command: [
-        "sh",
-        "-c",
-        "bun dev swap"
-      ]
+    command: ['sh', '-c', 'bun dev swap']
     restart: always
     depends_on:
       - clientd
@@ -60,11 +56,7 @@ services:
       context: .
       dockerfile: ./apps/nostr/Dockerfile
       target: development
-    command: [
-        "sh",
-        "-c",
-        "bun dev nostr"
-      ]
+    command: ['sh', '-c', 'bun dev nostr']
     restart: always
     depends_on:
       - mongodb
@@ -82,11 +74,7 @@ services:
       context: .
       dockerfile: ./apps/sms/Dockerfile
       target: development
-    command: [
-        "sh",
-        "-c",
-        "bun dev sms"
-      ]
+    command: ['sh', '-c', 'bun dev sms']
     restart: always
     depends_on:
       - mongodb
@@ -104,11 +92,7 @@ services:
       context: .
       dockerfile: ./apps/shares/Dockerfile
       target: development
-    command: [
-        "sh",
-        "-c",
-        "bun dev shares"
-      ]
+    command: ['sh', '-c', 'bun dev shares']
     restart: always
     depends_on:
       - mongodb
@@ -126,11 +110,7 @@ services:
       context: .
       dockerfile: ./apps/solowallet/Dockerfile
       target: development
-    command: [
-        "sh",
-        "-c",
-        "bun dev solowallet"
-      ]
+    command: ['sh', '-c', 'bun dev solowallet']
     restart: always
     depends_on:
       - swap
@@ -149,11 +129,7 @@ services:
       context: .
       dockerfile: ./apps/chama/Dockerfile
       target: development
-    command: [
-        "sh",
-        "-c",
-        "bun dev chama"
-      ]
+    command: ['sh', '-c', 'bun dev chama']
     restart: always
     depends_on:
       - swap
@@ -183,7 +159,11 @@ services:
     container_name: redis
     ports:
       - '6379:6379'
+    volumes:
+      - redis:/data
     restart: always
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
 
   clientd:
     image: okjodom/fedimint-clientd:v0.4.0
@@ -201,6 +181,63 @@ services:
       - clientd_datadir:/var/lib/clientd
     restart: always
 
+  featbit-ui:
+    image: featbit/featbit-ui:latest
+    container_name: featbit-ui
+    environment:
+      - API_URL=http://featbit-api:5000
+      - EVALUATION_URL=http://featbit-eval:5100
+      - DEMO_URL=https://featbit-samples.vercel.app
+    depends_on:
+      - featbit-api
+    ports:
+      - '8081:80'
+
+  featbit-api:
+    image: featbit/featbit-api-server:latest
+    container_name: featbit-api
+    environment:
+      - MongoDb__ConnectionString=mongodb://bs:password@mongodb:27017
+      - MongoDb__Database=featbit
+      - Redis__ConnectionString=redis:6379
+      - OLAP__ServiceHost=http://featbit-da
+    depends_on:
+      - mongodb
+      - redis
+      - featbit-da
+    ports:
+      - '5000:5000'
+
+  featbit-eval:
+    image: featbit/featbit-evaluation-server:latest
+    container_name: featbit-eval
+    environment:
+      - MongoDb__ConnectionString=mongodb://bs:password@mongodb:27017
+      - MongoDb__Database=featbit
+      - Redis__ConnectionString=redis:6379
+    depends_on:
+      - mongodb
+      - redis
+    ports:
+      - '5100:5100'
+
+  featbit-da:
+    image: featbit/featbit-data-analytics-server:latest
+    container_name: featbit-da
+    depends_on:
+      - mongodb
+      - redis
+    ports:
+      - '8200:80'
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      MONGO_URI: mongodb://bs:password@mongodb:27017
+      MONGO_INITDB_DATABASE: featbit
+      MONGO_HOST: mongodb
+      CHECK_DB_LIVNESS: true
+
 volumes:
   mongodb_datadir:
   clientd_datadir:
+  redis:
