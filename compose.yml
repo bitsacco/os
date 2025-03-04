@@ -236,6 +236,22 @@ services:
       MONGO_INITDB_DATABASE: featbit
       MONGO_HOST: mongodb
       CHECK_DB_LIVNESS: true
+      
+  featbit-sync:
+    container_name: featbit-sync
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+      target: development
+    command: ['node', 'seeders/featbit/sync.js']
+    restart: always
+    depends_on:
+      - mongodb
+      - featbit-api
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - .:/usr/src/app
 
 volumes:
   mongodb_datadir:

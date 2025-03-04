@@ -1,6 +1,7 @@
 import { MongoClient } from 'mongodb';
 import { Logger } from '@nestjs/common';
 import { generateId, generateSpecifiedId, hashPin } from '../utils';
+import { Role } from '../../libs/common/src/types/proto/auth';
 
 const FEATBIT_DB = 'featbit';
 const logger = new Logger('FeatBitSeeder');
@@ -143,6 +144,84 @@ export const cleanFeatBitCollections = async (): Promise<void> => {
   }
 };
 
+
+/**
+ * Connect to Bitsacco MongoDB database
+ * @returns {Promise<{ client: MongoClient, db: Db }>} Client and db objects
+ */
+export const connectToBitsaccoDb = async () => {
+  try {
+    let client;
+    try {
+      client = await MongoClient.connect('mongodb://bs:password@mongodb:27017/bitsacco');
+      logger.log('Connected to Bitsacco MongoDB via docker network hostname');
+    } catch (error) {
+      logger.log('Failed to connect to Bitsacco DB via docker network, trying localhost');
+      client = await MongoClient.connect('mongodb://bs:password@localhost:27017/bitsacco');
+      logger.log('Connected to Bitsacco MongoDB via localhost');
+    }
+
+    const db = client.db('bitsacco');
+    return { client, db };
+  } catch (error) {
+    logger.error('Error connecting to Bitsacco DB', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch all Bitsacco users
+ * @returns {Promise<Array>} Array of user documents
+ */
+export const getBitsaccoUsers = async () => {
+  try {
+    const { client, db } = await connectToBitsaccoDb();
+    const users = await db.collection('users').find({}).toArray();
+    await client.close();
+    return users;
+  } catch (error) {
+    logger.error('Error fetching Bitsacco users', error);
+    return [];
+  }
+};
+
+/**
+ * Transform a Bitsacco user to a FeatBit user
+ * This function is used by both the initial seeding and the sync service
+ */
+export const transformUserToFeatBit = (bitsaccoUser, workspaceId) => {
+  // Default password that FeatBit expects
+  const password = 'AQAAAAEAACcQAAAAELDHEjCrDQrmnAXU5C//mOLvUBJ7lnVFEMMFxNMDIIrF7xK8JDQKUifU3HH4gexNAQ==';
+  
+  // Determine user's email - prioritize phone, then nostr, then fallback
+  let email = 'user@bitsacco.com';
+  let name = 'Bitsacco User';
+  
+  if (bitsaccoUser.phone && bitsaccoUser.phone.number) {
+    email = `${bitsaccoUser.phone.number}@bitsacco.com`;
+    name = bitsaccoUser.profile?.name || `Phone User ${bitsaccoUser.phone.number}`;
+  } else if (bitsaccoUser.nostr && bitsaccoUser.nostr.npub) {
+    email = `${bitsaccoUser.nostr.npub.substring(0, 8)}@bitsacco.com`;
+    name = bitsaccoUser.profile?.name || `Nostr User ${bitsaccoUser.nostr.npub.substring(0, 8)}`;
+  }
+  
+  // Check if user has admin role
+  const isAdmin = bitsaccoUser.roles && bitsaccoUser.roles.includes(Role.Admin);
+  
+  return {
+    _id: bitsaccoUser._id, // Preserve original user ID
+    email,
+    password,
+    name,
+    origin: 'Local',
+    workspaceId,
+    bitsaccoUser: true, // Mark as a Bitsacco user for reference
+    admin: isAdmin,
+    createAt: new Date(),
+    updatedAt: new Date(),
+  };
+};
+
 export const seedFeatBit = async (): Promise<void> => {
   console.log(`Use ${FEATBIT_DB} database`);
 
@@ -172,7 +251,7 @@ export const seedFeatBit = async (): Promise<void> => {
   try {
     // seed ids
     const workspaceId = generateId();
-    const userId = generateId();
+    const defaultUserId = generateId();
     const organizationId = generateId();
     const projectId = generateId();
     const environmentId = generateId();
@@ -203,7 +282,7 @@ export const seedFeatBit = async (): Promise<void> => {
     });
     console.log('Collection seeded: Workspaces');
 
-    // seed user
+    // seed users
     console.log('Seed collection: Users');
 
     // Using a fixed password that FeatBit expects - default is 'Pass@word1'
@@ -212,9 +291,10 @@ export const seedFeatBit = async (): Promise<void> => {
     const password =
       'AQAAAAEAACcQAAAAELDHEjCrDQrmnAXU5C//mOLvUBJ7lnVFEMMFxNMDIIrF7xK8JDQKUifU3HH4gexNAQ==';
 
-    await Users.insertMany([
+    // First seed default users
+    const defaultUsers = [
       {
-        _id: userId,
+        _id: defaultUserId,
         email: 'admin@bitsacco.com',
         password,
         name: 'Admin',
@@ -233,7 +313,18 @@ export const seedFeatBit = async (): Promise<void> => {
         createAt: new Date(),
         updatedAt: new Date(),
       },
-    ]);
+    ];
+    
+    // Fetch and transform Bitsacco users
+    const bitsaccoUsers = await getBitsaccoUsers();
+    logger.log(`Found ${bitsaccoUsers.length} Bitsacco users to sync`);
+    
+    const featBitUsers = [
+      ...defaultUsers,
+      ...bitsaccoUsers.map(user => transformUserToFeatBit(user, workspaceId))
+    ];
+    
+    await Users.insertMany(featBitUsers);
     console.log('Collection seeded: Users');
 
     // seed organization

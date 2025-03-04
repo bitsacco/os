@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { seed, clean } from './bitsacco';
 import { cleanFeatBitCollections, seedFeatBit } from './featbit';
+import { startFeatBitSync } from './featbit/sync';
 
 // Create CLI program
 const program = new Command();
@@ -98,6 +99,21 @@ program
       process.exit(0);
     } catch (error) {
       console.error('Error cleaning databases', error);
+      process.exit(1);
+    }
+  });
+
+// Start FeatBit sync service command
+program
+  .command('featbit:sync')
+  .description('Start FeatBit user synchronization service')
+  .action(async () => {
+    try {
+      console.log('Starting FeatBit user synchronization service...');
+      await startFeatBitSync();
+      // Note: This will not exit unless there's an error or the service is stopped
+    } catch (error) {
+      console.error('Error starting FeatBit sync service:', error);
       process.exit(1);
     }
   });
