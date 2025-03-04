@@ -5,7 +5,7 @@ This app is a gRPC microservice for Bitsacco shares.
 ## Dev
 
 Run `bun dev shares` to launch the microservice in development mode.
-Run `bun start` to launch this plus any other microservice and the REST api gateway in dev mode 
+Run `bun start` to launch this plus any other microservice and the REST api gateway in dev mode
 
 ## Docs
 

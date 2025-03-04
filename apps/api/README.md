@@ -9,6 +9,7 @@ Run `bun start` to launch the app and all underlying microservices in developmen
 ## Docs
 
 With the app running, you can access OpenAPI docs at
-  - http://localhost:4000/v1/docs
-  - http://localhost:4000/v1/docs/json
-  - http://localhost:4000/v1/docs/yaml
+
+- http://localhost:4000/v1/docs
+- http://localhost:4000/v1/docs/json
+- http://localhost:4000/v1/docs/yaml

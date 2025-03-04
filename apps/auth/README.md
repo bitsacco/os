@@ -2,14 +2,15 @@
 
 This app is a gRPC microservice for Bitsacco authentication.
 This service can be configured to support
- - [x] jwt authentication
- - [x] local auth via phone number and pin
- - [ ] local auth via nostr npub and pin
+
+- [x] jwt authentication
+- [x] local auth via phone number and pin
+- [ ] local auth via nostr npub and pin
 
 ## Dev
 
 Run `bun dev auth` to launch the microservice in development mode.
-Run `bun start` to launch this plus any other microservice and the REST api gateway in dev mode 
+Run `bun start` to launch this plus any other microservice and the REST api gateway in dev mode
 
 ## Docs
 

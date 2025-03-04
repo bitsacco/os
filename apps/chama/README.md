@@ -7,7 +7,7 @@ Members save and transact together in what is commonly known as a Chama savings 
 ## Dev
 
 Run `bun dev chama` to launch the microservice in development mode.
-Run `bun start` to launch this plus any other microservice and the REST api gateway in dev mode 
+Run `bun start` to launch this plus any other microservice and the REST api gateway in dev mode
 
 ## Docs
 

@@ -2,7 +2,6 @@
 
 [Bitsacco Open Source](https://github.com/bitsacco/opensource) is home to services and components powering the [Bitsacco](https://bitsacco.com) platform.
 
-
 ## Contributing
 
 | Read more contribution docs at [contributing.md](https://github.com/bitsacco/opensource/blob/main/docs/contributing.md)

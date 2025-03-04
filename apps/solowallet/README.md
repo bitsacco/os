@@ -7,7 +7,7 @@ Members can withdraw at any time via lightning, or to fiat via integrated Bitsac
 ## Dev
 
 Run `bun dev solowallet` to launch the microservice in development mode.
-Run `bun start` to launch this plus any other microservice and the REST api gateway in dev mode 
+Run `bun start` to launch this plus any other microservice and the REST api gateway in dev mode
 
 ## Docs
 

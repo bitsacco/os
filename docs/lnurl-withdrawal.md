@@ -9,6 +9,7 @@ LNURL is a protocol for interacting with Lightning wallets using QR codes and li
 1. **User Initiates Withdrawal**: User selects "Withdraw via LNURL" in the Bitsacco app.
 
 2. **Generate LNURL**: The system generates an LNURL withdraw request with:
+
    - A unique `k1` value to identify the request
    - Maximum and minimum withdrawal amounts
    - A description
@@ -19,10 +20,12 @@ LNURL is a protocol for interacting with Lightning wallets using QR codes and li
 4. **User Scans QR**: The user scans the QR code with their Lightning wallet.
 
 5. **Wallet Callback**: The user's wallet calls the Bitsacco callback URL with:
+
    - The `k1` parameter to identify the withdrawal request
    - A bolt11 payment request (`pr` parameter)
 
 6. **Process Withdrawal**: Bitsacco processes the withdrawal by:
+
    - Validating the withdrawal request
    - Checking if the transaction has already been processed
    - Paying the invoice via Fedimint
@@ -47,6 +50,7 @@ POST /solowallet/withdraw
 ```
 
 Request body:
+
 ```json
 {
   "user_id": "user-123",
@@ -57,21 +61,24 @@ Request body:
 ```
 
 Response:
+
 ```json
 {
   "tx_id": "tx-123",
   "ledger": {
-    "transactions": [{
-      "id": "tx-123",
-      "status": "PENDING",
-      "lightning": {
-        "lnurl_withdraw_point": {
-          "lnurl": "LNURL1...",
-          "k1": "abcdef123456...",
-          "expires_at": 1677777777
+    "transactions": [
+      {
+        "id": "tx-123",
+        "status": "PENDING",
+        "lightning": {
+          "lnurl_withdraw_point": {
+            "lnurl": "LNURL1...",
+            "k1": "abcdef123456...",
+            "expires_at": 1677777777
+          }
         }
       }
-    }]
+    ]
   }
 }
 ```
@@ -83,6 +90,7 @@ GET /solowallet/lnurl?k1=abcdef123456...&pr=lnbc...
 ```
 
 Response on success:
+
 ```json
 {
   "status": "OK"
@@ -90,6 +98,7 @@ Response on success:
 ```
 
 Response on error:
+
 ```json
 {
   "status": "ERROR",
@@ -112,6 +121,7 @@ To test the LNURL withdrawal flow, you need:
 2. A Lightning wallet that supports LNURL-withdraw (e.g., Phoenix, Blue Wallet)
 
 Test flows:
+
 1. Complete flow - successful withdrawal
 2. Expired withdrawal request
 3. Invalid invoice

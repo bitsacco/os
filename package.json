@@ -29,7 +29,11 @@
     "proto:gen": "bunx protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/common/src/types/proto --ts_proto_opt=nestJs=true --ts_proto_opt=exportCommonSymbols=false --ts_proto_opt=eslint_disable -I ./proto ./proto/*.proto",
     "proto:clean": "rm ./libs/common/src/types/proto/*.ts",
     "seed": "bun run seeders/cli.ts seed",
-    "seed:clean": "bun run seeders/cli.ts clean"
+    "clean": "bun run seeders/cli.ts clean",
+    "bitsacco:seed": "bun run seeders/cli.ts bitsacco:seed",
+    "bitsacco:clean": "bun run seeders/cli.ts bitsacco:clean",
+    "featbit:seed": "bun run seeders/cli.ts featbit:seed",
+    "featbit:clean": "bun run seeders/cli.ts featbit:clean"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.12.2",

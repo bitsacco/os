@@ -5,9 +5,7 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": true,
-    "assets": [
-      "**/*.proto"
-    ],
+    "assets": ["**/*.proto"],
     "watchAssets": true
   },
   "projects": {

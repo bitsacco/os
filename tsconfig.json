@@ -18,12 +18,8 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@bitsacco/common": [
-        "libs/common/src"
-      ],
-      "@bitsacco/testing": [
-        "libs/testing/src"
-      ]
+      "@bitsacco/common": ["libs/common/src"],
+      "@bitsacco/testing": ["libs/testing/src"]
     }
   }
 }

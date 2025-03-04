@@ -38,7 +38,7 @@ export class SolowalletDocument extends AbstractDocument {
   @Prop({ type: String, required: true })
   lightning: string;
 
-  @Prop({ type: String, required: true, unique: true })
+  @Prop({ type: String, required: true })
   paymentTracker?: string;
 
   @Prop({ type: String, required: true })

@@ -10,31 +10,36 @@ While we recommend using the GitHub Actions workflow for publishing, you can als
 ## Publishing Steps
 
 1. Run the packaging script:
+
    ```bash
    cd libs/common
    ./package.sh
    ```
 
 2. Navigate to the package directory:
+
    ```bash
    cd npm-package
    ```
 
 3. Login to npm (if not already logged in):
+
    ```bash
    npm login
    ```
 
 4. Publish the package:
+
    ```bash
    npm publish --access public
    ```
 
    If two-factor authentication is enabled, use:
+
    ```bash
    npm publish --access public --otp=YOUR_OTP_CODE
    ```
-   
+
    Replace YOUR_OTP_CODE with the code from your authenticator app.
 
 ## Updating the Version
@@ -53,6 +58,7 @@ This will update the version in your package.json file. Then run the package.sh 
 After successfully publishing, consider:
 
 1. Creating a git tag to mark the version:
+
    ```bash
    git tag common-v[version]
    git push origin common-v[version]
