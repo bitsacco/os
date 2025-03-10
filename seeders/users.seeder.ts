@@ -16,7 +16,7 @@ export async function seedUsers(): Promise<User[]> {
     // User 1 - Super Admin with both phone and nostr (PIN: 123456)
     [
       {
-        id: generateId(),
+        id: '43040650-5090-4dd4-8e93-8fd342533e7c',
         phone: {
           number: '+254700123456',
           verified: true,
@@ -26,7 +26,7 @@ export async function seedUsers(): Promise<User[]> {
           verified: true,
         },
         profile: {
-          name: 'Admin User',
+          name: 'Jodom',
           avatar_url: 'https://example.com/avatars/admin.jpg',
         },
         roles: [Role.Member, Role.Admin, Role.SuperAdmin],
@@ -37,13 +37,13 @@ export async function seedUsers(): Promise<User[]> {
     // User 2 - Admin with phone only (PIN: 111111)
     [
       {
-        id: generateId(),
+        id: '7b158dfd-cb98-40b1-9ed2-a13006a9f670',
         phone: {
           number: '+254701234567',
           verified: true,
         },
         profile: {
-          name: 'Phone Admin',
+          name: 'Isaack',
         },
         roles: [Role.Member, Role.Admin],
       },

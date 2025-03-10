@@ -163,7 +163,7 @@ export class UpdateUserRequestDto implements UpdateUserRequest {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   userId: string;
 
   @IsNotEmpty()

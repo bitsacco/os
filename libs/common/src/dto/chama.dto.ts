@@ -63,7 +63,7 @@ const IsInvites = (minSize: number, maxSize: number, isOptional = false) => {
 
 class ChamaMemberDto implements ChamaMember {
   @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   userId: string;
 
   @IsArray()
@@ -111,7 +111,7 @@ export class CreateChamaDto implements CreateChamaRequest {
     type: [ChamaMemberDto],
     example: [
       {
-        userId: '7b158dfd-cb98-40b1-9ed2-a13006a9f670',
+        userId: '43040650-5090-4dd4-8e93-8fd342533e7c',
         roles: [ChamaMemberRole.Member, ChamaMemberRole.Admin],
       },
     ],
@@ -125,7 +125,7 @@ export class CreateChamaDto implements CreateChamaRequest {
   invites: ChamaInvite[];
 
   @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   createdBy: string;
 }
 
@@ -145,7 +145,7 @@ export class ChamaUpdatesDto implements ChamaUpdates {
     type: [ChamaMemberDto],
     example: [
       {
-        userId: '7b158dfd-cb98-40b1-9ed2-a13006a9f670',
+        userId: '43040650-5090-4dd4-8e93-8fd342533e7c',
         roles: [ChamaMemberRole.Member],
       },
     ],
@@ -155,7 +155,7 @@ export class ChamaUpdatesDto implements ChamaUpdates {
 
 export class UpdateChamaDto implements UpdateChamaRequest {
   @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   chamaId: string;
 
   @ValidateNested()
@@ -167,21 +167,21 @@ export class UpdateChamaDto implements UpdateChamaRequest {
 
 export class FindChamaDto implements FindChamaRequest {
   @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   chamaId: string;
 }
 
 export class FilterChamasDto implements FilterChamasRequest {
   @IsOptionalUUID()
   @ApiProperty({
-    example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
     required: false,
   })
   createdBy?: string;
 
   @IsOptionalUUID()
   @ApiProperty({
-    example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
     required: false,
   })
   memberId?: string;
@@ -195,7 +195,7 @@ export class FilterChamasDto implements FilterChamasRequest {
 
 export class JoinChamaDto implements JoinChamaRequest {
   @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   chamaId: string;
 
   @ValidateNested()
@@ -206,7 +206,7 @@ export class JoinChamaDto implements JoinChamaRequest {
 
 export class InviteMembersDto implements InviteMembersRequest {
   @IsRequiredUUID()
-  @ApiProperty({ example: '7b158dfd-cb98-40b1-9ed2-a13006a9f670' })
+  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   chamaId: string;
 
   @IsInvites(1, 100, true)
