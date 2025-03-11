@@ -107,14 +107,92 @@ export interface LnUrlWithdrawPointCall {
 }
 
 /**
+ * Request object for processing LNURL withdrawals
+ *
+ * REF: https://github.com/lnurl/luds/blob/luds/03.md
+ */
+export interface LnUrlWithdrawRequest {
+  /**
+   * The k1 parameter used to identify the withdrawal request
+   * Sent on first and second steps of handshake
+   */
+  k1: string;
+  /**
+   * The type of LNURL. Always = 'withdrawRequest'
+   * Sent in first step of handshake
+   */
+  tag?: string | undefined;
+  /**
+   * The LNURL callback confirmation
+   * Sent in first step of handshake
+   */
+  callback?: string | undefined;
+  /**
+   * The maximum withdrawable amount msats confirmation
+   * Sent in first step of handshake
+   */
+  maxWithdrawable?: string | undefined;
+  /**
+   * The minimum withdrawable amount msats confirmation
+   * Sent in first step of handshake
+   */
+  minWithdrawable?: string | undefined;
+  /**
+   * The default description confirmation
+   * Sent in first step of handshake
+   */
+  defaultDescription?: string | undefined;
+  /**
+   * The bolt11 invoice from the receiving wallet (the "pr" parameter).
+   * Sent on second step of handshake
+   */
+  pr?: string | undefined;
+}
+
+/**
  * Message returned from  `LnUrlWithdrawPoint.callback`
  * when a user's `LN WALLET` makes a GET request with invoice and params
- *
- * REF: https://github.com/lnurl/luds/blob/luds/03.md step 6
+ * REF: https://github.com/lnurl/luds/blob/luds/03.md step 3 and step 6
  */
 export interface LnUrlWithdrawResponse {
-  /** "OK" or "ERROR" */
-  status: string;
-  /** error reason if `status` = "ERROR" */
+  /**
+   * The type of LNURL. Always = 'withdrawRequest'
+   * Sent in RESPONSE to first step of handshake
+   */
+  tag?: string | undefined;
+  /**
+   * The LNURL callback confirmation
+   * Sent in RESPONSE to first step of handshake
+   */
+  callback?: string | undefined;
+  /**
+   * The k1 parameter used to identify the withdrawal request
+   * Sent in RESPONSE to first step of handshake
+   */
+  k1?: string | undefined;
+  /**
+   * The maximum withdrawable amount msats confirmation
+   * Sent in RESPONSE to first step of handshake
+   */
+  maxWithdrawable?: string | undefined;
+  /**
+   * The minimum withdrawable amount msats confirmation
+   * Sent in RESPONSE to first step of handshake
+   */
+  minWithdrawable?: string | undefined;
+  /**
+   * The default description confirmation
+   * Sent in RESPONSE to first step of handshake
+   */
+  defaultDescription?: string | undefined;
+  /**
+   * "OK" or "ERROR"
+   * Sent in RESPONSE to second step of handshake
+   */
+  status?: string | undefined;
+  /**
+   * error reason if `status` = "ERROR"
+   * Sent in RESPONSE to second step of handshake
+   */
   reason?: string | undefined;
 }

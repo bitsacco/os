@@ -11,6 +11,7 @@ import {
   Bolt11,
   FindTxRequest,
   FmLightning,
+  LnUrlWithdrawRequest,
   LnUrlWithdrawResponse,
   OfframpSwapTarget,
   OnrampSwapSource,
@@ -100,14 +101,6 @@ export interface ContinueTxRequest {
   pagination?: PaginatedRequest | undefined;
 }
 
-/** Request object for processing LNURL withdrawals */
-export interface ProcessLnUrlWithdrawRequest {
-  /** The k1 parameter used to identify the withdrawal request */
-  k1: string;
-  /** The bolt11 invoice from the receiving wallet (the "pr" parameter) */
-  pr: string;
-}
-
 export interface SolowalletServiceClient {
   depositFunds(request: DepositFundsRequest): Observable<UserTxsResponse>;
 
@@ -124,7 +117,7 @@ export interface SolowalletServiceClient {
   /** Process LNURL withdrawal request from a Lightning wallet */
 
   processLnUrlWithdraw(
-    request: ProcessLnUrlWithdrawRequest,
+    request: LnUrlWithdrawRequest,
   ): Observable<LnUrlWithdrawResponse>;
 }
 
@@ -156,7 +149,7 @@ export interface SolowalletServiceController {
   /** Process LNURL withdrawal request from a Lightning wallet */
 
   processLnUrlWithdraw(
-    request: ProcessLnUrlWithdrawRequest,
+    request: LnUrlWithdrawRequest,
   ):
     | Promise<LnUrlWithdrawResponse>
     | Observable<LnUrlWithdrawResponse>

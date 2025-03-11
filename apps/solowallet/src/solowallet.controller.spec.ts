@@ -4,6 +4,7 @@ import { SolowalletController } from './solowallet.controller';
 import { SolowalletService } from './solowallet.service';
 import { FedimintService, LnurlMetricsService } from '@bitsacco/common';
 import { TransactionStatus } from '@bitsacco/common';
+import { ConfigService } from '@nestjs/config';
 
 // Mock implementations
 const mockSolowalletService = {
@@ -30,6 +31,10 @@ const mockLnurlMetricsService = {
   resetMetrics: jest.fn(),
 };
 
+const mockConfigService = {
+  getOrThrow: jest.fn(),
+};
+
 describe('SolowalletController', () => {
   let controller: SolowalletController;
   let service: SolowalletService;
@@ -45,6 +50,10 @@ describe('SolowalletController', () => {
         {
           provide: FedimintService,
           useValue: mockFedimintService,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
         {
           provide: LnurlMetricsService,
@@ -65,113 +74,186 @@ describe('SolowalletController', () => {
     const k1 = '1234567890abcdef';
     const pr =
       'lnbc1m1pj9npjfpp5qtgahqghjqdd3qwdsk33zut0r8uhfazuuckfrlhpvp4d689swsdsdqqcqzpgxqyz5vqsp5yxr67trxm66s8yn7m7nclfzcyjrhswhvwvfv05fqlfg5xtytlf4q9qyyssq340zakmv7c9d34dx5lnsd4r0qkv88qspcgnetl4xf83yg8g67axfw7u8q3hlcmpvk93zdexyru6r3hs5wvdffux4l6nj08nfj7syjhspwusd9v';
+    const maxWithdrawable = '100000';
 
-    it('should process a valid LNURL withdrawal', async () => {
-      // Mock a pending transaction
-      const mockTx = {
-        id: 'test-tx-1',
-        status: TransactionStatus.PENDING,
-        metadata: { k1 },
-      };
-      mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(
-        mockTx,
-      );
+    describe('First handshake step (tag=withdrawRequest)', () => {
+      it('should handle first step of LNURL withdraw handshake', async () => {
+        // Mock a pending transaction with amount matching maxWithdrawable
+        const mockTx = {
+          id: 'test-tx-1',
+          status: TransactionStatus.PENDING,
+          amountMsats: 100000,
+        };
+        mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(
+          mockTx,
+        );
 
-      // Mock a successful callback processing
-      mockSolowalletService.processLnUrlWithdrawCallback.mockResolvedValue({
-        success: true,
+        const callback = 'https://example.com/withdraw/callback';
+        const defaultDescription = 'Withdraw from Bitsacco';
+        const minWithdrawable = '1000';
+
+        const result = await controller.processLnUrlWithdraw({
+          k1,
+          maxWithdrawable,
+          tag: 'withdrawRequest',
+          callback,
+          defaultDescription,
+          minWithdrawable,
+        });
+
+        expect(
+          mockSolowalletService.findPendingLnurlWithdrawal,
+        ).toHaveBeenCalledWith(k1);
+        expect(
+          mockSolowalletService.processLnUrlWithdrawCallback,
+        ).not.toHaveBeenCalled();
+        expect(result).toEqual({
+          tag: 'withdrawRequest',
+          callback,
+          k1,
+          defaultDescription,
+          minWithdrawable,
+          maxWithdrawable,
+        });
       });
 
-      const result = await controller.processLnUrlWithdraw({ k1, pr });
+      it('should return error when maxWithdrawable exceeds expected amount', async () => {
+        // Mock a pending transaction with amount LESS than maxWithdrawable
+        const mockTx = {
+          id: 'test-tx-1',
+          status: TransactionStatus.PENDING,
+          amountMsats: 50000, // Less than maxWithdrawable (100000)
+        };
+        mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(
+          mockTx,
+        );
 
-      expect(
-        mockSolowalletService.findPendingLnurlWithdrawal,
-      ).toHaveBeenCalledWith(k1);
-      expect(
-        mockSolowalletService.processLnUrlWithdrawCallback,
-      ).toHaveBeenCalledWith(k1, pr);
-      expect(result).toEqual({
-        status: 'OK',
-      });
-    });
+        const result = await controller.processLnUrlWithdraw({
+          k1,
+          maxWithdrawable,
+          tag: 'withdrawRequest',
+        });
 
-    it('should handle transaction not found', async () => {
-      // Mock no transaction found
-      mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(null);
-
-      // Reset mock before test
-      mockSolowalletService.processLnUrlWithdrawCallback.mockReset();
-
-      const result = await controller.processLnUrlWithdraw({ k1, pr });
-
-      expect(
-        mockSolowalletService.findPendingLnurlWithdrawal,
-      ).toHaveBeenCalledWith(k1);
-      expect(
-        mockSolowalletService.processLnUrlWithdrawCallback,
-      ).not.toHaveBeenCalled();
-      expect(result).toEqual({
-        status: 'ERROR',
-        reason: 'Withdrawal request not found or expired',
-      });
-    });
-
-    it('should handle non-pending transaction', async () => {
-      // Mock a completed transaction
-      const mockTx = {
-        id: 'test-tx-1',
-        status: TransactionStatus.COMPLETE,
-        metadata: { k1 },
-      };
-      mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(
-        mockTx,
-      );
-
-      // Reset mock before test
-      mockSolowalletService.processLnUrlWithdrawCallback.mockReset();
-
-      const result = await controller.processLnUrlWithdraw({ k1, pr });
-
-      expect(
-        mockSolowalletService.findPendingLnurlWithdrawal,
-      ).toHaveBeenCalledWith(k1);
-      expect(
-        mockSolowalletService.processLnUrlWithdrawCallback,
-      ).not.toHaveBeenCalled();
-      expect(result).toEqual({
-        status: 'ERROR',
-        reason: 'LNURL withdrawal is now invalid or expired',
+        expect(
+          mockSolowalletService.findPendingLnurlWithdrawal,
+        ).toHaveBeenCalledWith(k1);
+        expect(
+          mockSolowalletService.processLnUrlWithdrawCallback,
+        ).not.toHaveBeenCalled();
+        expect(result).toEqual({
+          status: 'ERROR',
+          reason: 'maxWithdrawable exceeds expected amount',
+        });
       });
     });
 
-    it('should handle processLnUrlWithdrawCallback failure', async () => {
-      // Mock a pending transaction
-      const mockTx = {
-        id: 'test-tx-1',
-        status: TransactionStatus.PENDING,
-        metadata: { k1 },
-      };
-      mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(
-        mockTx,
-      );
+    describe('Second handshake step (invoice processing)', () => {
+      it('should process a valid LNURL withdrawal', async () => {
+        // Mock a pending transaction
+        const mockTx = {
+          id: 'test-tx-1',
+          status: TransactionStatus.PENDING,
+        };
+        mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(
+          mockTx,
+        );
 
-      // Mock a failed callback processing
-      mockSolowalletService.processLnUrlWithdrawCallback.mockResolvedValue({
-        success: false,
-        message: 'Invoice payment failed',
+        // Mock a successful callback processing
+        mockSolowalletService.processLnUrlWithdrawCallback.mockResolvedValue({
+          success: true,
+        });
+
+        const result = await controller.processLnUrlWithdraw({ k1, pr });
+
+        expect(
+          mockSolowalletService.findPendingLnurlWithdrawal,
+        ).toHaveBeenCalledWith(k1);
+        expect(
+          mockSolowalletService.processLnUrlWithdrawCallback,
+        ).toHaveBeenCalledWith(k1, pr);
+        expect(result).toEqual({
+          status: 'OK',
+        });
       });
 
-      const result = await controller.processLnUrlWithdraw({ k1, pr });
+      it('should handle transaction not found', async () => {
+        // Mock no transaction found
+        mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(
+          null,
+        );
 
-      expect(
-        mockSolowalletService.findPendingLnurlWithdrawal,
-      ).toHaveBeenCalledWith(k1);
-      expect(
-        mockSolowalletService.processLnUrlWithdrawCallback,
-      ).toHaveBeenCalledWith(k1, pr);
-      expect(result).toEqual({
-        status: 'ERROR',
-        reason: 'Invoice payment failed',
+        // Reset mock before test
+        mockSolowalletService.processLnUrlWithdrawCallback.mockReset();
+
+        const result = await controller.processLnUrlWithdraw({ k1, pr });
+
+        expect(
+          mockSolowalletService.findPendingLnurlWithdrawal,
+        ).toHaveBeenCalledWith(k1);
+        expect(
+          mockSolowalletService.processLnUrlWithdrawCallback,
+        ).not.toHaveBeenCalled();
+        expect(result).toEqual({
+          status: 'ERROR',
+          reason: 'Withdrawal request not found or expired',
+        });
+      });
+
+      it('should handle non-pending transaction', async () => {
+        // Mock a completed transaction
+        const mockTx = {
+          id: 'test-tx-1',
+          status: TransactionStatus.COMPLETE,
+        };
+        mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(
+          mockTx,
+        );
+
+        // Reset mock before test
+        mockSolowalletService.processLnUrlWithdrawCallback.mockReset();
+
+        const result = await controller.processLnUrlWithdraw({ k1, pr });
+
+        expect(
+          mockSolowalletService.findPendingLnurlWithdrawal,
+        ).toHaveBeenCalledWith(k1);
+        expect(
+          mockSolowalletService.processLnUrlWithdrawCallback,
+        ).not.toHaveBeenCalled();
+        expect(result).toEqual({
+          status: 'ERROR',
+          reason: 'LNURL withdrawal is now invalid or expired',
+        });
+      });
+
+      it('should handle processLnUrlWithdrawCallback failure', async () => {
+        // Mock a pending transaction
+        const mockTx = {
+          id: 'test-tx-1',
+          status: TransactionStatus.PENDING,
+        };
+        mockSolowalletService.findPendingLnurlWithdrawal.mockResolvedValue(
+          mockTx,
+        );
+
+        // Mock a failed callback processing
+        mockSolowalletService.processLnUrlWithdrawCallback.mockResolvedValue({
+          success: false,
+          message: 'Invoice payment failed',
+        });
+
+        const result = await controller.processLnUrlWithdraw({ k1, pr });
+
+        expect(
+          mockSolowalletService.findPendingLnurlWithdrawal,
+        ).toHaveBeenCalledWith(k1);
+        expect(
+          mockSolowalletService.processLnUrlWithdrawCallback,
+        ).toHaveBeenCalledWith(k1, pr);
+        expect(result).toEqual({
+          status: 'ERROR',
+          reason: 'Invoice payment failed',
+        });
       });
     });
 

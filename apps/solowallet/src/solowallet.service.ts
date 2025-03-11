@@ -703,25 +703,24 @@ export class SolowalletService {
 
       // 3. Decode the invoice to get the amount
       const invoiceDetails = await this.fedimintService.decode(pr);
-      const amountMsats = Number(invoiceDetails.amountMsats);
 
       // 4. Pay the invoice directly
       const { operationId, fee } = await this.fedimintService.pay(pr);
+
+      // TODO: Issue #78 - https://github.com/bitsacco/os/issues/78
+      // final amount charged: = actual withdrawn amount plus fee paid
+      const amountMsats = Number(invoiceDetails.amountMsats) + fee;
 
       // 5. Update the withdrawal record
       const updatedWithdrawal = await this.wallet.findOneAndUpdate(
         { _id: withdrawal._id },
         {
           status: TransactionStatus.COMPLETE,
-          amountMsats: amountMsats + fee, // Update to the actual withdrawn amount plus fee
+          amountMsats: amountMsats,
           updatedAt: new Date(),
-          // Store the payment info for reference
           lightning: JSON.stringify({
-            ...lightningData,
+            invoice: pr,
             operationId,
-            pr,
-            amountMsats,
-            fee,
           }),
         },
       );

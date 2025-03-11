@@ -8,11 +8,12 @@ import {
   UpdateTxDto,
   ContinueTxRequestDto,
   FindTxRequestDto,
+  type LnUrlWithdrawRequest,
   LnUrlWithdrawResponse,
   TransactionStatus,
 } from '@bitsacco/common';
 import { SolowalletService } from './solowallet.service';
-import { FedimintService } from '@bitsacco/common';
+import { ConfigService } from '@nestjs/config';
 
 @Controller()
 @SolowalletServiceControllerMethods()
@@ -21,7 +22,7 @@ export class SolowalletController {
 
   constructor(
     private readonly solowalletService: SolowalletService,
-    private readonly fedimintService: FedimintService,
+    private readonly configService: ConfigService,
   ) {}
 
   @GrpcMethod()
@@ -55,51 +56,100 @@ export class SolowalletController {
   }
 
   @GrpcMethod()
-  async processLnUrlWithdraw(request: {
-    k1: string;
-    pr: string;
-  }): Promise<LnUrlWithdrawResponse> {
-    this.logger.log(`Processing LNURL withdraw via gRPC, k1: ${request.k1}`);
+  async processLnUrlWithdraw({
+    k1,
+    tag,
+    callback,
+    maxWithdrawable,
+    minWithdrawable,
+    defaultDescription,
+    pr,
+  }: LnUrlWithdrawRequest): Promise<LnUrlWithdrawResponse> {
+    this.logger.log(
+      `Processing LNURL withdraw via gRPC, k1: ${k1}, tag: ${tag}`,
+    );
+
+    if (!k1) {
+      this.logger.error(`Invalid k1: ${k1}`);
+      return {
+        status: 'ERROR',
+        reason: `Invalid k1: ${k1}`,
+      };
+    }
 
     try {
       // 1. First, find any transaction that's already using this k1 value
-      const pendingTx = await this.solowalletService.findPendingLnurlWithdrawal(
-        request.k1,
+      const pendingTx =
+        await this.solowalletService.findPendingLnurlWithdrawal(k1);
+
+      // 2. If no pending transaction is found, this is an error
+      if (!pendingTx) {
+        this.logger.warn(`No pending withdrawal found for k1: ${k1}`);
+        return {
+          status: 'ERROR',
+          reason: 'Withdrawal request not found or expired',
+        };
+      }
+
+      this.logger.log(
+        `Found existing withdrawal transaction: ${pendingTx.id} in status: ${pendingTx.status}`,
       );
 
-      // 2. If a pending transaction is found and it's in PENDING state, process it
-      if (pendingTx) {
-        this.logger.log(
-          `Found existing withdrawal transaction: ${pendingTx.id} in status: ${pendingTx.status}`,
-        );
-
-        // If transaction is pending, continue with processing
-        if (pendingTx.status === TransactionStatus.PENDING) {
-          // Process the payment using the existing transaction
-          const result =
-            await this.solowalletService.processLnUrlWithdrawCallback(
-              request.k1,
-              request.pr,
-            );
-
-          return {
-            status: result.success ? 'OK' : 'ERROR',
-            reason: result.success ? undefined : result.message,
-          };
-        }
-
-        // For any other status, return error
+      // 3. If transaction is not in pending state, return error
+      if (pendingTx.status !== TransactionStatus.PENDING) {
         return {
           status: 'ERROR',
           reason: `LNURL withdrawal is now invalid or expired`,
         };
       }
 
-      // 3. No matching transaction found - this is an error
-      this.logger.warn(`No pending withdrawal found for k1: ${request.k1}`);
+      // 4. Handle first step of handshake (tag=withdrawRequest && !pr - wallet querying parameters)
+      if (tag === 'withdrawRequest' && !pr) {
+        this.logger.log('Processing first step of LNURL withdraw handshake');
+
+        // Verify maxWithdrawable matches our expected value (if provided in request)
+        if (maxWithdrawable) {
+          const expectedMsats = pendingTx.amountMsats;
+          if (parseInt(maxWithdrawable) > expectedMsats) {
+            this.logger.error(
+              `Mismatched maxWithdrawable: expected ${expectedMsats}, got ${maxWithdrawable}`,
+            );
+            return {
+              status: 'ERROR',
+              reason: 'maxWithdrawable exceeds expected amount',
+            };
+          }
+        }
+
+        // Return success response for first step
+        return {
+          tag,
+          callback,
+          k1,
+          defaultDescription,
+          minWithdrawable,
+          maxWithdrawable,
+        };
+      }
+
+      // 5. Handle second step of handshake (with invoice)
+      if (!pr) {
+        this.logger.error(`Invalid Bolt11 invoice: ${pr}`);
+        return {
+          status: 'ERROR',
+          reason: `Invalid Bolt11 invoice: ${pr}`,
+        };
+      }
+
+      // Process the payment using the existing transaction
+      const result = await this.solowalletService.processLnUrlWithdrawCallback(
+        k1,
+        pr,
+      );
+
       return {
-        status: 'ERROR',
-        reason: 'Withdrawal request not found or expired',
+        status: result.success ? 'OK' : 'ERROR',
+        reason: result.success ? undefined : result.message,
       };
     } catch (error) {
       this.logger.error(
