@@ -30,9 +30,14 @@ const mockLnurlMetricsService = {
   getMetrics: jest.fn(),
   resetMetrics: jest.fn(),
 };
-
+const callback = 'https://example.com/withdraw/callback';
 const mockConfigService = {
-  getOrThrow: jest.fn(),
+  getOrThrow: jest.fn().mockImplementation((key, defaultValue) => {
+    const config = {
+      LNURL_CALLBACK: callback,
+    };
+    return config[key] || defaultValue;
+  }),
 };
 
 describe('SolowalletController', () => {
@@ -88,7 +93,6 @@ describe('SolowalletController', () => {
           mockTx,
         );
 
-        const callback = 'https://example.com/withdraw/callback';
         const defaultDescription = 'Withdraw from Bitsacco';
         const minWithdrawable = '1000';
 
@@ -107,6 +111,7 @@ describe('SolowalletController', () => {
         expect(
           mockSolowalletService.processLnUrlWithdrawCallback,
         ).not.toHaveBeenCalled();
+
         expect(result).toEqual({
           tag: 'withdrawRequest',
           callback,

@@ -121,6 +121,14 @@ export class SolowalletController {
           }
         }
 
+        // Verify callback
+        if (callback !== this.configService.getOrThrow('LNURL_CALLBACK')) {
+          return {
+            status: 'ERROR',
+            reason: `LNURL withdrawal has invalid callback`,
+          };
+        }
+
         // Return success response for first step
         return {
           tag,

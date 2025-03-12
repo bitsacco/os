@@ -199,11 +199,12 @@ export class SolowalletController {
       const response = await firstValueFrom(
         this.walletService.processLnUrlWithdraw({
           k1,
-          pr,
+          tag,
+          callback,
           maxWithdrawable,
           minWithdrawable,
           defaultDescription,
-          tag,
+          pr,
         }),
       );
 
