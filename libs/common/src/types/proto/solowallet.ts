@@ -50,7 +50,7 @@ export interface WithdrawFundsRequest {
 export interface ContinueWithdrawFundsRequest {
   userId: string;
   txId: string;
-  amountFiat: number;
+  amountFiat?: number | undefined;
   offramp?: OfframpSwapTarget | undefined;
   lightning?: Bolt11 | undefined;
   lnurlRequest?: boolean | undefined;

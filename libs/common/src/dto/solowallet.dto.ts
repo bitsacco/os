@@ -41,7 +41,6 @@ export class DepositFundsRequestDto implements DepositFundsRequest {
   @ApiProperty()
   reference: string;
 
-  @ApiProperty()
   @IsNumber()
   @Min(1)
   @ApiProperty({ example: 2 })
@@ -104,7 +103,6 @@ export class WithdrawFundsRequestDto implements WithdrawFundsRequest {
   @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   userId: string;
 
-  @ApiProperty()
   @IsNumber()
   @Min(1)
   @ApiProperty({ example: 2 })
@@ -159,9 +157,8 @@ export class ContinueWithdrawFundsRequestDto
   @ApiProperty({ example: '4a4b4c4d-cb98-40b1-9ed2-a13006a9f670' })
   txId: string;
 
-  @ApiProperty()
+  @IsOptional()
   @IsNumber()
-  @Min(1)
   @ApiProperty({ example: 2 })
   amountFiat: number;
 

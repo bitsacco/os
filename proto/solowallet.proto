@@ -79,7 +79,7 @@ message ContinueWithdrawFundsRequest {
 
   string tx_id = 2;
 
-  int32 amount_fiat = 3;
+  optional int32 amount_fiat = 3;
   
   optional lib.OfframpSwapTarget offramp = 4;
   
