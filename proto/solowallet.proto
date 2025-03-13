@@ -57,7 +57,7 @@ message ContinueDepositFundsRequest {
 message WithdrawFundsRequest {
   string user_id = 1;
 
-  int32 amountFiat = 2;
+  optional int32 amountFiat = 2;
 
   string reference = 3;
 

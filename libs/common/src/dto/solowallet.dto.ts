@@ -103,8 +103,8 @@ export class WithdrawFundsRequestDto implements WithdrawFundsRequest {
   @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   userId: string;
 
+  @IsOptional()
   @IsNumber()
-  @Min(1)
   @ApiProperty({ example: 2 })
   amountFiat: number;
 

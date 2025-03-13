@@ -39,7 +39,7 @@ export interface ContinueDepositFundsRequest {
 
 export interface WithdrawFundsRequest {
   userId: string;
-  amountFiat: number;
+  amountFiat?: number | undefined;
   reference: string;
   offramp?: OfframpSwapTarget | undefined;
   lightning?: Bolt11 | undefined;
