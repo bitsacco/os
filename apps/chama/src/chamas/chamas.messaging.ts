@@ -47,7 +47,7 @@ export class ChamaMessageService {
   async sendChamaInvites(chama: Chama, invites: ChamaInvite[]) {
     const invitePromises = [];
     for (const member of invites) {
-      const invitePromise = this.generateInviteLink(member, chama)
+      const invitePromise = this.generateInviteMessage(member, chama)
         .then((message) => {
           member.phoneNumber &&
             this.smsService.sendSms({
@@ -67,7 +67,7 @@ export class ChamaMessageService {
     );
   }
 
-  private async generateInviteLink(
+  private async generateInviteMessage(
     member: ChamaInvite,
     { id, name, description }: Pick<Chama, 'id' | 'name' | 'description'>,
   ): Promise<string> {
@@ -108,13 +108,82 @@ export class ChamaMessageService {
     );
   }
 
-  async sendChamaWithdrawalApprovalLink(
+  async sendChamaWithdrawalRequests(
     chama: Chama,
-    admins: User[],
+    admins: ChamaAdminContact[],
     withdrawal: ChamaWalletTx,
   ) {
-    console.log(chama);
-    console.log(admins);
-    console.log(withdrawal);
+    const invitePromises = [];
+    for (const admin of admins) {
+      const invitePromise = this.generateWithdrawalMessage(
+        chama,
+        admin,
+        withdrawal,
+      )
+        .then((message) => {
+          admin.phoneNumber &&
+            this.smsService.sendSms({
+              message,
+              receiver: admin.phoneNumber,
+            });
+
+          admin.nostrNpub &&
+            this.logger.log(`Sending withdrawal request to ${admin.nostrNpub}`);
+        })
+        .catch((err) => this.logger.error(err));
+
+      invitePromises.push(invitePromise);
+    }
+    Promise.allSettled(invitePromises).then((results) =>
+      console.log('Sent withdrawal request', results),
+    );
   }
+
+  private async generateWithdrawalMessage(
+    chama: Pick<Chama, 'id' | 'name' | 'description'>,
+    admin: ChamaAdminContact,
+    withdrawal: ChamaWalletTx,
+  ): Promise<string> {
+    const token = await this.encodeWithdrawal(chama, admin, withdrawal);
+    this.logger.log(token);
+
+    const chamaUrl = this.configService.getOrThrow('CHAMA_EXPERIENCE_URL');
+    const link = await this.shortenLink(`${chamaUrl}/tx/?t=${token}`);
+    const message = `${
+      admin.name || admin.phoneNumber
+    } requested withdrawal from '${chama.name}'. Click ${link} to review.`;
+
+    this.logger.log(message);
+
+    return message;
+  }
+
+  private async encodeWithdrawal(
+    chama: Pick<Chama, 'id' | 'name' | 'description'>,
+    admin: ChamaAdminContact,
+    withdrawal: ChamaWalletTx,
+  ): Promise<string> {
+    if (!admin.phoneNumber && !admin.nostrNpub) {
+      throw new BadRequestException(
+        `Invalid chama admin ${JSON.stringify(admin)}`,
+      );
+    }
+
+    return this.jwtService.sign(
+      {
+        chama,
+        admin,
+        withdrawal,
+      },
+      {
+        secret: this.jwtSecret,
+      },
+    );
+  }
+}
+
+export interface ChamaAdminContact {
+  name?: string;
+  phoneNumber?: string | undefined;
+  nostrNpub?: string | undefined;
 }

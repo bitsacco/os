@@ -325,13 +325,17 @@ export class ChamaWalletService {
           this.logger.log('No other admins to notify about the withdrawal');
         }
 
-        const admins = await this.users.findUsersById(new Set(adminMemberIds));
+        const admins = (
+          await this.users.findUsersById(new Set(adminMemberIds))
+        ).map((admin) => {
+          return {
+            name: admin.profile.name,
+            phoneNumber: admin.phone.number,
+            nostrNpub: admin.nostr.npub,
+          };
+        });
 
-        this.messenger.sendChamaWithdrawalApprovalLink(
-          chama,
-          admins,
-          withdrawal,
-        );
+        this.messenger.sendChamaWithdrawalRequests(chama, admins, withdrawal);
       } catch (e) {
         this.logger.error(e);
       }
