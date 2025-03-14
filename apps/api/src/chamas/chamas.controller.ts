@@ -118,6 +118,7 @@ export class ChamasController {
     type: String,
     required: false,
     description: 'chama member id',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
   })
   @ApiQuery({
     name: 'createdBy',
@@ -157,15 +158,15 @@ export class ChamasController {
     return this.wallet.continueDeposit(req);
   }
 
-  @Post('tx/withdraw')
+  @Post('tx/withdraw/request')
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Chama withdrawal transaction' })
   @ApiBody({
     type: ChamaWithdrawDto,
   })
-  async withdraw(@Body() req: ChamaWithdrawDto) {
-    return this.wallet.withdraw(req);
+  async requestWithdraw(@Body() req: ChamaWithdrawDto) {
+    return this.wallet.requestWithdraw(req);
   }
 
   @Post('tx/withdraw/continue')
@@ -208,6 +209,7 @@ export class ChamasController {
     type: String,
     required: false,
     description: 'chama member id',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
   })
   @ApiQuery({
     name: 'chamaId',

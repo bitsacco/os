@@ -75,14 +75,11 @@ export interface ChamaWithdrawRequest {
   chamaId: string;
   amountFiat: number;
   reference?: string | undefined;
-  offramp?: OfframpSwapTarget | undefined;
-  lightning?: Bolt11 | undefined;
   pagination?: PaginatedRequest | undefined;
 }
 
 export interface ChamaContinueWithdrawRequest {
   txId: string;
-  amountFiat: number;
   reference?: string | undefined;
   offramp?: OfframpSwapTarget | undefined;
   lightning?: Bolt11 | undefined;
@@ -179,7 +176,7 @@ export interface ChamaWalletServiceClient {
     request: ChamaContinueDepositRequest,
   ): Observable<ChamaTxsResponse>;
 
-  withdraw(request: ChamaWithdrawRequest): Observable<ChamaTxsResponse>;
+  requestWithdraw(request: ChamaWithdrawRequest): Observable<ChamaTxsResponse>;
 
   continueWithdraw(
     request: ChamaContinueWithdrawRequest,
@@ -215,7 +212,7 @@ export interface ChamaWalletServiceController {
     | Observable<ChamaTxsResponse>
     | ChamaTxsResponse;
 
-  withdraw(
+  requestWithdraw(
     request: ChamaWithdrawRequest,
   ):
     | Promise<ChamaTxsResponse>
@@ -260,7 +257,7 @@ export function ChamaWalletServiceControllerMethods() {
     const grpcMethods: string[] = [
       'deposit',
       'continueDeposit',
-      'withdraw',
+      'requestWithdraw',
       'continueWithdraw',
       'updateTransaction',
       'findTransaction',

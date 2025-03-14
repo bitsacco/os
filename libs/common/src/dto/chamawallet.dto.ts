@@ -111,18 +111,7 @@ export class ChamaContinueDepositDto
 
 export class ChamaWithdrawDto
   extends ChamaMemberBaseDto
-  implements ChamaWithdrawRequest
-{
-  @ValidateNested()
-  @Type(() => OfframpSwapTargetDto)
-  @ApiProperty({ type: OfframpSwapTargetDto })
-  offramp?: OfframpSwapTarget;
-
-  @ValidateNested()
-  @Type(() => Bolt11InvoiceDto)
-  @ApiProperty({ type: Bolt11InvoiceDto })
-  lightning?: Bolt11;
-}
+  implements ChamaWithdrawRequest {}
 
 export class ChamaContinueWithdrawDto
   extends ChamaBaseDto

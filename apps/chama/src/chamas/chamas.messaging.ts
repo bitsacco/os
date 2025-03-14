@@ -13,6 +13,8 @@ import {
   SMS_SERVICE_NAME,
   type Chama,
   type ChamaInvite,
+  ChamaWalletTx,
+  User,
 } from '@bitsacco/common';
 
 @Injectable()
@@ -36,6 +38,10 @@ export class ChamaMessageService {
     this.logger.debug('SMS Service Connected');
 
     this.logger.debug('ChamaMessageService started');
+  }
+
+  private async shortenLink(link: string): Promise<string> {
+    return (await this.bitlyClient.shorten(link)).link;
   }
 
   async sendChamaInvites(chama: Chama, invites: ChamaInvite[]) {
@@ -102,7 +108,13 @@ export class ChamaMessageService {
     );
   }
 
-  private async shortenLink(link: string): Promise<string> {
-    return (await this.bitlyClient.shorten(link)).link;
+  async sendChamaWithdrawalApprovalLink(
+    chama: Chama,
+    admins: User[],
+    withdrawal: ChamaWalletTx,
+  ) {
+    console.log(chama);
+    console.log(admins);
+    console.log(withdrawal);
   }
 }

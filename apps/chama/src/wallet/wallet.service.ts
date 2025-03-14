@@ -10,6 +10,7 @@ import {
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
   ChamaDepositDto,
+  ChamaMemberRole,
   ChamaTxStatus,
   ChamaWithdrawDto,
   Currency,
@@ -24,6 +25,7 @@ import {
   initiateOnrampSwap,
   PaginatedChamaTxsResponse,
   ReceiveContext,
+  Review,
   SWAP_SERVICE_NAME,
   SwapServiceClient,
   TransactionStatus,
@@ -39,6 +41,7 @@ import {
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { ChamaMessageService } from '../chamas/chamas.messaging';
 import { ChamasService } from '../chamas/chamas.service';
 import { ChamaWalletRepository, toChamaWalletTx } from './db';
 
@@ -54,6 +57,7 @@ export class ChamaWalletService {
     @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
     private readonly chamas: ChamasService,
     private readonly users: UsersService,
+    private readonly messenger: ChamaMessageService,
   ) {
     this.swapService =
       this.swapGrpc.getService<SwapServiceClient>(SWAP_SERVICE_NAME);
@@ -241,8 +245,113 @@ export class ChamaWalletService {
     };
   }
 
-  withdraw(request: ChamaWithdrawDto) {
-    throw new NotImplementedException('withdrawFunds method not implemented');
+  async requestWithdraw({
+    memberId,
+    chamaId,
+    amountFiat,
+    reference,
+    pagination,
+  }: ChamaWithdrawDto) {
+    const { memberMeta, groupMeta } = await this.getWalletMeta(
+      chamaId,
+      memberId,
+    );
+
+    const chama = await this.chamas.findChama({ chamaId });
+    const initiatorMember = chama.members.find(
+      (member) => member.userId === memberId,
+    );
+    const isAdmin =
+      initiatorMember?.roles.includes(ChamaMemberRole.Admin) ||
+      initiatorMember?.roles.includes(ChamaMemberRole.ExternalAdmin);
+
+    const initialReviews = [];
+
+    // If member is an admin, add their pre-approval
+    if (isAdmin) {
+      this.logger.log(
+        `Member ${memberId} is a chama admin - adding pre-approval to withdrawal`,
+      );
+      initialReviews.push({
+        memberId,
+        review: Review.APPROVE,
+      });
+    }
+
+    const { amountMsats } = await getQuote(
+      {
+        from: Currency.KES,
+        to: Currency.BTC,
+        amount: amountFiat.toString(),
+      },
+      this.swapService,
+      this.logger,
+    );
+
+    // Create a pending withdrawal record that requires approval
+    const withdrawal = toChamaWalletTx(
+      await this.wallet.create({
+        memberId,
+        chamaId,
+        amountMsats,
+        amountFiat,
+        lightning: JSON.stringify({}),
+        paymentTracker: `${Date.now()}`,
+        type: TransactionType.WITHDRAW,
+        status:
+          isAdmin && initialReviews.length > 0
+            ? ChamaTxStatus.APPROVED // Auto-approve if sole admin
+            : ChamaTxStatus.PENDING,
+        reviews: initialReviews, // Include self-approval if admin
+        reference: reference || 'Offramp withdrawal (pending approval)',
+      }),
+      this.logger,
+    );
+
+    if (withdrawal.status === ChamaTxStatus.PENDING) {
+      // Send notifications to other admins asynchronously (don't wait for completion)
+      try {
+        // Find all admin members excluding the initiator
+        const adminMemberIds = chama.members
+          .filter(
+            (member) =>
+              (member.roles.includes(ChamaMemberRole.Admin) ||
+                member.roles.includes(ChamaMemberRole.ExternalAdmin)) &&
+              member.userId !== memberId,
+          )
+          .map((member) => member.userId);
+
+        if (adminMemberIds.length === 0) {
+          this.logger.log('No other admins to notify about the withdrawal');
+        }
+
+        const admins = await this.users.findUsersById(new Set(adminMemberIds));
+
+        this.messenger.sendChamaWithdrawalApprovalLink(
+          chama,
+          admins,
+          withdrawal,
+        );
+      } catch (e) {
+        this.logger.error(e);
+      }
+    }
+
+    // Get updated transaction ledger
+    const ledger = await this.getPaginatedChamaTransactions({
+      memberId,
+      chamaId,
+      pagination,
+      priority: withdrawal.id,
+    });
+
+    // Return the updated wallet information
+    return {
+      txId: withdrawal.id,
+      ledger,
+      groupMeta,
+      memberMeta,
+    };
   }
 
   continueWithdraw(request: ChamaContinueWithdrawDto) {
@@ -583,7 +692,7 @@ export class ChamaWalletService {
     await this.wallet.findOneAndUpdate(
       { paymentTracker: operationId },
       {
-        state: TransactionStatus.FAILED,
+        status: ChamaTxStatus.FAILED,
       },
     );
   }

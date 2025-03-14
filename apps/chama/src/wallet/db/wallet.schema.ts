@@ -48,7 +48,7 @@ export class ChamaWalletDocument extends AbstractDocument {
   @Prop({ type: String, required: true })
   reference: string;
 
-  @Prop({ type: String, required: true, unique: true })
+  @Prop({ type: String, required: true })
   paymentTracker?: string;
 }
 
