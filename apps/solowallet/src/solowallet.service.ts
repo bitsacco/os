@@ -579,8 +579,9 @@ export class SolowalletService {
     }
 
     if (
+      tx.status === TransactionStatus.PROCESSING ||
       tx.status === TransactionStatus.COMPLETE ||
-      tx.status === TransactionStatus.PROCESSING
+      tx.status === TransactionStatus.FAILED
     ) {
       throw new Error('Transaction is processing or complete');
     }

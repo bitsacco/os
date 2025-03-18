@@ -118,23 +118,20 @@ export class ChamaContinueWithdrawDto
   implements ChamaContinueWithdrawRequest
 {
   @MemberIdDecorator()
+  memberId: string;
+
+  @MemberIdDecorator()
   txId: string;
-
-  @AmountFiatDecorator()
-  amountFiat: number;
-
-  @ReferenceDecorator()
-  reference?: string;
 
   @ValidateNested()
   @Type(() => OfframpSwapTargetDto)
-  @ApiProperty({ type: OfframpSwapTargetDto })
-  offramp?: OfframpSwapTarget;
+  @ApiProperty({ type: OfframpSwapTargetDto, required: false })
+  offramp?: OfframpSwapTargetDto;
 
   @ValidateNested()
   @Type(() => Bolt11InvoiceDto)
-  @ApiProperty({ type: Bolt11InvoiceDto })
-  lightning?: Bolt11;
+  @ApiProperty({ type: Bolt11InvoiceDto, required: false })
+  lightning?: Bolt11InvoiceDto;
 }
 
 export class ChamaTxReviewDto implements ChamaTxReview {

@@ -37,7 +37,7 @@ const PinDecorators = () => {
     IsNotEmpty(),
     IsString(),
     Validate(IsStringifiedNumberConstraint, [{ digits: 6, positive: true }]),
-    ApiProperty({ example: '000000' }),
+    ApiProperty({ example: '123456' }),
   );
 };
 

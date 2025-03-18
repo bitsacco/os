@@ -9,7 +9,7 @@ export const PhoneDecorators = () => {
     IsNotEmpty(),
     // @IsPhoneNumber()
     ApiProperty({
-      example: '+254700000000',
+      example: '+254700123456',
     }),
   );
 };

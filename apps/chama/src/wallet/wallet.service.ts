@@ -38,12 +38,17 @@ import {
   type ChamaTxMemberMeta,
   type ReceivePaymentFailureEvent,
   type ReceivePaymentSuccessEvent,
+  initiateOfframpSwap,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { ChamaMessageService } from '../chamas/chamas.messaging';
 import { ChamasService } from '../chamas/chamas.service';
-import { ChamaWalletRepository, toChamaWalletTx } from './db';
+import {
+  ChamaWalletDocument,
+  ChamaWalletRepository,
+  toChamaWalletTx,
+} from './db';
 
 @Injectable()
 export class ChamaWalletService {
@@ -358,10 +363,176 @@ export class ChamaWalletService {
     };
   }
 
-  continueWithdraw(request: ChamaContinueWithdrawDto) {
-    throw new NotImplementedException(
-      'continueWithdraw method not implemented',
+  async continueWithdraw({
+    txId,
+    offramp,
+    lightning,
+    pagination,
+  }: ChamaContinueWithdrawDto) {
+    // Get the transaction record
+    const txd = await this.wallet.findOne({ _id: txId });
+    const { memberId, chamaId } = txd;
+
+    // Check if this transaction is already in a final state
+    if (
+      txd.status === ChamaTxStatus.PROCESSING ||
+      txd.status === ChamaTxStatus.COMPLETE ||
+      txd.status === ChamaTxStatus.FAILED
+    ) {
+      throw new Error('Transaction is processing or complete');
+    }
+
+    // Check if transaction has status APPROVED - only approved withdrawals can be continued
+    if (txd.status !== ChamaTxStatus.APPROVED) {
+      throw new Error(
+        'Withdrawal must be approved by admins before it can be processed',
+      );
+    }
+
+    // Get the wallet balances
+    const { memberMeta, groupMeta } = await this.getWalletMeta(
+      chamaId,
+      memberId,
     );
+    let withdrawal: ChamaWalletDocument;
+
+    if (lightning) {
+      // 1. Execute lightning withdrawal that has been approved
+      this.logger.log('Processing approved lightning invoice withdrawal');
+      this.logger.log(lightning);
+
+      // Decode the invoice to get the amount and details
+      const inv = await this.fedimintService.decode(lightning.invoice);
+      const invoiceMsats = Number(inv.amountMsats);
+
+      this.logger.log(`Invoice amount: ${invoiceMsats} msats`);
+
+      // Check if chama has enough total balance
+      if (invoiceMsats > groupMeta.groupBalance) {
+        throw new Error('Invoice amount exceeds available chama balance');
+      }
+
+      try {
+        // Pay the lightning invoice using fedimint
+        const { operationId, fee } = await this.fedimintService.pay(
+          lightning.invoice,
+        );
+
+        this.logger.log(
+          `Lightning invoice paid successfully. Operation ID: ${operationId}, Fee: ${fee} msats`,
+        );
+
+        // Calculate total amount withdrawn (invoice amount + fee)
+        const totalWithdrawnMsats = invoiceMsats + fee;
+
+        // Update the withdrawal record to complete
+        withdrawal = await this.wallet.findOneAndUpdate(
+          {
+            _id: txId,
+          },
+          {
+            amountMsats: totalWithdrawnMsats,
+            lightning: JSON.stringify({ ...lightning, operationId }),
+            paymentTracker: operationId,
+            status: ChamaTxStatus.COMPLETE,
+          },
+        );
+
+        this.logger.log(`Withdrawal completed with ID: ${withdrawal._id}`);
+      } catch (error) {
+        this.logger.error('Failed to pay lightning invoice', error);
+
+        // Update transaction to failed state
+        await this.wallet.findOneAndUpdate(
+          { _id: txId },
+          { status: ChamaTxStatus.FAILED },
+        );
+
+        throw new Error(
+          `Failed to process lightning payment: ${error.message}`,
+        );
+      }
+    } else if (offramp) {
+      // 2. Execute offramp withdrawal that has been approved
+      this.logger.log('Processing approved offramp withdrawal');
+
+      // Double check if chama has enough total balance
+      if (txd.amountMsats > groupMeta.groupBalance) {
+        throw new Error('Insufficient chama funds for offramp withdrawal');
+      }
+
+      try {
+        // Initiate offramp swap
+        const {
+          status,
+          amountMsats: offrampMsats,
+          invoice,
+        } = await initiateOfframpSwap<ChamaTxStatus>(
+          {
+            amountFiat: txd.amountFiat.toString(),
+            reference: txd.reference,
+            target: offramp,
+          },
+          this.swapService,
+          this.logger,
+        );
+
+        // Pay the invoice for the swap
+        const { operationId, fee } = await this.fedimintService.pay(invoice);
+
+        // Calculate total withdrawal amount including fee
+        const totalOfframpMsats = offrampMsats + fee;
+
+        // Update withdrawal record to complete
+        withdrawal = await this.wallet.findOneAndUpdate(
+          {
+            _id: txId,
+          },
+          {
+            amountMsats: totalOfframpMsats,
+            lightning: JSON.stringify({ invoice, operationId }),
+            paymentTracker: operationId,
+            status,
+          },
+        );
+
+        this.logger.log(
+          `Offramp withdrawal completed with ID: ${withdrawal._id}`,
+        );
+      } catch (error) {
+        this.logger.error('Failed to process offramp payment', error);
+
+        // Update transaction to failed state
+        await this.wallet.findOneAndUpdate(
+          { _id: txId },
+          { status: ChamaTxStatus.FAILED },
+        );
+
+        throw new Error(`Failed to process offramp payment: ${error.message}`);
+      }
+    } else {
+      throw new Error(
+        'No withdrawal method provided (lightning invoice or offramp)',
+      );
+    }
+
+    // Get updated transaction ledger
+    const ledger = await this.getPaginatedChamaTransactions({
+      memberId,
+      chamaId,
+      pagination,
+      priority: withdrawal._id,
+    });
+
+    // Get updated wallet balance
+    const updateMeta = await this.getWalletMeta(chamaId, memberId);
+
+    return {
+      txId: withdrawal._id,
+      ledger,
+      groupMeta: updateMeta.groupMeta,
+      memberMeta: updateMeta.memberMeta,
+    };
   }
 
   async updateTransaction({

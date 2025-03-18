@@ -116,16 +116,18 @@ message ChamaWithdrawRequest {
 }
 
 message ChamaContinueWithdrawRequest {
-  string tx_id = 1;
+  string member_id = 1;
 
-  optional string reference = 2;
+  string tx_id = 2;
 
-  optional lib.OfframpSwapTarget offramp = 3;
+  optional string reference = 3;
 
-  optional lib.Bolt11 lightning = 4;
+  optional lib.OfframpSwapTarget offramp = 4;
+
+  optional lib.Bolt11 lightning = 5;
 
   // Add more optional funding sources, like direct lightning deposit
-  reserved 5,6,7,8,9,10;
+  reserved 6,7,8,9,10;
 
   optional lib.PaginatedRequest pagination = 11;
 }

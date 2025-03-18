@@ -79,6 +79,7 @@ export interface ChamaWithdrawRequest {
 }
 
 export interface ChamaContinueWithdrawRequest {
+  memberId: string;
   txId: string;
   reference?: string | undefined;
   offramp?: OfframpSwapTarget | undefined;

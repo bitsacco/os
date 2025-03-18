@@ -132,8 +132,8 @@ export class CreateOfframpSwapDto implements OfframpSwapRequest {
   @IsOptional()
   @ValidateNested()
   @Type(() => QuoteDto)
-  @ApiProperty({ type: QuoteDto })
-  quote: QuoteDto;
+  @ApiProperty({ type: QuoteDto, required: false })
+  quote?: QuoteDto;
 
   @IsNotEmpty()
   @IsString()
