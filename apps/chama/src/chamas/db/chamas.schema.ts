@@ -18,7 +18,9 @@ class ChamaMemberDocument extends AbstractDocument implements ChamaMember {
     type: [{ type: String, enum: Object.values(ChamaMemberRole) }],
     required: true,
     validate: {
-      validator: (roles: ChamaMemberRole[]) => roles.length > 0,
+      validator: (roles: ChamaMemberRole[]) => {
+        return roles.length > 0 && roles.length === new Set(roles).size;
+      },
       message: 'Member must have at least one role',
     },
   })
@@ -62,7 +64,24 @@ export function toChama(doc: ChamasDocument): Chama {
     id: doc._id,
     name: doc.name,
     description: doc.description,
-    members: doc.members,
+    members: doc.members.map(toChamaMember),
     createdBy: doc.createdBy,
   };
+}
+
+function toChamaMember(doc: ChamaMemberDocument): ChamaMember {
+  return {
+    userId: doc.userId,
+    roles: [
+      ...new Set(doc.roles.map((role) => parseMemberRole(role.toString()))),
+    ],
+  };
+}
+
+export function parseMemberRole(status: string): ChamaMemberRole {
+  try {
+    return Number(status) as ChamaMemberRole;
+  } catch (error) {
+    return ChamaMemberRole.Member;
+  }
 }

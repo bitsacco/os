@@ -131,7 +131,7 @@ export class CreateChamaDto implements CreateChamaRequest {
 
 export class ChamaUpdatesDto implements ChamaUpdates {
   @IsChamaName(true)
-  @ApiProperty({ example: 'Og Maxi Kenya Bitcoiners', required: false })
+  @ApiProperty({ example: 'Kenya Bitcoiners', required: false })
   name?: string;
 
   @IsString()
@@ -140,7 +140,7 @@ export class ChamaUpdatesDto implements ChamaUpdates {
   @ApiProperty({ example: 'We stack and buidl in Bitcoin', required: false })
   description?: string;
 
-  @IsMembers(1, 100, true)
+  @IsMembers(0, 100, true)
   @ApiProperty({
     type: [ChamaMemberDto],
     example: [
@@ -151,6 +151,19 @@ export class ChamaUpdatesDto implements ChamaUpdates {
     ],
   })
   addMembers: ChamaMember[];
+
+  @IsMembers(0, 100, true)
+  @ApiProperty({
+    type: [ChamaMemberDto],
+    example: [
+      {
+        userId: '43040650-5090-4dd4-8e93-8fd342533e7c',
+        roles: [ChamaMemberRole.Member, ChamaMemberRole.Admin],
+      },
+    ],
+    description: 'Update roles for existing members',
+  })
+  updateMembers: ChamaMember[];
 }
 
 export class UpdateChamaDto implements UpdateChamaRequest {

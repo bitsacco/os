@@ -62,6 +62,7 @@ message ChamaUpdates {
   optional string name = 1;
   optional string description = 2;
   repeated ChamaMember add_members = 3;
+  repeated ChamaMember update_members = 4;
 }
 
 message FindChamaRequest {
