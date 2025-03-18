@@ -129,17 +129,47 @@ export class ChamasService {
       hunk.description = updates.description;
     }
 
+    let members: ChamaMember[] = cd.members.map((member) => ({
+      userId: member.userId,
+      roles: member.roles,
+    }));
+
     if (updates.addMembers) {
       const registered = await this.resolveMembers(updates.addMembers);
-      hunk.members = this.deduplicateMembers(cd.members, registered);
+      members = this.deduplicateMembers(members, registered);
     }
 
-    const updatedChama = await this.chamas.findOneAndUpdate(
-      { _id: chamaId },
-      hunk,
-    );
+    if (updates.updateMembers) {
+      const updatedMembers = await this.resolveMembers(updates.updateMembers);
 
-    return toChama(updatedChama);
+      // For each member to update, if they exist in the current members list,
+      // update their roles; otherwise ignore them
+      members = members.map((current) => {
+        const updated = updatedMembers.find(
+          (um) => um.userId === current.userId,
+        );
+
+        if (updated) {
+          // Ensure unique roles and proper enum values
+          const uniqueRoles = [...new Set(updated.roles)].map((role) =>
+            typeof role === 'number' ? role : parseInt(role as string, 10),
+          );
+
+          return {
+            userId: current.userId,
+            roles: uniqueRoles,
+          };
+        }
+
+        return current;
+      });
+    }
+
+    hunk.members = members;
+
+    const ucd = await this.chamas.findOneAndUpdate({ _id: chamaId }, hunk);
+
+    return toChama(ucd);
   }
 
   async joinChama({ chamaId, memberInfo }: JoinChamaDto): Promise<Chama> {

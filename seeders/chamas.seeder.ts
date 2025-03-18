@@ -26,8 +26,8 @@ export async function seedChamas(users: User[]): Promise<Chama[]> {
   const chama1Members: ChamaMember[] = [
     // Creator is admin
     createChamaMember(creator1, [
-      ChamaMemberRole.Admin,
       ChamaMemberRole.Member,
+      ChamaMemberRole.Admin,
     ]),
   ];
 
@@ -70,8 +70,8 @@ export async function seedChamas(users: User[]): Promise<Chama[]> {
     // Determine roles based on user
     if (user.id === creator2.id || (otherAdmin && user.id === otherAdmin.id)) {
       return createChamaMember(user, [
-        ChamaMemberRole.Admin,
         ChamaMemberRole.Member,
+        ChamaMemberRole.Admin,
       ]);
     } else {
       return createChamaMember(user, [ChamaMemberRole.Member]);
@@ -108,8 +108,8 @@ export async function seedChamas(users: User[]): Promise<Chama[]> {
   const chama3Members: ChamaMember[] = projectMembers.map((user) => {
     if (user.id === creator3.id) {
       return createChamaMember(user, [
-        ChamaMemberRole.Admin,
         ChamaMemberRole.Member,
+        ChamaMemberRole.Admin,
       ]);
     } else {
       return createChamaMember(user, [ChamaMemberRole.Member]);

@@ -53,6 +53,7 @@ export interface ChamaUpdates {
   name?: string | undefined;
   description?: string | undefined;
   addMembers: ChamaMember[];
+  updateMembers: ChamaMember[];
 }
 
 export interface FindChamaRequest {

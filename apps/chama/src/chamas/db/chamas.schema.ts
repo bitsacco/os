@@ -18,7 +18,9 @@ class ChamaMemberDocument extends AbstractDocument implements ChamaMember {
     type: [{ type: String, enum: Object.values(ChamaMemberRole) }],
     required: true,
     validate: {
-      validator: (roles: ChamaMemberRole[]) => roles.length > 0,
+      validator: (roles: ChamaMemberRole[]) => {
+        return roles.length > 0 && roles.length === new Set(roles).size;
+      },
       message: 'Member must have at least one role',
     },
   })
