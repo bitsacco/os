@@ -18,8 +18,7 @@ service SolowalletService {
   rpc UpdateTransaction(UpdateTxRequest) returns (UserTxsResponse) {}
 
   rpc FindTransaction(lib.FindTxRequest) returns (SolowalletTx) {}
-  
-  // Process LNURL withdrawal request from a Lightning wallet
+
   rpc ProcessLnUrlWithdraw(lib.LnUrlWithdrawRequest) returns (lib.LnUrlWithdrawResponse) {}
 }
 

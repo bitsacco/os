@@ -11,6 +11,8 @@ import {
   Bolt11,
   FindTxRequest,
   FmLightning,
+  LnUrlWithdrawRequest,
+  LnUrlWithdrawResponse,
   OfframpSwapTarget,
   OnrampSwapSource,
   PaginatedRequest,
@@ -196,6 +198,10 @@ export interface ChamaWalletServiceClient {
   aggregateWalletMeta(
     request: ChamaTxMetaRequest,
   ): Observable<ChamaTxMetaResponse>;
+
+  processLnUrlWithdraw(
+    request: LnUrlWithdrawRequest,
+  ): Observable<LnUrlWithdrawResponse>;
 }
 
 export interface ChamaWalletServiceController {
@@ -251,6 +257,13 @@ export interface ChamaWalletServiceController {
     | Promise<ChamaTxMetaResponse>
     | Observable<ChamaTxMetaResponse>
     | ChamaTxMetaResponse;
+
+  processLnUrlWithdraw(
+    request: LnUrlWithdrawRequest,
+  ):
+    | Promise<LnUrlWithdrawResponse>
+    | Observable<LnUrlWithdrawResponse>
+    | LnUrlWithdrawResponse;
 }
 
 export function ChamaWalletServiceControllerMethods() {
@@ -264,6 +277,7 @@ export function ChamaWalletServiceControllerMethods() {
       'findTransaction',
       'filterTransactions',
       'aggregateWalletMeta',
+      'processLnUrlWithdraw',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(

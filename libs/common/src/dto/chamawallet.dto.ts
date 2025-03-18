@@ -132,6 +132,11 @@ export class ChamaContinueWithdrawDto
   @Type(() => Bolt11InvoiceDto)
   @ApiProperty({ type: Bolt11InvoiceDto, required: false })
   lightning?: Bolt11InvoiceDto;
+
+  @IsOptional()
+  @IsNotEmpty()
+  @ApiProperty({ required: false })
+  lnurlRequest?: boolean;
 }
 
 export class ChamaTxReviewDto implements ChamaTxReview {

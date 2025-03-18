@@ -685,7 +685,7 @@ export class SolowalletService {
           await this.fedimintService.createLnUrlWithdrawPoint(
             maxWithdrawableMsats,
             Math.min(1000, maxWithdrawableMsats), // Set reasonable minimum
-            reference || 'Bitsacco Withdrawal',
+            reference || 'Bitsacco Personal Savings Withdrawal',
           );
 
         this.logger.log(
@@ -706,7 +706,7 @@ export class SolowalletService {
             amountMsats: maxWithdrawableMsats, // This will be updated when actually claimed
             amountFiat,
             lightning: JSON.stringify(fmLightning),
-            paymentTracker: lnurlWithdrawPoint.k1, // We'll use k1 to track this withdrawal
+            paymentTracker: lnurlWithdrawPoint.k1,
             type: TransactionType.WITHDRAW,
             status: TransactionStatus.PENDING, // Pending until someone scans and claims
             reference: reference || 'LNURL Withdrawal',
@@ -717,7 +717,9 @@ export class SolowalletService {
           `LNURL withdrawal request recorded with ID: ${withdrawal._id}`,
         );
       } catch (error) {
-        this.logger.error('Failed to create LNURL withdrawal request', error);
+        this.logger.error(
+          `Failed to create LNURL withdrawal request : ${error}`,
+        );
         throw new Error(
           `Failed to create LNURL withdrawal request: ${error.message}`,
         );

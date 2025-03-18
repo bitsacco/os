@@ -21,6 +21,8 @@ service ChamaWalletService {
   rpc FilterTransactions(ChamaTxsFilterRequest) returns (PaginatedChamaTxsResponse){}
 
   rpc AggregateWalletMeta(ChamaTxMetaRequest) returns (ChamaTxMetaResponse) {}
+
+  rpc ProcessLnUrlWithdraw(lib.LnUrlWithdrawRequest) returns (lib.LnUrlWithdrawResponse) {}
 }
 
 

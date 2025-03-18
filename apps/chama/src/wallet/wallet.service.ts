@@ -1,10 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  NotFoundException,
-  NotImplementedException,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   AggregateChamaTransactionsDto,
   ChamaContinueDepositDto,
@@ -39,6 +33,8 @@ import {
   type ReceivePaymentFailureEvent,
   type ReceivePaymentSuccessEvent,
   initiateOfframpSwap,
+  FmLightning,
+  ChamaWalletTx,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -364,14 +360,20 @@ export class ChamaWalletService {
   }
 
   async continueWithdraw({
+    memberId,
     txId,
     offramp,
     lightning,
+    lnurlRequest,
     pagination,
   }: ChamaContinueWithdrawDto) {
     // Get the transaction record
     const txd = await this.wallet.findOne({ _id: txId });
-    const { memberId, chamaId } = txd;
+    const { chamaId } = txd;
+
+    if (txd.memberId !== memberId) {
+      throw new Error('Invalid request to continue transaction');
+    }
 
     // Check if this transaction is already in a final state
     if (
@@ -390,10 +392,7 @@ export class ChamaWalletService {
     }
 
     // Get the wallet balances
-    const { memberMeta, groupMeta } = await this.getWalletMeta(
-      chamaId,
-      memberId,
-    );
+    const { groupMeta } = await this.getWalletMeta(chamaId, memberId);
     let withdrawal: ChamaWalletDocument;
 
     if (lightning) {
@@ -429,6 +428,7 @@ export class ChamaWalletService {
         withdrawal = await this.wallet.findOneAndUpdate(
           {
             _id: txId,
+            memberId,
           },
           {
             amountMsats: totalWithdrawnMsats,
@@ -452,8 +452,64 @@ export class ChamaWalletService {
           `Failed to process lightning payment: ${error.message}`,
         );
       }
+    } else if (lnurlRequest) {
+      // 2. Execute LNURL withdrawal that has been approved
+      this.logger.log('Processing approved LNURL withdrawal');
+
+      const maxWithdrawableMsats = txd.amountMsats;
+
+      this.logger.log(`Max withdrawable amount: ${maxWithdrawableMsats} msats`);
+      this.logger.log(`Current chama balance: ${groupMeta.groupBalance} msats`);
+
+      // Check if chama has sufficient balance
+      if (maxWithdrawableMsats > groupMeta.groupBalance) {
+        throw new Error('Insufficient chama funds for LNURL withdrawal');
+      }
+
+      if (maxWithdrawableMsats <= 0) {
+        throw new Error('Insufficient balance for withdrawal');
+      }
+
+      try {
+        // Create a new LNURL withdraw point
+        const lnurlWithdrawPoint =
+          await this.fedimintService.createLnUrlWithdrawPoint(
+            maxWithdrawableMsats,
+            Math.min(1000, maxWithdrawableMsats),
+            txd.reference || 'Bitsacco Chama Savings withdrawal',
+          );
+
+        this.logger.log(
+          `LNURL withdrawal access point created. LNURL: ${lnurlWithdrawPoint.lnurl}`,
+        );
+
+        const fmLightning: FmLightning = {
+          lnurlWithdrawPoint,
+        };
+
+        withdrawal = await this.wallet.findOneAndUpdate(
+          { _id: txId, memberId },
+          {
+            lightning: JSON.stringify(fmLightning),
+            status: ChamaTxStatus.PROCESSING, // Processing until LNURL callback is received
+            paymentTracker: lnurlWithdrawPoint.k1,
+          },
+        );
+
+        this.logger.log(
+          `LNURL withdrawal request recorded with ID: ${withdrawal._id}`,
+        );
+      } catch (error) {
+        this.logger.error(
+          `Failed to create LNURL withdrawal request : ${error}`,
+        );
+
+        throw new Error(
+          `Failed to create LNURL withdrawal request: ${error.message}`,
+        );
+      }
     } else if (offramp) {
-      // 2. Execute offramp withdrawal that has been approved
+      // 3. Execute offramp withdrawal that has been approved
       this.logger.log('Processing approved offramp withdrawal');
 
       // Double check if chama has enough total balance
@@ -512,7 +568,7 @@ export class ChamaWalletService {
       }
     } else {
       throw new Error(
-        'No withdrawal method provided (lightning invoice or offramp)',
+        'No withdrawal method provided (lightning invoice, LNURL, or offramp)',
       );
     }
 
@@ -870,6 +926,126 @@ export class ChamaWalletService {
         status: ChamaTxStatus.FAILED,
       },
     );
+  }
+
+  /**
+   * Find a pending LNURL withdrawal transaction by k1
+   * @param k1 The k1 identifier from the LNURL withdrawal request
+   * @returns The transaction document if found, null otherwise
+   */
+  async findPendingLnurlWithdrawal(k1: string): Promise<ChamaWalletTx | null> {
+    this.logger.log(`Looking for pending chama withdrawal with k1: ${k1}`);
+
+    try {
+      // Find transaction by paymentTracker (which stores the k1 value)
+      const doc = await this.wallet.findOne({
+        paymentTracker: k1,
+        type: TransactionType.WITHDRAW.toString(),
+      });
+
+      if (!doc) {
+        this.logger.log(`No chama withdrawal found with k1: ${k1}`);
+        return null;
+      }
+
+      const status = doc.status.toString();
+      this.logger.log(`TRANSACTION STATUS: ${status}`);
+
+      if (status !== ChamaTxStatus.PROCESSING.toString()) {
+        throw new Error('Transaction is not in processing state');
+      }
+
+      return toChamaWalletTx(doc, this.logger);
+    } catch (error) {
+      this.logger.error(
+        `Error finding pending chama withdrawal: ${error.message}`,
+        error,
+      );
+      return null;
+    }
+  }
+
+  /**
+   * Handle an LNURL withdraw callback when a user scans the QR code
+   */
+  async processLnUrlWithdrawCallback(
+    k1: string,
+    pr: string,
+  ): Promise<{ success: boolean; message: string; txId?: string }> {
+    this.logger.log(`Processing chama LNURL withdraw callback with k1: ${k1}`);
+
+    try {
+      // 1. Find the pending withdrawal record using the k1 value
+      const withdrawal = await this.wallet.findOne({
+        paymentTracker: k1,
+        status: ChamaTxStatus.PROCESSING,
+        type: TransactionType.WITHDRAW,
+      });
+
+      if (!withdrawal) {
+        throw new Error('Withdrawal request not found or already processed');
+      }
+
+      // 2. Decode the invoice to get the amount
+      const invoiceDetails = await this.fedimintService.decode(pr);
+
+      // 3. Pay the invoice directly
+      const { operationId, fee } = await this.fedimintService.pay(pr);
+
+      // Total amount charged = actual withdrawn amount plus fee paid
+      const amountMsats = Number(invoiceDetails.amountMsats) + fee;
+
+      // 4. Update the withdrawal record
+      const updatedWithdrawal = await this.wallet.findOneAndUpdate(
+        { _id: withdrawal._id },
+        {
+          status: ChamaTxStatus.COMPLETE,
+          amountMsats: amountMsats,
+          updatedAt: new Date(),
+          lightning: JSON.stringify({
+            invoice: pr,
+            operationId,
+          }),
+        },
+      );
+
+      this.logger.log(
+        `Chama LNURL withdrawal successfully completed for ID: ${updatedWithdrawal._id}`,
+      );
+
+      return {
+        success: true,
+        message: 'Withdrawal successful',
+        txId: updatedWithdrawal._id,
+      };
+    } catch (error) {
+      this.logger.error(
+        'Failed to process chama LNURL withdraw callback',
+        error,
+      );
+
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+  }
+
+  /**
+   * Check the status of an LNURL withdrawal request
+   * @param withdrawId The ID of the withdrawal
+   * @returns The withdrawal transaction details
+   */
+  async checkLnUrlWithdrawStatus(withdrawId: string): Promise<ChamaWalletTx> {
+    this.logger.log(`Checking status of chama LNURL withdrawal: ${withdrawId}`);
+
+    const doc = await this.wallet.findOne({ _id: withdrawId });
+
+    if (!doc) {
+      throw new Error('Withdrawal request not found');
+    }
+
+    return toChamaWalletTx(doc, this.logger);
   }
 }
 

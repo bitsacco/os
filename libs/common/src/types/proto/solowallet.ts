@@ -131,8 +131,6 @@ export interface SolowalletServiceClient {
 
   findTransaction(request: FindTxRequest): Observable<SolowalletTx>;
 
-  /** Process LNURL withdrawal request from a Lightning wallet */
-
   processLnUrlWithdraw(
     request: LnUrlWithdrawRequest,
   ): Observable<LnUrlWithdrawResponse>;
@@ -166,8 +164,6 @@ export interface SolowalletServiceController {
   findTransaction(
     request: FindTxRequest,
   ): Promise<SolowalletTx> | Observable<SolowalletTx> | SolowalletTx;
-
-  /** Process LNURL withdrawal request from a Lightning wallet */
 
   processLnUrlWithdraw(
     request: LnUrlWithdrawRequest,
