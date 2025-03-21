@@ -86,6 +86,7 @@ export interface ChamaContinueWithdrawRequest {
   reference?: string | undefined;
   offramp?: OfframpSwapTarget | undefined;
   lightning?: Bolt11 | undefined;
+  lnurlRequest?: boolean | undefined;
   pagination?: PaginatedRequest | undefined;
 }
 

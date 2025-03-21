@@ -128,8 +128,10 @@ message ChamaContinueWithdrawRequest {
 
   optional lib.Bolt11 lightning = 5;
 
+  optional bool lnurl_request = 6;
+
   // Add more optional funding sources, like direct lightning deposit
-  reserved 6,7,8,9,10;
+  reserved 7,8,9,10;
 
   optional lib.PaginatedRequest pagination = 11;
 }

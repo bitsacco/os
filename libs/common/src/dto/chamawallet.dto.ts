@@ -20,8 +20,6 @@ import {
   type ChamaTxUpdates,
   type PaginatedRequest,
   type ChamaContinueWithdrawRequest,
-  type Bolt11,
-  type OfframpSwapTarget,
   type ChamaWithdrawRequest,
   type ChamaContinueDepositRequest,
   type OnrampSwapSource,

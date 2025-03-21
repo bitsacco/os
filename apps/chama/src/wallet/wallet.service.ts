@@ -35,6 +35,7 @@ import {
   initiateOfframpSwap,
   FmLightning,
   ChamaWalletTx,
+  parseTransactionStatus,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -375,17 +376,23 @@ export class ChamaWalletService {
       throw new Error('Invalid request to continue transaction');
     }
 
+    const status = parseTransactionStatus<ChamaTxStatus>(
+      txd.status.toString(),
+      ChamaTxStatus.UNRECOGNIZED,
+      this.logger,
+    );
+
     // Check if this transaction is already in a final state
     if (
-      txd.status === ChamaTxStatus.PROCESSING ||
-      txd.status === ChamaTxStatus.COMPLETE ||
-      txd.status === ChamaTxStatus.FAILED
+      status === ChamaTxStatus.PROCESSING ||
+      status === ChamaTxStatus.COMPLETE ||
+      status === ChamaTxStatus.FAILED
     ) {
       throw new Error('Transaction is processing or complete');
     }
 
     // Check if transaction has status APPROVED - only approved withdrawals can be continued
-    if (txd.status !== ChamaTxStatus.APPROVED) {
+    if (status !== ChamaTxStatus.APPROVED) {
       throw new Error(
         'Withdrawal must be approved by admins before it can be processed',
       );
