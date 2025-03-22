@@ -204,14 +204,14 @@ export class FedimintService {
    * @param maxWithdrawableMsats Maximum amount in millisatoshis that can be withdrawn
    * @param minWithdrawableMsats Minimum amount in millisatoshis that can be withdrawn (optional)
    * @param defaultDescription Default description for the withdrawal (optional)
-   * @param expirySeconds Time in seconds until this withdraw request expires (default: 1 hour)
+   * @param expirySeconds Time in seconds until this withdraw request expires (default: no expiry)
    * @returns Object containing LNURL details for generating a QR code
    */
   async createLnUrlWithdrawPoint(
     maxWithdrawableMsats: number,
     minWithdrawableMsats: number = 0,
     defaultDescription: string = 'Bitsacco LNURL Withdraw',
-    expirySeconds: number = 3600,
+    expirySeconds?: number | undefined,
   ): Promise<LnUrlWithdrawPoint> {
     this.logger.log(
       `Creating LNURL withdraw request for max ${maxWithdrawableMsats} msats`,
@@ -220,9 +220,10 @@ export class FedimintService {
     try {
       const callback = this.configService.getOrThrow('LNURL_CALLBACK');
       const k1 = crypto.randomBytes(16).toString('hex');
-
-      const timestamp = new Date().getTime();
-      const expiresAt = Math.floor(timestamp / 1000) + expirySeconds;
+      const currentTimeSeconds = Math.floor(new Date().getTime() / 1000);
+      const expiresAt = expirySeconds
+        ? currentTimeSeconds + expirySeconds
+        : undefined;
 
       const shortDescription =
         defaultDescription.length > 20

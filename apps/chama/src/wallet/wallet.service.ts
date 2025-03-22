@@ -935,11 +935,11 @@ export class ChamaWalletService {
   }
 
   /**
-   * Find a pending LNURL withdrawal transaction by k1
+   * Find a approved LNURL withdrawal transaction by k1
    * @param k1 The k1 identifier from the LNURL withdrawal request
    * @returns The transaction document if found, null otherwise
    */
-  async findPendingLnurlWithdrawal(k1: string): Promise<ChamaWalletTx | null> {
+  async findApprovedLnurlWithdrawal(k1: string): Promise<ChamaWalletTx | null> {
     this.logger.log(`Looking for pending chama withdrawal with k1: ${k1}`);
 
     try {
@@ -954,11 +954,15 @@ export class ChamaWalletService {
         return null;
       }
 
-      const status = doc.status.toString();
-      this.logger.log(`TRANSACTION STATUS: ${status}`);
+      const status = parseTransactionStatus<ChamaTxStatus>(
+        doc.status.toString(),
+        ChamaTxStatus.UNRECOGNIZED,
+        this.logger,
+      );
 
-      if (status !== ChamaTxStatus.PROCESSING.toString()) {
-        throw new Error('Transaction is not in processing state');
+      if (status !== ChamaTxStatus.APPROVED) {
+        this.logger.log(`TRANSACTION STATUS: ${status}`);
+        throw new Error('Transaction is not in approved state');
       }
 
       return toChamaWalletTx(doc, this.logger);
@@ -984,7 +988,7 @@ export class ChamaWalletService {
       // 1. Find the pending withdrawal record using the k1 value
       const withdrawal = await this.wallet.findOne({
         paymentTracker: k1,
-        status: ChamaTxStatus.PROCESSING,
+        status: ChamaTxStatus.APPROVED,
         type: TransactionType.WITHDRAW,
       });
 
@@ -992,16 +996,26 @@ export class ChamaWalletService {
         throw new Error('Withdrawal request not found or already processed');
       }
 
-      // 2. Decode the invoice to get the amount
+      // 2. Check if the withdrawal request has expired
+      const lightningData = JSON.parse(withdrawal.lightning);
+      if (
+        lightningData.expiresAt &&
+        Date.now() / 1000 > lightningData.expiresAt
+      ) {
+        throw new Error('Withdrawal request has expired');
+      }
+
+      // 3. Decode the invoice to get the amount
       const invoiceDetails = await this.fedimintService.decode(pr);
 
-      // 3. Pay the invoice directly
+      // 4. Pay the invoice directly
       const { operationId, fee } = await this.fedimintService.pay(pr);
 
+      // TODO: Issue #78 - https://github.com/bitsacco/os/issues/78
       // Total amount charged = actual withdrawn amount plus fee paid
       const amountMsats = Number(invoiceDetails.amountMsats) + fee;
 
-      // 4. Update the withdrawal record
+      // 5. Update the withdrawal record
       const updatedWithdrawal = await this.wallet.findOneAndUpdate(
         { _id: withdrawal._id },
         {

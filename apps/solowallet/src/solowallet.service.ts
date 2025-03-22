@@ -444,7 +444,7 @@ export class SolowalletService {
           await this.fedimintService.createLnUrlWithdrawPoint(
             maxWithdrawableMsats,
             Math.min(1000, maxWithdrawableMsats), // Set reasonable minimum
-            reference || 'Bitsacco Withdrawal',
+            reference || 'Bitsacco Personal Savings Withdrawal',
           );
 
         this.logger.log(
@@ -948,10 +948,6 @@ export class SolowalletService {
         lightningData.expiresAt &&
         Date.now() / 1000 > lightningData.expiresAt
       ) {
-        await this.wallet.findOneAndUpdate(
-          { _id: withdrawal._id },
-          { status: TransactionStatus.FAILED },
-        );
         throw new Error('Withdrawal request has expired');
       }
 

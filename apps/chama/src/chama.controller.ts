@@ -150,10 +150,11 @@ export class ChamaController {
 
     try {
       // 1. First, find any transaction that's already using this k1 value
-      const pendingTx = await this.walletService.findPendingLnurlWithdrawal(k1);
+      const approvedTx =
+        await this.walletService.findApprovedLnurlWithdrawal(k1);
 
       // 2. If no pending transaction is found, this is an error
-      if (!pendingTx) {
+      if (!approvedTx) {
         this.logger.warn(`No pending withdrawal found for k1: ${k1}`);
         return {
           status: 'ERROR',
@@ -162,11 +163,11 @@ export class ChamaController {
       }
 
       this.logger.log(
-        `Found existing withdrawal transaction: ${pendingTx.id} in status: ${pendingTx.status}`,
+        `Found existing withdrawal transaction: ${approvedTx.id} in status: ${approvedTx.status}`,
       );
 
       // 3. If transaction is not in pending state, return error
-      if (pendingTx.status !== ChamaTxStatus.PENDING) {
+      if (approvedTx.status !== ChamaTxStatus.APPROVED) {
         return {
           status: 'ERROR',
           reason: `LNURL withdrawal is now invalid or expired`,
@@ -179,7 +180,7 @@ export class ChamaController {
 
         // Verify maxWithdrawable matches our expected value (if provided in request)
         if (maxWithdrawable) {
-          const expectedMsats = pendingTx.amountMsats;
+          const expectedMsats = approvedTx.amountMsats;
           if (parseInt(maxWithdrawable) > expectedMsats) {
             this.logger.error(
               `Mismatched maxWithdrawable: expected ${expectedMsats}, got ${maxWithdrawable}`,
