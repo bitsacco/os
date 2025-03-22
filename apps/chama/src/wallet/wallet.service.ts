@@ -498,7 +498,6 @@ export class ChamaWalletService {
           { _id: txId, memberId },
           {
             lightning: JSON.stringify(fmLightning),
-            status: ChamaTxStatus.PROCESSING, // Processing until LNURL callback is received
             paymentTracker: lnurlWithdrawPoint.k1,
           },
         );
