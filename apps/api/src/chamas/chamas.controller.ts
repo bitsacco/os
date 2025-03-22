@@ -38,7 +38,6 @@ import {
 } from '@nestjs/swagger';
 import { firstValueFrom } from 'rxjs';
 @Controller('chamas')
-@UseGuards(JwtAuthGuard)
 export class ChamasController {
   private readonly logger = new Logger(ChamasController.name);
   private chamas: ChamasServiceClient;
@@ -58,6 +57,7 @@ export class ChamasController {
   }
 
   @Post('create')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Create new Chama' })
@@ -69,6 +69,7 @@ export class ChamasController {
   }
 
   @Patch('update')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Update existing Chama' })
@@ -80,6 +81,7 @@ export class ChamasController {
   }
 
   @Post('join')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Join existing Chama' })
@@ -91,6 +93,7 @@ export class ChamasController {
   }
 
   @Post('invite')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Invite members to existing Chama' })
@@ -102,6 +105,7 @@ export class ChamasController {
   }
 
   @Get('find/:chamaId')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Find existing Chama by ID' })
@@ -111,6 +115,7 @@ export class ChamasController {
   }
 
   @Get('filter/')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Filter existing Chamas by queries' })
@@ -138,6 +143,7 @@ export class ChamasController {
   }
 
   @Post('tx/deposit')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Chama deposit transaction' })
@@ -149,6 +155,7 @@ export class ChamasController {
   }
 
   @Post('tx/deposit/continue')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Continue Chama deposit transaction' })
@@ -160,6 +167,7 @@ export class ChamasController {
   }
 
   @Post('tx/withdraw/request')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Chama withdrawal transaction' })
@@ -171,6 +179,7 @@ export class ChamasController {
   }
 
   @Post('tx/withdraw/continue')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Continue Chama withdrawal transaction' })
@@ -182,6 +191,7 @@ export class ChamasController {
   }
 
   @Patch('tx/update')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Update Chama transaction' })
@@ -193,6 +203,7 @@ export class ChamasController {
   }
 
   @Get('tx/find/:txId')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Find Chama transaction by ID' })
@@ -202,6 +213,7 @@ export class ChamasController {
   }
 
   @Get('tx/filter/')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Filter chama transactions' })
@@ -229,6 +241,7 @@ export class ChamasController {
   }
 
   @Post('tx/aggregate/')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Aggregate chama transactions' })
