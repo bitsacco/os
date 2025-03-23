@@ -18,7 +18,7 @@ import {
   getQuote,
   initiateOnrampSwap,
   PaginatedChamaTxsResponse,
-  ReceiveContext,
+  FedimintContext,
   Review,
   SWAP_SERVICE_NAME,
   SwapServiceClient,
@@ -30,12 +30,14 @@ import {
   type MemberMeta,
   type ChamaTxGroupMeta,
   type ChamaTxMemberMeta,
-  type ReceivePaymentFailureEvent,
-  type ReceivePaymentSuccessEvent,
+  type FedimintReceiveFailureEvent,
+  type FedimintReceiveSuccessEvent,
+  type SwapStatusChangeEvent,
   initiateOfframpSwap,
   FmLightning,
   ChamaWalletTx,
   parseTransactionStatus,
+  swap_status_change,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -71,6 +73,10 @@ export class ChamaWalletService {
     this.eventEmitter.on(
       fedimint_receive_failure,
       this.handleFailedReceive.bind(this),
+    );
+    this.eventEmitter.on(
+      swap_status_change,
+      this.handleSwapStatusChange.bind(this),
     );
     this.logger.debug('ChamaWalletService initialized');
   }
@@ -134,7 +140,7 @@ export class ChamaWalletService {
 
     // listen for payment
     this.fedimintService.receive(
-      ReceiveContext.CHAMAWALLET,
+      FedimintContext.CHAMAWALLET_RECEIVE,
       lightning.operationId,
     );
 
@@ -223,7 +229,7 @@ export class ChamaWalletService {
 
     // listen for payment
     this.fedimintService.receive(
-      ReceiveContext.SOLOWALLET,
+      FedimintContext.SOLOWALLET_RECEIVE,
       lightning.operationId,
     );
 
@@ -529,6 +535,7 @@ export class ChamaWalletService {
           status,
           amountMsats: offrampMsats,
           invoice,
+          swapTracker,
         } = await initiateOfframpSwap<ChamaTxStatus>(
           {
             amountFiat: txd.amountFiat.toString(),
@@ -553,7 +560,7 @@ export class ChamaWalletService {
           {
             amountMsats: totalOfframpMsats,
             lightning: JSON.stringify({ invoice, operationId }),
-            paymentTracker: operationId,
+            paymentTracker: swapTracker,
             status,
           },
         );
@@ -904,7 +911,7 @@ export class ChamaWalletService {
   private async handleSuccessfulReceive({
     context,
     operationId,
-  }: ReceivePaymentSuccessEvent) {
+  }: FedimintReceiveSuccessEvent) {
     await this.wallet.findOneAndUpdate(
       { paymentTracker: operationId },
       {
@@ -921,7 +928,7 @@ export class ChamaWalletService {
   private async handleFailedReceive({
     context,
     operationId,
-  }: ReceivePaymentFailureEvent) {
+  }: FedimintReceiveFailureEvent) {
     this.logger.log(
       `Failed to receive lightning payment for ${context} : ${operationId}`,
     );
@@ -932,6 +939,40 @@ export class ChamaWalletService {
         status: ChamaTxStatus.FAILED,
       },
     );
+  }
+
+  @OnEvent(swap_status_change)
+  private async handleSwapStatusChange({
+    context,
+    payload,
+    error,
+  }: SwapStatusChangeEvent) {
+    this.logger.log(
+      `Received swap status change - context: ${context} - refundable : ${payload.refundable}`,
+    );
+
+    if (error) {
+      this.logger.error(`Swap status change has error: ${error}`);
+    }
+
+    try {
+      const { swapTracker, swapStatus } = payload;
+      const txd = await this.wallet.findOneAndUpdate(
+        { paymentTracker: swapTracker },
+        {
+          status: swapStatus,
+        },
+      );
+
+      this.logger.log(
+        `Updated chamawallet transaction ${txd._id} to status: ${swapStatus}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error updating chamawallet transaction for swap: ${payload.swapTracker}`,
+        error,
+      );
+    }
   }
 
   /**

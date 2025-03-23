@@ -9,17 +9,20 @@ import {
   SwapResponse,
   CreateOfframpSwapDto,
   QuoteDto,
-  ReceiveContext,
-  type ReceivePaymentFailureEvent,
-  type ReceivePaymentSuccessEvent,
+  FedimintContext,
+  type FedimintReceiveFailureEvent,
+  type FedimintReceiveSuccessEvent,
+  type SwapStatusChangeEvent,
   btcToFiat,
   fiatToBtc,
   fedimint_receive_success,
   fedimint_receive_failure,
+  swap_status_change,
   FedimintService,
   SupportedCurrencyType,
   PaginatedRequestDto,
   QuoteRequestDto,
+  SwapContext,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -266,7 +269,7 @@ export class SwapService {
     });
 
     // listen for payment
-    this.fedimintService.receive(ReceiveContext.OFFRAMP, operationId);
+    this.fedimintService.receive(FedimintContext.OFFRAMP_RECEIVE, operationId);
 
     return {
       id: swap._id,
@@ -439,6 +442,21 @@ export class SwapService {
       },
     );
 
+    // Emit an event with the updated swap status for interested services
+    const txStatus = mapSwapTxStateToTransactionStatus(newState);
+    const statusEvent: SwapStatusChangeEvent = {
+      context: SwapContext.OFFRAMP,
+      payload: {
+        swapTracker: swap._id,
+        swapStatus: txStatus,
+      },
+    };
+
+    this.logger.log(
+      `Emitting swap_status_change event: ${JSON.stringify(statusEvent)}`,
+    );
+    this.eventEmitter.emit(swap_status_change, statusEvent);
+
     this.logger.log(
       `Swap ${swap._id} updated successfully to state: ${newState}`,
     );
@@ -449,27 +467,64 @@ export class SwapService {
   private async handleSuccessfulReceive({
     context,
     operationId,
-  }: ReceivePaymentSuccessEvent) {
+  }: FedimintReceiveSuccessEvent) {
     const swap = await this.offramp.findOne({ paymentTracker: operationId });
 
     const { amountFiat } = btcToFiat({
       amountSats: Number(swap.amountSats),
       fiatToBtcRate: Number(swap.rate),
     });
-    const { id } = await this.intasendService.sendMpesaPayment({
-      amount: amountFiat.toFixed(0).toString(),
-      account: swap.phone,
-      name: 'bitsacco',
-      narrative: 'withdrawal',
-    });
 
-    await this.offramp.findOneAndUpdate(
-      { _id: swap._id },
-      {
-        paymentTracker: id,
-        state: SwapTransactionState.PROCESSING,
-      },
+    let statusEvent: SwapStatusChangeEvent;
+
+    try {
+      const { id } = await this.intasendService.sendMpesaPayment({
+        amount: amountFiat.toFixed(0).toString(),
+        account: swap.phone,
+        name: 'bitsacco',
+        narrative: 'withdrawal',
+      });
+
+      await this.offramp.findOneAndUpdate(
+        { _id: swap._id },
+        {
+          paymentTracker: id,
+          state: SwapTransactionState.PROCESSING,
+        },
+      );
+
+      statusEvent = {
+        context: SwapContext.OFFRAMP,
+        payload: {
+          swapTracker: swap._id,
+          swapStatus: TransactionStatus.PROCESSING,
+        },
+      };
+    } catch (error) {
+      this.logger.error(`Error when sending mpesa payment: ${error}`);
+
+      await this.offramp.findOneAndUpdate(
+        { _id: swap._id },
+        {
+          state: SwapTransactionState.FAILED,
+        },
+      );
+
+      statusEvent = {
+        context: SwapContext.OFFRAMP,
+        payload: {
+          swapTracker: swap._id,
+          swapStatus: TransactionStatus.FAILED,
+          refundable: true,
+        },
+        error,
+      };
+    }
+
+    this.logger.log(
+      `Emitting swap_status_change event: ${JSON.stringify(statusEvent)}`,
     );
+    this.eventEmitter.emit(swap_status_change, statusEvent);
 
     this.logger.log(
       `Received lightning payment for ${context} : ${operationId}`,
@@ -480,17 +535,36 @@ export class SwapService {
   private async handleFailedReceive({
     context,
     operationId,
-  }: ReceivePaymentFailureEvent) {
+  }: FedimintReceiveFailureEvent) {
     this.logger.log(
       `Failed to receive lightning payment for ${context} : ${operationId}`,
     );
 
+    const swap = await this.offramp.findOne({ paymentTracker: operationId });
+
+    if (!swap) {
+      this.logger.error(`No swap found with paymentTracker ${operationId}`);
+      return;
+    }
+
     await this.offramp.findOneAndUpdate(
-      { _id: operationId },
+      { _id: swap._id },
       {
         state: SwapTransactionState.FAILED,
       },
     );
+
+    // Emit an event with the failed status
+    const statusEvent: SwapStatusChangeEvent = {
+      context: SwapContext.OFFRAMP,
+      payload: { swapTracker: swap._id, swapStatus: TransactionStatus.FAILED },
+      error: 'Failed to receive lightning payment',
+    };
+
+    this.logger.log(
+      `Emitting swap_status_change event: ${JSON.stringify(statusEvent)}`,
+    );
+    this.eventEmitter.emit(swap_status_change, statusEvent);
   }
 }
 

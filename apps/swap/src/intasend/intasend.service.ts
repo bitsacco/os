@@ -91,6 +91,7 @@ export class IntasendService {
     status_code,
     transactions,
     challenge,
+    transactions_count,
   }: MpesaPaymentUpdateDto): Promise<MpesaTracker> {
     this.checkUpdateChallenge(challenge);
     this.logger.log(
@@ -126,7 +127,7 @@ export class IntasendService {
     if (batch === MpesaTransactionState.Complete && transactions.length > 0) {
       this.logger.log(`Batch complete, checking individual transaction status`);
 
-      if (transactions.length !== 1) {
+      if (transactions.length !== transactions_count) {
         this.logger.warn(
           `Expected 1 transaction, but got ${transactions.length}`,
         );

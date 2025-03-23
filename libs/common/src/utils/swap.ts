@@ -117,9 +117,8 @@ export async function initiateOfframpSwap<S>(
   amountMsats: number;
   amountFiat: number;
   invoice: string;
-  reference: string;
+  swapTracker: string;
 }> {
-  const reference = fiatWithdraw.reference;
   const amountFiat = Number(fiatWithdraw.amountFiat);
 
   return firstValueFrom(
@@ -140,7 +139,7 @@ export async function initiateOfframpSwap<S>(
             invoice: swap.lightning,
             amountMsats,
             amountFiat,
-            reference,
+            swapTracker: swap.id,
           };
         }),
       )

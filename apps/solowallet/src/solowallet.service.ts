@@ -5,14 +5,16 @@ import {
   WalletMeta,
   fedimint_receive_failure,
   fedimint_receive_success,
+  swap_status_change,
   FedimintService,
   LnurlMetricsService,
   UserTxsResponse,
   UserTxsRequestDto,
   PaginatedSolowalletTxsResponse,
-  ReceiveContext,
-  type ReceivePaymentFailureEvent,
-  type ReceivePaymentSuccessEvent,
+  FedimintContext,
+  type FedimintReceiveFailureEvent,
+  type FedimintReceiveSuccessEvent,
+  type SwapStatusChangeEvent,
   SWAP_SERVICE_NAME,
   SwapServiceClient,
   TransactionStatus,
@@ -58,6 +60,10 @@ export class SolowalletService {
     this.eventEmitter.on(
       fedimint_receive_failure,
       this.handleFailedReceive.bind(this),
+    );
+    this.eventEmitter.on(
+      swap_status_change,
+      this.handleSwapStatusChange.bind(this),
     );
     this.logger.log('SwapService initialized');
   }
@@ -209,7 +215,7 @@ export class SolowalletService {
 
     // listen for payment
     this.fedimintService.receive(
-      ReceiveContext.SOLOWALLET,
+      FedimintContext.SOLOWALLET_RECEIVE,
       lightning.operationId,
     );
 
@@ -299,7 +305,7 @@ export class SolowalletService {
 
     // listen for payment
     this.fedimintService.receive(
-      ReceiveContext.SOLOWALLET,
+      FedimintContext.SOLOWALLET_RECEIVE,
       lightning.operationId,
     );
 
@@ -392,7 +398,10 @@ export class SolowalletService {
           paymentTracker: operationId,
           type: TransactionType.WITHDRAW,
           status: TransactionStatus.COMPLETE,
-          reference: reference || inv.description || 'Lightning withdrawal',
+          reference:
+            reference ||
+            inv.description ||
+            `withdraw ${amountFiat} KES via Lightning`,
         });
 
         this.logger.log(`Withdrawal record created with ID: ${withdrawal._id}`);
@@ -464,7 +473,7 @@ export class SolowalletService {
           paymentTracker: lnurlWithdrawPoint.k1, // We'll use k1 to track this withdrawal
           type: TransactionType.WITHDRAW,
           status: TransactionStatus.PENDING, // Pending until someone scans and claims
-          reference: reference || 'LNURL Withdrawal',
+          reference: reference || `withdraw ${amountFiat} KES via LNURL`,
         });
 
         this.logger.log(
@@ -501,6 +510,7 @@ export class SolowalletService {
         status,
         amountMsats: offrampMsats,
         invoice,
+        swapTracker,
       } = await initiateOfframpSwap<TransactionStatus>(
         {
           quote,
@@ -524,11 +534,11 @@ export class SolowalletService {
           userId,
           amountMsats: totalOfframpMsats,
           amountFiat,
-          lightning: JSON.stringify({ invoice }),
-          paymentTracker: operationId,
+          lightning: JSON.stringify({ invoice, operationId }),
+          paymentTracker: swapTracker,
           type: TransactionType.WITHDRAW,
           status,
-          reference: reference || 'Offramp withdrawal',
+          reference: reference || `withdraw ${amountFiat} KES to mpesa`,
         });
 
         this.logger.log(
@@ -632,7 +642,10 @@ export class SolowalletService {
             paymentTracker: operationId,
             type: TransactionType.WITHDRAW,
             status: TransactionStatus.COMPLETE,
-            reference: reference || inv.description || 'Lightning withdrawal',
+            reference:
+              reference ||
+              inv.description ||
+              `withdraw ${amountFiat} KES via Lightning`,
           },
         );
 
@@ -709,7 +722,7 @@ export class SolowalletService {
             paymentTracker: lnurlWithdrawPoint.k1,
             type: TransactionType.WITHDRAW,
             status: TransactionStatus.PENDING, // Pending until someone scans and claims
-            reference: reference || 'LNURL Withdrawal',
+            reference: reference || `withdraw ${amountFiat} KES via LNURL`,
           },
         );
 
@@ -749,6 +762,7 @@ export class SolowalletService {
         status,
         amountMsats: offrampMsats,
         invoice,
+        swapTracker,
       } = await initiateOfframpSwap<TransactionStatus>(
         {
           quote,
@@ -776,11 +790,11 @@ export class SolowalletService {
           {
             amountMsats: totalOfframpMsats,
             amountFiat,
-            lightning: JSON.stringify({ invoice }),
-            paymentTracker: operationId,
+            lightning: JSON.stringify({ invoice, operationId }),
+            paymentTracker: swapTracker,
             type: TransactionType.WITHDRAW,
             status,
-            reference: reference || 'Offramp withdrawal',
+            reference: reference || `withdraw ${amountFiat} KES to mpesa`,
           },
         );
 
@@ -847,7 +861,7 @@ export class SolowalletService {
   private async handleSuccessfulReceive({
     context,
     operationId,
-  }: ReceivePaymentSuccessEvent) {
+  }: FedimintReceiveSuccessEvent) {
     await this.wallet.findOneAndUpdate(
       { paymentTracker: operationId },
       {
@@ -864,7 +878,7 @@ export class SolowalletService {
   private async handleFailedReceive({
     context,
     operationId,
-  }: ReceivePaymentFailureEvent) {
+  }: FedimintReceiveFailureEvent) {
     this.logger.log(
       `Failed to receive lightning payment for ${context} : ${operationId}`,
     );
@@ -875,6 +889,38 @@ export class SolowalletService {
         status: TransactionStatus.FAILED, // Changed from 'state' to 'status' to fix bug
       },
     );
+  }
+
+  @OnEvent(swap_status_change)
+  private async handleSwapStatusChange({
+    context,
+    payload,
+    error,
+  }: SwapStatusChangeEvent) {
+    this.logger.log(`Received swap status change - context: ${context} - refundable : ${payload.refundable}`);
+
+    if (error) {
+      this.logger.error(`Swap status change has error: ${error}`);
+    }
+
+    try {
+      const { swapTracker, swapStatus } = payload;
+      const txd = await this.wallet.findOneAndUpdate(
+        { paymentTracker: swapTracker },
+        {
+          status: swapStatus,
+        },
+      );
+
+      this.logger.log(
+        `Updated solowallet transaction ${txd._id} to status: ${swapStatus}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Error updating solowallet transaction for swap: ${payload.swapTracker}`,
+        error,
+      );
+    }
   }
 
   /**

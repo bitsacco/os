@@ -1,24 +1,24 @@
+import { bech32 } from 'bech32';
+import * as crypto from 'crypto';
 import { AxiosError } from 'axios';
+import { decode } from 'light-bolt11-decoder';
 import { catchError, firstValueFrom, map } from 'rxjs';
-import { ConfigService } from '@nestjs/config';
-import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import {
   fedimint_receive_success,
   fedimint_receive_failure,
-} from './fedimint.const';
+  FedimintContext,
+} from '../events';
 import {
   LightningInvoiceResponse,
   LightningPayResponse,
   LnUrlWithdrawPoint,
-  ReceiveContext,
   WithFederationId,
   WithGatewayId,
-} from '@bitsacco/common';
-import { decode } from 'light-bolt11-decoder';
-import * as crypto from 'crypto';
-import { bech32 } from 'bech32';
+} from '../types';
 
 @Injectable()
 export class FedimintService {
@@ -150,7 +150,7 @@ export class FedimintService {
     };
   }
 
-  receive(context: ReceiveContext, operationId: string): void {
+  receive(context: FedimintContext, operationId: string): void {
     this.logger.log(`Receiving payment : ${operationId}`);
 
     this.post<{ operationId: string } & WithFederationId, any>(
