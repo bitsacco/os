@@ -1,5 +1,3 @@
-import { Transform, Type } from 'class-transformer';
-import { IsStringifiedNumberConstraint } from '@bitsacco/common';
 import {
   IsNotEmpty,
   IsString,
@@ -9,7 +7,11 @@ import {
   Length,
   Validate,
   Min,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsStringifiedNumberConstraint } from '@bitsacco/common';
 import {
   BatchPaymentStatusCode,
   PaymentStatusCode,
@@ -85,11 +87,41 @@ export class MpesaPaymentUpdateDto implements MpesaPaymentUpdate {
   @IsString()
   status: string;
 
-  @IsEnum(MpesaTransactionState)
+  @IsEnum(BatchPaymentStatusCode)
   status_code: BatchPaymentStatusCode;
 
-  @IsNotEmpty()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => IntasendPaymentDto)
   transactions: IntasendPayment[];
+
+  @IsNotEmpty()
+  @IsString()
+  actual_charges: string;
+
+  @IsNotEmpty()
+  @IsString()
+  paid_amount: string;
+
+  @IsNotEmpty()
+  @IsString()
+  failed_amount: string;
+
+  @IsNotEmpty()
+  @IsString()
+  charge_estimate: string;
+
+  @IsNotEmpty()
+  @IsString()
+  total_amount_estimate: string;
+
+  @IsNotEmpty()
+  @IsString()
+  total_amount: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  transactions_count: number;
 
   @IsNotEmpty()
   @IsString()
@@ -97,6 +129,10 @@ export class MpesaPaymentUpdateDto implements MpesaPaymentUpdate {
 }
 
 export class IntasendPaymentDto implements IntasendPayment {
+  @IsNotEmpty()
+  @IsString()
+  transaction_id: string;
+
   @IsNotEmpty()
   @IsString()
   status: string;
@@ -110,6 +146,14 @@ export class IntasendPaymentDto implements IntasendPayment {
 
   @IsNotEmpty()
   @IsString()
+  provider: string;
+
+  @IsOptional()
+  @IsString()
+  bank_code: string | null;
+
+  @IsNotEmpty()
+  @IsString()
   name: string;
 
   @IsNotEmpty()
@@ -118,19 +162,39 @@ export class IntasendPaymentDto implements IntasendPayment {
 
   @IsOptional()
   @IsString()
-  id_number: string | null;
+  account_type: string | null;
 
   @IsOptional()
   @IsString()
-  bank_code: string | null;
+  account_reference: string | null;
+
+  @IsOptional()
+  @IsString()
+  provider_reference: string | null;
+
+  @IsOptional()
+  @IsString()
+  provider_account_name: string | null;
 
   @IsNotEmpty()
-  @IsNumber()
-  amount: number;
+  @IsString()
+  amount: string;
+
+  @IsNotEmpty()
+  @IsString()
+  charge: string;
+
+  @IsOptional()
+  @IsString()
+  file_id: string | null;
 
   @IsNotEmpty()
   @IsString()
   narrative: string;
+
+  @IsNotEmpty()
+  @IsString()
+  currency: string;
 }
 
 function NormalizePhoneNumber() {

@@ -71,15 +71,23 @@ export interface MpesaInvoice {
 }
 
 export interface IntasendPayment {
+  transaction_id: string;
   status: string;
   status_code: PaymentStatusCode;
   request_reference_id: string;
+  provider: string;
+  bank_code: string | null;
   name: string;
   account: string;
-  id_number: string | null;
-  bank_code: string | null;
-  amount: number;
+  account_type: string | null;
+  account_reference: string | null;
+  provider_reference: string | null;
+  provider_account_name: string | null;
+  amount: string;
+  charge: string;
+  file_id: string | null;
   narrative: string;
+  currency: string;
 }
 
 export interface MpesaCollectionUpdate {
@@ -94,6 +102,14 @@ export interface MpesaPaymentUpdate {
   status: string;
   status_code: BatchPaymentStatusCode;
   transactions: IntasendPayment[];
+  actual_charges: string;
+  paid_amount: string;
+  failed_amount: string;
+  charge_estimate: string;
+  total_amount_estimate: string;
+  total_amount: string;
+  transactions_count: number;
+  challenge: string;
 }
 
 export interface MpesaTracker {
