@@ -2,10 +2,16 @@ import * as Joi from 'joi';
 import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { HttpModule } from '@nestjs/axios';
 import {
+  CustomStore,
   DatabaseModule,
+  EVENTS_SERVICE_BUS,
   FedimintService,
   LoggerModule,
   SMS_SERVICE_NAME,
@@ -15,18 +21,17 @@ import {
   UsersSchema,
   UsersService,
 } from '@bitsacco/common';
-import { ChamasDocument, ChamasRepository, ChamasSchema } from './chamas/db';
 import {
   ChamaWalletDocument,
   ChamaWalletRepository,
   ChamaWalletSchema,
 } from './wallet/db';
+import { ChamasDocument, ChamasRepository, ChamasSchema } from './chamas/db';
 import { ChamaMessageService } from './chamas/chamas.messaging';
 import { ChamasService } from './chamas/chamas.service';
 import { ChamaWalletService } from './wallet/wallet.service';
 import { ChamaController } from './chama.controller';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-import { HttpModule } from '@nestjs/axios';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -45,6 +50,8 @@ import { HttpModule } from '@nestjs/axios';
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION: Joi.string().required(),
         BITLY_TOKEN: Joi.string().required(),
+        REDIS_HOST: Joi.string().required(),
+        REDIS_PORT: Joi.number().required(),
       }),
     }),
     JwtModule.registerAsync({
@@ -81,7 +88,37 @@ import { HttpModule } from '@nestjs/axios';
         }),
         inject: [ConfigService],
       },
+      {
+        name: EVENTS_SERVICE_BUS,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.REDIS,
+          options: {
+            host: configService.getOrThrow<string>('REDIS_HOST'),
+            port: configService.getOrThrow<number>('REDIS_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
     ]),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => {
+        const store = await redisStore({
+          socket: {
+            host: configService.getOrThrow<string>('REDIS_HOST'),
+            port: configService.getOrThrow<number>('REDIS_PORT'),
+          },
+          ttl: 60 * 60 * 5, // 5 hours
+        });
+
+        return {
+          store: new CustomStore(store, undefined /* TODO: inject logger */),
+          ttl: 60 * 60 * 5, // 5 hours
+        };
+      },
+      inject: [ConfigService],
+    }),
     EventEmitterModule.forRoot({
       global: true,
       delimiter: '.',

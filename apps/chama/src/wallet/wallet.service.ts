@@ -37,7 +37,6 @@ import {
   FmLightning,
   ChamaWalletTx,
   parseTransactionStatus,
-  swap_status_change,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -73,10 +72,6 @@ export class ChamaWalletService {
     this.eventEmitter.on(
       fedimint_receive_failure,
       this.handleFailedReceive.bind(this),
-    );
-    this.eventEmitter.on(
-      swap_status_change,
-      this.handleSwapStatusChange.bind(this),
     );
     this.logger.debug('ChamaWalletService initialized');
   }
@@ -941,8 +936,7 @@ export class ChamaWalletService {
     );
   }
 
-  @OnEvent(swap_status_change)
-  private async handleSwapStatusChange({
+  async handleSwapStatusChange({
     context,
     payload,
     error,

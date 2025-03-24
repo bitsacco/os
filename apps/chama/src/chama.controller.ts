@@ -1,5 +1,5 @@
 import { Controller, Logger } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
+import { EventPattern, GrpcMethod } from '@nestjs/microservices';
 import {
   AggregateChamaTransactionsDto,
   ChamaContinueDepositDto,
@@ -17,7 +17,9 @@ import {
   InviteMembersDto,
   JoinChamaDto,
   type LnUrlWithdrawRequest,
+  type SwapStatusChangeEvent,
   LnUrlWithdrawResponse,
+  swap_status_change,
   UpdateChamaDto,
   UpdateChamaTransactionDto,
 } from '@bitsacco/common';
@@ -240,5 +242,10 @@ export class ChamaController {
         reason: error.message || 'Internal server error',
       };
     }
+  }
+
+  @EventPattern(swap_status_change)
+  async handleSwapStatusChange(event: SwapStatusChangeEvent) {
+    await this.walletService.handleSwapStatusChange(event);
   }
 }

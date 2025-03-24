@@ -2,23 +2,24 @@ import * as Joi from 'joi';
 import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { HttpModule } from '@nestjs/axios';
 import {
   DatabaseModule,
+  EVENTS_SERVICE_BUS,
   FedimintService,
   LoggerModule,
   MonitoringModule,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { SolowalletController } from './solowallet.controller';
-import { SolowalletService } from './solowallet.service';
 import {
   SolowalletDocument,
   SolowalletRepository,
   SolowalletSchema,
 } from './db';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-import { HttpModule } from '@nestjs/axios';
+import { SolowalletController } from './solowallet.controller';
+import { SolowalletService } from './solowallet.service';
 
 @Module({
   imports: [
@@ -34,6 +35,8 @@ import { HttpModule } from '@nestjs/axios';
         FEDIMINT_FEDERATION_ID: Joi.string().required(),
         FEDIMINT_GATEWAY_ID: Joi.string().required(),
         LNURL_CALLBACK: Joi.string().required(),
+        REDIS_HOST: Joi.string().required(),
+        REDIS_PORT: Joi.number().required(),
       }),
     }),
     DatabaseModule,
@@ -52,6 +55,17 @@ import { HttpModule } from '@nestjs/axios';
             package: 'swap',
             protoPath: join(__dirname, '../../../proto/swap.proto'),
             url: configService.getOrThrow<string>('SWAP_GRPC_URL'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
+        name: EVENTS_SERVICE_BUS,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.REDIS,
+          options: {
+            host: configService.getOrThrow<string>('REDIS_HOST'),
+            port: configService.getOrThrow<number>('REDIS_PORT'),
           },
         }),
         inject: [ConfigService],

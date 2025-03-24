@@ -1,13 +1,15 @@
 import * as Joi from 'joi';
-import { redisStore } from 'cache-manager-redis-store';
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-store';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
   CustomStore,
   DatabaseModule,
+  EVENTS_SERVICE_BUS,
   FedimintService,
   LoggerModule,
 } from '@bitsacco/common';
@@ -15,7 +17,6 @@ import { SwapController } from './swap.controller';
 import { SwapService } from './swap.service';
 import { FxService } from './fx/fx.service';
 import { IntasendService } from './intasend/intasend.service';
-import { EventsController } from './events.controller';
 import {
   MpesaOfframpSwapRepository,
   MpesaOfframpSwapDocument,
@@ -52,6 +53,19 @@ import {
     ]),
     LoggerModule,
     HttpModule,
+    ClientsModule.registerAsync([
+      {
+        name: EVENTS_SERVICE_BUS,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.REDIS,
+          options: {
+            host: configService.getOrThrow<string>('REDIS_HOST'),
+            port: configService.getOrThrow<number>('REDIS_PORT'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+    ]),
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
@@ -77,7 +91,7 @@ import {
       verboseMemoryLeak: true,
     }),
   ],
-  controllers: [SwapController, EventsController],
+  controllers: [SwapController],
   providers: [
     SwapService,
     FxService,

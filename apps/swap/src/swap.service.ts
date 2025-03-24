@@ -23,8 +23,10 @@ import {
   PaginatedRequestDto,
   QuoteRequestDto,
   SwapContext,
+  EVENTS_SERVICE_BUS,
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
+import { ClientProxy } from '@nestjs/microservices';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Inject, Injectable, Logger } from '@nestjs/common';
@@ -54,6 +56,7 @@ export class SwapService {
     private readonly fedimintService: FedimintService,
     private readonly eventEmitter: EventEmitter2,
     @Inject(CACHE_MANAGER) private readonly cacheManager: CustomStore,
+    @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
     private readonly offramp: MpesaOfframpSwapRepository,
     private readonly onramp: MpesaOnrampSwapRepository,
   ) {
@@ -455,7 +458,7 @@ export class SwapService {
     this.logger.log(
       `Emitting swap_status_change event: ${JSON.stringify(statusEvent)}`,
     );
-    this.eventEmitter.emit(swap_status_change, statusEvent);
+    this.eventsClient.emit(swap_status_change, statusEvent);
 
     this.logger.log(
       `Swap ${swap._id} updated successfully to state: ${newState}`,
@@ -524,7 +527,7 @@ export class SwapService {
     this.logger.log(
       `Emitting swap_status_change event: ${JSON.stringify(statusEvent)}`,
     );
-    this.eventEmitter.emit(swap_status_change, statusEvent);
+    this.eventsClient.emit(swap_status_change, statusEvent);
 
     this.logger.log(
       `Received lightning payment for ${context} : ${operationId}`,
@@ -564,7 +567,7 @@ export class SwapService {
     this.logger.log(
       `Emitting swap_status_change event: ${JSON.stringify(statusEvent)}`,
     );
-    this.eventEmitter.emit(swap_status_change, statusEvent);
+    this.eventsClient.emit(swap_status_change, statusEvent);
   }
 }
 

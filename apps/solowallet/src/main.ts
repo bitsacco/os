@@ -26,6 +26,16 @@ async function bootstrap() {
     },
   });
 
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.REDIS,
+    options: {
+      host: configService.getOrThrow<string>('REDIS_HOST'),
+      port: configService.getOrThrow<number>('REDIS_PORT'),
+      retryAttempts: 2,
+      retryDelay: 100,
+    },
+  });
+
   // setup pino logging
   app.useLogger(app.get(Logger));
 

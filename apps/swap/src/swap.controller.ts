@@ -1,5 +1,5 @@
-import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
+import { Controller, Logger } from '@nestjs/common';
+import { EventPattern, GrpcMethod } from '@nestjs/microservices';
 import {
   CreateOnrampSwapDto,
   CreateOfframpSwapDto,
@@ -8,12 +8,19 @@ import {
   SwapServiceController,
   SwapServiceControllerMethods,
   QuoteRequestDto,
+  process_swap_update,
 } from '@bitsacco/common';
 import { SwapService } from './swap.service';
+import {
+  MpesaCollectionUpdateDto,
+  MpesaPaymentUpdateDto,
+} from './intasend/intasend.dto';
 
 @Controller()
 @SwapServiceControllerMethods()
 export class SwapController implements SwapServiceController {
+  private readonly logger = new Logger(SwapController.name);
+
   constructor(private readonly swapService: SwapService) {}
 
   @GrpcMethod()
@@ -49,5 +56,13 @@ export class SwapController implements SwapServiceController {
   @GrpcMethod()
   listOfframpSwaps(request: PaginatedRequest) {
     return this.swapService.listOfframpSwaps(request);
+  }
+
+  @EventPattern(process_swap_update)
+  async processSwapUpdate(
+    request: MpesaCollectionUpdateDto | MpesaPaymentUpdateDto,
+  ) {
+    this.logger.log('Processing Swap Update');
+    await this.swapService.processSwapUpdate(request);
   }
 }

@@ -5,7 +5,6 @@ import {
   WalletMeta,
   fedimint_receive_failure,
   fedimint_receive_success,
-  swap_status_change,
   FedimintService,
   LnurlMetricsService,
   UserTxsResponse,
@@ -60,10 +59,6 @@ export class SolowalletService {
     this.eventEmitter.on(
       fedimint_receive_failure,
       this.handleFailedReceive.bind(this),
-    );
-    this.eventEmitter.on(
-      swap_status_change,
-      this.handleSwapStatusChange.bind(this),
     );
     this.logger.log('SwapService initialized');
   }
@@ -891,13 +886,14 @@ export class SolowalletService {
     );
   }
 
-  @OnEvent(swap_status_change)
-  private async handleSwapStatusChange({
+  async handleSwapStatusChange({
     context,
     payload,
     error,
   }: SwapStatusChangeEvent) {
-    this.logger.log(`Received swap status change - context: ${context} - refundable : ${payload.refundable}`);
+    this.logger.log(
+      `Received swap status change - context: ${context} - refundable : ${payload.refundable}`,
+    );
 
     if (error) {
       this.logger.error(`Swap status change has error: ${error}`);

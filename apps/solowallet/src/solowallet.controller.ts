@@ -1,5 +1,5 @@
 import { Controller, Logger } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
+import { EventPattern, GrpcMethod } from '@nestjs/microservices';
 import {
   SolowalletServiceControllerMethods,
   DepositFundsRequestDto,
@@ -8,10 +8,12 @@ import {
   UpdateTxDto,
   FindTxRequestDto,
   type LnUrlWithdrawRequest,
+  type SwapStatusChangeEvent,
   LnUrlWithdrawResponse,
   TransactionStatus,
   ContinueDepositFundsRequestDto,
   ContinueWithdrawFundsRequestDto,
+  swap_status_change,
 } from '@bitsacco/common';
 import { SolowalletService } from './solowallet.service';
 import { ConfigService } from '@nestjs/config';
@@ -175,5 +177,10 @@ export class SolowalletController {
         reason: error.message || 'Internal server error',
       };
     }
+  }
+
+  @EventPattern(swap_status_change)
+  async handleSwapStatusChange(event: SwapStatusChangeEvent) {
+    await this.solowalletService.handleSwapStatusChange(event);
   }
 }

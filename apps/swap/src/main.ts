@@ -12,7 +12,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   const swap_url = configService.getOrThrow<string>('SWAP_GRPC_URL');
-  const swap = app.connectMicroservice<MicroserviceOptions>({
+  app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
       package: 'swap',
@@ -24,13 +24,11 @@ async function bootstrap() {
     },
   });
 
-  const redis_host = configService.getOrThrow<string>('REDIS_HOST');
-  const redis_port = configService.getOrThrow<number>('REDIS_PORT');
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.REDIS,
     options: {
-      host: redis_host,
-      port: redis_port,
+      host: configService.getOrThrow<string>('REDIS_HOST'),
+      port: configService.getOrThrow<number>('REDIS_PORT'),
       retryAttempts: 2,
       retryDelay: 100,
     },
