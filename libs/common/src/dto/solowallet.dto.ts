@@ -83,11 +83,11 @@ export class ContinueDepositFundsRequestDto
   @ApiProperty({ type: OnrampSwapSourceDto })
   onramp?: OnrampSwapSourceDto;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @Type(() => String)
   @ApiProperty()
-  reference: string;
+  reference?: string;
 
   @IsOptional()
   @ValidateNested()
