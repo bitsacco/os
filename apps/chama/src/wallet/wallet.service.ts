@@ -7,6 +7,7 @@ import {
   ChamaMemberRole,
   ChamaTxStatus,
   ChamaWithdrawDto,
+  collection_for_shares,
   Currency,
   default_page,
   default_page_size,
@@ -26,6 +27,7 @@ import {
   TransactionType,
   UpdateChamaTransactionDto,
   UsersService,
+  WalletTxContext,
   type ChamaMeta,
   type MemberMeta,
   type ChamaTxGroupMeta,
@@ -85,6 +87,7 @@ export class ChamaWalletService {
     amountFiat,
     reference,
     onramp,
+    context,
     pagination,
   }: ChamaDepositDto) {
     // TODO: Validate member and chama exist
@@ -134,6 +137,7 @@ export class ChamaWalletService {
       status,
       reviews: [],
       reference,
+      context: context ? JSON.stringify(context) : undefined,
     });
 
     // listen for payment
@@ -222,12 +226,13 @@ export class ChamaWalletService {
         lightning: JSON.stringify(lightning),
         paymentTracker: lightning.operationId,
         status,
+        // Preserve existing context if any
       },
     );
 
     // listen for payment
     this.fedimintService.receive(
-      FedimintContext.SOLOWALLET_RECEIVE,
+      FedimintContext.CHAMAWALLET_RECEIVE,
       lightning.operationId,
     );
 
@@ -708,13 +713,14 @@ export class ChamaWalletService {
       ];
     }
 
-    let { page, size } = pagination || {
+    const { page: initialPage, size: initialSize } = pagination || {
       page: default_page,
       size: default_page_size,
     };
 
     // if size is set to 0, we should return all available data in a single page
-    size = size || allTxds.length;
+    const size = initialSize || allTxds.length;
+    const page = initialPage;
 
     const pages = Math.ceil(allTxds.length / size);
 
@@ -760,7 +766,7 @@ export class ChamaWalletService {
             memberIds = (await this.chamas.findChama({ chamaId })).members.map(
               (member) => member.userId,
             );
-          } catch (e) {
+          } catch (_) {
             this.logger.error(`Chama with id ${chamaId} not found`);
             memberIds = [];
           }
@@ -925,7 +931,7 @@ export class ChamaWalletService {
     context,
     operationId,
   }: FedimintReceiveSuccessEvent) {
-    await this.wallet.findOneAndUpdate(
+    const transaction = await this.wallet.findOneAndUpdate(
       { paymentTracker: operationId },
       {
         status: TransactionStatus.COMPLETE,
@@ -935,6 +941,32 @@ export class ChamaWalletService {
     this.logger.log(
       `Received lightning payment for ${context} : ${operationId}`,
     );
+
+    // Check if this transaction has a sharesSubscriptionTracker context
+    try {
+      const txContext = transaction.context
+        ? JSON.parse(transaction.context)
+        : null;
+
+      if (txContext && txContext.sharesSubscriptionTracker) {
+        this.logger.log(
+          `Emitting collection_for_shares event for tracker: ${txContext.sharesSubscriptionTracker}`,
+        );
+
+        // Emit event for shares service to process the subscription
+        this.eventEmitter.emit(collection_for_shares, {
+          context: WalletTxContext.COLLECTION_FOR_SHARES,
+          payload: {
+            paymentTracker: txContext.sharesSubscriptionTracker,
+            paymentStatus: TransactionStatus.COMPLETE,
+          },
+        });
+      }
+    } catch (error) {
+      this.logger.error(
+        `Error processing transaction context: ${error.message}`,
+      );
+    }
   }
 
   @OnEvent(fedimint_receive_failure)
