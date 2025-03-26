@@ -1,7 +1,9 @@
 import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
+import { EventPattern, GrpcMethod } from '@nestjs/microservices';
 import {
+  collection_for_shares,
   type Empty,
+  type WalletTxEvent,
   FindSharesTxDto,
   OfferSharesDto,
   SharesServiceControllerMethods,
@@ -9,6 +11,7 @@ import {
   TransferSharesDto,
   UpdateSharesDto,
   UserSharesDto,
+  WalletTxContext,
 } from '@bitsacco/common';
 import { SharesService } from './shares.service';
 
@@ -55,5 +58,12 @@ export class SharesController {
   @GrpcMethod()
   findSharesTransaction(request: FindSharesTxDto) {
     return this.sharesService.findSharesTransaction(request);
+  }
+
+  @EventPattern(collection_for_shares)
+  async handleCollectionForShares(event: WalletTxEvent) {
+    if (event.context === WalletTxContext.COLLECTION_FOR_SHARES) {
+      await this.sharesService.handleWalletTxForShares(event);
+    }
   }
 }

@@ -50,6 +50,9 @@ export class ChamaWalletDocument extends AbstractDocument {
 
   @Prop({ type: String, required: true })
   paymentTracker?: string;
+
+  @Prop({ type: String, required: false })
+  context?: string;
 }
 
 export const ChamaWalletSchema =
@@ -76,6 +79,15 @@ export function toChamaWalletTx(
   } catch (error) {
     logger.warn(`Error parsing transaction updatedAt ${error}`);
     updatedAt = doc.updatedAt.toString();
+  }
+
+  let context = undefined;
+  if (doc.context) {
+    try {
+      context = JSON.parse(doc.context);
+    } catch (error) {
+      logger.warn(`Error parsing transaction context: ${error}`);
+    }
   }
 
   return {

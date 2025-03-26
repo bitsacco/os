@@ -12,10 +12,12 @@ import {
   SharesTx,
   SharesTxStatus,
   SubscribeSharesDto,
+  TransactionStatus,
   TransferSharesDto,
   UpdateSharesDto,
   UserSharesDto,
   UserShareTxsResponse,
+  WalletTxEvent,
 } from '@bitsacco/common';
 import { SharesOfferRepository, SharesRepository, toSharesTx } from './db';
 
@@ -35,6 +37,11 @@ export class SharesService {
     availableFrom,
     availableTo,
   }: OfferSharesDto): Promise<AllSharesOffers> {
+    // Validate quantity
+    if (quantity <= 0) {
+      throw new Error('Share offer quantity must be greater than zero');
+    }
+    
     await this.shareOffers.create({
       quantity,
       subscribedQuantity: 0,
@@ -82,6 +89,21 @@ export class SharesService {
     quantity,
   }: SubscribeSharesDto): Promise<UserShareTxsResponse> {
     this.logger.debug(`Subscribing ${quantity} Bitsacco shares for ${userId}`);
+
+    // Check if the offer exists and has enough available shares
+    const offer = await this.shareOffers.findOne({ _id: offerId });
+    
+    if (!offer) {
+      throw new Error(`Share offer with ID ${offerId} not found`);
+    }
+    
+    const availableShares = offer.quantity - offer.subscribedQuantity;
+    
+    if (availableShares < quantity) {
+      throw new Error(
+        `Not enough shares available for subscription. Requested: ${quantity}, Available: ${availableShares}`
+      );
+    }
 
     await this.shares.create({
       userId,
@@ -152,6 +174,37 @@ export class SharesService {
         offerId: offerId ?? originShares.offerId,
       },
     );
+
+    if (
+      status === SharesTxStatus.COMPLETE ||
+      status === SharesTxStatus.APPROVED
+    ) {
+      // Update the subscribed quantity for the offer
+      try {
+        const offer = await this.shareOffers.findOne({
+          _id: originShares.offerId,
+        });
+        
+        if (offer) {
+          const newQuantity = offer.subscribedQuantity + originShares.quantity;
+          await this.shareOffers.findOneAndUpdate(
+            { _id: originShares.offerId },
+            {
+              subscribedQuantity: newQuantity,
+            },
+          );
+          this.logger.log(
+            `Updated offer ${originShares.offerId} subscribed quantity to ${newQuantity}`,
+          );
+        } else {
+          this.logger.warn(`Offer with ID ${originShares.offerId} not found for updating subscribed quantity`);
+        }
+      } catch (error) {
+        this.logger.error(
+          `Error updating offer subscribed quantity: ${error.message}`,
+        );
+      }
+    }
 
     return this.userSharesTransactions({
       userId,
@@ -262,6 +315,95 @@ export class SharesService {
       size,
       pages,
     };
+  }
+
+  async handleWalletTxForShares({ payload, error }: WalletTxEvent) {
+    const { paymentTracker, paymentStatus } = payload;
+
+    error &&
+      this.logger.error(
+        `Wallet Tx ${paymentTracker} shares failed with error : ${error}`,
+      );
+
+    try {
+      // Find the shares transaction using the payment tracker (shares transaction ID)
+      const sharesTx = await this.shares.findOne({ _id: paymentTracker });
+
+      if (!sharesTx) {
+        this.logger.warn(
+          `No shares transaction found with ID ${paymentTracker}`,
+        );
+        return;
+      }
+
+      // Update the shares transaction status based on payment status
+      let sharesStatus: SharesTxStatus;
+
+      switch (paymentStatus) {
+        case TransactionStatus.COMPLETE:
+          sharesStatus = SharesTxStatus.COMPLETE;
+          break;
+
+        case TransactionStatus.PROCESSING:
+          sharesStatus = SharesTxStatus.PROCESSING;
+          break;
+
+        case TransactionStatus.FAILED:
+        case TransactionStatus.UNRECOGNIZED:
+          sharesStatus = SharesTxStatus.FAILED;
+          break;
+
+        case TransactionStatus.PENDING:
+        default:
+          sharesStatus = sharesTx.status;
+          break;
+      }
+
+      // Update the shares transaction status
+      await this.updateShares({
+        sharesId: paymentTracker,
+        updates: {
+          status: sharesStatus,
+        },
+      });
+
+      // If the transaction is now complete or approved, update the offer's subscribed quantity
+      if (sharesStatus === SharesTxStatus.COMPLETE || sharesStatus === SharesTxStatus.APPROVED) {
+        try {
+          const offer = await this.shareOffers.findOne({
+            _id: sharesTx.offerId,
+          });
+          
+          if (offer) {
+            await this.shareOffers.findOneAndUpdate(
+              { _id: sharesTx.offerId },
+              {
+                subscribedQuantity: offer.subscribedQuantity + sharesTx.quantity,
+              },
+            );
+            this.logger.log(
+              `Updated offer ${sharesTx.offerId} subscribed quantity to ${
+                offer.subscribedQuantity + sharesTx.quantity
+              }`,
+            );
+          } else {
+            this.logger.warn(`Offer with ID ${sharesTx.offerId} not found for updating subscribed quantity`);
+          }
+        } catch (error) {
+          this.logger.error(
+            `Error updating offer subscribed quantity: ${error.message}`,
+          );
+        }
+      }
+
+      this.logger.log(
+        `Updated shares transaction ${paymentTracker} to ${SharesTxStatus[sharesStatus]} status`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Error processing wallet transaction for shares: ${err.message}`,
+      );
+    }
   }
 }
 
