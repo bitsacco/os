@@ -112,6 +112,15 @@ describe('SharesService', () => {
           status: SharesTxStatus.COMPLETE,
         },
       });
+      expect(sharesOfferRepository.findOne).toHaveBeenCalledWith({
+        _id: 'offer123',
+      });
+      expect(sharesOfferRepository.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: 'offer123' },
+        {
+          subscribedQuantity: mockSharesOffer.subscribedQuantity + mockSharesTx.quantity,
+        },
+      );
     });
 
     it('should update shares transaction to PROCESSING when payment is processing', async () => {
@@ -139,6 +148,9 @@ describe('SharesService', () => {
           status: SharesTxStatus.PROCESSING,
         },
       });
+      // Should not try to update the subscribed quantity for PROCESSING status
+      expect(sharesOfferRepository.findOne).not.toHaveBeenCalled();
+      expect(sharesOfferRepository.findOneAndUpdate).not.toHaveBeenCalled();
     });
 
     it('should update shares transaction to FAILED when payment fails', async () => {
@@ -166,6 +178,9 @@ describe('SharesService', () => {
           status: SharesTxStatus.FAILED,
         },
       });
+      // Should not try to update the subscribed quantity for FAILED status
+      expect(sharesOfferRepository.findOne).not.toHaveBeenCalled();
+      expect(sharesOfferRepository.findOneAndUpdate).not.toHaveBeenCalled();
     });
 
     it('should handle wallet tx error properly', async () => {
@@ -194,6 +209,9 @@ describe('SharesService', () => {
           status: SharesTxStatus.FAILED,
         },
       });
+      // Should not try to update the subscribed quantity for FAILED status with error
+      expect(sharesOfferRepository.findOne).not.toHaveBeenCalled();
+      expect(sharesOfferRepository.findOneAndUpdate).not.toHaveBeenCalled();
     });
 
     it('should do nothing if shares transaction is not found', async () => {
@@ -216,6 +234,8 @@ describe('SharesService', () => {
         _id: 'nonexistent',
       });
       expect(service.updateShares).not.toHaveBeenCalled();
+      expect(sharesOfferRepository.findOne).not.toHaveBeenCalled();
+      expect(sharesOfferRepository.findOneAndUpdate).not.toHaveBeenCalled();
     });
   });
 });
