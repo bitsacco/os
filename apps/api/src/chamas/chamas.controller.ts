@@ -14,6 +14,9 @@ import {
   ChamaDepositDto,
   AggregateChamaTransactionsDto,
   JwtAuthGuard,
+  PaginatedRequestDto,
+  default_page,
+  default_page_size,
 } from '@bitsacco/common';
 import {
   Body,
@@ -132,13 +135,31 @@ export class ChamasController {
     required: false,
     description: 'chama created by',
   })
+  @ApiQuery({
+    name: 'page',
+    example: '0',
+    type: PaginatedRequestDto['page'],
+    required: false,
+  })
+  @ApiQuery({
+    name: 'size',
+    example: '100',
+    type: PaginatedRequestDto['size'],
+    required: false,
+  })
   async filterChama(
     @Query('memberId') memberId: string,
     @Query('createdBy') createdBy: string,
+    @Query('page') page: number = default_page,
+    @Query('size') size: number = default_page_size,
   ) {
     return this.chamas.filterChamas({
       memberId,
       createdBy,
+      pagination: {
+        page,
+        size,
+      },
     });
   }
 
