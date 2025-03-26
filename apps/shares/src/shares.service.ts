@@ -159,26 +159,31 @@ export class SharesService {
       status === SharesTxStatus.COMPLETE ||
       status === SharesTxStatus.APPROVED
     ) {
-      // // Update the subscribed quantity for the offer
-      // try {
-      //   const offer = await this.shareOffers.findOne({
-      //     _id: sharesTx.offerId,
-      //   });
-      //   await this.shareOffers.findOneAndUpdate(
-      //     { _id: sharesTx.offerId },
-      //     {
-      //       subscribedQuantity:
-      //         offer.subscribedQuantity + sharesTx.quantity,
-      //     },
-      //   );
-      //   this.logger.log(
-      //     `Updated offer ${sharesTx.offerId} subscribed quantity`,
-      //   );
-      // } catch (err) {
-      //   this.logger.error(
-      //     `Error updating offer subscribed quantity: ${err.message}`,
-      //   );
-      // }
+      // Update the subscribed quantity for the offer
+      try {
+        const offer = await this.shareOffers.findOne({
+          _id: originShares.offerId,
+        });
+        
+        if (offer) {
+          const newQuantity = offer.subscribedQuantity + originShares.quantity;
+          await this.shareOffers.findOneAndUpdate(
+            { _id: originShares.offerId },
+            {
+              subscribedQuantity: newQuantity,
+            },
+          );
+          this.logger.log(
+            `Updated offer ${originShares.offerId} subscribed quantity to ${newQuantity}`,
+          );
+        } else {
+          this.logger.warn(`Offer with ID ${originShares.offerId} not found for updating subscribed quantity`);
+        }
+      } catch (error) {
+        this.logger.error(
+          `Error updating offer subscribed quantity: ${error.message}`,
+        );
+      }
     }
 
     return this.userSharesTransactions({
@@ -338,6 +343,35 @@ export class SharesService {
           status: sharesStatus,
         },
       });
+
+      // If the transaction is now complete or approved, update the offer's subscribed quantity
+      if (sharesStatus === SharesTxStatus.COMPLETE || sharesStatus === SharesTxStatus.APPROVED) {
+        try {
+          const offer = await this.shareOffers.findOne({
+            _id: sharesTx.offerId,
+          });
+          
+          if (offer) {
+            await this.shareOffers.findOneAndUpdate(
+              { _id: sharesTx.offerId },
+              {
+                subscribedQuantity: offer.subscribedQuantity + sharesTx.quantity,
+              },
+            );
+            this.logger.log(
+              `Updated offer ${sharesTx.offerId} subscribed quantity to ${
+                offer.subscribedQuantity + sharesTx.quantity
+              }`,
+            );
+          } else {
+            this.logger.warn(`Offer with ID ${sharesTx.offerId} not found for updating subscribed quantity`);
+          }
+        } catch (error) {
+          this.logger.error(
+            `Error updating offer subscribed quantity: ${error.message}`,
+          );
+        }
+      }
 
       this.logger.log(
         `Updated shares transaction ${paymentTracker} to ${SharesTxStatus[sharesStatus]} status`,
