@@ -13,7 +13,7 @@ describe('SharesService', () => {
   let service: SharesService;
   let sharesRepository: SharesRepository;
   let sharesOfferRepository: SharesOfferRepository;
-  let sharesMetricsService: SharesMetricsService;
+  let metricsService: SharesMetricsService;
 
   // Mock data
   const mockSharesOffer = {
@@ -25,7 +25,7 @@ describe('SharesService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
-  
+
   const mockFullySubscribedOffer = {
     _id: 'fullOffer123',
     quantity: 50,
@@ -74,6 +74,8 @@ describe('SharesService', () => {
             recordSubscriptionMetric: jest.fn(),
             recordTransferMetric: jest.fn(),
             recordOwnershipMetric: jest.fn(),
+            getMetrics: jest.fn(),
+            resetMetrics: jest.fn(),
           },
         },
       ],
@@ -84,7 +86,7 @@ describe('SharesService', () => {
     sharesOfferRepository = module.get<SharesOfferRepository>(
       SharesOfferRepository,
     );
-    sharesMetricsService = module.get<SharesMetricsService>(SharesMetricsService);
+    metricsService = module.get<SharesMetricsService>(SharesMetricsService);
 
     // Override logger to prevent console noise during tests
     jest.spyOn(service, 'logger', 'get').mockReturnValue({
@@ -106,14 +108,16 @@ describe('SharesService', () => {
 
   describe('offerShares', () => {
     beforeEach(() => {
-      jest.spyOn(sharesOfferRepository, 'create').mockResolvedValue(mockSharesOffer);
+      jest
+        .spyOn(sharesOfferRepository, 'create')
+        .mockResolvedValue(mockSharesOffer);
       jest.spyOn(service, 'getSharesOffers').mockResolvedValue({
         offers: [mockSharesOffer],
         totalOfferQuantity: 100,
         totalSubscribedQuantity: 20,
       });
     });
-    
+
     it('should create a new shares offer with valid quantity', async () => {
       // Arrange
       const offerDto = {
@@ -121,10 +125,10 @@ describe('SharesService', () => {
         availableFrom: new Date().toISOString(),
         availableTo: new Date(Date.now() + 86400000).toISOString(),
       };
-      
+
       // Act
       await service.offerShares(offerDto);
-      
+
       // Assert
       expect(sharesOfferRepository.create).toHaveBeenCalledWith({
         quantity: 100,
@@ -134,7 +138,7 @@ describe('SharesService', () => {
       });
       expect(service.getSharesOffers).toHaveBeenCalled();
     });
-    
+
     it('should throw error if quantity is zero', async () => {
       // Arrange
       const offerDto = {
@@ -142,14 +146,14 @@ describe('SharesService', () => {
         availableFrom: new Date().toISOString(),
         availableTo: new Date(Date.now() + 86400000).toISOString(),
       };
-      
+
       // Act & Assert
       await expect(service.offerShares(offerDto)).rejects.toThrow(
-        'Share offer quantity must be greater than zero'
+        'Share offer quantity must be greater than zero',
       );
       expect(sharesOfferRepository.create).not.toHaveBeenCalled();
     });
-    
+
     it('should throw error if quantity is negative', async () => {
       // Arrange
       const offerDto = {
@@ -157,10 +161,10 @@ describe('SharesService', () => {
         availableFrom: new Date().toISOString(),
         availableTo: new Date(Date.now() + 86400000).toISOString(),
       };
-      
+
       // Act & Assert
       await expect(service.offerShares(offerDto)).rejects.toThrow(
-        'Share offer quantity must be greater than zero'
+        'Share offer quantity must be greater than zero',
       );
       expect(sharesOfferRepository.create).not.toHaveBeenCalled();
     });
@@ -174,7 +178,11 @@ describe('SharesService', () => {
         userId: 'user123',
         shareHoldings: 0,
         shares: { transactions: [], page: 0, size: 10, pages: 0 },
-        offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
+        offers: {
+          offers: [],
+          totalOfferQuantity: 0,
+          totalSubscribedQuantity: 0,
+        },
       });
       jest.spyOn(service, 'getSharesOffers').mockResolvedValue({
         offers: [mockSharesOffer, mockFullySubscribedOffer],
@@ -190,14 +198,18 @@ describe('SharesService', () => {
         offerId: 'offer123',
         quantity: 10,
       };
-      
-      jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(mockSharesOffer);
-      
+
+      jest
+        .spyOn(sharesOfferRepository, 'findOne')
+        .mockResolvedValue(mockSharesOffer);
+
       // Act
       await service.subscribeShares(subscribeDto);
-      
+
       // Assert
-      expect(sharesOfferRepository.findOne).toHaveBeenCalledWith({ _id: 'offer123' });
+      expect(sharesOfferRepository.findOne).toHaveBeenCalledWith({
+        _id: 'offer123',
+      });
       expect(sharesRepository.create).toHaveBeenCalledWith({
         userId: 'user123',
         offerId: 'offer123',
@@ -206,7 +218,7 @@ describe('SharesService', () => {
       });
       expect(service.userSharesTransactions).toHaveBeenCalled();
     });
-    
+
     it('should throw error if requested quantity exceeds available shares', async () => {
       // Arrange
       const subscribeDto = {
@@ -214,16 +226,18 @@ describe('SharesService', () => {
         offerId: 'offer123',
         quantity: 90, // More than available (100-20=80)
       };
-      
-      jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(mockSharesOffer);
-      
+
+      jest
+        .spyOn(sharesOfferRepository, 'findOne')
+        .mockResolvedValue(mockSharesOffer);
+
       // Act & Assert
       await expect(service.subscribeShares(subscribeDto)).rejects.toThrow(
-        'Not enough shares available for subscription. Requested: 90, Available: 80'
+        'Not enough shares available for subscription. Requested: 90, Available: 80',
       );
       expect(sharesRepository.create).not.toHaveBeenCalled();
     });
-    
+
     it('should throw error if offer is fully subscribed', async () => {
       // Arrange
       const subscribeDto = {
@@ -231,16 +245,18 @@ describe('SharesService', () => {
         offerId: 'fullOffer123',
         quantity: 1,
       };
-      
-      jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(mockFullySubscribedOffer);
-      
+
+      jest
+        .spyOn(sharesOfferRepository, 'findOne')
+        .mockResolvedValue(mockFullySubscribedOffer);
+
       // Act & Assert
       await expect(service.subscribeShares(subscribeDto)).rejects.toThrow(
-        'Not enough shares available for subscription. Requested: 1, Available: 0'
+        'Not enough shares available for subscription. Requested: 1, Available: 0',
       );
       expect(sharesRepository.create).not.toHaveBeenCalled();
     });
-    
+
     it('should throw error if offer is not found', async () => {
       // Arrange
       const subscribeDto = {
@@ -248,16 +264,16 @@ describe('SharesService', () => {
         offerId: 'nonexistent',
         quantity: 10,
       };
-      
+
       jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(null);
-      
+
       // Act & Assert
       await expect(service.subscribeShares(subscribeDto)).rejects.toThrow(
-        'Share offer with ID nonexistent not found'
+        'Share offer with ID nonexistent not found',
       );
       expect(sharesRepository.create).not.toHaveBeenCalled();
     });
-    
+
     it('should throw error if subscription exceeds 20% of total shares', async () => {
       // Arrange
       const subscribeDto = {
@@ -265,18 +281,20 @@ describe('SharesService', () => {
         offerId: 'offer123',
         quantity: 31, // Max is 30 (20% of 150)
       };
-      
-      jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(mockSharesOffer);
-      
+
+      jest
+        .spyOn(sharesOfferRepository, 'findOne')
+        .mockResolvedValue(mockSharesOffer);
+
       // The user already has 0 shares (from the default mock)
-      
+
       // Act & Assert
       await expect(service.subscribeShares(subscribeDto)).rejects.toThrow(
-        /Subscription exceeds maximum allowed shares per user \(20% of total\)/
+        /Subscription exceeds maximum allowed shares per user \(20% of total\)/,
       );
       expect(sharesRepository.create).not.toHaveBeenCalled();
     });
-    
+
     it('should throw error if subscription would cause user to exceed 20% of total shares', async () => {
       // Arrange
       const subscribeDto = {
@@ -284,20 +302,26 @@ describe('SharesService', () => {
         offerId: 'offer123',
         quantity: 15,
       };
-      
+
       // Mock that user already has 20 shares, which with 15 more would exceed 30 (20% of 150)
       jest.spyOn(service, 'userSharesTransactions').mockResolvedValue({
         userId: 'user123',
         shareHoldings: 20,
         shares: { transactions: [], page: 0, size: 10, pages: 0 },
-        offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
+        offers: {
+          offers: [],
+          totalOfferQuantity: 0,
+          totalSubscribedQuantity: 0,
+        },
       });
-      
-      jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(mockSharesOffer);
-      
+
+      jest
+        .spyOn(sharesOfferRepository, 'findOne')
+        .mockResolvedValue(mockSharesOffer);
+
       // Act & Assert
       await expect(service.subscribeShares(subscribeDto)).rejects.toThrow(
-        /Subscription exceeds maximum allowed shares per user \(20% of total\)/
+        /Subscription exceeds maximum allowed shares per user \(20% of total\)/,
       );
       expect(sharesRepository.create).not.toHaveBeenCalled();
     });
@@ -310,7 +334,7 @@ describe('SharesService', () => {
       toUserId: 'user456',
       quantity: 3,
     };
-    
+
     beforeEach(() => {
       jest.spyOn(sharesRepository, 'findOne').mockResolvedValue({
         ...mockSharesTx,
@@ -326,33 +350,45 @@ describe('SharesService', () => {
         totalOfferQuantity: 150, // 100 + 50
         totalSubscribedQuantity: 70, // 20 + 50
       });
-      jest.spyOn(service, 'userSharesTransactions').mockImplementation((params) => {
-        if (params.userId === 'user456') {
-          // The recipient initially has 0 shares
-          return Promise.resolve({
-            userId: 'user456',
-            shareHoldings: 0,
-            shares: { transactions: [], page: 0, size: 10, pages: 0 },
-            offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
-          });
-        } else {
-          // The sender has 5 shares (as in mockSharesTx)
-          return Promise.resolve({
-            userId: 'user123',
-            shareHoldings: 5,
-            shares: { transactions: [], page: 0, size: 10, pages: 0 },
-            offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
-          });
-        }
-      });
+      jest
+        .spyOn(service, 'userSharesTransactions')
+        .mockImplementation((params) => {
+          if (params.userId === 'user456') {
+            // The recipient initially has 0 shares
+            return Promise.resolve({
+              userId: 'user456',
+              shareHoldings: 0,
+              shares: { transactions: [], page: 0, size: 10, pages: 0 },
+              offers: {
+                offers: [],
+                totalOfferQuantity: 0,
+                totalSubscribedQuantity: 0,
+              },
+            });
+          } else {
+            // The sender has 5 shares (as in mockSharesTx)
+            return Promise.resolve({
+              userId: 'user123',
+              shareHoldings: 5,
+              shares: { transactions: [], page: 0, size: 10, pages: 0 },
+              offers: {
+                offers: [],
+                totalOfferQuantity: 0,
+                totalSubscribedQuantity: 0,
+              },
+            });
+          }
+        });
     });
-    
+
     it('should transfer shares when recipient is within 20% limit', async () => {
       // Act
       await service.transferShares(mockTransferDto);
-      
+
       // Assert
-      expect(sharesRepository.findOne).toHaveBeenCalledWith({ _id: 'sharesTx123' });
+      expect(sharesRepository.findOne).toHaveBeenCalledWith({
+        _id: 'sharesTx123',
+      });
       expect(service.updateShares).toHaveBeenCalledWith({
         sharesId: 'sharesTx123',
         updates: {
@@ -376,76 +412,86 @@ describe('SharesService', () => {
         },
       });
     });
-    
+
     it('should throw error if recipient would exceed 20% limit', async () => {
       // Arrange - recipient already has 25 shares
-      jest.spyOn(service, 'userSharesTransactions').mockImplementation((params) => {
-        if (params.userId === 'user456') {
-          return Promise.resolve({
-            userId: 'user456',
-            shareHoldings: 25,
-            shares: { transactions: [], page: 0, size: 10, pages: 0 },
-            offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
-          });
-        } else {
-          return Promise.resolve({
-            userId: 'user123',
-            shareHoldings: 5,
-            shares: { transactions: [], page: 0, size: 10, pages: 0 },
-            offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
-          });
-        }
-      });
-      
+      jest
+        .spyOn(service, 'userSharesTransactions')
+        .mockImplementation((params) => {
+          if (params.userId === 'user456') {
+            return Promise.resolve({
+              userId: 'user456',
+              shareHoldings: 25,
+              shares: { transactions: [], page: 0, size: 10, pages: 0 },
+              offers: {
+                offers: [],
+                totalOfferQuantity: 0,
+                totalSubscribedQuantity: 0,
+              },
+            });
+          } else {
+            return Promise.resolve({
+              userId: 'user123',
+              shareHoldings: 5,
+              shares: { transactions: [], page: 0, size: 10, pages: 0 },
+              offers: {
+                offers: [],
+                totalOfferQuantity: 0,
+                totalSubscribedQuantity: 0,
+              },
+            });
+          }
+        });
+
       // Try to transfer 3 shares, which would push recipient to 28 (still under 20% of 150)
       // But would pass the initial quantity check, allowing us to test the 20% limit
-      
+
       // Mock that the user has 20 shares (instead of 5)
       jest.spyOn(sharesRepository, 'findOne').mockResolvedValue({
         ...mockSharesTx,
         quantity: 20,
         status: SharesTxStatus.COMPLETE,
       });
-      
+
       // Try to transfer 6 shares, which would push recipient to 31 (over 20% of 150)
       const largeTransferDto = {
         ...mockTransferDto,
         quantity: 6,
       };
-      
+
       // Act & Assert
       await expect(service.transferShares(largeTransferDto)).rejects.toThrow(
-        /Transfer exceeds maximum allowed shares per user \(20% of total\)/
+        /Transfer exceeds maximum allowed shares per user \(20% of total\)/,
       );
       expect(service.updateShares).not.toHaveBeenCalled();
       expect(sharesRepository.create).not.toHaveBeenCalled();
     });
-    
+
     it('should throw error if shares are not available to transfer', async () => {
       // Arrange - Shares are not COMPLETE
       jest.spyOn(sharesRepository, 'findOne').mockResolvedValue({
         ...mockSharesTx,
         status: SharesTxStatus.PENDING,
       });
-      
+
       // Act & Assert
       await expect(service.transferShares(mockTransferDto)).rejects.toThrow(
-        'Shares are not available to transfer'
+        'Shares are not available to transfer',
       );
       expect(service.updateShares).not.toHaveBeenCalled();
       expect(sharesRepository.create).not.toHaveBeenCalled();
     });
-    
+
     it('should throw error if not enough shares to transfer', async () => {
       // Arrange - Try to transfer more shares than available
       const largeTransferDto = {
         ...mockTransferDto,
         quantity: 10, // More than the 5 available
       };
-      
+
       // Act & Assert
       await expect(service.transferShares(largeTransferDto)).rejects.toThrow(
-        'Not enough shares to transfer'
+        'Not enough shares to transfer',
       );
       expect(service.updateShares).not.toHaveBeenCalled();
       expect(sharesRepository.create).not.toHaveBeenCalled();
@@ -487,7 +533,8 @@ describe('SharesService', () => {
       expect(sharesOfferRepository.findOneAndUpdate).toHaveBeenCalledWith(
         { _id: 'offer123' },
         {
-          subscribedQuantity: mockSharesOffer.subscribedQuantity + mockSharesTx.quantity,
+          subscribedQuantity:
+            mockSharesOffer.subscribedQuantity + mockSharesTx.quantity,
         },
       );
     });

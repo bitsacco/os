@@ -38,6 +38,8 @@ describe('SharesController', () => {
             recordSubscriptionMetric: jest.fn(),
             recordTransferMetric: jest.fn(),
             recordOwnershipMetric: jest.fn(),
+            getMetrics: jest.fn(),
+            resetMetrics: jest.fn(),
           },
         },
       ],

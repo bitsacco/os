@@ -4,15 +4,14 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ReflectionService } from '@grpc/reflection';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { SharesModule } from './shares.module';
 import { initializeOpenTelemetry } from '@bitsacco/common';
+import { SharesModule } from './shares.module';
 
 async function bootstrap() {
   // Initialize OpenTelemetry for metrics and tracing
   const telemetrySdk = initializeOpenTelemetry('shares-service');
-  
-  const app = await NestFactory.create(SharesModule);
 
+  const app = await NestFactory.create(SharesModule);
   const configService = app.get(ConfigService);
 
   const shares_url = configService.getOrThrow<string>('SHARES_GRPC_URL');
@@ -38,23 +37,22 @@ async function bootstrap() {
     },
   });
 
-  // Setup HTTP endpoint for Prometheus metrics
   app.enableShutdownHooks();
-  
-  const shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
 
-  // Register shutdown handler to gracefully shut down telemetry
-  app.beforeApplicationShutdown(async () => {
-    await telemetrySdk.shutdown()
+  process.on('SIGTERM', async () => {
+    await telemetrySdk
+      .shutdown()
       .then(() => console.log('OpenTelemetry shut down successfully'))
-      .catch(err => console.error('Error shutting down OpenTelemetry', err));
+      .catch((err) => console.error('OpenTelemetry shut down error', err));
   });
-  
+
   // setup pino logging
   app.useLogger(app.get(Logger));
 
   await app.startAllMicroservices();
-  console.log(`🔍 Telemetry enabled - Prometheus metrics available at ${shares_url}/metrics`);
+  console.log(
+    `🔍 Telemetry enabled - Prometheus metrics available at ${shares_url}/metrics`,
+  );
 }
 
 bootstrap();

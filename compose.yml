@@ -238,7 +238,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
     ports:
-      - '3000:3000'
+      - '5000:3000'
     restart: always
     depends_on:
       - prometheus

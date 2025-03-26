@@ -6,7 +6,6 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "preinstall": "node -e \"if(process.env.npm_execpath.includes('yarn')) {console.error('\\x1b[31m⚠️  This project uses Bun, not Yarn. Please use \\'bun install\\' instead.\\x1b[0m'); process.exit(1)}\"",
     "start": "docker compose -p os up",
     "stop": "docker compose -p os down",
     "dev": "nest start --watch",
@@ -50,16 +49,15 @@
     "@nestjs/sequelize": "^10.0.1",
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/terminus": "^10.2.2",
+    "@nostr-dev-kit/ndk": "^2.10.6",
     "@opentelemetry/api": "^1.9.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.45.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.57.0",
     "@opentelemetry/exporter-prometheus": "^0.48.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.48.0",
+    "@opentelemetry/resources": "^1.22.0",
     "@opentelemetry/sdk-metrics": "^1.22.0",
     "@opentelemetry/sdk-node": "^0.48.0",
-    "@opentelemetry/resources": "^1.22.0",
-    "@opentelemetry/semantic-conventions": "^1.22.0",
-    "nestjs-otel": "^6.1.4",
-    "@nostr-dev-kit/ndk": "^2.10.6",
+    "@opentelemetry/semantic-conventions": "^1.30.0",
     "@types/uuid": "^10.0.0",
     "africastalking": "^0.7.0",
     "argon2": "^0.41.1",
@@ -78,6 +76,7 @@
     "joi": "^17.13.3",
     "light-bolt11-decoder": "^3.2.0",
     "mongoose": "^8.8.0",
+    "nestjs-otel": "^6.1.4",
     "nestjs-pino": "^4.1.0",
     "nostr-tools": "^2.10.3",
     "passport": "^0.7.0",
@@ -147,5 +146,6 @@
       "^@bitsacco/common(|/.*)$": "<rootDir>/libs/common/src/$1",
       "^@bitsacco/testing(|/.*)$": "<rootDir>/libs/testing/src/$1"
     }
-  }
+  },
+  "packageManager": "bun@1.1.30"
 }
