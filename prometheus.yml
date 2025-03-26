@@ -1,0 +1,51 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093
+
+# Load rules once and periodically evaluate them
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing endpoints to scrape
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: "shares"
+    scrape_interval: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["shares:4070"]
+    
+  - job_name: "chama"
+    scrape_interval: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["chama:4090"]
+    
+  - job_name: "solowallet"
+    scrape_interval: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["solowallet:4080"]
+    
+  - job_name: "swap"
+    scrape_interval: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["swap:4040"]
+    
+  - job_name: "api"
+    scrape_interval: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:4000"]
