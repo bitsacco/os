@@ -12,10 +12,12 @@ import {
   SharesTx,
   SharesTxStatus,
   SubscribeSharesDto,
+  TransactionStatus,
   TransferSharesDto,
   UpdateSharesDto,
   UserSharesDto,
   UserShareTxsResponse,
+  WalletTxEvent,
 } from '@bitsacco/common';
 import { SharesOfferRepository, SharesRepository, toSharesTx } from './db';
 
@@ -153,6 +155,32 @@ export class SharesService {
       },
     );
 
+    if (
+      status === SharesTxStatus.COMPLETE ||
+      status === SharesTxStatus.APPROVED
+    ) {
+      // // Update the subscribed quantity for the offer
+      // try {
+      //   const offer = await this.shareOffers.findOne({
+      //     _id: sharesTx.offerId,
+      //   });
+      //   await this.shareOffers.findOneAndUpdate(
+      //     { _id: sharesTx.offerId },
+      //     {
+      //       subscribedQuantity:
+      //         offer.subscribedQuantity + sharesTx.quantity,
+      //     },
+      //   );
+      //   this.logger.log(
+      //     `Updated offer ${sharesTx.offerId} subscribed quantity`,
+      //   );
+      // } catch (err) {
+      //   this.logger.error(
+      //     `Error updating offer subscribed quantity: ${err.message}`,
+      //   );
+      // }
+    }
+
     return this.userSharesTransactions({
       userId,
       pagination: { page: default_page, size: default_page_size },
@@ -262,6 +290,66 @@ export class SharesService {
       size,
       pages,
     };
+  }
+
+  async handleWalletTxForShares({ payload, error }: WalletTxEvent) {
+    const { paymentTracker, paymentStatus } = payload;
+
+    error &&
+      this.logger.error(
+        `Wallet Tx ${paymentTracker} shares failed with error : ${error}`,
+      );
+
+    try {
+      // Find the shares transaction using the payment tracker (shares transaction ID)
+      const sharesTx = await this.shares.findOne({ _id: paymentTracker });
+
+      if (!sharesTx) {
+        this.logger.warn(
+          `No shares transaction found with ID ${paymentTracker}`,
+        );
+        return;
+      }
+
+      // Update the shares transaction status based on payment status
+      let sharesStatus: SharesTxStatus;
+
+      switch (paymentStatus) {
+        case TransactionStatus.COMPLETE:
+          sharesStatus = SharesTxStatus.COMPLETE;
+          break;
+
+        case TransactionStatus.PROCESSING:
+          sharesStatus = SharesTxStatus.PROCESSING;
+          break;
+
+        case TransactionStatus.FAILED:
+        case TransactionStatus.UNRECOGNIZED:
+          sharesStatus = SharesTxStatus.FAILED;
+          break;
+
+        case TransactionStatus.PENDING:
+        default:
+          sharesStatus = sharesTx.status;
+          break;
+      }
+
+      // Update the shares transaction status
+      await this.updateShares({
+        sharesId: paymentTracker,
+        updates: {
+          status: sharesStatus,
+        },
+      });
+
+      this.logger.log(
+        `Updated shares transaction ${paymentTracker} to ${SharesTxStatus[sharesStatus]} status`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Error processing wallet transaction for shares: ${err.message}`,
+      );
+    }
   }
 }
 

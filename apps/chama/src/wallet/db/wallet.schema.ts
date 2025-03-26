@@ -105,7 +105,6 @@ export function toChamaWalletTx(
     ),
     type: parseTransactionType(doc.type.toString(), logger),
     lightning: parseFmLightning(doc.lightning, logger),
-    context,
     createdAt,
     updatedAt,
   };
