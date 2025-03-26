@@ -55,12 +55,17 @@ export interface ChamaTxReview {
   review: Review;
 }
 
+export interface ChamaTxContext {
+  sharesSubscriptionTracker?: string | undefined;
+}
+
 export interface ChamaDepositRequest {
   memberId: string;
   chamaId: string;
   amountFiat: number;
   reference?: string | undefined;
   onramp?: OnrampSwapSource | undefined;
+  context?: ChamaTxContext | undefined;
   pagination?: PaginatedRequest | undefined;
 }
 

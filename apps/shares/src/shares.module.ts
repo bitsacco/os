@@ -1,6 +1,6 @@
 import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
-import { DatabaseModule, LoggerModule } from '@bitsacco/common';
+import { DatabaseModule, LoggerModule, MonitoringModule } from '@bitsacco/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SharesController } from './shares.controller';
 import { SharesService } from './shares.service';
@@ -30,6 +30,7 @@ import {
       { name: SharesDocument.name, schema: SharesSchema },
     ]),
     LoggerModule,
+    MonitoringModule,
   ],
   controllers: [SharesController],
   providers: [
