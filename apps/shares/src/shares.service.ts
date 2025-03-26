@@ -104,6 +104,32 @@ export class SharesService {
         `Not enough shares available for subscription. Requested: ${quantity}, Available: ${availableShares}`
       );
     }
+    
+    // Get all share offers to calculate the total shares available
+    const allOffers = await this.getSharesOffers();
+    const totalSharesAvailable = allOffers.totalOfferQuantity;
+    
+    // Calculate the maximum allowed shares per user (20% of total)
+    const maxSharesPerUser = Math.floor(totalSharesAvailable * 0.2);
+    
+    // Get user's current share holdings
+    const userShares = await this.userSharesTransactions({
+      userId,
+      pagination: { page: default_page, size: default_page_size },
+    });
+    
+    // Calculate total holdings after this subscription
+    const currentHoldings = userShares.shareHoldings;
+    const totalAfterSubscription = currentHoldings + quantity;
+    
+    // Check if this subscription would exceed the 20% limit
+    if (totalAfterSubscription > maxSharesPerUser) {
+      throw new Error(
+        `Subscription exceeds maximum allowed shares per user (20% of total). ` +
+        `Current: ${currentHoldings}, Requested: ${quantity}, ` +
+        `Maximum Allowed: ${maxSharesPerUser}, Total After: ${totalAfterSubscription}`
+      );
+    }
 
     await this.shares.create({
       userId,
@@ -130,6 +156,32 @@ export class SharesService {
 
     if (originShares.quantity < transfer.quantity) {
       throw new Error('Not enough shares to transfer');
+    }
+    
+    // Get all share offers to calculate the total shares available
+    const allOffers = await this.getSharesOffers();
+    const totalSharesAvailable = allOffers.totalOfferQuantity;
+    
+    // Calculate the maximum allowed shares per user (20% of total)
+    const maxSharesPerUser = Math.floor(totalSharesAvailable * 0.2);
+    
+    // Get recipient's current share holdings
+    const recipientShares = await this.userSharesTransactions({
+      userId: transfer.toUserId,
+      pagination: { page: default_page, size: default_page_size },
+    });
+    
+    // Calculate total holdings after this transfer
+    const currentHoldings = recipientShares.shareHoldings;
+    const totalAfterTransfer = currentHoldings + transfer.quantity;
+    
+    // Check if this transfer would exceed the 20% limit for the recipient
+    if (totalAfterTransfer > maxSharesPerUser) {
+      throw new Error(
+        `Transfer exceeds maximum allowed shares per user (20% of total). ` +
+        `Recipient Current: ${currentHoldings}, Transfer Amount: ${transfer.quantity}, ` +
+        `Maximum Allowed: ${maxSharesPerUser}, Total After: ${totalAfterTransfer}`
+      );
     }
 
     // Update origin shares quantity, and record transfer metadata
