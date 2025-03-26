@@ -25,6 +25,7 @@ import {
   type OnrampSwapSource,
   type ChamaDepositRequest,
   type ChamaTxMetaRequest,
+  type ChamaTxContext,
 } from '../types';
 import {
   Bolt11InvoiceDto,
@@ -61,6 +62,13 @@ const PaginationDecorator = () => {
   );
 };
 
+class ChamaTxContextDto implements ChamaTxContext {
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  sharesSubscriptionTracker?: string;
+}
+
 class ChamaBaseDto {
   @PaginationDecorator()
   pagination?: PaginatedRequest;
@@ -91,6 +99,12 @@ export class ChamaDepositDto
   @Type(() => OnrampSwapSourceDto)
   @ApiProperty({ type: OnrampSwapSourceDto })
   onramp?: OnrampSwapSource;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ChamaTxContextDto)
+  @ApiProperty({ type: ChamaTxContextDto })
+  context?: ChamaTxContext;
 }
 
 export class ChamaContinueDepositDto

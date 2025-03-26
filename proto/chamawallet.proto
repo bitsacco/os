@@ -50,6 +50,8 @@ message ChamaWalletTx {
   string createdAt = 11;
 
   optional string updatedAt = 12;
+  
+  optional ChamaTxContext context = 13;
 }
 
 enum ChamaTxStatus {
@@ -71,6 +73,10 @@ enum Review {
   APPROVE = 1;
 }
 
+message ChamaTxContext {
+  optional string shares_subscription_tracker = 2;
+}
+
 message ChamaDepositRequest {
   string member_id = 1;
 
@@ -83,7 +89,9 @@ message ChamaDepositRequest {
   optional lib.OnrampSwapSource onramp = 5;
 
   // Add more optional funding sources, like direct lightning deposit
-  reserved 6,7,8,9,10;
+  reserved 6,7,8,9;
+
+  optional ChamaTxContext context = 10;
 
   optional lib.PaginatedRequest pagination = 11;
 }

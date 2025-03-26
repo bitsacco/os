@@ -34,3 +34,18 @@ export interface SwapStatusChangeEvent {
   payload: SwapStatusChangePayload;
   error?: string;
 }
+
+export enum WalletTxContext {
+  COLLECTION_FOR_SHARES,
+}
+
+interface WalletTxEventPayload {
+  paymentTracker: string;
+  paymentStatus: TransactionStatus;
+}
+
+export interface WalletTxEvent {
+  context: WalletTxContext;
+  payload: WalletTxEventPayload;
+  error?: string;
+}
