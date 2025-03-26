@@ -292,7 +292,6 @@ export class SharesService {
       });
     }
   }
-  }
 
   async updateShares({
     sharesId,
