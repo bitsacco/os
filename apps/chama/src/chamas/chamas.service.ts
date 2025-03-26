@@ -57,6 +57,7 @@ export class ChamasService {
     });
     const chama = toChama(cd);
 
+    this.logger.debug(`Sending invites to ${invites?.length}`);
     this.messenger.sendChamaInvites(chama, invites);
 
     return chama;

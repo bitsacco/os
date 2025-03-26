@@ -46,6 +46,11 @@ export class ChamaMessageService {
 
   async sendChamaInvites(chama: Chama, invites: ChamaInvite[]) {
     const invitePromises = [];
+
+    if (!invites) {
+      return;
+    }
+
     for (const member of invites) {
       const invitePromise = this.generateInviteMessage(member, chama)
         .then((message) => {
