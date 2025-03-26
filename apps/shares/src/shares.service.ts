@@ -37,6 +37,11 @@ export class SharesService {
     availableFrom,
     availableTo,
   }: OfferSharesDto): Promise<AllSharesOffers> {
+    // Validate quantity
+    if (quantity <= 0) {
+      throw new Error('Share offer quantity must be greater than zero');
+    }
+    
     await this.shareOffers.create({
       quantity,
       subscribedQuantity: 0,
@@ -84,6 +89,21 @@ export class SharesService {
     quantity,
   }: SubscribeSharesDto): Promise<UserShareTxsResponse> {
     this.logger.debug(`Subscribing ${quantity} Bitsacco shares for ${userId}`);
+
+    // Check if the offer exists and has enough available shares
+    const offer = await this.shareOffers.findOne({ _id: offerId });
+    
+    if (!offer) {
+      throw new Error(`Share offer with ID ${offerId} not found`);
+    }
+    
+    const availableShares = offer.quantity - offer.subscribedQuantity;
+    
+    if (availableShares < quantity) {
+      throw new Error(
+        `Not enough shares available for subscription. Requested: ${quantity}, Available: ${availableShares}`
+      );
+    }
 
     await this.shares.create({
       userId,

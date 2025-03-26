@@ -23,6 +23,16 @@ describe('SharesService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
   };
+  
+  const mockFullySubscribedOffer = {
+    _id: 'fullOffer123',
+    quantity: 50,
+    subscribedQuantity: 50,
+    availableFrom: new Date(),
+    availableTo: new Date(Date.now() + 86400000),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
 
   const mockSharesTx = {
     _id: 'sharesTx123',
@@ -81,6 +91,156 @@ describe('SharesService', () => {
     jest.spyOn(sharesOfferRepository, 'find').mockResolvedValue([]);
     jest.spyOn(sharesRepository, 'findOne').mockResolvedValue(null);
     jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(null);
+  });
+
+  describe('offerShares', () => {
+    beforeEach(() => {
+      jest.spyOn(sharesOfferRepository, 'create').mockResolvedValue(mockSharesOffer);
+      jest.spyOn(service, 'getSharesOffers').mockResolvedValue({
+        offers: [mockSharesOffer],
+        totalOfferQuantity: 100,
+        totalSubscribedQuantity: 20,
+      });
+    });
+    
+    it('should create a new shares offer with valid quantity', async () => {
+      // Arrange
+      const offerDto = {
+        quantity: 100,
+        availableFrom: new Date().toISOString(),
+        availableTo: new Date(Date.now() + 86400000).toISOString(),
+      };
+      
+      // Act
+      await service.offerShares(offerDto);
+      
+      // Assert
+      expect(sharesOfferRepository.create).toHaveBeenCalledWith({
+        quantity: 100,
+        subscribedQuantity: 0,
+        availableFrom: expect.any(Date),
+        availableTo: expect.any(Date),
+      });
+      expect(service.getSharesOffers).toHaveBeenCalled();
+    });
+    
+    it('should throw error if quantity is zero', async () => {
+      // Arrange
+      const offerDto = {
+        quantity: 0,
+        availableFrom: new Date().toISOString(),
+        availableTo: new Date(Date.now() + 86400000).toISOString(),
+      };
+      
+      // Act & Assert
+      await expect(service.offerShares(offerDto)).rejects.toThrow(
+        'Share offer quantity must be greater than zero'
+      );
+      expect(sharesOfferRepository.create).not.toHaveBeenCalled();
+    });
+    
+    it('should throw error if quantity is negative', async () => {
+      // Arrange
+      const offerDto = {
+        quantity: -10,
+        availableFrom: new Date().toISOString(),
+        availableTo: new Date(Date.now() + 86400000).toISOString(),
+      };
+      
+      // Act & Assert
+      await expect(service.offerShares(offerDto)).rejects.toThrow(
+        'Share offer quantity must be greater than zero'
+      );
+      expect(sharesOfferRepository.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('subscribeShares', () => {
+    beforeEach(() => {
+      // Reset mocks to ensure clean state for each test
+      jest.spyOn(sharesRepository, 'create').mockResolvedValue(mockSharesTx);
+      jest.spyOn(service, 'userSharesTransactions').mockResolvedValue({
+        userId: 'user123',
+        shareHoldings: 0,
+        shares: { transactions: [], page: 0, size: 10, pages: 0 },
+        offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
+      });
+    });
+
+    it('should successfully subscribe shares when there are enough available', async () => {
+      // Arrange
+      const subscribeDto = {
+        userId: 'user123',
+        offerId: 'offer123',
+        quantity: 10,
+      };
+      
+      jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(mockSharesOffer);
+      
+      // Act
+      await service.subscribeShares(subscribeDto);
+      
+      // Assert
+      expect(sharesOfferRepository.findOne).toHaveBeenCalledWith({ _id: 'offer123' });
+      expect(sharesRepository.create).toHaveBeenCalledWith({
+        userId: 'user123',
+        offerId: 'offer123',
+        quantity: 10,
+        status: SharesTxStatus.PROPOSED,
+      });
+      expect(service.userSharesTransactions).toHaveBeenCalled();
+    });
+    
+    it('should throw error if requested quantity exceeds available shares', async () => {
+      // Arrange
+      const subscribeDto = {
+        userId: 'user123',
+        offerId: 'offer123',
+        quantity: 90, // More than available (100-20=80)
+      };
+      
+      jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(mockSharesOffer);
+      
+      // Act & Assert
+      await expect(service.subscribeShares(subscribeDto)).rejects.toThrow(
+        'Not enough shares available for subscription. Requested: 90, Available: 80'
+      );
+      expect(sharesRepository.create).not.toHaveBeenCalled();
+    });
+    
+    it('should throw error if offer is fully subscribed', async () => {
+      // Arrange
+      const subscribeDto = {
+        userId: 'user123',
+        offerId: 'fullOffer123',
+        quantity: 1,
+      };
+      
+      jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(mockFullySubscribedOffer);
+      
+      // Act & Assert
+      await expect(service.subscribeShares(subscribeDto)).rejects.toThrow(
+        'Not enough shares available for subscription. Requested: 1, Available: 0'
+      );
+      expect(sharesRepository.create).not.toHaveBeenCalled();
+    });
+    
+    it('should throw error if offer is not found', async () => {
+      // Arrange
+      const subscribeDto = {
+        userId: 'user123',
+        offerId: 'nonexistent',
+        quantity: 10,
+      };
+      
+      jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(null);
+      
+      // Act & Assert
+      await expect(service.subscribeShares(subscribeDto)).rejects.toThrow(
+        'Share offer with ID nonexistent not found'
+      );
+      expect(sharesRepository.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('handleWalletTxForShares', () => {
