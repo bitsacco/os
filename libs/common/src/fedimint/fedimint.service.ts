@@ -81,12 +81,16 @@ export class FedimintService {
     invoice: string;
     operationId: string;
   }> {
-    this.logger.log('Generating invoice');
+    this.logger.log(
+      `Generating invoice for amount: ${amountMsat} msats (fees implicitly included)`,
+    );
 
+    const FEE_LIMIT_PERCENTAGE = 0.01; // 1% max for fees
     const { invoice, operationId }: LightningInvoiceResponse = await this.post<
       {
         amountMsat: number;
         description: string;
+        extra_meta: object;
       } & WithFederationId &
         WithGatewayId,
       LightningInvoiceResponse
@@ -95,6 +99,9 @@ export class FedimintService {
       description,
       federationId: this.federationId,
       gatewayId: this.gatewayId,
+      extra_meta: {
+        feeLimit: Math.round(amountMsat * FEE_LIMIT_PERCENTAGE),
+      },
     });
 
     this.logger.log('Invoice : ', invoice);

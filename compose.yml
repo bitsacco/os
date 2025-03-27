@@ -186,7 +186,7 @@ services:
     restart: always
 
   clientd:
-    image: okjodom/fedimint-clientd:v0.4.0
+    image: okjodom/fedimint-clientd:v0.4.1
     container_name: clientd
     environment:
       - FEDIMINT_CLIENTD_DB_PATH=/var/lib/clientd
