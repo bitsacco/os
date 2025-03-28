@@ -40,7 +40,10 @@ import {
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { ChamaMessageService } from '../chamas/chamas.messaging';
+import {
+  ChamaMemberContact,
+  ChamaMessageService,
+} from '../chamas/chamas.messaging';
 import { ChamasService } from '../chamas/chamas.service';
 import {
   ChamaWalletDocument,
@@ -337,7 +340,7 @@ export class ChamaWalletService {
 
         const admins = (
           await this.users.findUsersById(new Set(adminMemberIds))
-        ).map((admin) => {
+        ).map((admin): ChamaMemberContact => {
           return {
             name: admin.profile.name,
             phoneNumber: admin.phone.number,
@@ -345,7 +348,15 @@ export class ChamaWalletService {
           };
         });
 
-        this.messenger.sendChamaWithdrawalRequests(chama, admins, withdrawal);
+        const beneficiary = await this.users.findUser({
+          id: withdrawal.memberId,
+        });
+
+        this.messenger.sendChamaWithdrawalRequests(chama, admins, withdrawal, {
+          name: beneficiary.profile.name,
+          phoneNumber: beneficiary.phone.number,
+          nostrNpub: beneficiary.nostr.npub,
+        });
       } catch (e) {
         this.logger.error(e);
       }

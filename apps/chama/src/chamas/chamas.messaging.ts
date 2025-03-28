@@ -136,8 +136,9 @@ export class ChamaMessageService {
 
   sendChamaWithdrawalRequests(
     chama: Chama,
-    admins: ChamaAdminContact[],
+    admins: ChamaMemberContact[],
     withdrawal: ChamaWalletTx,
+    beneficiary: ChamaMemberContact,
   ) {
     this.logger.debug(
       `Sending withdrawal requests to ${JSON.stringify(admins)}`,
@@ -154,6 +155,7 @@ export class ChamaMessageService {
             chama,
             admin,
             withdrawal,
+            beneficiary,
           );
 
           if (admin.phoneNumber) {
@@ -192,8 +194,9 @@ export class ChamaMessageService {
 
   private async generateWithdrawalMessage(
     chama: Pick<Chama, 'id' | 'name' | 'description'>,
-    admin: ChamaAdminContact,
+    admin: ChamaMemberContact,
     withdrawal: ChamaWalletTx,
+    beneficiary: ChamaMemberContact,
   ): Promise<string> {
     const token = await this.encodeWithdrawal(chama, admin, withdrawal);
     this.logger.log(token);
@@ -201,7 +204,7 @@ export class ChamaMessageService {
     const chamaUrl = this.configService.getOrThrow('CHAMA_EXPERIENCE_URL');
     const link = await this.shortenLink(`${chamaUrl}/tx/?t=${token}`);
     const message = `${
-      admin.name || admin.phoneNumber
+      beneficiary.name || beneficiary.phoneNumber || beneficiary.nostrNpub
     } requested withdrawal from '${chama.name}'. Click ${link} to review.`;
 
     this.logger.log(message);
@@ -211,7 +214,7 @@ export class ChamaMessageService {
 
   private async encodeWithdrawal(
     chama: Pick<Chama, 'id' | 'name' | 'description'>,
-    admin: ChamaAdminContact,
+    admin: ChamaMemberContact,
     withdrawal: ChamaWalletTx,
   ): Promise<string> {
     if (!admin.phoneNumber && !admin.nostrNpub) {
@@ -233,7 +236,7 @@ export class ChamaMessageService {
   }
 }
 
-export interface ChamaAdminContact {
+export interface ChamaMemberContact {
   name?: string;
   phoneNumber?: string | undefined;
   nostrNpub?: string | undefined;
