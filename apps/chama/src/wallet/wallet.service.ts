@@ -342,8 +342,8 @@ export class ChamaWalletService {
           await this.users.findUsersById(new Set(adminMemberIds))
         ).map((admin): ChamaMemberContact => {
           return {
-            name: admin.profile.name,
-            phoneNumber: admin.phone.number,
+            name: admin.profile?.name,
+            phoneNumber: admin.phone?.number,
             // nostrNpub: admin.nostr?.npub,
           };
         });
@@ -353,9 +353,9 @@ export class ChamaWalletService {
         });
 
         this.messenger.sendChamaWithdrawalRequests(chama, admins, withdrawal, {
-          name: beneficiary.profile.name,
-          phoneNumber: beneficiary.phone.number,
-          nostrNpub: beneficiary.nostr.npub,
+          name: beneficiary.profile?.name,
+          phoneNumber: beneficiary.phone?.number,
+          // nostrNpub: beneficiary.nostr?.npub,
         });
       } catch (e) {
         this.logger.error(e);
