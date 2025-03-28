@@ -66,6 +66,7 @@ class ChamaTxContextDto implements ChamaTxContext {
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @ApiProperty({ required: false })
   sharesSubscriptionTracker?: string;
 }
 

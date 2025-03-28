@@ -11,6 +11,7 @@ import {
   Currency,
   default_page,
   default_page_size,
+  EVENTS_SERVICE_BUS,
   fedimint_receive_failure,
   fedimint_receive_success,
   FedimintService,
@@ -40,7 +41,7 @@ import {
   ChamaWalletTx,
   parseTransactionStatus,
 } from '@bitsacco/common';
-import { type ClientGrpc } from '@nestjs/microservices';
+import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
   ChamaMemberContact,
@@ -63,6 +64,7 @@ export class ChamaWalletService {
     private readonly fedimintService: FedimintService,
     private readonly eventEmitter: EventEmitter2,
     @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
+    @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
     private readonly chamas: ChamasService,
     private readonly users: UsersService,
     private readonly messenger: ChamaMessageService,
@@ -949,17 +951,28 @@ export class ChamaWalletService {
         : null;
 
       if (txContext && txContext.sharesSubscriptionTracker) {
-        this.logger.log(
-          `Emitting collection_for_shares event for tracker: ${txContext.sharesSubscriptionTracker}`,
-        );
-
-        // Emit event for shares service to process the subscription
-        this.eventEmitter.emit(collection_for_shares, {
+        const eventPayload = {
           context: WalletTxContext.COLLECTION_FOR_SHARES,
           payload: {
             paymentTracker: txContext.sharesSubscriptionTracker,
             paymentStatus: TransactionStatus.COMPLETE,
           },
+        };
+
+        this.logger.log(
+          `Emitting collection_for_shares event for tracker: ${txContext.sharesSubscriptionTracker}`,
+        );
+
+        // Emit event for shares service to process the subscription via Redis
+        this.eventsClient.emit(collection_for_shares, eventPayload).subscribe({
+          error: (err) =>
+            this.logger.error(
+              `Failed to publish collection_for_shares event: ${err}`,
+            ),
+          complete: () =>
+            this.logger.log(
+              'Successfully published collection_for_shares event to Redis',
+            ),
         });
       }
     } catch (error) {
