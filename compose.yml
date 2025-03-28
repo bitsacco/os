@@ -25,6 +25,7 @@ services:
     restart: always
     depends_on:
       - mongodb
+      - sms
     env_file:
       - ./apps/auth/.dev.env
     ports:
@@ -159,6 +160,7 @@ services:
       - swap
       - mongodb
       - redis
+      - sms
     env_file:
       - ./apps/chama/.dev.env
     ports:

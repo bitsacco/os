@@ -27,14 +27,15 @@ export class ChamaMessageService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    @Inject(SMS_SERVICE_NAME) smsGrpc: ClientGrpc,
+    @Inject(SMS_SERVICE_NAME) private readonly smsGrpc: ClientGrpc,
   ) {
     this.jwtSecret = this.configService.getOrThrow('JWT_SECRET');
 
     const bitlyToken = this.configService.getOrThrow('BITLY_TOKEN');
     this.bitlyClient = new BitlyClient(bitlyToken);
 
-    this.smsService = smsGrpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
+    this.smsService =
+      this.smsGrpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
     this.logger.debug('SMS Service Connected');
 
     this.logger.debug('ChamaMessageService started');
@@ -44,32 +45,33 @@ export class ChamaMessageService {
     return (await this.bitlyClient.shorten(link)).link;
   }
 
-  async sendChamaInvites(chama: Chama, invites: ChamaInvite[]) {
-    const invitePromises = [];
+  sendChamaInvites(chama: Chama, invites: ChamaInvite[]) {
+    this.logger.debug(`Sending invites to ${JSON.stringify(invites)}`);
 
     if (!invites) {
       return;
     }
 
-    for (const member of invites) {
-      const invitePromise = this.generateInviteMessage(member, chama)
-        .then((message) => {
-          member.phoneNumber &&
-            this.smsService.sendSms({
+    Promise.allSettled(
+      invites.map(async (member) => {
+        try {
+          const message = await this.generateInviteMessage(member, chama);
+
+          if (member.phoneNumber) {
+            await this.smsService.sendSms({
               message,
               receiver: member.phoneNumber,
             });
+          }
 
-          member.nostrNpub &&
+          if (member.nostrNpub) {
             this.logger.log(`Sending chama invite to ${member.nostrNpub}`);
-        })
-        .catch((err) => this.logger.error(err));
-
-      invitePromises.push(invitePromise);
-    }
-    Promise.allSettled(invitePromises).then((results) =>
-      console.log('Sent chama invites', results),
-    );
+          }
+        } catch (err) {
+          this.logger.error(err);
+        }
+      }),
+    ).then((results) => this.logger.log('Sent chama invites', results));
   }
 
   private async generateInviteMessage(
@@ -86,7 +88,7 @@ export class ChamaMessageService {
     const chamaUrl = this.configService.getOrThrow('CHAMA_EXPERIENCE_URL');
     const link = await this.shortenLink(`${chamaUrl}/join/?t=${token}`);
 
-    const invite = `Welcome to ${name} chama on BITSACCO. Click ${link} to join`;
+    const invite = `You have been invited to ${name} chama on BITSACCO. Click ${link} to join`;
     this.logger.log(invite);
 
     return invite;
@@ -118,30 +120,38 @@ export class ChamaMessageService {
     admins: ChamaAdminContact[],
     withdrawal: ChamaWalletTx,
   ) {
-    const invitePromises = [];
-    for (const admin of admins) {
-      const invitePromise = this.generateWithdrawalMessage(
-        chama,
-        admin,
-        withdrawal,
-      )
-        .then((message) => {
-          admin.phoneNumber &&
-            this.smsService.sendSms({
+    this.logger.debug(
+      `Sending withdrawal requests to ${JSON.stringify(admins)}`,
+    );
+
+    if (!admins?.length) {
+      return;
+    }
+
+    Promise.allSettled(
+      admins.map(async (admin) => {
+        try {
+          const message = await this.generateWithdrawalMessage(
+            chama,
+            admin,
+            withdrawal,
+          );
+
+          if (admin.phoneNumber) {
+            await this.smsService.sendSms({
               message,
               receiver: admin.phoneNumber,
             });
+          }
 
-          admin.nostrNpub &&
+          if (admin.nostrNpub) {
             this.logger.log(`Sending withdrawal request to ${admin.nostrNpub}`);
-        })
-        .catch((err) => this.logger.error(err));
-
-      invitePromises.push(invitePromise);
-    }
-    Promise.allSettled(invitePromises).then((results) =>
-      console.log('Sent withdrawal request', results),
-    );
+          }
+        } catch (err) {
+          this.logger.error(err);
+        }
+      }),
+    ).then((results) => this.logger.log('Sent withdrawal requests', results));
   }
 
   private async generateWithdrawalMessage(
