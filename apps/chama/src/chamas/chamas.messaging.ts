@@ -8,13 +8,13 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
+import { firstValueFrom } from 'rxjs';
 import {
   SmsServiceClient,
   SMS_SERVICE_NAME,
   type Chama,
   type ChamaInvite,
   ChamaWalletTx,
-  User,
 } from '@bitsacco/common';
 
 @Injectable()
@@ -36,7 +36,12 @@ export class ChamaMessageService {
 
     this.smsService =
       this.smsGrpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
-    this.logger.debug('SMS Service Connected');
+
+    if (!this.smsService) {
+      this.logger.error('Failed to connect to SMS Service');
+    } else {
+      this.logger.debug('SMS Service Connected');
+    }
 
     this.logger.debug('ChamaMessageService started');
   }
@@ -58,17 +63,31 @@ export class ChamaMessageService {
           const message = await this.generateInviteMessage(member, chama);
 
           if (member.phoneNumber) {
-            await this.smsService.sendSms({
-              message,
-              receiver: member.phoneNumber,
-            });
+            try {
+              await firstValueFrom(
+                this.smsService.sendSms({
+                  message,
+                  receiver: member.phoneNumber,
+                }),
+              );
+              this.logger.debug(`SMS sent to ${member.phoneNumber}`);
+            } catch (smsError) {
+              this.logger.error(
+                `SMS send failure to ${member.phoneNumber}: ${smsError.message}`,
+                {
+                  error: smsError,
+                  phone: member.phoneNumber,
+                  message: message.substring(0, 30) + '...',
+                },
+              );
+            }
           }
 
           if (member.nostrNpub) {
             this.logger.log(`Sending chama invite to ${member.nostrNpub}`);
           }
         } catch (err) {
-          this.logger.error(err);
+          this.logger.error(`Error sending invite: ${err.message}`, err);
         }
       }),
     ).then((results) => this.logger.log('Sent chama invites', results));
@@ -138,17 +157,34 @@ export class ChamaMessageService {
           );
 
           if (admin.phoneNumber) {
-            await this.smsService.sendSms({
-              message,
-              receiver: admin.phoneNumber,
-            });
+            try {
+              await firstValueFrom(
+                this.smsService.sendSms({
+                  message,
+                  receiver: admin.phoneNumber,
+                }),
+              );
+              this.logger.debug(`Withdrawal SMS sent to ${admin.phoneNumber}`);
+            } catch (smsError) {
+              this.logger.error(
+                `Withdrawal SMS send failure to ${admin.phoneNumber}: ${smsError.message}`,
+                {
+                  error: smsError,
+                  phone: admin.phoneNumber,
+                  message: message.substring(0, 30) + '...',
+                },
+              );
+            }
           }
 
           if (admin.nostrNpub) {
             this.logger.log(`Sending withdrawal request to ${admin.nostrNpub}`);
           }
         } catch (err) {
-          this.logger.error(err);
+          this.logger.error(
+            `Error sending withdrawal request: ${err.message}`,
+            err,
+          );
         }
       }),
     ).then((results) => this.logger.log('Sent withdrawal requests', results));
