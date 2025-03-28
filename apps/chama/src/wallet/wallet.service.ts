@@ -270,16 +270,23 @@ export class ChamaWalletService {
 
     const initialReviews = [];
 
-    // If member is an admin, add their pre-approval
+    // If member is an admin, add their pre-review
     if (isAdmin) {
       this.logger.log(
-        `Member ${memberId} is a chama admin - adding pre-approval to withdrawal`,
+        `Member ${memberId} is a chama admin - adding pre-review to withdrawal`,
       );
       initialReviews.push({
         memberId,
         review: Review.APPROVE,
       });
     }
+
+    // Check if requestor is the ONLY admin in the chama
+    const isSoleAdmin =
+      isAdmin &&
+      chama.members.filter((member) =>
+        member.roles.includes(ChamaMemberRole.Admin),
+      ).length === 1;
 
     const { amountMsats } = await getQuote(
       {
@@ -302,8 +309,8 @@ export class ChamaWalletService {
         paymentTracker: `${Date.now()}`,
         type: TransactionType.WITHDRAW,
         status:
-          isAdmin && initialReviews.length > 0
-            ? ChamaTxStatus.APPROVED // Auto-approve if sole admin
+          isSoleAdmin && initialReviews.length > 0
+            ? ChamaTxStatus.APPROVED // Auto-approve only if the sole admin
             : ChamaTxStatus.PENDING,
         reviews: initialReviews, // Include self-approval if admin
         reference: reference || 'Offramp withdrawal (pending approval)',

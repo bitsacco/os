@@ -115,7 +115,7 @@ export class ChamaMessageService {
     );
   }
 
-  async sendChamaWithdrawalRequests(
+  sendChamaWithdrawalRequests(
     chama: Chama,
     admins: ChamaAdminContact[],
     withdrawal: ChamaWalletTx,
