@@ -292,8 +292,11 @@ export class SharesService {
     };
   }
 
-  async handleWalletTxForShares({ payload, error }: WalletTxEvent) {
+  async handleWalletTxForShares({ context, payload, error }: WalletTxEvent) {
     const { paymentTracker, paymentStatus } = payload;
+    this.logger.log(
+      `Received swap status change - context: ${context} - sharesTransactionTracker : ${paymentTracker} - status : ${paymentStatus}`,
+    );
 
     error &&
       this.logger.error(
