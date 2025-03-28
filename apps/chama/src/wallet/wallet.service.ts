@@ -341,7 +341,7 @@ export class ChamaWalletService {
           return {
             name: admin.profile.name,
             phoneNumber: admin.phone.number,
-            nostrNpub: admin.nostr.npub,
+            // nostrNpub: admin.nostr?.npub,
           };
         });
 
