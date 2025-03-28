@@ -40,6 +40,7 @@ import {
   FmLightning,
   ChamaWalletTx,
   parseTransactionStatus,
+  WalletTxEvent,
 } from '@bitsacco/common';
 import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -951,7 +952,7 @@ export class ChamaWalletService {
         : null;
 
       if (txContext && txContext.sharesSubscriptionTracker) {
-        const eventPayload = {
+        const collectionEvent: WalletTxEvent = {
           context: WalletTxContext.COLLECTION_FOR_SHARES,
           payload: {
             paymentTracker: txContext.sharesSubscriptionTracker,
@@ -960,20 +961,9 @@ export class ChamaWalletService {
         };
 
         this.logger.log(
-          `Emitting collection_for_shares event for tracker: ${txContext.sharesSubscriptionTracker}`,
+          `Emitting collection_for_shares event: ${JSON.stringify(collectionEvent)}`,
         );
-
-        // Emit event for shares service to process the subscription via Redis
-        this.eventsClient.emit(collection_for_shares, eventPayload).subscribe({
-          error: (err) =>
-            this.logger.error(
-              `Failed to publish collection_for_shares event: ${err}`,
-            ),
-          complete: () =>
-            this.logger.log(
-              'Successfully published collection_for_shares event to Redis',
-            ),
-        });
+        this.eventsClient.emit(collection_for_shares, collectionEvent);
       }
     } catch (error) {
       this.logger.error(

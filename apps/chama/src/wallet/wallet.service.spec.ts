@@ -3,6 +3,7 @@ import { ChamaWalletService } from './wallet.service';
 import { ChamaWalletRepository } from './db';
 import {
   collection_for_shares,
+  EVENTS_SERVICE_BUS,
   FedimintContext,
   FedimintReceiveSuccessEvent,
   FedimintService,
@@ -18,6 +19,7 @@ import { ChamaMessageService } from '../chamas/chamas.messaging';
 describe('ChamaWalletService', () => {
   let service: ChamaWalletService;
   let eventEmitter: EventEmitter2;
+  let eventsClient: any;
 
   const mockWalletRepository = {
     findOneAndUpdate: jest.fn(),
@@ -31,6 +33,12 @@ describe('ChamaWalletService', () => {
 
   const mockSwapGrpc = {
     getService: jest.fn().mockReturnValue({}),
+  };
+
+  const mockEventsClient = {
+    emit: jest.fn().mockReturnValue({
+      subscribe: jest.fn(),
+    }),
   };
 
   const mockChamasService = {};
@@ -63,6 +71,10 @@ describe('ChamaWalletService', () => {
           useValue: mockSwapGrpc,
         },
         {
+          provide: EVENTS_SERVICE_BUS,
+          useValue: mockEventsClient,
+        },
+        {
           provide: ChamasService,
           useValue: mockChamasService,
         },
@@ -79,6 +91,7 @@ describe('ChamaWalletService', () => {
 
     service = module.get<ChamaWalletService>(ChamaWalletService);
     eventEmitter = module.get<EventEmitter2>(EventEmitter2);
+    eventsClient = module.get(EVENTS_SERVICE_BUS);
   });
 
   describe('handleSuccessfulReceive', () => {
@@ -107,7 +120,7 @@ describe('ChamaWalletService', () => {
       );
     });
 
-    it('should emit collection_for_shares event when transaction has sharesSubscriptionTracker context', async () => {
+    it('should emit collection_for_shares event via Redis when transaction has sharesSubscriptionTracker context', async () => {
       // Arrange
       const operationId = 'test-operation-id';
       const sharesId = 'shares-subscription-id';
@@ -126,7 +139,7 @@ describe('ChamaWalletService', () => {
         operationId,
       };
 
-      const emitSpy = jest.spyOn(eventEmitter, 'emit');
+      const eventsEmitSpy = jest.spyOn(eventsClient, 'emit');
 
       // Act
       await service.handleSuccessfulReceive(event);
@@ -137,7 +150,7 @@ describe('ChamaWalletService', () => {
         { status: TransactionStatus.COMPLETE },
       );
 
-      expect(emitSpy).toHaveBeenCalledWith(collection_for_shares, {
+      expect(eventsEmitSpy).toHaveBeenCalledWith(collection_for_shares, {
         context: WalletTxContext.COLLECTION_FOR_SHARES,
         payload: {
           paymentTracker: sharesId,
@@ -162,7 +175,7 @@ describe('ChamaWalletService', () => {
         operationId,
       };
 
-      const emitSpy = jest.spyOn(eventEmitter, 'emit');
+      const eventsEmitSpy = jest.spyOn(eventsClient, 'emit');
 
       // Act - this should not throw an error
       await service.handleSuccessfulReceive(event);
@@ -174,7 +187,7 @@ describe('ChamaWalletService', () => {
       );
 
       // Event should not be emitted due to invalid context
-      expect(emitSpy).not.toHaveBeenCalled();
+      expect(eventsEmitSpy).not.toHaveBeenCalled();
     });
   });
 });

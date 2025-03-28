@@ -195,8 +195,6 @@ export class SharesService {
       await this.shares.find({ userId, ...STATUS_FILTER }, { createdAt: -1 })
     ).map(toSharesTx, pagination);
 
-    this.logger.log(`Shares: ${JSON.stringify(shares)}`);
-
     const shareHoldings = shares
       .filter((share) => {
         return (
@@ -207,8 +205,6 @@ export class SharesService {
       .reduce((sum, share) => sum + share.quantity, 0);
 
     const txShares = await this.getPaginatedShareTx({ userId }, pagination);
-
-    this.logger.log(`Tx shares: ${JSON.stringify(txShares)}`);
 
     const offers = await this.getSharesOffers();
 
@@ -238,8 +234,6 @@ export class SharesService {
     sharesId,
   }: FindSharesTxDto): Promise<SharesTx> {
     const shares = toSharesTx(await this.shares.findOne({ _id: sharesId }));
-
-    this.logger.log(`shares: ${JSON.stringify(shares)}`);
 
     if (!shares) {
       throw new Error('Shares transaction not found');
