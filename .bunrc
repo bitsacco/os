@@ -1,0 +1,9 @@
+{
+  "install": {
+    "registry": "https://registry.npmjs.org/",
+    "lockfile": true
+  },
+  "run": {
+    "bun": true
+  }
+}

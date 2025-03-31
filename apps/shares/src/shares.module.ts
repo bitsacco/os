@@ -5,6 +5,8 @@ import {
   DatabaseModule,
   EVENTS_SERVICE_BUS,
   LoggerModule,
+  MonitoringModule,
+  SharesMetricsService,
 } from '@bitsacco/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
@@ -72,6 +74,7 @@ import {
       { name: SharesDocument.name, schema: SharesSchema },
     ]),
     LoggerModule,
+    MonitoringModule,
   ],
   controllers: [SharesController],
   providers: [
@@ -79,6 +82,7 @@ import {
     SharesService,
     SharesOfferRepository,
     SharesRepository,
+    SharesMetricsService,
   ],
 })
 export class SharesModule {}

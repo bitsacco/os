@@ -5,8 +5,12 @@ import { ConfigService } from '@nestjs/config';
 import { ReflectionService } from '@grpc/reflection';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { SharesModule } from './shares.module';
+import { initializeOpenTelemetry } from '@bitsacco/common';
 
 async function bootstrap() {
+  // Initialize OpenTelemetry for metrics and tracing
+  const telemetrySdk = initializeOpenTelemetry('shares-service');
+  
   const app = await NestFactory.create(SharesModule);
 
   const configService = app.get(ConfigService);
@@ -34,10 +38,23 @@ async function bootstrap() {
     },
   });
 
+  // Setup HTTP endpoint for Prometheus metrics
+  app.enableShutdownHooks();
+  
+  const shutdownSignals: NodeJS.Signals[] = ['SIGTERM', 'SIGINT'];
+
+  // Register shutdown handler to gracefully shut down telemetry
+  app.beforeApplicationShutdown(async () => {
+    await telemetrySdk.shutdown()
+      .then(() => console.log('OpenTelemetry shut down successfully'))
+      .catch(err => console.error('Error shutting down OpenTelemetry', err));
+  });
+  
   // setup pino logging
   app.useLogger(app.get(Logger));
 
   await app.startAllMicroservices();
+  console.log(`🔍 Telemetry enabled - Prometheus metrics available at ${shares_url}/metrics`);
 }
 
 bootstrap();
