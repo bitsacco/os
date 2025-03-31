@@ -6,12 +6,14 @@ import {
   WalletTxEvent,
   SharesTxStatus,
   TransactionStatus,
+  SharesMetricsService,
 } from '@bitsacco/common';
 
 describe('SharesService', () => {
   let service: SharesService;
   let sharesRepository: SharesRepository;
   let sharesOfferRepository: SharesOfferRepository;
+  let sharesMetricsService: SharesMetricsService;
 
   // Mock data
   const mockSharesOffer = {
@@ -66,6 +68,14 @@ describe('SharesService', () => {
             findOneAndUpdate: jest.fn(),
           },
         },
+        {
+          provide: SharesMetricsService,
+          useValue: {
+            recordSubscriptionMetric: jest.fn(),
+            recordTransferMetric: jest.fn(),
+            recordOwnershipMetric: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -74,6 +84,7 @@ describe('SharesService', () => {
     sharesOfferRepository = module.get<SharesOfferRepository>(
       SharesOfferRepository,
     );
+    sharesMetricsService = module.get<SharesMetricsService>(SharesMetricsService);
 
     // Override logger to prevent console noise during tests
     jest.spyOn(service, 'logger', 'get').mockReturnValue({
