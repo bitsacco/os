@@ -1,13 +1,13 @@
-import { Test } from '@nestjs/testing';
-import { SharesService } from './shares.service';
-import { SharesOfferRepository, SharesRepository } from './db';
 import {
   WalletTxContext,
   WalletTxEvent,
   SharesTxStatus,
   TransactionStatus,
-  SharesMetricsService,
 } from '@bitsacco/common';
+import { Test } from '@nestjs/testing';
+import { SharesService } from './shares.service';
+import { SharesOfferRepository, SharesRepository } from './db';
+import { SharesMetricsService } from './shares.metrics';
 
 describe('SharesService', () => {
   let service: SharesService;

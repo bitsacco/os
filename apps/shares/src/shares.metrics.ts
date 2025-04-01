@@ -1,12 +1,12 @@
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   Injectable,
   Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
-import { Counter, Histogram, Meter, Observable } from '@opentelemetry/api';
-import { createMeter } from './opentelemetry';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Counter, Histogram, Meter } from '@opentelemetry/api';
+import { createMeter } from '@bitsacco/common';
 
 export const SHARES_SUBSCRIPTION_METRIC = 'shares:subscription';
 export const SHARES_TRANSFER_METRIC = 'shares:transfer';

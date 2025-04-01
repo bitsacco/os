@@ -2,8 +2,8 @@ import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { SharesController } from './shares.controller';
 import { SharesService } from './shares.service';
-import { SharesMetricsService } from '@bitsacco/common';
 import { SharesOfferRepository, SharesRepository } from './db';
+import { SharesMetricsService } from './shares.metrics';
 
 describe('SharesController', () => {
   let sharesController: SharesController;

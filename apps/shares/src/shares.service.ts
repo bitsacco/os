@@ -1,3 +1,4 @@
+import { performance } from 'perf_hooks';
 import { Injectable, Logger } from '@nestjs/common';
 import {
   AllSharesOffers,
@@ -8,7 +9,6 @@ import {
   OfferSharesDto,
   PaginatedRequestDto,
   PaginatedUserSharesTxsResponse,
-  SharesMetricsService,
   SharesOffer,
   SharesTx,
   SharesTxStatus,
@@ -21,7 +21,7 @@ import {
   WalletTxEvent,
 } from '@bitsacco/common';
 import { SharesOfferRepository, SharesRepository, toSharesTx } from './db';
-import { performance } from 'perf_hooks';
+import { SharesMetricsService } from './shares.metrics';
 
 @Injectable()
 export class SharesService {
@@ -30,7 +30,7 @@ export class SharesService {
   constructor(
     private readonly shareOffers: SharesOfferRepository,
     private readonly shares: SharesRepository,
-    private readonly metricsService: SharesMetricsService,
+    private readonly metrics: SharesMetricsService,
   ) {
     this.logger.log('SharesService created');
   }
@@ -136,7 +136,7 @@ export class SharesService {
       // Record ownership metrics
       const percentageOfTotal =
         (totalAfterSubscription / totalSharesAvailable) * 100;
-      this.metricsService.recordOwnershipMetric({
+      this.metrics.recordOwnershipMetric({
         userId,
         quantity: currentHoldings,
         percentageOfTotal,
@@ -178,7 +178,7 @@ export class SharesService {
       const endTime = performance.now();
       const duration = Math.round(endTime - startTime);
 
-      this.metricsService.recordSubscriptionMetric({
+      this.metrics.recordSubscriptionMetric({
         userId,
         offerId,
         quantity,
@@ -231,7 +231,7 @@ export class SharesService {
       // Record ownership metrics for recipient
       const percentageOfTotal =
         (totalAfterTransfer / totalSharesAvailable) * 100;
-      this.metricsService.recordOwnershipMetric({
+      this.metrics.recordOwnershipMetric({
         userId: transfer.toUserId,
         quantity: currentHoldings,
         percentageOfTotal,
@@ -284,7 +284,7 @@ export class SharesService {
       const endTime = performance.now();
       const duration = Math.round(endTime - startTime);
 
-      this.metricsService.recordTransferMetric({
+      this.metrics.recordTransferMetric({
         fromUserId: transfer.fromUserId,
         toUserId: transfer.toUserId,
         quantity: transfer.quantity,
@@ -562,7 +562,7 @@ export class SharesService {
             const percentageOfTotal =
               (currentHoldings / totalSharesAvailable) * 100;
 
-            this.metricsService.recordOwnershipMetric({
+            this.metrics.recordOwnershipMetric({
               userId: sharesTx.userId,
               quantity: currentHoldings,
               percentageOfTotal,
@@ -597,7 +597,7 @@ export class SharesService {
 
       // Only record metrics if we have a valid transaction
       if (userId && offerId) {
-        this.metricsService.recordSubscriptionMetric({
+        this.metrics.recordSubscriptionMetric({
           userId,
           offerId,
           quantity,

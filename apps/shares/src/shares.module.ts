@@ -6,7 +6,6 @@ import {
   EVENTS_SERVICE_BUS,
   LoggerModule,
   MonitoringModule,
-  SharesMetricsService,
 } from '@bitsacco/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
@@ -22,6 +21,7 @@ import {
   SharesRepository,
   SharesSchema,
 } from './db';
+import { SharesMetricsService } from './shares.metrics';
 
 @Module({
   imports: [
