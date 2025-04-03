@@ -1,5 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Counter, Histogram, Meter, MetricOptions, Observable, ValueType } from '@opentelemetry/api';
+import {
+  Counter,
+  Histogram,
+  Meter,
+  MetricOptions,
+  Observable,
+  ValueType,
+} from '@opentelemetry/api';
 import { createMeter } from './opentelemetry';
 
 /**
@@ -148,7 +155,7 @@ export abstract class OperationMetricsService extends MetricsService {
 
   constructor(serviceName: string, operationName: string) {
     super(serviceName);
-    
+
     // Set standard metric names following convention
     this.totalOperationCounter = `${serviceName}.${operationName}.total`;
     this.successfulOperationCounter = `${serviceName}.${operationName}.success`;

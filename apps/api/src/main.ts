@@ -2,12 +2,24 @@ import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { HttpLoggingInterceptor } from '@bitsacco/common';
+import {
+  HttpLoggingInterceptor,
+  initializeOpenTelemetry,
+} from '@bitsacco/common';
 import { ApiModule } from './api.module';
 
 const API_VERSION = 'v1';
 
 async function bootstrap() {
+  // Initialize OpenTelemetry for metrics and tracing
+  // Set up metrics endpoint for API gateway that will aggregate all metrics
+  // Pass true as the third parameter to indicate this is the API gateway
+  const telemetrySdk = initializeOpenTelemetry(
+    'api-gateway-service',
+    4000,
+    true,
+  );
+
   const app = await NestFactory.create(ApiModule);
 
   // setup pino logging
@@ -34,7 +46,20 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
-  await app.listen(process.env.PORT ?? 4000);
+  // Register shutdown hooks for OpenTelemetry
+  app.enableShutdownHooks();
+  process.on('SIGTERM', async () => {
+    await telemetrySdk
+      .shutdown()
+      .then(() => console.log('OpenTelemetry shut down successfully'))
+      .catch((err) => console.error('OpenTelemetry shut down error', err));
+  });
+
+  const port = process.env.PORT ?? 4000;
+  await app.listen(port);
+  console.log(
+    `🔍 Telemetry enabled - Aggregated metrics available at http://localhost:${port}/metrics`,
+  );
 }
 
 bootstrap();
