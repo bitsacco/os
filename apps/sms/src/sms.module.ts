@@ -2,8 +2,10 @@ import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LoggerModule } from '@bitsacco/common';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SmsController } from './sms.controller';
 import { SmsService } from './sms.service';
+import { SmsMetricsService } from './sms.metrics';
 
 @Module({
   imports: [
@@ -19,8 +21,13 @@ import { SmsService } from './sms.service';
       }),
     }),
     LoggerModule,
+    EventEmitterModule.forRoot({
+      global: true,
+      delimiter: '.',
+      verboseMemoryLeak: true,
+    }),
   ],
   controllers: [SmsController],
-  providers: [SmsService, ConfigService],
+  providers: [SmsService, ConfigService, SmsMetricsService],
 })
 export class SmsModule {}
