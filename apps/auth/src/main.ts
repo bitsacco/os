@@ -4,17 +4,17 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ReflectionService } from '@grpc/reflection';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { 
-  initializeOpenTelemetry, 
-  CoreMetricsService, 
-  MetricsIntegration 
+import {
+  initializeOpenTelemetry,
+  CoreMetricsService,
+  MetricsIntegration,
 } from '@bitsacco/common';
 import { AuthModule } from './auth.module';
 
 async function bootstrap() {
   // Initialize OpenTelemetry for metrics and tracing
   const telemetrySdk = initializeOpenTelemetry('auth-service');
-  
+
   const app = await NestFactory.create(AuthModule);
 
   const configService = app.get(ConfigService);
@@ -34,10 +34,10 @@ async function bootstrap() {
 
   // setup pino logging
   app.useLogger(app.get(Logger));
-  
+
   // Get CoreMetricsService instance from DI container
   const metricsService = app.get(CoreMetricsService);
-  
+
   // Apply gRPC metrics interceptor for automatic collection
   MetricsIntegration.applyGrpcMetricsInterceptor(app, metricsService);
 

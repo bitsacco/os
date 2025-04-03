@@ -78,7 +78,10 @@ import { SharesMetricsService } from './shares.metrics';
       {
         name: SharesOfferDocument.name,
         useFactory: (databaseMetricsMiddleware: DatabaseMetricsMiddleware) => {
-          databaseMetricsMiddleware.applyMiddleware(SharesOfferSchema, 'sharesOffer');
+          databaseMetricsMiddleware.applyMiddleware(
+            SharesOfferSchema,
+            'sharesOffer',
+          );
           return SharesOfferSchema;
         },
         inject: [DatabaseMetricsMiddleware],

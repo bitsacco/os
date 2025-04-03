@@ -22,7 +22,9 @@ describe('DatabaseMetricsMiddleware', () => {
       ],
     }).compile();
 
-    middleware = module.get<DatabaseMetricsMiddleware>(DatabaseMetricsMiddleware);
+    middleware = module.get<DatabaseMetricsMiddleware>(
+      DatabaseMetricsMiddleware,
+    );
     metricsService = module.get<CoreMetricsService>(CoreMetricsService);
 
     // Mock recordDatabaseMetric
@@ -181,24 +183,63 @@ describe('DatabaseMetricsMiddleware', () => {
 
       // Should apply pre middleware for all operations
       expect(mockSchema.pre).toHaveBeenCalledWith('find', expect.any(Function));
-      expect(mockSchema.pre).toHaveBeenCalledWith('findOne', expect.any(Function));
+      expect(mockSchema.pre).toHaveBeenCalledWith(
+        'findOne',
+        expect.any(Function),
+      );
       expect(mockSchema.pre).toHaveBeenCalledWith('save', expect.any(Function));
-      expect(mockSchema.pre).toHaveBeenCalledWith('remove', expect.any(Function));
-      expect(mockSchema.pre).toHaveBeenCalledWith('aggregate', expect.any(Function));
+      expect(mockSchema.pre).toHaveBeenCalledWith(
+        'remove',
+        expect.any(Function),
+      );
+      expect(mockSchema.pre).toHaveBeenCalledWith(
+        'aggregate',
+        expect.any(Function),
+      );
 
       // Should apply post middleware for all operations
-      expect(mockSchema.post).toHaveBeenCalledWith('find', expect.any(Function));
-      expect(mockSchema.post).toHaveBeenCalledWith('findOne', expect.any(Function));
-      expect(mockSchema.post).toHaveBeenCalledWith('save', expect.any(Function));
-      expect(mockSchema.post).toHaveBeenCalledWith('remove', expect.any(Function));
-      expect(mockSchema.post).toHaveBeenCalledWith('aggregate', expect.any(Function));
+      expect(mockSchema.post).toHaveBeenCalledWith(
+        'find',
+        expect.any(Function),
+      );
+      expect(mockSchema.post).toHaveBeenCalledWith(
+        'findOne',
+        expect.any(Function),
+      );
+      expect(mockSchema.post).toHaveBeenCalledWith(
+        'save',
+        expect.any(Function),
+      );
+      expect(mockSchema.post).toHaveBeenCalledWith(
+        'remove',
+        expect.any(Function),
+      );
+      expect(mockSchema.post).toHaveBeenCalledWith(
+        'aggregate',
+        expect.any(Function),
+      );
 
       // Should apply error middleware for all operations
-      expect(mockSchema.post).toHaveBeenCalledWith('find', expect.any(Function));
-      expect(mockSchema.post).toHaveBeenCalledWith('findOne', expect.any(Function));
-      expect(mockSchema.post).toHaveBeenCalledWith('save', expect.any(Function));
-      expect(mockSchema.post).toHaveBeenCalledWith('remove', expect.any(Function));
-      expect(mockSchema.post).toHaveBeenCalledWith('aggregate', expect.any(Function));
+      expect(mockSchema.post).toHaveBeenCalledWith(
+        'find',
+        expect.any(Function),
+      );
+      expect(mockSchema.post).toHaveBeenCalledWith(
+        'findOne',
+        expect.any(Function),
+      );
+      expect(mockSchema.post).toHaveBeenCalledWith(
+        'save',
+        expect.any(Function),
+      );
+      expect(mockSchema.post).toHaveBeenCalledWith(
+        'remove',
+        expect.any(Function),
+      );
+      expect(mockSchema.post).toHaveBeenCalledWith(
+        'aggregate',
+        expect.any(Function),
+      );
     });
   });
 });

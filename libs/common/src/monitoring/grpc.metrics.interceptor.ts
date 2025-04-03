@@ -29,7 +29,7 @@ export class GrpcMetricsInterceptor implements NestInterceptor {
     const rpcContext = context.switchToRpc();
     const handlerData = context.getHandler();
     const controllerClass = context.getClass();
-    
+
     // Extract service and method names from context
     const serviceName = controllerClass.name.replace('Controller', '');
     const methodName = handlerData.name;
@@ -37,7 +37,7 @@ export class GrpcMetricsInterceptor implements NestInterceptor {
     return next.handle().pipe(
       tap(() => {
         const duration = Date.now() - startTime;
-        
+
         this.metricsService.recordGrpcMetric({
           service: serviceName,
           method: methodName,
@@ -47,7 +47,7 @@ export class GrpcMetricsInterceptor implements NestInterceptor {
       }),
       catchError((error) => {
         const duration = Date.now() - startTime;
-        
+
         this.metricsService.recordGrpcMetric({
           service: serviceName,
           method: methodName,
@@ -55,7 +55,7 @@ export class GrpcMetricsInterceptor implements NestInterceptor {
           duration,
           errorType: error.code || error.message || 'Unknown',
         });
-        
+
         return throwError(() => error);
       }),
     );

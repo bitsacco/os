@@ -52,7 +52,7 @@ async function bootstrap() {
 
   // Apply metrics interceptors for automatic collection
   MetricsIntegration.applyHttpMetricsInterceptor(app, metricsService);
-  
+
   // Apply logging interceptor after metrics to avoid interference
   app.useGlobalInterceptors(new HttpLoggingInterceptor());
 

@@ -36,7 +36,10 @@ describe('GrpcMetricsInterceptor', () => {
   });
 
   it('should record metrics for successful gRPC requests', (done) => {
-    const executionContext = createMockExecutionContext('UserService', 'getUser');
+    const executionContext = createMockExecutionContext(
+      'UserService',
+      'getUser',
+    );
     const next: CallHandler = {
       handle: () => of({ data: 'test' }),
     };
@@ -57,7 +60,10 @@ describe('GrpcMetricsInterceptor', () => {
   });
 
   it('should record metrics for failed gRPC requests', (done) => {
-    const executionContext = createMockExecutionContext('UserService', 'createUser');
+    const executionContext = createMockExecutionContext(
+      'UserService',
+      'createUser',
+    );
     const error = new Error('Invalid request');
     (error as any).code = 'INVALID_ARGUMENT';
     const next: CallHandler = {
@@ -81,7 +87,10 @@ describe('GrpcMetricsInterceptor', () => {
   });
 
   // Helper function to create mock execution context
-  function createMockExecutionContext(serviceName: string, methodName: string): ExecutionContext {
+  function createMockExecutionContext(
+    serviceName: string,
+    methodName: string,
+  ): ExecutionContext {
     const mockRpcContext = {
       getData: () => ({ test: 'data' }),
       getContext: () => ({ requestId: '123' }),

@@ -85,18 +85,25 @@ describe('HttpMetricsInterceptor', () => {
   it('should normalize paths correctly', () => {
     // Use private method for testing
     const normalizePath = (interceptor as any).normalizePath.bind(interceptor);
-    
+
     expect(normalizePath('/users/123')).toBe('/users/:id');
     expect(normalizePath('/users/123/posts/456')).toBe('/users/:id/posts/:id');
     // Numbers that are part of segment names should not be replaced
     expect(normalizePath('/users/abc123')).toBe('/users/abc123');
     expect(normalizePath('/users/123?sort=name')).toBe('/users/:id');
-    expect(normalizePath('/users/550e8400-e29b-41d4-a716-446655440000')).toBe('/users/:uuid');
-    expect(normalizePath('/users/550e8400e29b41d4a716446655440000')).toBe('/users/:hash');
+    expect(normalizePath('/users/550e8400-e29b-41d4-a716-446655440000')).toBe(
+      '/users/:uuid',
+    );
+    expect(normalizePath('/users/550e8400e29b41d4a716446655440000')).toBe(
+      '/users/:hash',
+    );
   });
 
   // Helper function to create mock execution context
-  function createMockExecutionContext(method: string, url: string): ExecutionContext {
+  function createMockExecutionContext(
+    method: string,
+    url: string,
+  ): ExecutionContext {
     const mockRequest = {
       method,
       url,
