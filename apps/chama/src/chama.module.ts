@@ -30,6 +30,7 @@ import {
 import { ChamasDocument, ChamasRepository, ChamasSchema } from './chamas/db';
 import { ChamaMessageService } from './chamas/chamas.messaging';
 import { ChamasService } from './chamas/chamas.service';
+import { ChamaMetricsService } from './chamas/chama.metrics';
 import { ChamaWalletService } from './wallet/wallet.service';
 import { ChamaController } from './chama.controller';
 
@@ -146,6 +147,7 @@ import { ChamaController } from './chama.controller';
     UsersRepository,
     FedimintService,
     LnurlMetricsService,
+    ChamaMetricsService,
   ],
 })
 export class ChamaModule {}

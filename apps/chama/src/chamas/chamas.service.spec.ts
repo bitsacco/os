@@ -4,12 +4,14 @@ import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { ChamaMessageService } from './chamas.messaging';
 import { ChamasService } from './chamas.service';
 import { ChamasRepository } from './db';
+import { ChamaMetricsService } from './chama.metrics';
 
 describe('ChamasService', () => {
   let chamaService: ChamasService;
   let chamasRepository: ChamasRepository;
   let messageService: ChamaMessageService;
   let usersService: UsersService;
+  let metricsService: ChamaMetricsService;
 
   beforeEach(async () => {
     messageService = {
@@ -34,6 +36,11 @@ describe('ChamasService', () => {
       findUsersById: jest.fn(),
     } as unknown as UsersService;
 
+    metricsService = {
+      recordChamaCreationMetric: jest.fn(),
+      recordMembershipMetric: jest.fn(),
+    } as unknown as ChamaMetricsService;
+
     const module: TestingModule = await createTestingModuleWithValidation({
       providers: [
         {
@@ -47,6 +54,7 @@ describe('ChamasService', () => {
               chamasRepository,
               messageService,
               usersService,
+              metricsService,
             );
           },
         },

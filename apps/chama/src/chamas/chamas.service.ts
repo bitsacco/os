@@ -20,6 +20,7 @@ import {
 } from '@bitsacco/common';
 import { ChamasRepository, parseMemberRole, toChama } from './db';
 import { ChamaMessageService } from './chamas.messaging';
+import { ChamaMetricsService } from './chama.metrics';
 @Injectable()
 export class ChamasService {
   private readonly logger = new Logger(ChamasService.name);
@@ -28,6 +29,7 @@ export class ChamasService {
     private readonly chamas: ChamasRepository,
     private readonly messenger: ChamaMessageService,
     private readonly users: UsersService,
+    private readonly metricsService: ChamaMetricsService,
   ) {
     this.logger.debug('ChamasService initialized');
   }
@@ -39,27 +41,58 @@ export class ChamasService {
     invites,
     createdBy,
   }: CreateChamaDto): Promise<Chama> {
-    const registered = await this.resolveMembers(members);
+    const startTime = Date.now();
+    let success = false;
+    let errorType: string | undefined;
 
-    if (!registered.find((member) => member.userId === createdBy)) {
-      throw new BadRequestException('Failed to create chama', {
-        cause: new Error('Invalid chama creator'),
-        description:
-          'Seems the proposed chama creator, is not yet a registered member',
+    try {
+      const registered = await this.resolveMembers(members);
+
+      if (!registered.find((member) => member.userId === createdBy)) {
+        throw new BadRequestException('Failed to create chama', {
+          cause: new Error('Invalid chama creator'),
+          description:
+            'Seems the proposed chama creator, is not yet a registered member',
+        });
+      }
+
+      const cd = await this.chamas.create({
+        name,
+        description,
+        members: registered,
+        createdBy,
       });
+      const chama = toChama(cd);
+
+      this.messenger.sendChamaInvites(chama, invites);
+
+      // Record successful chama creation metrics
+      success = true;
+      this.metricsService.recordChamaCreationMetric({
+        chamaId: chama.id,
+        createdById: createdBy,
+        memberCount: registered.length,
+        success: true,
+        duration: Date.now() - startTime,
+      });
+
+      return chama;
+    } catch (error) {
+      errorType = error.message || 'Unknown error';
+      this.logger.error(`Chama creation failed: ${errorType}`, error.stack);
+
+      // Record failed chama creation metrics
+      this.metricsService.recordChamaCreationMetric({
+        chamaId: 'unknown',
+        createdById: createdBy,
+        memberCount: members.length,
+        success: false,
+        duration: Date.now() - startTime,
+        errorType,
+      });
+
+      throw error;
     }
-
-    const cd = await this.chamas.create({
-      name,
-      description,
-      members: registered,
-      createdBy,
-    });
-    const chama = toChama(cd);
-
-    this.messenger.sendChamaInvites(chama, invites);
-
-    return chama;
   }
 
   private async resolveMembers(
@@ -173,18 +206,60 @@ export class ChamasService {
   }
 
   async joinChama({ chamaId, memberInfo }: JoinChamaDto): Promise<Chama> {
-    const cd = await this.chamas.findOne({ _id: chamaId });
-    const registered = await this.resolveMembers([memberInfo]);
-    const hunk: Partial<Chama> = {
-      members: this.deduplicateMembers(cd.members, registered),
-    };
+    const startTime = Date.now();
+    let success = false;
+    let errorType: string | undefined;
 
-    const updatedChama = await this.chamas.findOneAndUpdate(
-      { _id: chamaId },
-      hunk,
-    );
+    try {
+      const cd = await this.chamas.findOne({ _id: chamaId });
+      const registered = await this.resolveMembers([memberInfo]);
+      const hunk: Partial<Chama> = {
+        members: this.deduplicateMembers(cd.members, registered),
+      };
 
-    return toChama(updatedChama);
+      const updatedChama = await this.chamas.findOneAndUpdate(
+        { _id: chamaId },
+        hunk,
+      );
+
+      const chama = toChama(updatedChama);
+
+      // Record successful membership metrics
+      success = true;
+      this.metricsService.recordMembershipMetric({
+        chamaId,
+        memberId: memberInfo.userId,
+        operation: 'join',
+        success: true,
+        duration: Date.now() - startTime,
+      });
+
+      // Record chama size metrics
+      this.metricsService.recordChamaCreationMetric({
+        chamaId,
+        createdById: chama.createdBy,
+        memberCount: chama.members.length,
+        success: true,
+        duration: 0, // Not a creation operation, just updating the size metric
+      });
+
+      return chama;
+    } catch (error) {
+      errorType = error.message || 'Unknown error';
+      this.logger.error(`Join chama failed: ${errorType}`, error.stack);
+
+      // Record failed membership metrics
+      this.metricsService.recordMembershipMetric({
+        chamaId,
+        memberId: memberInfo.userId,
+        operation: 'join',
+        success: false,
+        duration: Date.now() - startTime,
+        errorType,
+      });
+
+      throw error;
+    }
   }
 
   async inviteMembers({ chamaId, invites }: InviteMembersDto): Promise<Chama> {

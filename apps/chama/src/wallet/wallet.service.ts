@@ -43,6 +43,7 @@ import {
   WalletTxEvent,
   LnurlMetricsService,
 } from '@bitsacco/common';
+import { ChamaMetricsService } from '../chamas/chama.metrics';
 import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
@@ -65,7 +66,8 @@ export class ChamaWalletService {
     private readonly wallet: ChamaWalletRepository,
     private readonly fedimintService: FedimintService,
     private readonly eventEmitter: EventEmitter2,
-    private readonly metricsService: LnurlMetricsService,
+    private readonly lnurlMetricsService: LnurlMetricsService,
+    private readonly chamaMetricsService: ChamaMetricsService,
     @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
     @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
     private readonly chamas: ChamasService,
@@ -1126,14 +1128,47 @@ export class ChamaWalletService {
         `Chama LNURL withdrawal successfully completed for ID: ${updatedWithdrawal._id}`,
       );
 
-      // Record successful metric
+      // Record successful metrics via both services
       const duration = Date.now() - startTime;
-      this.metricsService.recordWithdrawalMetric({
+
+      // Legacy LNURL metrics
+      this.lnurlMetricsService.recordWithdrawalMetric({
         success: true,
         duration,
         amountMsats: updatedWithdrawal.amountMsats,
         amountFiat: updatedWithdrawal.amountFiat,
+        userId: updatedWithdrawal.memberId,
+        wallet: 'chama',
       });
+
+      // New standardized chama metrics
+      this.chamaMetricsService.recordWithdrawalMetric({
+        chamaId: updatedWithdrawal.chamaId,
+        memberId: updatedWithdrawal.memberId,
+        amountMsats: updatedWithdrawal.amountMsats,
+        amountFiat: updatedWithdrawal.amountFiat,
+        method: 'lnurl',
+        status: 'completed',
+        success: true,
+        duration,
+      });
+
+      // Get updated balances and record them
+      const { groupMeta, memberMeta } = await this.getWalletMeta(
+        updatedWithdrawal.chamaId,
+        updatedWithdrawal.memberId,
+      );
+
+      this.chamaMetricsService.recordChamaBalanceMetric(
+        updatedWithdrawal.chamaId,
+        groupMeta.groupBalance,
+      );
+
+      this.chamaMetricsService.recordMemberBalanceMetric(
+        updatedWithdrawal.chamaId,
+        updatedWithdrawal.memberId,
+        memberMeta.memberBalance,
+      );
 
       return {
         success: true,
@@ -1146,9 +1181,24 @@ export class ChamaWalletService {
         error,
       );
 
-      // Record failed metric with error type
+      // Record failed metrics with both services
       const duration = Date.now() - startTime;
-      this.metricsService.recordWithdrawalMetric({
+
+      // Legacy LNURL metrics
+      this.lnurlMetricsService.recordWithdrawalMetric({
+        success: false,
+        duration,
+        errorType: error.message || 'Unknown error',
+        wallet: 'chama',
+      });
+
+      // New standardized chama metrics
+      this.chamaMetricsService.recordWithdrawalMetric({
+        chamaId: 'unknown',
+        memberId: 'unknown',
+        amountMsats: 0,
+        method: 'lnurl',
+        status: 'failed',
         success: false,
         duration,
         errorType: error.message || 'Unknown error',

@@ -12,6 +12,7 @@ import {
   TransactionStatus,
   WalletTxContext,
 } from '@bitsacco/common';
+import { ChamaMetricsService } from '../chamas/chama.metrics';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ChamasService } from '../chamas/chamas.service';
 import { UsersService } from '@bitsacco/common';
@@ -96,6 +97,15 @@ describe('ChamaWalletService', () => {
         {
           provide: LnurlMetricsService,
           useValue: mockMetricsService,
+        },
+        {
+          provide: ChamaMetricsService,
+          useValue: {
+            recordDepositMetric: jest.fn(),
+            recordWithdrawalMetric: jest.fn(),
+            recordChamaBalanceMetric: jest.fn(),
+            recordMemberBalanceMetric: jest.fn(),
+          },
         },
       ],
     }).compile();
