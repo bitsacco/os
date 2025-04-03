@@ -178,9 +178,91 @@ All services implement a standard set of operational metrics:
 - `core.resources.network_rx` - Network receive rate in bytes per second
 - `core.resources.network_tx` - Network transmit rate in bytes per second
 
-## Adding New Metrics
+## Automatic Metrics Collection
 
-To add new metrics to an existing service:
+Bitsacco OS provides automatic metrics collection for HTTP, gRPC, and database operations through interceptors and middleware.
+
+### HTTP Metrics Interceptor
+
+The `HttpMetricsInterceptor` automatically collects metrics for all HTTP requests:
+
+```typescript
+import { MetricsIntegration, CoreMetricsService } from '@bitsacco/common';
+
+// In your main.ts bootstrap function
+const app = await NestFactory.create(AppModule);
+const metricsService = app.get(CoreMetricsService);
+
+// Apply HTTP metrics interceptor
+MetricsIntegration.applyHttpMetricsInterceptor(app, metricsService);
+```
+
+This interceptor captures:
+- Request method and normalized path
+- Response status code
+- Request duration
+- Error types (for failed requests)
+
+### gRPC Metrics Interceptor
+
+The `GrpcMetricsInterceptor` automatically collects metrics for all gRPC calls:
+
+```typescript
+import { MetricsIntegration, CoreMetricsService } from '@bitsacco/common';
+
+// In your main.ts bootstrap function
+const app = await NestFactory.create(AppModule);
+const metricsService = app.get(CoreMetricsService);
+
+// Apply gRPC metrics interceptor
+MetricsIntegration.applyGrpcMetricsInterceptor(app, metricsService);
+```
+
+This interceptor captures:
+- Service and method names
+- Call duration
+- Success/failure status
+- Error types (for failed calls)
+
+### Database Metrics Middleware
+
+The `DatabaseMetricsMiddleware` automatically collects metrics for database operations:
+
+```typescript
+// In your module
+DatabaseModule.forFeatureAsync([
+  {
+    name: UserDocument.name,
+    useFactory: (middleware: DatabaseMetricsMiddleware) => {
+      middleware.applyMiddleware(UserSchema, 'users');
+      return UserSchema;
+    },
+    inject: [DatabaseMetricsMiddleware],
+  },
+]),
+```
+
+This middleware captures:
+- Collection name
+- Operation type (find, findOne, create, update, delete, aggregate)
+- Operation duration
+- Success/failure status
+- Error types (for failed operations)
+
+### Integration Helper
+
+The `MetricsIntegration` class provides helper methods to easily apply metrics interceptors:
+
+```typescript
+import { MetricsIntegration, CoreMetricsService } from '@bitsacco/common';
+
+// Apply all metrics interceptors
+MetricsIntegration.applyAllMetricsInterceptors(app, metricsService);
+```
+
+## Adding Custom Metrics
+
+To add custom metrics to an existing service:
 
 1. Use the standard `MetricsService` or `OperationMetricsService` as a base class
 2. Initialize your metrics in the constructor or `onModuleInit` lifecycle hook
