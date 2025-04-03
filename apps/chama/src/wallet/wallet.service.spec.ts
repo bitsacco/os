@@ -7,6 +7,7 @@ import {
   FedimintContext,
   FedimintReceiveSuccessEvent,
   FedimintService,
+  LnurlMetricsService,
   SWAP_SERVICE_NAME,
   TransactionStatus,
   WalletTxContext,
@@ -29,6 +30,12 @@ describe('ChamaWalletService', () => {
   const mockFedimintService = {
     invoice: jest.fn(),
     receive: jest.fn(),
+  };
+
+  const mockMetricsService = {
+    recordWithdrawalMetric: jest.fn(),
+    getMetrics: jest.fn(),
+    resetMetrics: jest.fn(),
   };
 
   const mockSwapGrpc = {
@@ -85,6 +92,10 @@ describe('ChamaWalletService', () => {
         {
           provide: ChamaMessageService,
           useValue: mockMessengerService,
+        },
+        {
+          provide: LnurlMetricsService,
+          useValue: mockMetricsService,
         },
       ],
     }).compile();

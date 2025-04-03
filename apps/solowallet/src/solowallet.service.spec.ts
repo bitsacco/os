@@ -202,5 +202,80 @@ describe('SolowalletService', () => {
       // Verify that no withdrawal was created
       expect(repository.create).not.toHaveBeenCalled();
     });
+
+    // Test for LNURL metrics implementation
+    it('LNURL metrics are properly implemented', async () => {
+      // Setup for LNURL metrics testing
+      const mockLnurlMetricsService =
+        app.get<LnurlMetricsService>(LnurlMetricsService);
+      const mockWallet = app.get<SolowalletRepository>(SolowalletRepository);
+
+      // Mock wallet.findOne to return a test document
+      jest.spyOn(mockWallet, 'findOne').mockResolvedValueOnce({
+        _id: 'lnurl-withdrawal-id',
+        userId: 'test-user',
+        amountMsats: 50000,
+        amountFiat: 100,
+        paymentTracker: 'test-k1',
+        status: TransactionStatus.PENDING,
+        type: TransactionType.WITHDRAW,
+        lightning: JSON.stringify({
+          lnurlWithdrawPoint: {
+            k1: 'test-k1',
+            callback: 'https://test.com/callback',
+            expiresAt: Date.now() / 1000 + 3600, // 1 hour from now
+          },
+        }),
+        reference: 'Test withdrawal',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as SolowalletDocument);
+
+      // Mock the fedimintService.decode and pay methods
+      jest.spyOn(fedimintService, 'decode').mockResolvedValueOnce({
+        amountMsats: '40000',
+        description: 'Test invoice',
+        paymentHash: 'hash',
+        timestamp: Date.now(),
+      });
+
+      jest.spyOn(fedimintService, 'pay').mockResolvedValueOnce({
+        operationId: 'test-operation-id',
+        fee: 1000,
+      });
+
+      // Mock wallet.findOneAndUpdate to return an updated document
+      jest.spyOn(mockWallet, 'findOneAndUpdate').mockResolvedValueOnce({
+        _id: 'lnurl-withdrawal-id',
+        userId: 'test-user',
+        amountMsats: 41000, // 40000 + 1000 fee
+        amountFiat: 100,
+        status: TransactionStatus.COMPLETE,
+        type: TransactionType.WITHDRAW,
+        reference: 'Test withdrawal',
+      } as SolowalletDocument);
+
+      // Call the method we're testing
+      const result = await service.processLnUrlWithdrawCallback(
+        'test-k1',
+        'lnbc500n1p3zg5k2pp5...',
+      );
+
+      // Verify the result is correct
+      expect(result.success).toBe(true);
+      expect(result.txId).toBe('lnurl-withdrawal-id');
+
+      // Verify that metrics were recorded
+      expect(
+        mockLnurlMetricsService.recordWithdrawalMetric,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          duration: expect.any(Number),
+          amountMsats: 41000,
+          amountFiat: 100,
+        }),
+      );
+    });
   });
 });

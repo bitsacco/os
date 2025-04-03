@@ -4,8 +4,8 @@ import {
   CustomStore,
   DatabaseModule,
   EVENTS_SERVICE_BUS,
+  LnurlMetricsService,
   LoggerModule,
-  MonitoringModule,
 } from '@bitsacco/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
@@ -74,11 +74,11 @@ import { SharesMetricsService } from './shares.metrics';
       { name: SharesDocument.name, schema: SharesSchema },
     ]),
     LoggerModule,
-    MonitoringModule,
   ],
   controllers: [SharesController],
   providers: [
     ConfigService,
+    LnurlMetricsService,
     SharesService,
     SharesOfferRepository,
     SharesRepository,
