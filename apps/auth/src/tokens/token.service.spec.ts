@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { UnauthorizedException } from '@nestjs/common';
 import {
   TokenRepository,
@@ -10,6 +11,7 @@ import {
   TokenDocument,
 } from '@bitsacco/common';
 import { TokenService } from './token.service';
+import { TokenMetricsService } from './token.metrics';
 
 describe('TokenService', () => {
   let tokenService: TokenService;
@@ -17,6 +19,7 @@ describe('TokenService', () => {
   let configService: ConfigService;
   let tokenRepository: TokenRepository;
   let usersService: UsersService;
+  let metricsService: TokenMetricsService;
 
   const mockUser = {
     id: 'test-user-id',
@@ -93,6 +96,13 @@ describe('TokenService', () => {
       findUser: jest.fn().mockResolvedValue(mockUser),
     };
 
+    // Create mock for TokenMetricsService
+    const mockMetricsService = {
+      recordTokenOperationMetric: jest.fn(),
+      getMetrics: jest.fn().mockReturnValue({}),
+      resetMetrics: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TokenService,
@@ -112,6 +122,16 @@ describe('TokenService', () => {
           provide: UsersService,
           useValue: mockUsersService,
         },
+        {
+          provide: TokenMetricsService,
+          useValue: mockMetricsService,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: {
+            emit: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -120,6 +140,7 @@ describe('TokenService', () => {
     configService = module.get<ConfigService>(ConfigService);
     tokenRepository = module.get<TokenRepository>(TokenRepository);
     usersService = module.get<UsersService>(UsersService);
+    metricsService = module.get<TokenMetricsService>(TokenMetricsService);
   });
 
   it('should be defined', () => {
