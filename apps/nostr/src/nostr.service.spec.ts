@@ -2,6 +2,8 @@ import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { NostrService } from './nostr.service';
 import { ConfigService } from '@nestjs/config';
+import { NostrMetricsService } from './nostr.metrics';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 describe('NostrService', () => {
   let service: NostrService;
@@ -23,11 +25,30 @@ describe('NostrService', () => {
       }),
     } as any;
 
+    const mockEventEmitter = {
+      emit: jest.fn(),
+      on: jest.fn(),
+    };
+
+    const mockMetricsService = {
+      recordMessageMetric: jest.fn(),
+      recordRelayMetric: jest.fn(),
+      updateConnectedRelaysCount: jest.fn(),
+    };
+
     const module: TestingModule = await createTestingModuleWithValidation({
       providers: [
         {
           provide: ConfigService,
           useValue: mockCfg,
+        },
+        {
+          provide: NostrMetricsService,
+          useValue: mockMetricsService,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: mockEventEmitter,
         },
         NostrService,
       ],

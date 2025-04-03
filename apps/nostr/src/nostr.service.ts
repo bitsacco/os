@@ -12,6 +12,12 @@ import {
   NostrRecipient,
   SendEncryptedNostrDmDto,
 } from '@bitsacco/common';
+import {
+  NostrMessageType,
+  NostrMetricsService,
+  NostrOperation,
+  NostrRecipientType,
+} from './nostr.metrics';
 
 const explicitRelayUrls = [
   'wss://relay.damus.io',
@@ -29,7 +35,10 @@ export class NostrService {
   private readonly pubkey: string;
   private connected = false;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly metricsService: NostrMetricsService,
+  ) {
     this.logger.log('NostrService created');
 
     const privkey = this.configService.getOrThrow<string>('NOSTR_PRIVATE_KEY');
@@ -43,16 +52,47 @@ export class NostrService {
 
     this.ndk.pool.on('relay:connect', (relay: NDKRelay) => {
       this.logger.log(`Connected to relay: ${relay.url}`);
+
+      // Record successful relay connection metric
+      this.metricsService.recordRelayMetric({
+        relayUrl: relay.url,
+        operation: NostrOperation.connect,
+        success: true,
+        duration: 0, // We don't have duration here
+      });
+
+      // Update connected relays count
+      this.metricsService.updateConnectedRelaysCount(
+        this.ndk.pool.connectedRelays().length,
+      );
     });
 
     this.ndk.pool.on('relay:disconnect', (relay: NDKRelay) => {
       this.logger.warn(`Disconnected from relay: ${relay.url}`);
+
+      // Record relay disconnection metric
+      this.metricsService.recordRelayMetric({
+        relayUrl: relay.url,
+        operation: NostrOperation.disconnect,
+        success: true,
+        duration: 0, // We don't have duration here
+      });
+
+      // Update connected relays count
+      this.metricsService.updateConnectedRelaysCount(
+        this.ndk.pool.connectedRelays().length,
+      );
     });
 
     this.connectRelays()
       .then(() => {
         this.logger.log('NostrService connected');
         this.connected = true;
+
+        // Update connected relays count
+        this.metricsService.updateConnectedRelaysCount(
+          this.ndk.pool.connectedRelays().length,
+        );
       })
       .catch((e) => {
         this.logger.warn('NostrService disconnected');
@@ -61,33 +101,89 @@ export class NostrService {
   }
 
   private async connectRelays() {
+    const startTime = Date.now();
     try {
       await this.ndk.connect();
       // Wait one sec for connections to stabilize
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      this.logger.log(
-        `${this.ndk.pool.connectedRelays().length} relays connected`,
-      );
+      const connectedCount = this.ndk.pool.connectedRelays().length;
+      this.logger.log(`${connectedCount} relays connected`);
+
+      // Record success metric for overall relay connection operation
+      this.metricsService.recordRelayMetric({
+        relayUrl: 'all',
+        operation: NostrOperation.connect,
+        success: true,
+        duration: Date.now() - startTime,
+      });
     } catch (e) {
       this.logger.error(`Failed to connect nostr relays, ${e}`);
+
+      // Record failure metric
+      this.metricsService.recordRelayMetric({
+        relayUrl: 'all',
+        operation: NostrOperation.connect,
+        success: false,
+        duration: Date.now() - startTime,
+        errorType: e.message || 'Unknown error',
+      });
+
       throw e;
     }
   }
 
   private async publishEventWithRetry(dm: NDKEvent, maxAttempts: number = 2) {
     let attempts = 0;
+    let totalDuration = 0;
+
     while (attempts < maxAttempts) {
+      const attemptStartTime = Date.now();
+      attempts++;
+
       try {
         await dm.publish();
         this.logger.log('Published Nostr event');
+
+        // Record successful publish metric with duration of successful attempt only
+        const attemptDuration = Date.now() - attemptStartTime;
+        totalDuration += attemptDuration;
+
+        this.metricsService.recordRelayMetric({
+          relayUrl: 'all',
+          operation: NostrOperation.publish,
+          success: true,
+          duration: attemptDuration,
+        });
+
         return;
       } catch (error) {
-        attempts++;
+        const attemptDuration = Date.now() - attemptStartTime;
+        totalDuration += attemptDuration;
+
         if (attempts >= maxAttempts) {
+          // Record final failed publish metric
+          this.metricsService.recordRelayMetric({
+            relayUrl: 'all',
+            operation: NostrOperation.publish,
+            success: false,
+            duration: totalDuration,
+            errorType: error.message || 'Unknown error',
+          });
+
           throw new Error(
             `Failed to publish Nostr event after ${maxAttempts} attempts: ${error}`,
           );
         }
+
+        // Record individual failed attempt metric
+        this.metricsService.recordRelayMetric({
+          relayUrl: 'all',
+          operation: NostrOperation.publishAttempt,
+          success: false,
+          duration: attemptDuration,
+          errorType: error.message || 'Unknown error',
+        });
+
         this.logger.warn(`Publish attempt ${attempts} failed. Retrying...`);
         await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
       }
@@ -121,12 +217,24 @@ export class NostrService {
     recipient,
     retry = true,
   }: SendEncryptedNostrDmDto): Promise<void> {
+    const startTime = Date.now();
+    let success = false;
+    let recipientType = NostrRecipientType.other;
+    let errorType: string | undefined;
+
     try {
       if (!this.connected) {
         await this.connectRelays();
       }
 
       const receiver = this.parseRecipient(recipient) || this.pubkey;
+
+      // Determine recipient type for metrics
+      if (receiver === this.pubkey) {
+        recipientType = NostrRecipientType.self;
+      } else {
+        recipientType = NostrRecipientType.user; // Default for individual user
+      }
 
       this.logger.log(
         `${this.ndk.pool.connectedRelays().length} relays connected`,
@@ -143,9 +251,31 @@ export class NostrService {
       const user = new NDKUser({ pubkey: receiver });
       dm.encrypt(user);
 
-      return this.publishEventWithRetry(dm, retry ? 5 : 0);
+      await this.publishEventWithRetry(dm, retry ? 5 : 0);
+
+      // Record successful message metric
+      success = true;
+      this.metricsService.recordMessageMetric({
+        messageType: NostrMessageType.encrypted,
+        recipientType,
+        success: true,
+        duration: Date.now() - startTime,
+      });
+
+      return;
     } catch (error) {
+      errorType = error.message || 'Unknown error';
       this.logger.error(error);
+
+      // Record failed message metric
+      this.metricsService.recordMessageMetric({
+        messageType: NostrMessageType.encrypted,
+        recipientType,
+        success: false,
+        duration: Date.now() - startTime,
+        errorType,
+      });
+
       return;
     }
   }
