@@ -10,7 +10,7 @@ describe('MetricsService', () => {
         super('test-service');
       }
     }
-    
+
     const service = new TestMetricsService();
     expect(service).toBeDefined();
   });
@@ -22,7 +22,7 @@ describe('OperationMetricsService', () => {
       constructor() {
         super('test', 'operation');
       }
-      
+
       public getMetricNames() {
         return {
           totalOperationCounter: this.totalOperationCounter,
@@ -32,15 +32,19 @@ describe('OperationMetricsService', () => {
         };
       }
     }
-    
+
     const service = new TestOperationMetricsService();
     expect(service).toBeDefined();
-    
+
     // Verify metric names are correctly set
     const metricNames = service.getMetricNames();
     expect(metricNames.totalOperationCounter).toBe('test.operation.total');
-    expect(metricNames.successfulOperationCounter).toBe('test.operation.success');
+    expect(metricNames.successfulOperationCounter).toBe(
+      'test.operation.success',
+    );
     expect(metricNames.failedOperationCounter).toBe('test.operation.failure');
-    expect(metricNames.operationDurationHistogram).toBe('test.operation.duration');
+    expect(metricNames.operationDurationHistogram).toBe(
+      'test.operation.duration',
+    );
   });
 });

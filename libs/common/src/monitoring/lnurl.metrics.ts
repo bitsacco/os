@@ -22,7 +22,7 @@ export class LnurlMetricsService extends OperationMetricsService {
   // Additional counters specific to LNURL operations
   private withdrawAmountMsatsCounter!: Counter;
   private withdrawAmountFiatCounter!: Counter;
-  
+
   // Additional histograms
   private withdrawAmountHistogram!: Histogram;
 
@@ -47,21 +47,30 @@ export class LnurlMetricsService extends OperationMetricsService {
    */
   private initializeMetrics(): void {
     // Create additional counter for tracking withdrawal amounts
-    this.withdrawAmountMsatsCounter = this.createCounter('lnurl.withdrawal.amount.msats', {
-      description: 'Total amount withdrawn in millisatoshis',
-      unit: 'msats',
-    });
+    this.withdrawAmountMsatsCounter = this.createCounter(
+      'lnurl.withdrawal.amount.msats',
+      {
+        description: 'Total amount withdrawn in millisatoshis',
+        unit: 'msats',
+      },
+    );
 
-    this.withdrawAmountFiatCounter = this.createCounter('lnurl.withdrawal.amount.fiat', {
-      description: 'Total amount withdrawn in fiat currency',
-      unit: 'KES',
-    });
+    this.withdrawAmountFiatCounter = this.createCounter(
+      'lnurl.withdrawal.amount.fiat',
+      {
+        description: 'Total amount withdrawn in fiat currency',
+        unit: 'KES',
+      },
+    );
 
     // Create histogram for withdrawal amounts
-    this.withdrawAmountHistogram = this.createHistogram('lnurl.withdrawal.amount', {
-      description: 'Distribution of withdrawal amounts',
-      unit: 'msats',
-    });
+    this.withdrawAmountHistogram = this.createHistogram(
+      'lnurl.withdrawal.amount',
+      {
+        description: 'Distribution of withdrawal amounts',
+        unit: 'msats',
+      },
+    );
   }
 
   /**
@@ -89,14 +98,14 @@ export class LnurlMetricsService extends OperationMetricsService {
         this.withdrawAmountMsatsCounter.add(metric.amountMsats);
         this.withdrawAmountHistogram.record(metric.amountMsats);
       }
-      
+
       if (metric.amountFiat) {
         this.metrics.totalWithdrawAmountFiat += metric.amountFiat;
         this.withdrawAmountFiatCounter.add(metric.amountFiat);
       }
     } else {
       this.metrics.failedWithdraws++;
-      
+
       // Track error types
       if (metric.errorType) {
         this.metrics.errorTypes[metric.errorType] =

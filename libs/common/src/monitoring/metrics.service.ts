@@ -1,5 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Counter, Histogram, Meter, MetricOptions, Observable, ValueType } from '@opentelemetry/api';
+import {
+  Attributes,
+  Counter,
+  Histogram,
+  Meter,
+  MetricOptions,
+  Observable,
+  ObservableResult,
+} from '@opentelemetry/api';
 import { createMeter } from './opentelemetry';
 
 /**
@@ -73,24 +81,24 @@ export class MetricsService {
   }
 
   /**
-   * Create a new observable metric
-   * @param name Name of the observable
-   * @param options Options for the observable
-   * @param callback Callback function for the observable
-   * @returns The created observable
+   * Create a new observable gauge metric
+   * @param name Name of the observable gauge
+   * @param options Options for the observable gauge
+   * @param callback Callback function for the observable gauge
+   * @returns The created observable gauge
    */
-  protected createObservable<T extends ValueType>(
+  protected createObservable(
     name: string,
     options: MetricOptions,
-    callback: (observable: Observable<T>) => void,
-  ): Observable<T> {
+    callback: (observableResult: ObservableResult<Attributes>) => void,
+  ): Observable<Attributes> {
     if (this.observables.has(name)) {
-      return this.observables.get(name) as Observable<T>;
+      return this.observables.get(name);
     }
 
     const observable = this.meter.createObservableGauge(name, options);
     this.observables.set(name, observable);
-    observable.addCallback(callback);
+    observable.addCallback((result) => callback(result));
     return observable;
   }
 
@@ -148,7 +156,7 @@ export abstract class OperationMetricsService extends MetricsService {
 
   constructor(serviceName: string, operationName: string) {
     super(serviceName);
-    
+
     // Set standard metric names following convention
     this.totalOperationCounter = `${serviceName}.${operationName}.total`;
     this.successfulOperationCounter = `${serviceName}.${operationName}.success`;

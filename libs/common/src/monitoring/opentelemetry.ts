@@ -18,17 +18,22 @@ import { ATTR_DEPLOYMENT_ENVIRONMENT } from './semconv';
  * Initialize OpenTelemetry for the application
  * @param serviceName Name of the service to use in metrics and tracing
  * @param prometheusPort Port to expose Prometheus metrics on
+ * @param isGateway Whether this service is the API gateway that federates metrics
  * @returns The NodeSDK instance that can be used to shut down telemetry
  */
 export function initializeOpenTelemetry(
   serviceName: string,
   prometheusPort = 9464,
+  isGateway = false,
 ) {
   // Create Prometheus exporter
-  const prometheusExporter = new PrometheusExporter({
-    port: prometheusPort,
-    // Additional configuration as needed
-  });
+  // If this is the API gateway, we'll handle metrics in a custom controller
+  const prometheusExporter = isGateway
+    ? null
+    : new PrometheusExporter({
+        port: prometheusPort,
+        endpoint: '/metrics',
+      });
 
   // Configure tracing
   // No exporter by default, we'll use OTLP HTTP when needed
@@ -63,7 +68,13 @@ export function initializeOpenTelemetry(
 
   try {
     sdk.start();
-    console.log('OpenTelemetry initialized');
+    console.log(`OpenTelemetry initialized for ${serviceName}`);
+
+    if (!isGateway && prometheusExporter) {
+      console.log(
+        `Prometheus metrics available at port ${prometheusPort}/metrics`,
+      );
+    }
   } catch (error) {
     console.error('Error initializing OpenTelemetry', error);
   }

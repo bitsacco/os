@@ -1,7 +1,7 @@
 import * as Joi from 'joi';
 import { join } from 'path';
 import { JwtModule } from '@nestjs/jwt';
-import { Module } from '@nestjs/common';
+import { Module, Controller, Get } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
@@ -23,7 +23,9 @@ import {
   UsersRepository,
   UsersSchema,
   UsersService,
+  createMeter,
 } from '@bitsacco/common';
+import { register } from 'prom-client';
 import { SwapController } from './swap';
 import { NostrController } from './nostr';
 import { SmsController } from './sms/sms.controller';
@@ -32,6 +34,72 @@ import { SolowalletController } from './solowallet/solowallet.controller';
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
 import { ChamasController } from './chamas/chamas.controller';
+import axios from 'axios';
+
+// Controller for federated metrics
+@Controller('metrics')
+export class MetricsController {
+  private readonly serviceEndpoints = {
+    shares: process.env.SHARES_GRPC_URL,
+    chama: process.env.CHAMA_GRPC_URL,
+    solowallet: process.env.SOLOWALLET_GRPC_URL,
+    swap: process.env.SWAP_GRPC_URL,
+    auth: process.env.AUTH_GRPC_URL,
+    sms: process.env.SMS_GRPC_URL,
+    nostr: process.env.NOSTR_GRPC_URL,
+  };
+
+  constructor() {
+    // Initialize metrics specific to API gateway
+    const meter = createMeter('api-gateway');
+
+    meter.createCounter('api_gateway.requests_total', {
+      description: 'Total number of requests processed by the API gateway',
+    });
+
+    meter.createCounter('api_gateway.errors_total', {
+      description: 'Total number of errors encountered by the API gateway',
+    });
+  }
+
+  @Get()
+  async getMetrics() {
+    try {
+      // First, get metrics from API gateway itself
+      const ownMetrics = await register.metrics();
+      let combinedMetrics = ownMetrics;
+
+      // Collect metrics from individual services
+      for (const [service, url] of Object.entries(this.serviceEndpoints)) {
+        if (!url) continue;
+
+        try {
+          // Extract hostname/port from gRPC URL format like "hostname:port"
+          const [host, port] = url.split(':');
+          if (!host || !port) continue;
+
+          const metricsUrl = `http://${host}:${port}/metrics`;
+          const response = await axios.get(metricsUrl, { timeout: 500 });
+
+          if (response.status === 200) {
+            // Add service metrics to combined output
+            combinedMetrics += `\n# Metrics from ${service} service\n${response.data}`;
+          }
+        } catch (err) {
+          // Skip services that don't have metrics endpoints available
+          console.log(
+            `Could not fetch metrics from ${service}: ${err.message}`,
+          );
+        }
+      }
+
+      return combinedMetrics;
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+      return 'Error fetching metrics';
+    }
+  }
+}
 
 @Module({
   imports: [
@@ -178,6 +246,7 @@ import { ChamasController } from './chamas/chamas.controller';
     SharesController,
     SolowalletController,
     ChamasController,
+    MetricsController,
   ],
   providers: [
     UsersRepository,
