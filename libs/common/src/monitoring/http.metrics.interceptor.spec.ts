@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionContext, CallHandler } from '@nestjs/common';
-import { of, throwError } from 'rxjs';
+import { of, throwError, lastValueFrom, firstValueFrom } from 'rxjs';
 import { HttpMetricsInterceptor } from './http.metrics.interceptor';
 import { CoreMetricsService } from './core.metrics';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -27,37 +27,36 @@ describe('HttpMetricsInterceptor', () => {
     interceptor = module.get<HttpMetricsInterceptor>(HttpMetricsInterceptor);
     metricsService = module.get<CoreMetricsService>(CoreMetricsService);
 
-    // Mock recordApiMetric
-    metricsService.recordApiMetric = jest.fn();
+    // Create a more complete mock of the metrics service
+    jest.spyOn(metricsService, 'recordApiMetric').mockImplementation(() => {
+      // Do nothing
+    });
   });
 
   it('should be defined', () => {
     expect(interceptor).toBeDefined();
   });
 
-  it('should record metrics for successful HTTP requests', (done) => {
+  it('should record metrics for successful HTTP requests', async () => {
     const executionContext = createMockExecutionContext('GET', '/users/123');
     const next: CallHandler = {
       handle: () => of({ data: 'test' }),
     };
 
-    interceptor.intercept(executionContext, next).subscribe({
-      next: () => {
-        expect(metricsService.recordApiMetric).toHaveBeenCalledWith(
-          expect.objectContaining({
-            method: 'GET',
-            path: '/users/:id',
-            statusCode: 200,
-            success: true,
-            duration: expect.any(Number),
-          }),
-        );
-        done();
-      },
-    });
+    await firstValueFrom(interceptor.intercept(executionContext, next));
+    
+    expect(metricsService.recordApiMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'GET',
+        path: '/users/:id',
+        statusCode: 200,
+        success: true,
+        duration: expect.any(Number),
+      }),
+    );
   });
 
-  it('should record metrics for failed HTTP requests', (done) => {
+  it('should record metrics for failed HTTP requests', async () => {
     const executionContext = createMockExecutionContext('POST', '/users');
     const error = new Error('Test error');
     (error as any).status = 400;
@@ -65,21 +64,23 @@ describe('HttpMetricsInterceptor', () => {
       handle: () => throwError(() => error),
     };
 
-    interceptor.intercept(executionContext, next).subscribe({
-      error: () => {
-        expect(metricsService.recordApiMetric).toHaveBeenCalledWith(
-          expect.objectContaining({
-            method: 'POST',
-            path: '/users',
-            statusCode: 400,
-            success: false,
-            duration: expect.any(Number),
-            errorType: 'Error',
-          }),
-        );
-        done();
-      },
-    });
+    try {
+      await firstValueFrom(interceptor.intercept(executionContext, next));
+      // Should not reach here
+      expect(true).toBe(false);
+    } catch (e) {
+      // Error is expected
+      expect(metricsService.recordApiMetric).toHaveBeenCalledWith(
+        expect.objectContaining({
+          method: 'POST',
+          path: '/users',
+          statusCode: 400,
+          success: false,
+          duration: expect.any(Number),
+          errorType: 'Error',
+        }),
+      );
+    }
   });
 
   it('should normalize paths correctly', () => {
