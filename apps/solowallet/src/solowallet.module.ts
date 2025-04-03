@@ -13,6 +13,7 @@ import {
   LoggerModule,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
+import { SolowalletMetricsService } from './solowallet.metrics';
 import {
   SolowalletDocument,
   SolowalletRepository,
@@ -83,6 +84,7 @@ import { SolowalletService } from './solowallet.service';
     SolowalletRepository,
     FedimintService,
     LnurlMetricsService,
+    SolowalletMetricsService,
   ],
 })
 export class SolowalletModule {}

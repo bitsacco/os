@@ -9,6 +9,7 @@ import {
   LnurlMetricsService,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
+import { SolowalletMetricsService } from './solowallet.metrics';
 import { Logger } from '@nestjs/common';
 
 import { SolowalletService } from './solowallet.service';
@@ -95,6 +96,14 @@ describe('SolowalletService', () => {
             recordWithdrawalMetric: jest.fn(),
             getMetrics: jest.fn(),
             resetMetrics: jest.fn(),
+          },
+        },
+        {
+          provide: SolowalletMetricsService,
+          useValue: {
+            recordDepositMetric: jest.fn(),
+            recordWithdrawalMetric: jest.fn(),
+            recordBalanceMetric: jest.fn(),
           },
         },
         Logger,

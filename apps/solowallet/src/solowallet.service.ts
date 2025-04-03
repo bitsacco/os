@@ -32,6 +32,7 @@ import {
   ContinueDepositFundsRequestDto,
   ContinueWithdrawFundsRequestDto,
 } from '@bitsacco/common';
+import { SolowalletMetricsService } from './solowallet.metrics';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { SolowalletDocument, SolowalletRepository, toSolowalletTx } from './db';
@@ -45,7 +46,8 @@ export class SolowalletService {
     private readonly wallet: SolowalletRepository,
     private readonly fedimintService: FedimintService,
     private readonly eventEmitter: EventEmitter2,
-    private readonly metricsService: LnurlMetricsService,
+    private readonly lnurlMetricsService: LnurlMetricsService,
+    private readonly solowalletMetricsService: SolowalletMetricsService,
     @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
   ) {
     this.logger.log('SolowalletService created');
@@ -163,71 +165,113 @@ export class SolowalletService {
     onramp,
     pagination,
   }: DepositFundsRequestDto): Promise<UserTxsResponse> {
-    const { quote, amountMsats } = await getQuote(
-      {
-        from: onramp?.currency || Currency.KES,
-        to: Currency.BTC,
-        amount: amountFiat.toString(),
-      },
-      this.swapService,
-      this.logger,
-    );
+    const startTime = Date.now();
+    let success = false;
+    let errorType: string | undefined;
 
-    const lightning = await this.fedimintService.invoice(
-      amountMsats,
-      reference,
-    );
+    try {
+      const { quote, amountMsats } = await getQuote(
+        {
+          from: onramp?.currency || Currency.KES,
+          to: Currency.BTC,
+          amount: amountFiat.toString(),
+        },
+        this.swapService,
+        this.logger,
+      );
 
-    const { status } = onramp
-      ? await initiateOnrampSwap<TransactionStatus>(
-          {
-            quote,
-            amountFiat: amountFiat.toString(),
-            reference,
-            source: onramp,
-            target: {
-              payout: lightning,
+      const lightning = await this.fedimintService.invoice(
+        amountMsats,
+        reference,
+      );
+
+      const { status } = onramp
+        ? await initiateOnrampSwap<TransactionStatus>(
+            {
+              quote,
+              amountFiat: amountFiat.toString(),
+              reference,
+              source: onramp,
+              target: {
+                payout: lightning,
+              },
             },
-          },
-          this.swapService,
-          this.logger,
-        )
-      : {
-          status: TransactionStatus.PENDING,
-        };
+            this.swapService,
+            this.logger,
+          )
+        : {
+            status: TransactionStatus.PENDING,
+          };
 
-    this.logger.log(`Status: ${status}`);
-    const deposit = await this.wallet.create({
-      userId,
-      amountMsats,
-      amountFiat,
-      lightning: JSON.stringify(lightning),
-      paymentTracker: lightning.operationId,
-      type: TransactionType.DEPOSIT,
-      status,
-      reference,
-    });
+      this.logger.log(`Status: ${status}`);
+      const deposit = await this.wallet.create({
+        userId,
+        amountMsats,
+        amountFiat,
+        lightning: JSON.stringify(lightning),
+        paymentTracker: lightning.operationId,
+        type: TransactionType.DEPOSIT,
+        status,
+        reference,
+      });
 
-    // listen for payment
-    this.fedimintService.receive(
-      FedimintContext.SOLOWALLET_RECEIVE,
-      lightning.operationId,
-    );
+      // listen for payment
+      this.fedimintService.receive(
+        FedimintContext.SOLOWALLET_RECEIVE,
+        lightning.operationId,
+      );
 
-    const ledger = await this.getPaginatedUserTxLedger({
-      userId,
-      pagination,
-      priority: deposit._id,
-    });
+      const ledger = await this.getPaginatedUserTxLedger({
+        userId,
+        pagination,
+        priority: deposit._id,
+      });
 
-    const meta = await this.getWalletMeta(userId);
+      const meta = await this.getWalletMeta(userId);
 
-    return {
-      txId: deposit._id,
-      ledger,
-      meta,
-      userId,
-    };
+      // Record successful deposit metrics
+      success = true;
+
+      // Record metrics for this operation
+      this.solowalletMetricsService.recordDepositMetric({
+        userId,
+        amountMsats,
+        amountFiat,
+        method: onramp ? 'onramp' : 'lightning',
+        success: true,
+        duration: Date.now() - startTime,
+      });
+
+      // Record balance metrics
+      this.solowalletMetricsService.recordBalanceMetric({
+        userId,
+        balanceMsats: meta.currentBalance,
+        activity: 'deposit',
+      });
+
+      return {
+        txId: deposit._id,
+        ledger,
+        meta,
+        userId,
+      };
+    } catch (error) {
+      errorType = error.message || 'Unknown error';
+      this.logger.error(`Deposit failed: ${errorType}`, error.stack);
+
+      // Record failed deposit metrics
+      this.solowalletMetricsService.recordDepositMetric({
+        userId,
+        amountMsats: 0,
+        amountFiat,
+        method: onramp ? 'onramp' : 'lightning',
+        success: false,
+        duration: Date.now() - startTime,
+        errorType,
+      });
+
+      throw error;
+    }
   }
 
   async continueDepositFunds({
@@ -329,6 +373,13 @@ export class SolowalletService {
       pagination,
     });
     const meta = await this.getWalletMeta(userId);
+
+    // Record balance query metric
+    this.solowalletMetricsService.recordBalanceMetric({
+      userId,
+      balanceMsats: meta.currentBalance,
+      activity: 'query',
+    });
 
     return {
       userId,
@@ -1021,13 +1072,38 @@ export class SolowalletService {
         `LNURL withdrawal successfully completed for ID: ${updatedWithdrawal._id}`,
       );
 
-      // Record successful metric
+      // Get the updated balance for this user
+      const { currentBalance } = await this.getWalletMeta(withdrawal.userId);
+
+      // Record metrics via both services
       const duration = Date.now() - startTime;
-      this.metricsService.recordWithdrawalMetric({
+
+      // Legacy LNURL metrics
+      this.lnurlMetricsService.recordWithdrawalMetric({
         success: true,
         duration,
         amountMsats: updatedWithdrawal.amountMsats,
         amountFiat: updatedWithdrawal.amountFiat,
+        paymentHash: invoiceDetails.paymentHash,
+        userId: withdrawal.userId,
+        wallet: 'solowallet',
+      });
+
+      // New standardized solowallet metrics
+      this.solowalletMetricsService.recordWithdrawalMetric({
+        userId: withdrawal.userId,
+        amountMsats: updatedWithdrawal.amountMsats,
+        amountFiat: updatedWithdrawal.amountFiat,
+        method: 'lnurl',
+        success: true,
+        duration,
+      });
+
+      // Also record the new balance
+      this.solowalletMetricsService.recordBalanceMetric({
+        userId: withdrawal.userId,
+        balanceMsats: currentBalance,
+        activity: 'withdrawal',
       });
 
       return {
@@ -1038,9 +1114,21 @@ export class SolowalletService {
     } catch (error) {
       this.logger.error('Failed to process LNURL withdraw callback', error);
 
-      // Record failed metric with error type
+      // Record failed metrics via both services
       const duration = Date.now() - startTime;
-      this.metricsService.recordWithdrawalMetric({
+
+      // Legacy LNURL metrics
+      this.lnurlMetricsService.recordWithdrawalMetric({
+        success: false,
+        duration,
+        errorType: error.message || 'Unknown error',
+      });
+
+      // New standardized solowallet metrics
+      this.solowalletMetricsService.recordWithdrawalMetric({
+        userId: 'unknown', // User ID not available in error state
+        amountMsats: 0,
+        method: 'lnurl',
         success: false,
         duration,
         errorType: error.message || 'Unknown error',
