@@ -1,6 +1,7 @@
 import { of, throwError } from 'rxjs';
 import { ClientGrpc } from '@nestjs/microservices';
 import { Test, TestingModule } from '@nestjs/testing';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   UnauthorizedException,
   InternalServerErrorException,
@@ -16,12 +17,14 @@ import {
 } from '@bitsacco/common';
 import { AuthService } from './auth.service';
 import { TokenService } from './tokens/token.service';
+import { AuthMetricsService } from './metrics/auth.metrics';
 
 describe('AuthService', () => {
   let authService: AuthService;
   let usersService: UsersService;
   let tokenService: TokenService;
   let smsService: SmsServiceClient;
+  let metricsService: AuthMetricsService;
 
   const mockUser: User = {
     id: 'test-user-id',
@@ -71,6 +74,15 @@ describe('AuthService', () => {
       revokeAllUserTokens: jest.fn().mockResolvedValue(true),
     };
 
+    // Create mock for AuthMetricsService
+    const mockMetricsService = {
+      recordLoginMetric: jest.fn(),
+      recordRegisterMetric: jest.fn(),
+      recordVerifyMetric: jest.fn(),
+      getMetrics: jest.fn().mockReturnValue({}),
+      resetMetrics: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -83,8 +95,18 @@ describe('AuthService', () => {
           useValue: mockTokenService,
         },
         {
+          provide: AuthMetricsService,
+          useValue: mockMetricsService,
+        },
+        {
           provide: SMS_SERVICE_NAME,
           useValue: mockSmsGrpc,
+        },
+        {
+          provide: EventEmitter2,
+          useValue: {
+            emit: jest.fn(),
+          },
         },
       ],
     }).compile();
@@ -92,6 +114,7 @@ describe('AuthService', () => {
     authService = module.get<AuthService>(AuthService);
     usersService = module.get<UsersService>(UsersService);
     tokenService = module.get<TokenService>(TokenService);
+    metricsService = module.get<AuthMetricsService>(AuthMetricsService);
   });
 
   it('should be defined', () => {

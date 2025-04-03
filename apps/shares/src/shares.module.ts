@@ -11,6 +11,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SharesController } from './shares.controller';
 import { SharesService } from './shares.service';
 import {
@@ -36,6 +37,7 @@ import { SharesMetricsService } from './shares.metrics';
         REDIS_PORT: Joi.number().required(),
       }),
     }),
+    EventEmitterModule.forRoot(),
     ClientsModule.registerAsync([
       {
         name: EVENTS_SERVICE_BUS,

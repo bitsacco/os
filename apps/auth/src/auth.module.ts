@@ -4,6 +4,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
   DatabaseModule,
   LoggerModule,
@@ -19,6 +20,8 @@ import {
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { TokenService } from './tokens/token.service';
+import { AuthMetricsService } from './metrics/auth.metrics';
+import { TokenMetricsService } from './tokens/token.metrics';
 
 @Module({
   imports: [
@@ -64,15 +67,20 @@ import { TokenService } from './tokens/token.service';
       { name: TokenDocument.name, schema: TokenSchema },
     ]),
     LoggerModule,
+    EventEmitterModule.forRoot(),
   ],
   controllers: [AuthController],
   providers: [
+    AuthMetricsService,
+    TokenMetricsService,
     AuthService,
     UsersRepository,
     UsersService,
     ConfigService,
     TokenRepository,
     TokenService,
+    AuthMetricsService,
+    TokenMetricsService,
   ],
 })
 export class AuthModule {}
