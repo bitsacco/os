@@ -41,6 +41,7 @@ import {
   ChamaWalletTx,
   parseTransactionStatus,
   WalletTxEvent,
+  LnurlMetricsService,
 } from '@bitsacco/common';
 import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -64,6 +65,7 @@ export class ChamaWalletService {
     private readonly wallet: ChamaWalletRepository,
     private readonly fedimintService: FedimintService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly metricsService: LnurlMetricsService,
     @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
     @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
     private readonly chamas: ChamasService,
@@ -930,7 +932,7 @@ export class ChamaWalletService {
   }
 
   @OnEvent(fedimint_receive_success)
-  private async handleSuccessfulReceive({
+  async handleSuccessfulReceive({
     context,
     operationId,
   }: FedimintReceiveSuccessEvent) {
@@ -1072,6 +1074,9 @@ export class ChamaWalletService {
   ): Promise<{ success: boolean; message: string; txId?: string }> {
     this.logger.log(`Processing chama LNURL withdraw callback with k1: ${k1}`);
 
+    // Start timing the operation for metrics
+    const startTime = Date.now();
+
     try {
       // 1. Find the pending withdrawal record using the k1 value
       const withdrawal = await this.wallet.findOne({
@@ -1121,6 +1126,15 @@ export class ChamaWalletService {
         `Chama LNURL withdrawal successfully completed for ID: ${updatedWithdrawal._id}`,
       );
 
+      // Record successful metric
+      const duration = Date.now() - startTime;
+      this.metricsService.recordWithdrawalMetric({
+        success: true,
+        duration,
+        amountMsats: updatedWithdrawal.amountMsats,
+        amountFiat: updatedWithdrawal.amountFiat,
+      });
+
       return {
         success: true,
         message: 'Withdrawal successful',
@@ -1131,6 +1145,14 @@ export class ChamaWalletService {
         'Failed to process chama LNURL withdraw callback',
         error,
       );
+
+      // Record failed metric with error type
+      const duration = Date.now() - startTime;
+      this.metricsService.recordWithdrawalMetric({
+        success: false,
+        duration,
+        errorType: error.message || 'Unknown error',
+      });
 
       return {
         success: false,

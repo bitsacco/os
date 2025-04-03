@@ -14,6 +14,7 @@ import {
   EVENTS_SERVICE_BUS,
   FedimintService,
   LoggerModule,
+  LnurlMetricsService,
   SMS_SERVICE_NAME,
   SWAP_SERVICE_NAME,
   UsersDocument,
@@ -144,6 +145,7 @@ import { ChamaController } from './chama.controller';
     UsersService,
     UsersRepository,
     FedimintService,
+    LnurlMetricsService,
   ],
 })
 export class ChamaModule {}
