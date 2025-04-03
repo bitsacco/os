@@ -2,14 +2,15 @@ import { Module, DynamicModule } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { LnurlMetricsService } from './lnurl-metrics.service';
 import { OperationMetricsService } from './metrics.service';
+import { CoreMetricsService } from './core.metrics';
 
 /**
  * Base monitoring module with core metrics services
  */
 @Module({
   imports: [EventEmitterModule.forRoot()],
-  providers: [LnurlMetricsService],
-  exports: [LnurlMetricsService],
+  providers: [LnurlMetricsService, CoreMetricsService],
+  exports: [LnurlMetricsService, CoreMetricsService],
 })
 export class MonitoringModule {
   /**

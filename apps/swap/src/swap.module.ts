@@ -12,11 +12,13 @@ import {
   EVENTS_SERVICE_BUS,
   FedimintService,
   LoggerModule,
+  MonitoringModule,
 } from '@bitsacco/common';
 import { SwapController } from './swap.controller';
 import { SwapService } from './swap.service';
 import { FxService } from './fx/fx.service';
 import { IntasendService } from './intasend/intasend.service';
+import { SwapMetricsService } from './metrics/swap.metrics';
 import {
   MpesaOfframpSwapRepository,
   MpesaOfframpSwapDocument,
@@ -90,6 +92,7 @@ import {
       delimiter: '.',
       verboseMemoryLeak: true,
     }),
+    MonitoringModule.forFeature([SwapMetricsService]),
   ],
   controllers: [SwapController],
   providers: [
@@ -100,6 +103,7 @@ import {
     FedimintService,
     MpesaOfframpSwapRepository,
     MpesaOnrampSwapRepository,
+    SwapMetricsService,
   ],
 })
 export class SwapModule {}

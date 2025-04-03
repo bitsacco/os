@@ -15,6 +15,7 @@ import {
   AuthTokenPayload,
   UsersService,
 } from '@bitsacco/common';
+import { TokenMetricsService } from './token.metrics';
 
 @Injectable()
 export class TokenService {
@@ -25,6 +26,7 @@ export class TokenService {
     private readonly jwtService: JwtService,
     private readonly tokenRepository: TokenRepository,
     private readonly usersService: UsersService,
+    private readonly metricsService: TokenMetricsService,
   ) {
     // Schedule a periodic cleanup of expired tokens
     this.scheduleTokenCleanup();
@@ -65,28 +67,78 @@ export class TokenService {
   }
 
   async generateTokens(user: User): Promise<TokenResponse> {
-    const accessToken = this.createAuthToken(user);
-    const refreshToken = await this.createRefreshToken(user.id);
+    const startTime = Date.now();
+    
+    try {
+      const accessToken = this.createAuthToken(user);
+      const refreshToken = await this.createRefreshToken(user.id);
+      
+      // Record successful token issue metric
+      this.metricsService.recordTokenOperationMetric({
+        userId: user.id,
+        operation: 'issue',
+        success: true,
+        duration: Date.now() - startTime,
+      });
 
-    return {
-      accessToken,
-      refreshToken,
-    };
+      return {
+        accessToken,
+        refreshToken,
+      };
+    } catch (e) {
+      // Record failed token issue metric
+      this.metricsService.recordTokenOperationMetric({
+        userId: user.id,
+        operation: 'issue',
+        success: false,
+        duration: Date.now() - startTime,
+        errorType: e.name || 'unknown_error',
+      });
+      
+      throw e;
+    }
   }
 
   async verifyAccessToken(token: string): Promise<AuthTokenPayload> {
+    const startTime = Date.now();
+    let userId: string | undefined;
+    
     try {
-      return this.jwtService.verify<AuthTokenPayload>(token);
+      const payload = this.jwtService.verify<AuthTokenPayload>(token);
+      userId = payload.user.id;
+      
+      // Record successful token verification metric
+      this.metricsService.recordTokenOperationMetric({
+        userId,
+        operation: 'verify',
+        success: true,
+        duration: Date.now() - startTime,
+      });
+      
+      return payload;
     } catch (error) {
+      // Record failed token verification metric
+      this.metricsService.recordTokenOperationMetric({
+        userId,
+        operation: 'verify',
+        success: false,
+        duration: Date.now() - startTime,
+        errorType: error.name || 'unknown_error',
+      });
+      
       this.logger.error(`Access token verification failed: ${error.message}`);
       throw new UnauthorizedException('Invalid access token');
     }
   }
 
   async refreshTokens(refreshToken: string): Promise<TokenResponse> {
+    const startTime = Date.now();
+    let userId: string | undefined;
+    
     try {
       // Verify the refresh token signature
       const payload = this.jwtService.verify<RefreshTokenPayload>(refreshToken);
+      userId = payload.userId;
 
       // Find the token in database
       const tokenDoc = await this.tokenRepository.findByTokenId(
@@ -94,6 +146,15 @@ export class TokenService {
       );
 
       if (!tokenDoc || tokenDoc.revoked || tokenDoc.expires < new Date()) {
+        // Record failed token refresh metric
+        this.metricsService.recordTokenOperationMetric({
+          userId,
+          operation: 'refresh',
+          success: false,
+          duration: Date.now() - startTime,
+          errorType: 'invalid_token',
+        });
+        
         throw new UnauthorizedException('Invalid refresh token');
       }
 
@@ -105,6 +166,15 @@ export class TokenService {
       try {
         user = await this.usersService.findUser({ id: payload.userId });
       } catch (error) {
+        // Record failed token refresh metric
+        this.metricsService.recordTokenOperationMetric({
+          userId,
+          operation: 'refresh',
+          success: false,
+          duration: Date.now() - startTime,
+          errorType: 'user_not_found',
+        });
+        
         this.logger.error(
           `User not found during token refresh: ${error.message}`,
         );
@@ -115,37 +185,99 @@ export class TokenService {
       const accessToken = this.createAuthToken(user);
       const newRefreshToken = await this.createRefreshToken(user.id);
 
+      // Record successful token refresh metric
+      this.metricsService.recordTokenOperationMetric({
+        userId,
+        operation: 'refresh',
+        success: true,
+        duration: Date.now() - startTime,
+      });
+
       return {
         accessToken,
         refreshToken: newRefreshToken,
       };
     } catch (error) {
+      // Record failed token refresh metric if not already recorded
+      if (error.name !== 'UnauthorizedException' && error.name !== 'NotFoundException') {
+        this.metricsService.recordTokenOperationMetric({
+          userId,
+          operation: 'refresh',
+          success: false,
+          duration: Date.now() - startTime,
+          errorType: error.name || 'unknown_error',
+        });
+      }
+      
       this.logger.error(`Error refreshing tokens: ${error.message}`);
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
 
   async revokeToken(refreshToken: string): Promise<boolean> {
+    const startTime = Date.now();
+    let userId: string | undefined;
+    
     try {
       // First try to verify the token
-      const { tokenId } =
+      const { tokenId, userId: uid } =
         this.jwtService.verify<RefreshTokenPayload>(refreshToken);
+      userId = uid;
 
       // Check if the token exists in the database and is not already revoked
       const tokenDoc = await this.tokenRepository.findByTokenId(tokenId);
       if (!tokenDoc) {
         this.logger.warn(`Token with ID ${tokenId} not found in database`);
+        
+        // Record failed token revocation
+        this.metricsService.recordTokenOperationMetric({
+          userId,
+          operation: 'revoke',
+          success: false,
+          duration: Date.now() - startTime,
+          errorType: 'token_not_found',
+        });
+        
         return false;
       }
 
       if (tokenDoc.revoked) {
         this.logger.warn(`Token with ID ${tokenId} was already revoked`);
+        
+        // Record successful token revocation (already revoked)
+        this.metricsService.recordTokenOperationMetric({
+          userId,
+          operation: 'revoke',
+          success: true,
+          duration: Date.now() - startTime,
+        });
+        
         return true; // Already revoked, so consider it a success
       }
 
       // Revoke the token
-      return this.tokenRepository.revokeToken(tokenId);
+      const result = await this.tokenRepository.revokeToken(tokenId);
+      
+      // Record token revocation result
+      this.metricsService.recordTokenOperationMetric({
+        userId,
+        operation: 'revoke',
+        success: result,
+        duration: Date.now() - startTime,
+        errorType: result ? undefined : 'revocation_failed',
+      });
+      
+      return result;
     } catch (error) {
+      // Record failed token revocation
+      this.metricsService.recordTokenOperationMetric({
+        userId,
+        operation: 'revoke',
+        success: false,
+        duration: Date.now() - startTime,
+        errorType: error.name || 'unknown_error',
+      });
+      
       this.logger.error(`Error revoking token: ${error.message}`);
       // We return false instead of throwing an exception to make logout
       // more robust - we don't want to prevent users from logging out

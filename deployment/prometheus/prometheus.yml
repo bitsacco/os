@@ -1,0 +1,68 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  scrape_timeout: 10s
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+# Load rules for alerting
+rule_files:
+  - "alert_rules.yml"
+
+# A scrape configuration containing endpoints to scrape
+scrape_configs:
+  - job_name: "prometheus"
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # API gateway as a single metrics endpoint for all services
+  - job_name: "api_gateway"
+    scrape_interval: 10s
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ["api:4000"]
+    honor_labels: true  # Preserve original service labels from federated metrics
+      
+  - job_name: "node_exporter"
+    scrape_interval: 15s
+    metrics_path: /metrics
+    scheme: http
+    static_configs:
+      - targets: ["node_exporter:9100"]
+      
+  # Keep individual service configurations commented for reference
+  # These are now federated through the API gateway
+  # - job_name: "shares"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   scheme: http
+  #   static_configs:
+  #     - targets: ["shares:4070"]
+  #   
+  # - job_name: "chama"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   scheme: http
+  #   static_configs:
+  #     - targets: ["chama:4090"]
+  #   
+  # - job_name: "solowallet"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   scheme: http
+  #   static_configs:
+  #     - targets: ["solowallet:4080"]
+  #   
+  # - job_name: "swap"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   scheme: http
+  #   static_configs:
+  #     - targets: ["swap:4040"]

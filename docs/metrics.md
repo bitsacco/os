@@ -1,72 +1,244 @@
-# Bitsacco Metrics and Monitoring Guide
+# Bitsacco OS Metrics
 
-This document provides a comprehensive guide to the metrics collected across Bitsacco services, their meanings, and how to use them for monitoring and alerting.
+This document describes the metrics collected by the Bitsacco OS platform and how to use them.
 
-## Metrics Naming Convention
+## Table of Contents
 
-Metrics in Bitsacco follow a standardized naming convention:
+- [Overview](#overview)
+- [Metric Types](#metric-types)
+- [Naming Conventions](#naming-conventions)
+- [Standard Metrics](#standard-metrics)
+- [Service-Specific Metrics](#service-specific-metrics)
+  - [Authentication Metrics](#authentication-metrics)
+  - [LNURL Metrics](#lnurl-metrics)
+  - [Swap Metrics](#swap-metrics)
+  - [Shares Metrics](#shares-metrics)
+  - [Core Metrics](#core-metrics)
+- [Adding New Metrics](#adding-new-metrics)
+- [Metric Collection and Visualization](#metric-collection-and-visualization)
+
+## Overview
+
+Bitsacco OS uses OpenTelemetry for metrics collection with Prometheus as the storage backend and Grafana for visualization. Metrics are federated through the API Gateway, which exposes a `/metrics` endpoint that collects metrics from all services.
+
+## Metric Types
+
+Bitsacco OS collects the following types of metrics:
+
+1. **Counters**: Monotonically increasing values that track the number of occurrences of an event.
+   - Examples: Number of login attempts, number of transactions, error counts.
+
+2. **Histograms**: Record distribution of values, such as request durations or transaction amounts.
+   - Examples: API request durations, transaction amounts.
+
+3. **Gauges**: Values that can increase and decrease over time.
+   - Examples: Current number of active users, current memory usage.
+
+4. **Observables**: Lazy measurements collected only when scraped.
+   - Examples: Resource utilization, exchange rates.
+
+## Naming Conventions
+
+Metric names follow a hierarchical structure:
 
 ```
-<service>.<entity>.<operation>.<result>
+service.entity.operation.result
 ```
 
-Example: `shares.subscription.total` represents the total count of share subscriptions.
+Where:
+- `service`: The microservice generating the metric (e.g., auth, swap, shares)
+- `entity`: The entity being tracked (e.g., login, token, transaction)
+- `operation`: The specific operation (e.g., total, success, failure)
+- `result`: The outcome or aspect being measured (e.g., count, duration)
 
-## Standard Metric Types
+Examples:
+- `auth.login.total` - Total login attempts
+- `swap.onramp.amount_kes` - Distribution of onramp amounts in KES
+- `core.database.duration` - Duration of database operations
 
-- **Counters**: Used for values that only increase (e.g., request count, error count)
-- **Histograms**: Used for measuring distributions of values (e.g., duration, size)
-- **Gauges**: Used for values that can increase and decrease (e.g., current connections)
+## Standard Metrics
 
-## Core Service Metrics
+All services implement a standard set of operational metrics:
+
+- `service.operation.total` - Total number of operations
+- `service.operation.success` - Number of successful operations
+- `service.operation.failure` - Number of failed operations
+- `service.operation.duration` - Duration of operations in milliseconds
+
+## Service-Specific Metrics
+
+### Authentication Metrics
+
+#### Login Metrics
+- `auth.login.attempts` - Total login attempts
+- `auth.login.successful` - Successful logins
+- `auth.login.failed` - Failed logins
+- `auth.login.by_type` - Login attempts by authentication type (phone, npub)
+- `auth.login.by_type.duration` - Login duration by authentication type
+
+#### Registration Metrics
+- `auth.register.attempts` - Total registration attempts
+- `auth.register.successful` - Successful registrations
+- `auth.register.failed` - Failed registrations
+- `auth.register.by_type` - Registration attempts by authentication type
+- `auth.register.by_type.duration` - Registration duration by authentication type
+
+#### Verification Metrics
+- `auth.verify.attempts` - Total verification attempts
+- `auth.verify.successful` - Successful verifications
+- `auth.verify.failed` - Failed verifications
+- `auth.verify.by_method` - Verification attempts by method (sms, nostr)
+- `auth.verify.by_method.duration` - Verification duration by method
+
+#### Token Metrics
+- `auth.token.operations` - Token operations by operation type (issue, refresh, verify, revoke)
+- `auth.token.issued` - Tokens issued
+- `auth.token.refreshed` - Tokens refreshed
+- `auth.token.verified` - Tokens verified
+- `auth.token.revoked` - Tokens revoked
+- `auth.token.failed` - Failed token operations
+- `auth.token.operations.duration` - Token operation duration
 
 ### LNURL Metrics
 
-| Metric Name | Type | Description | Labels |
-|-------------|------|-------------|--------|
-| `lnurl.withdrawal.total` | Counter | Total number of LNURL withdrawal attempts | - |
-| `lnurl.withdrawal.success` | Counter | Number of successful LNURL withdrawals | - |
-| `lnurl.withdrawal.failure` | Counter | Number of failed LNURL withdrawals | `errorType` |
-| `lnurl.withdrawal.duration` | Histogram | Duration of LNURL withdrawal operations in milliseconds | `success`, `operation` |
-| `lnurl.withdrawal.amount.msats` | Counter | Total amount withdrawn in millisatoshis | - |
-| `lnurl.withdrawal.amount.fiat` | Counter | Total amount withdrawn in fiat currency (KES) | - |
-| `lnurl.withdrawal.amount` | Histogram | Distribution of withdrawal amounts in millisatoshis | - |
+#### Withdrawal Metrics
+- `lnurl.withdrawal.total` - Total number of LNURL withdrawals
+- `lnurl.withdrawal.success` - Successful withdrawals
+- `lnurl.withdrawal.failure` - Failed withdrawals
+- `lnurl.withdrawal.amount.msats` - Total amount withdrawn in millisatoshis
+- `lnurl.withdrawal.amount.fiat` - Total amount withdrawn in fiat equivalent
+- `lnurl.withdrawal.duration` - Duration of withdrawal operations
+
+### Swap Metrics
+
+#### Onramp Metrics (KES → BTC)
+- `swap.onramp.count` - Number of onramp transactions
+- `swap.onramp.amount_kes` - Distribution of onramp amounts in KES
+- `swap.onramp.amount_sats` - Distribution of onramp amounts in satoshis
+- `swap.onramp.duration` - Duration of onramp transactions
+
+#### Offramp Metrics (BTC → KES)
+- `swap.offramp.count` - Number of offramp transactions
+- `swap.offramp.amount_kes` - Distribution of offramp amounts in KES
+- `swap.offramp.amount_sats` - Distribution of offramp amounts in satoshis
+- `swap.offramp.duration` - Duration of offramp transactions
+
+#### Quote Metrics
+- `swap.quote.count` - Number of quote requests
+- `swap.quote.duration` - Duration of quote operations
+
+#### FX Rate Metrics
+- `swap.fx.update` - Number of FX rate updates
+- `swap.fx.buy_rate` - Current buy rate (KES/BTC)
+- `swap.fx.sell_rate` - Current sell rate (KES/BTC)
 
 ### Shares Metrics
 
-| Metric Name | Type | Description | Labels |
-|-------------|------|-------------|--------|
-| `shares.subscriptions.total` | Counter | Total number of share subscription attempts | `userId`, `offerId` |
-| `shares.subscriptions.successful` | Counter | Number of successful share subscriptions | `userId`, `offerId` |
-| `shares.subscriptions.failed` | Counter | Number of failed share subscriptions | `userId`, `offerId`, `errorType` |
-| `shares.subscriptions.duration` | Histogram | Duration of share subscription operations in milliseconds | `userId`, `offerId`, `success` |
-| `shares.transfers.total` | Counter | Total number of share transfer attempts | `fromUserId`, `toUserId` |
-| `shares.transfers.successful` | Counter | Number of successful share transfers | `fromUserId`, `toUserId` |
-| `shares.transfers.failed` | Counter | Number of failed share transfers | `fromUserId`, `toUserId`, `errorType` |
-| `shares.transfers.duration` | Histogram | Duration of share transfer operations in milliseconds | `fromUserId`, `toUserId`, `success` |
-| `shares.quantity` | Histogram | Quantity of shares in transactions | `operation`, `userId`, `offerId` |
-| `shares.ownership.percentage` | Histogram | Percentage of total shares owned by users | `userId`, `quantity` |
-| `shares.ownership.limit_warnings` | Counter | Number of times users have attempted to exceed ownership limits | `userId` |
+#### Shares Transaction Metrics
+- `shares.transaction.total` - Total number of share transactions
+- `shares.transaction.success` - Successful share transactions
+- `shares.transaction.failure` - Failed share transactions
+- `shares.transaction.duration` - Duration of share transactions
 
-## Infrastructure Metrics
+#### Shares Subscription Metrics
+- `shares.subscriptions.total` - Total number of share subscription attempts
+- `shares.subscriptions.successful` - Successful share subscriptions
+- `shares.subscriptions.failed` - Failed share subscriptions
+- `shares.subscriptions.duration` - Duration of share subscription operations
 
-| Metric Name | Type | Description | Labels |
-|-------------|------|-------------|--------|
-| `api_gateway.requests_total` | Counter | Total number of requests processed by the API gateway | `method`, `path`, `status` |
-| `api_gateway.errors_total` | Counter | Total number of errors encountered by the API gateway | `method`, `path`, `error` |
-| `http.requests` | Counter | Count of HTTP requests | `service` |
-| `errors` | Counter | Count of errors | `service`, `type` |
-| `http.request.duration` | Histogram | HTTP request duration in milliseconds | `service`, `method`, `path` |
+#### Shares Transfer Metrics
+- `shares.transfers.total` - Total number of share transfer attempts
+- `shares.transfers.successful` - Successful share transfers
+- `shares.transfers.failed` - Failed share transfers
+- `shares.transfers.duration` - Duration of share transfer operations
+- `shares.quantity` - Quantity of shares in transactions
+- `shares.ownership.percentage` - Percentage of total shares owned by users
 
-## Using Metrics for Monitoring
+### Core Metrics
 
-### Grafana Dashboards
+#### Database Metrics
+- `core.database.operations` - Number of database operations
+- `core.database.duration` - Duration of database operations
+- `core.database.errors` - Number of database errors
 
-Grafana dashboards are available for visualizing metrics:
+#### API Metrics
+- `core.api.requests` - Number of API requests
+- `core.api.duration` - Duration of API requests
+- `core.api.errors` - Number of API errors
 
-- **Shares Dashboard**: `/grafana/dashboards/shares-dashboard.json`
-- **API Gateway Dashboard**: (coming soon)
-- **System Dashboard**: (coming soon)
+#### gRPC Metrics
+- `core.grpc.requests` - Number of gRPC requests
+- `core.grpc.duration` - Duration of gRPC requests
+- `core.grpc.errors` - Number of gRPC errors
+
+#### Resource Metrics
+- `core.resources.cpu_usage` - CPU usage percentage
+- `core.resources.memory_usage` - Memory usage in megabytes
+- `core.resources.disk_usage` - Disk usage percentage
+- `core.resources.network_rx` - Network receive rate in bytes per second
+- `core.resources.network_tx` - Network transmit rate in bytes per second
+
+## Adding New Metrics
+
+To add new metrics to an existing service:
+
+1. Use the standard `MetricsService` or `OperationMetricsService` as a base class
+2. Initialize your metrics in the constructor or `onModuleInit` lifecycle hook
+3. Create methods to record specific metrics
+4. Register your metrics service in your module using `MonitoringModule.forFeature([YourMetricsService])`
+
+Example:
+
+```typescript
+@Injectable()
+export class UserMetricsService extends OperationMetricsService {
+  private userActivityCounter!: Counter;
+  
+  constructor(private eventEmitter: EventEmitter2) {
+    super('users', 'activity');
+    this.initializeMetrics();
+  }
+  
+  private initializeMetrics() {
+    this.userActivityCounter = this.createCounter('users.activity.count', {
+      description: 'User activity count',
+    });
+  }
+  
+  recordUserActivity(userId: string, activityType: string) {
+    this.userActivityCounter.add(1, { userId, activityType });
+    
+    this.recordOperationMetric({
+      operation: activityType,
+      success: true,
+      duration: 0,
+      labels: { userId },
+    });
+  }
+}
+```
+
+Registration:
+
+```typescript
+@Module({
+  imports: [
+    MonitoringModule.forFeature([UserMetricsService]),
+  ],
+  providers: [UserMetricsService],
+})
+export class UsersModule {}
+```
+
+## Metric Collection and Visualization
+
+Metrics are exposed via the `/metrics` endpoint on each service and collected by Prometheus. The Prometheus server is configured to scrape metrics from all services at regular intervals.
+
+Grafana dashboards visualize the collected metrics with customizable panels and alerts. Default dashboards are provided for key services and can be extended for specific monitoring needs.
+
+To access the metrics:
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000 (default credentials: admin/admin)
 
 ### Key Performance Indicators (KPIs)
 
@@ -78,37 +250,4 @@ Grafana dashboards are available for visualizing metrics:
 
 - **High Error Rate**: Alert when error rate exceeds 5% over 5 minutes
 - **High Latency**: Alert when p95 latency exceeds defined thresholds
-- **Ownership Limits**: Alert when users approach the 20% ownership limit
-
-## Adding New Metrics
-
-To add new metrics to a service:
-
-1. Extend the `OperationMetricsService` class
-2. Initialize standard metrics in the constructor
-3. Add custom metrics as needed
-4. Update this documentation with new metrics
-
-Example:
-
-```typescript
-@Injectable()
-export class MyServiceMetrics extends OperationMetricsService {
-  constructor() {
-    super('myservice', 'operation');
-    
-    // Add custom metrics
-    this.createCounter('myservice.custom.metric', {
-      description: 'Custom metric description',
-    });
-  }
-  
-  // Add custom methods for recording metrics
-}
-```
-
-## Troubleshooting
-
-- **Missing Metrics**: Ensure service is properly initializing OpenTelemetry
-- **No Data in Grafana**: Check Prometheus targets are up and being scraped
-- **Inconsistent Labels**: Ensure consistent labeling across metric calls
+- **Resource Utilization**: Alert when CPU or memory usage exceeds thresholds

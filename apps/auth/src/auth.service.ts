@@ -21,6 +21,7 @@ import {
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { TokenService } from './tokens/token.service';
+import { AuthLoginMetric, AuthMetricsService, AuthRegisterMetric, AuthVerifyMetric } from './metrics/auth.metrics';
 
 @Injectable()
 export class AuthService {
@@ -30,6 +31,7 @@ export class AuthService {
   constructor(
     private readonly userService: UsersService,
     private readonly tokenService: TokenService,
+    private readonly metricsService: AuthMetricsService,
     @Inject(SMS_SERVICE_NAME) private readonly smsGrpc: ClientGrpc,
   ) {
     this.logger.debug('AuthService initialized');
@@ -39,23 +41,56 @@ export class AuthService {
   }
 
   async loginUser(req: LoginUserRequestDto): Promise<AuthResponse> {
+    const startTime = Date.now();
+    const authType = req.phone ? 'phone' : (req.npub ? 'npub' : 'unknown');
+    
     try {
       const { user, authorized } = await this.userService.validateUser(req);
 
       if (authorized) {
         const { accessToken, refreshToken } =
           await this.tokenService.generateTokens(user);
+          
+        // Record successful login metric
+        this.metricsService.recordLoginMetric({
+          userId: user.id,
+          success: true,
+          duration: Date.now() - startTime,
+          authType,
+        });
+          
         return { user, accessToken, refreshToken };
       }
+      
+      // Record unsuccessful login (not authorized)
+      this.metricsService.recordLoginMetric({
+        userId: user.id,
+        success: false,
+        duration: Date.now() - startTime,
+        authType,
+        errorType: 'not_authorized',
+      });
 
       return { user };
     } catch (e) {
+      // Record failed login metric
+      this.metricsService.recordLoginMetric({
+        userId: undefined,
+        success: false,
+        duration: Date.now() - startTime,
+        authType,
+        errorType: e.name || 'unknown_error',
+      });
+      
       this.logger.error(e);
       throw new UnauthorizedException('Invalid credentials');
     }
   }
 
   async registerUser(req: RegisterUserRequestDto): Promise<AuthResponse> {
+    const startTime = Date.now();
+    const authType = req.phone ? 'phone' : (req.npub ? 'npub' : 'unknown');
+    
     try {
       const { user, authorized, otp } =
         await this.userService.registerUser(req);
@@ -63,27 +98,76 @@ export class AuthService {
       if (!authorized) {
         await this.sendOtp(otp, req.phone, req.npub);
       }
+      
+      // Record successful registration metric
+      this.metricsService.recordRegisterMetric({
+        userId: user.id,
+        success: true,
+        duration: Date.now() - startTime,
+        authType,
+      });
 
       return { user };
     } catch (e) {
+      // Record failed registration metric
+      this.metricsService.recordRegisterMetric({
+        userId: undefined,
+        success: false,
+        duration: Date.now() - startTime,
+        authType,
+        errorType: e.name || 'unknown_error',
+      });
+      
       this.logger.error(e);
       throw new InternalServerErrorException('Register user failed');
     }
   }
 
   async verifyUser(req: VerifyUserRequestDto): Promise<AuthResponse> {
+    const startTime = Date.now();
+    const authType = req.phone ? 'phone' : (req.npub ? 'npub' : 'unknown');
+    const method = req.phone ? 'sms' : 'nostr';
+    
     try {
       const auth = await this.userService.verifyUser(req);
 
       if (isPreUserAuth(auth)) {
         await this.sendOtp(auth.otp, req.phone, req.npub);
+        
+        // Record verification (partially successful - needs another OTP)
+        this.metricsService.recordVerifyMetric({
+          userId: auth.user.id,
+          success: false,
+          duration: Date.now() - startTime,
+          method,
+          errorType: 'requires_additional_verification',
+        });
+        
         return { user: auth.user };
       }
 
       const { accessToken, refreshToken } =
         await this.tokenService.generateTokens(auth.user);
+        
+      // Record successful verification
+      this.metricsService.recordVerifyMetric({
+        userId: auth.user.id,
+        success: true,
+        duration: Date.now() - startTime,
+        method,
+      });
+        
       return { user: auth.user, accessToken, refreshToken };
     } catch (e) {
+      // Record failed verification
+      this.metricsService.recordVerifyMetric({
+        userId: undefined,
+        success: false,
+        duration: Date.now() - startTime,
+        method,
+        errorType: e.name || 'unknown_error',
+      });
+      
       this.logger.error(e);
       throw new UnauthorizedException('Invalid credentials');
     }
