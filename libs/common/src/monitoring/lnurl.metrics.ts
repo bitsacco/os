@@ -1,41 +1,42 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Counter, Histogram } from '@opentelemetry/api';
 import { OperationMetricsService } from './metrics.service';
 
-export interface LnurlMetric {
+/**
+ * Interface for metrics related to LNURL withdrawal operations
+ */
+export interface LnurlWithdrawalMetric {
+  userId?: string;
   success: boolean;
   duration: number;
   errorType?: string;
   amountMsats?: number;
   amountFiat?: number;
+  paymentHash?: string;
+  wallet?: string;
 }
 
 export const LNURL_WITHDRAW_METRIC = 'lnurl:withdraw';
 
 /**
  * Service for collecting metrics related to LNURL operations
- * Uses OpenTelemetry for metrics collection and supports Prometheus
+ * Fully integrated with OpenTelemetry for metrics collection
  */
 @Injectable()
 export class LnurlMetricsService extends OperationMetricsService {
-  // Additional counters specific to LNURL operations
+  protected readonly logger = new Logger(LnurlMetricsService.name);
+
+  // Withdrawal amount counters
   private withdrawAmountMsatsCounter!: Counter;
   private withdrawAmountFiatCounter!: Counter;
 
-  // Additional histograms
-  private withdrawAmountHistogram!: Histogram;
+  // Withdrawal amount histograms
+  private withdrawAmountMsatsHistogram!: Histogram;
+  private withdrawAmountFiatHistogram!: Histogram;
 
-  // Keep the in-memory metrics for backward compatibility
-  private metrics = {
-    totalWithdraws: 0,
-    successfulWithdraws: 0,
-    failedWithdraws: 0,
-    averageDuration: 0,
-    errorTypes: {} as Record<string, number>,
-    totalWithdrawAmountMsats: 0,
-    totalWithdrawAmountFiat: 0,
-  };
+  // Withdrawal by wallet counter
+  private withdrawByWalletCounter!: Counter;
 
   constructor(private eventEmitter: EventEmitter2) {
     super('lnurl', 'withdrawal');
@@ -43,10 +44,10 @@ export class LnurlMetricsService extends OperationMetricsService {
   }
 
   /**
-   * Initialize LNURL-specific metrics
+   * Initialize LNURL-specific metrics using OpenTelemetry
    */
   private initializeMetrics(): void {
-    // Create additional counter for tracking withdrawal amounts
+    // Amount counters for tracking total amounts
     this.withdrawAmountMsatsCounter = this.createCounter(
       'lnurl.withdrawal.amount.msats',
       {
@@ -63,97 +64,111 @@ export class LnurlMetricsService extends OperationMetricsService {
       },
     );
 
-    // Create histogram for withdrawal amounts
-    this.withdrawAmountHistogram = this.createHistogram(
-      'lnurl.withdrawal.amount',
+    // Histograms for distribution of withdrawal amounts
+    this.withdrawAmountMsatsHistogram = this.createHistogram(
+      'lnurl.withdrawal.amount_msats',
       {
-        description: 'Distribution of withdrawal amounts',
+        description: 'Distribution of withdrawal amounts in millisatoshis',
         unit: 'msats',
+      },
+    );
+
+    this.withdrawAmountFiatHistogram = this.createHistogram(
+      'lnurl.withdrawal.amount_fiat',
+      {
+        description: 'Distribution of withdrawal amounts in fiat currency',
+        unit: 'KES',
+      },
+    );
+
+    // Counter for tracking withdrawals by wallet
+    this.withdrawByWalletCounter = this.createCounter(
+      'lnurl.withdrawal.by_wallet',
+      {
+        description: 'Number of withdrawals by wallet type',
       },
     );
   }
 
   /**
-   * Record a metric for an LNURL withdrawal
-   * @param metric The metric data to record
+   * Record comprehensive metrics for an LNURL withdrawal operation
+   * Uses OpenTelemetry for complete metrics collection
+   *
+   * @param metric The withdrawal metric data to record
    */
-  recordWithdrawalMetric(metric: LnurlMetric): void {
-    // Update in-memory metrics for backward compatibility
-    this.metrics.totalWithdraws++;
+  recordWithdrawalMetric(metric: LnurlWithdrawalMetric): void {
+    // Performance measurement
+    const startTime = performance.now();
 
-    // Record to OpenTelemetry metrics
-    this.recordOperationMetric({
-      operation: 'withdrawal',
-      success: metric.success,
-      duration: metric.duration,
-      errorType: metric.errorType,
-    });
+    try {
+      // 1. Record using the standard OperationMetricsService pattern
+      this.recordOperationMetric({
+        operation: 'withdrawal',
+        success: metric.success,
+        duration: metric.duration,
+        errorType: metric.errorType,
+        labels: {
+          userId: metric.userId || 'anonymous',
+          paymentHash: metric.paymentHash || 'unknown',
+          wallet: metric.wallet || 'unknown',
+        },
+      });
 
-    // Track withdrawal amounts
-    if (metric.success) {
-      this.metrics.successfulWithdraws++;
+      // 2. Record specific LNURL metrics with OpenTelemetry
 
+      // Track withdrawal amounts
       if (metric.amountMsats) {
-        this.metrics.totalWithdrawAmountMsats += metric.amountMsats;
-        this.withdrawAmountMsatsCounter.add(metric.amountMsats);
-        this.withdrawAmountHistogram.record(metric.amountMsats);
+        // Record to counter (total sum)
+        this.withdrawAmountMsatsCounter.add(metric.amountMsats, {
+          success: String(metric.success),
+          wallet: metric.wallet || 'unknown',
+          userId: metric.userId || 'anonymous',
+        });
+
+        // Record to histogram (distribution)
+        this.withdrawAmountMsatsHistogram.record(metric.amountMsats, {
+          success: String(metric.success),
+          wallet: metric.wallet || 'unknown',
+        });
       }
 
       if (metric.amountFiat) {
-        this.metrics.totalWithdrawAmountFiat += metric.amountFiat;
-        this.withdrawAmountFiatCounter.add(metric.amountFiat);
-      }
-    } else {
-      this.metrics.failedWithdraws++;
+        // Record to counter (total sum)
+        this.withdrawAmountFiatCounter.add(metric.amountFiat, {
+          success: String(metric.success),
+          wallet: metric.wallet || 'unknown',
+          userId: metric.userId || 'anonymous',
+        });
 
-      // Track error types
-      if (metric.errorType) {
-        this.metrics.errorTypes[metric.errorType] =
-          (this.metrics.errorTypes[metric.errorType] || 0) + 1;
+        // Record to histogram (distribution)
+        this.withdrawAmountFiatHistogram.record(metric.amountFiat, {
+          success: String(metric.success),
+          wallet: metric.wallet || 'unknown',
+        });
       }
+
+      // Track withdrawals by wallet
+      if (metric.wallet) {
+        this.withdrawByWalletCounter.add(1, {
+          success: String(metric.success),
+          wallet: metric.wallet,
+          userId: metric.userId || 'anonymous',
+        });
+      }
+
+      // 3. Emit event for potential subscribers
+      this.eventEmitter.emit(LNURL_WITHDRAW_METRIC, {
+        ...metric,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      this.logger.error(`Error recording LNURL withdrawal metric: ${error}`);
+    } finally {
+      // Log metric recording performance in debug mode
+      const endTime = performance.now();
+      this.logger.debug(
+        `Recorded LNURL withdrawal metric in ${endTime - startTime}ms`,
+      );
     }
-
-    // Update average duration for in-memory metrics
-    this.metrics.averageDuration =
-      (this.metrics.averageDuration * (this.metrics.totalWithdraws - 1) +
-        metric.duration) /
-      this.metrics.totalWithdraws;
-
-    // Emit event for potential subscribers
-    this.eventEmitter.emit(LNURL_WITHDRAW_METRIC, {
-      ...metric,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  /**
-   * Get the current metrics summary from in-memory metrics
-   * @returns Object containing current metrics
-   */
-  getMetrics() {
-    return {
-      ...this.metrics,
-      successRate:
-        this.metrics.totalWithdraws > 0
-          ? (this.metrics.successfulWithdraws / this.metrics.totalWithdraws) *
-            100
-          : 0,
-    };
-  }
-
-  /**
-   * Reset in-memory metrics to zero
-   * Note: OpenTelemetry metrics cannot be reset as they are cumulative
-   */
-  resetMetrics(): void {
-    this.metrics = {
-      totalWithdraws: 0,
-      successfulWithdraws: 0,
-      failedWithdraws: 0,
-      averageDuration: 0,
-      errorTypes: {},
-      totalWithdrawAmountMsats: 0,
-      totalWithdrawAmountFiat: 0,
-    };
   }
 }
