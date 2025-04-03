@@ -9,8 +9,8 @@ import {
   DatabaseModule,
   EVENTS_SERVICE_BUS,
   FedimintService,
+  LnurlMetricsService,
   LoggerModule,
-  MonitoringModule,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
 import {
@@ -45,7 +45,6 @@ import { SolowalletService } from './solowallet.service';
     ]),
     LoggerModule,
     HttpModule,
-    MonitoringModule,
     ClientsModule.registerAsync([
       {
         name: SWAP_SERVICE_NAME,
@@ -83,6 +82,7 @@ import { SolowalletService } from './solowallet.service';
     ConfigService,
     SolowalletRepository,
     FedimintService,
+    LnurlMetricsService,
   ],
 })
 export class SolowalletModule {}
