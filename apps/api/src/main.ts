@@ -5,6 +5,9 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import {
   HttpLoggingInterceptor,
   initializeOpenTelemetry,
+  CoreMetricsService,
+  HttpMetricsInterceptor,
+  MetricsIntegration,
 } from '@bitsacco/common';
 import { ApiModule } from './api.module';
 
@@ -44,6 +47,13 @@ async function bootstrap() {
 
   setupCORS(app);
 
+  // Get CoreMetricsService instance from DI container
+  const metricsService = app.get(CoreMetricsService);
+
+  // Apply metrics interceptors for automatic collection
+  MetricsIntegration.applyHttpMetricsInterceptor(app, metricsService);
+  
+  // Apply logging interceptor after metrics to avoid interference
   app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
   // Register shutdown hooks for OpenTelemetry

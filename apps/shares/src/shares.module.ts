@@ -6,6 +6,8 @@ import {
   EVENTS_SERVICE_BUS,
   LnurlMetricsService,
   LoggerModule,
+  CoreMetricsService,
+  DatabaseMetricsMiddleware,
 } from '@bitsacco/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
@@ -21,6 +23,7 @@ import {
   SharesOfferSchema,
   SharesRepository,
   SharesSchema,
+  applySharesMetricsMiddleware,
 } from './db';
 import { SharesMetricsService } from './shares.metrics';
 
@@ -71,9 +74,23 @@ import { SharesMetricsService } from './shares.metrics';
       inject: [ConfigService],
     }),
     DatabaseModule,
-    DatabaseModule.forFeature([
-      { name: SharesOfferDocument.name, schema: SharesOfferSchema },
-      { name: SharesDocument.name, schema: SharesSchema },
+    DatabaseModule.forFeatureAsync([
+      {
+        name: SharesOfferDocument.name,
+        useFactory: (databaseMetricsMiddleware: DatabaseMetricsMiddleware) => {
+          databaseMetricsMiddleware.applyMiddleware(SharesOfferSchema, 'sharesOffer');
+          return SharesOfferSchema;
+        },
+        inject: [DatabaseMetricsMiddleware],
+      },
+      {
+        name: SharesDocument.name,
+        useFactory: (databaseMetricsMiddleware: DatabaseMetricsMiddleware) => {
+          applySharesMetricsMiddleware(databaseMetricsMiddleware);
+          return SharesSchema;
+        },
+        inject: [DatabaseMetricsMiddleware],
+      },
     ]),
     LoggerModule,
   ],
@@ -85,6 +102,8 @@ import { SharesMetricsService } from './shares.metrics';
     SharesOfferRepository,
     SharesRepository,
     SharesMetricsService,
+    CoreMetricsService,
+    DatabaseMetricsMiddleware,
   ],
 })
 export class SharesModule {}

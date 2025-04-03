@@ -51,6 +51,13 @@ export class SharesDocument extends AbstractDocument {
 
 export const SharesSchema = SchemaFactory.createForClass(SharesDocument);
 
+// Function to apply database metrics middleware
+export function applySharesMetricsMiddleware(
+  middleware: any, // DatabaseMetricsMiddleware
+) {
+  middleware.applyMiddleware(SharesSchema, 'shares');
+}
+
 export function toSharesTx(doc: SharesDocument): SharesTx {
   let status: SharesTxStatus;
 
