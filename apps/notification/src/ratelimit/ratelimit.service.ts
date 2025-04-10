@@ -118,7 +118,8 @@ export class RateLimitService {
     const now = Date.now();
 
     // Get or create the user's rate limit data
-    const userKey = `${userId}:${NotificationChannel[channel]}`;
+    // Using fixed channel number for the key to ensure consistency even if enum names change
+    const userKey = `${userId}:${channel}`;
     if (!this.userLimits.has(userId)) {
       this.userLimits.set(userId, new Map());
     }
