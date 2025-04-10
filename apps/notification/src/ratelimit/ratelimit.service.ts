@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { NotificationChannel, NotificationImportance } from '@bitsacco/common';
 
 export interface RateLimitConfig {
@@ -30,7 +30,7 @@ export interface RateLimitResult {
  * Rate limiting service for notifications
  */
 @Injectable()
-export class RateLimitService {
+export class RateLimitService implements OnModuleDestroy {
   private readonly logger = new Logger(RateLimitService.name);
 
   // Default settings for rate limiting
@@ -50,6 +50,9 @@ export class RateLimitService {
   private channelConfigs: Map<NotificationChannel, RateLimitConfig> = new Map();
   private importanceConfigs: Map<NotificationImportance, RateLimitConfig> =
     new Map();
+
+  // Store the cleanup interval ID for proper resource cleanup
+  private cleanupIntervalId: any = null;
 
   constructor() {
     // Set default configurations for different channels
@@ -260,7 +263,7 @@ export class RateLimitService {
   private startCleanupTask(): void {
     const cleanupInterval = 60 * 60 * 1000; // 1 hour
 
-    setInterval(() => {
+    this.cleanupIntervalId = setInterval(() => {
       const now = Date.now();
       let expiredEntries = 0;
 
@@ -285,5 +288,16 @@ export class RateLimitService {
         );
       }
     }, cleanupInterval);
+  }
+
+  /**
+   * Clean up resources when the module is destroyed to prevent memory leaks
+   */
+  onModuleDestroy(): void {
+    if (this.cleanupIntervalId) {
+      clearInterval(this.cleanupIntervalId);
+      this.logger.log('Rate limit cleanup interval cleared');
+      this.cleanupIntervalId = null;
+    }
   }
 }

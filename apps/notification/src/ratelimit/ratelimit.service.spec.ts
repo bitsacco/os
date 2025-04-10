@@ -1,4 +1,5 @@
 import { Test } from '@nestjs/testing';
+import { Logger } from '@nestjs/common';
 import { RateLimitService } from './ratelimit.service';
 import { NotificationChannel, NotificationImportance } from '@bitsacco/common';
 
@@ -217,6 +218,27 @@ describe('RateLimitService', () => {
 
       // Should have higher limits than the channel config
       expect(result.remaining).toBeGreaterThan(2);
+    });
+  });
+
+  describe('resource cleanup', () => {
+    it('should clear interval on module destroy', () => {
+      // Spy on clearInterval and logger
+      const clearIntervalSpy = jest.spyOn(global, 'clearInterval');
+      const loggerSpy = jest.spyOn(Logger.prototype, 'log');
+
+      // Trigger onModuleDestroy
+      service.onModuleDestroy();
+
+      // Check if clearInterval was called
+      expect(clearIntervalSpy).toHaveBeenCalled();
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'Rate limit cleanup interval cleared',
+      );
+
+      // Restore original implementations
+      clearIntervalSpy.mockRestore();
+      loggerSpy.mockRestore();
     });
   });
 });
