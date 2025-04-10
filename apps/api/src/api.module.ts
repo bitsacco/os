@@ -37,6 +37,7 @@ import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
 import { ChamasController } from './chamas/chamas.controller';
 import { NotificationGateway } from './notifications/notification.gateway';
+import { NotificationController } from './notifications/notification.controller';
 
 // Controller for federated metrics
 @Controller('metrics')
@@ -262,6 +263,7 @@ export class MetricsController {
     SolowalletController,
     ChamasController,
     MetricsController,
+    NotificationController,
   ],
   providers: [
     UsersRepository,
