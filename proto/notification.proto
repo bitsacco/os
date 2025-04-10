@@ -1,0 +1,119 @@
+syntax = "proto3";
+
+package notification;
+
+import "lib.proto";
+
+service NotificationService {
+  // Subscription Management
+  rpc GetPreferences (GetPreferencesRequest) returns (GetPreferencesResponse);
+  rpc UpdatePreferences (UpdatePreferencesRequest) returns (lib.Empty);
+  
+  // Notification CRUD
+  rpc GetNotifications (GetNotificationsRequest) returns (GetNotificationsResponse);
+  rpc MarkAsRead (MarkAsReadRequest) returns (lib.Empty);
+  
+  // Delivery
+  rpc SendNotification (SendNotificationRequest) returns (SendNotificationResponse);
+}
+
+// Notification Types and Channels
+enum NotificationChannel {
+  IN_APP = 0;
+  SMS = 1;
+  NOSTR = 2;
+}
+
+enum NotificationImportance {
+  LOW = 0;
+  MEDIUM = 1;
+  HIGH = 2;
+  CRITICAL = 3;
+}
+
+enum NotificationTopic {
+  TRANSACTION = 0;
+  SECURITY = 1;
+  SYSTEM = 2;
+  SWAP = 3;
+  SHARES = 4;
+  CHAMA = 5;
+}
+
+// Subscription Management
+message GetPreferencesRequest {
+  string user_id = 1;
+}
+
+message ChannelPreference {
+  NotificationChannel channel = 1;
+  bool enabled = 2;
+}
+
+message TopicPreference {
+  NotificationTopic topic = 1;
+  bool enabled = 2;
+  repeated NotificationChannel channels = 3;
+}
+
+message GetPreferencesResponse {
+  string user_id = 1;
+  repeated ChannelPreference channels = 2;
+  repeated TopicPreference topics = 3;
+}
+
+message UpdatePreferencesRequest {
+  string user_id = 1;
+  repeated ChannelPreference channels = 2;
+  repeated TopicPreference topics = 3;
+}
+
+// Notification CRUD
+message GetNotificationsRequest {
+  string user_id = 1;
+  bool unread_only = 2;
+  lib.PaginatedRequest pagination = 3;
+  repeated NotificationTopic topics = 4;
+}
+
+message Notification {
+  string id = 1;
+  string user_id = 2;
+  string title = 3;
+  string body = 4;
+  NotificationTopic topic = 5;
+  bool read = 6;
+  int64 created_at = 7;
+  map<string, string> metadata = 8;
+  NotificationImportance importance = 9;
+}
+
+message GetNotificationsResponse {
+  repeated Notification notifications = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 size = 4;
+}
+
+message MarkAsReadRequest {
+  string user_id = 1;
+  // Empty means mark all as read
+  repeated string notification_ids = 2;
+}
+
+// Delivery
+message SendNotificationRequest {
+  string user_id = 1;
+  string title = 2;
+  string body = 3;
+  NotificationTopic topic = 4;
+  map<string, string> metadata = 5;
+  NotificationImportance importance = 6;
+  // Empty means use user preferences
+  repeated NotificationChannel channels = 7;
+}
+
+message SendNotificationResponse {
+  string notification_id = 1;
+  repeated NotificationChannel delivered_to = 2;
+}

@@ -1,3 +1,5 @@
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
+import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   AggregateChamaTransactionsDto,
@@ -43,14 +45,12 @@ import {
   WalletTxEvent,
   LnurlMetricsService,
 } from '@bitsacco/common';
-import { ChamaMetricsService } from '../chamas/chama.metrics';
-import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
-import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
   ChamaMemberContact,
   ChamaMessageService,
 } from '../chamas/chamas.messaging';
 import { ChamasService } from '../chamas/chamas.service';
+import { ChamaMetricsService } from '../chamas/chama.metrics';
 import {
   ChamaWalletDocument,
   ChamaWalletRepository,

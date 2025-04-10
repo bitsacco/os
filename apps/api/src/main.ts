@@ -1,12 +1,13 @@
 import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import {
   HttpLoggingInterceptor,
   initializeOpenTelemetry,
 } from '@bitsacco/common';
 import { ApiModule } from './api.module';
+import { setupWebSocketDocs } from './websocket-docs.plugin';
 
 const API_VERSION = 'v1';
 
@@ -40,9 +41,14 @@ async function bootstrap() {
   //   defaultVersion: API_VERSION,
   // });
 
-  setupOpenAPI(app, 'docs');
-
+  // Set up CORS
   setupCORS(app);
+
+  // Configure WebSocket adapter to use the same HTTP server
+  app.useWebSocketAdapter(new IoAdapter(app));
+
+  // Add WebSocket documentation to Swagger UI (includes REST docs)
+  setupWebSocketDocs(app, 'docs');
 
   app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
@@ -64,26 +70,7 @@ async function bootstrap() {
 
 bootstrap();
 
-function setupOpenAPI(app: INestApplication, path: string) {
-  const options = new DocumentBuilder()
-    .setTitle('Bitsacco API')
-    .setDescription('endpoints for bitsacco api')
-    .setVersion(API_VERSION)
-    .setContact('Bitsacco', 'https://bitsacco.com', 'os@bitsacco.com')
-    .setLicense(
-      'MIT',
-      'https://github.com/bitsacco/opensource/blob/main/LICENSE',
-    )
-    .addBearerAuth()
-    .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, options);
-
-  SwaggerModule.setup(path, app, documentFactory, {
-    useGlobalPrefix: true,
-    jsonDocumentUrl: `${path}/json`,
-    yamlDocumentUrl: `${path}/yaml`,
-  });
-}
+// OpenAPI setup has been moved to websocket-docs.plugin.ts
 
 function setupCORS(app: INestApplication) {
   const allowedOrigins = [

@@ -1,6 +1,6 @@
+import { Model } from 'mongoose';
 import { getModelToken } from '@nestjs/mongoose';
 import { Test, TestingModule } from '@nestjs/testing';
-import { Model } from 'mongoose';
 import { TokenRepository } from './token.repository';
 import { TokenDocument } from './token.schema';
 
@@ -12,10 +12,13 @@ describe('TokenRepository', () => {
   const mockUserId = 'test-user-id';
 
   const mockTokenDoc = {
+    _id: 'someId',
     userId: mockUserId,
     tokenId: mockTokenId,
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     revoked: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   beforeEach(async () => {

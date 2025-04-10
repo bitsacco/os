@@ -7,6 +7,7 @@ export * from './proto/sms';
 export * from './proto/shares';
 export * from './proto/solowallet';
 export * from './proto/chamawallet';
+export * from './proto/notification';
 export * from './api';
 export * from './validator';
 export * from './fedimint';

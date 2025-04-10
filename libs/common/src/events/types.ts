@@ -1,4 +1,9 @@
-import { TransactionStatus } from '../types';
+import {
+  NotificationChannel,
+  NotificationImportance,
+  NotificationTopic,
+  TransactionStatus,
+} from '../types';
 
 // Scenarios in which onramp swap can receive payment
 export enum FedimintContext {
@@ -48,4 +53,28 @@ export interface WalletTxEvent {
   context: WalletTxContext;
   payload: WalletTxEventPayload;
   error?: string;
+}
+
+// Notification Events
+export interface NotificationCreatedEvent {
+  notificationId: string;
+  userId: string;
+  title: string;
+  body: string;
+  topic: NotificationTopic;
+  importance: NotificationImportance;
+  channels: NotificationChannel[];
+  metadata?: Record<string, string>;
+}
+
+export interface NotificationDeliveredEvent {
+  notificationId: string;
+  userId: string;
+  channel: NotificationChannel;
+  success: boolean;
+  error?: string;
+}
+
+export interface NotificationPreferencesUpdatedEvent {
+  userId: string;
 }

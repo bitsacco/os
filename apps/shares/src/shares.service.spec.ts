@@ -1,8 +1,8 @@
 import {
   WalletTxContext,
-  WalletTxEvent,
   SharesTxStatus,
   TransactionStatus,
+  type WalletTxEvent,
 } from '@bitsacco/common';
 import { Test } from '@nestjs/testing';
 import { SharesService } from './shares.service';

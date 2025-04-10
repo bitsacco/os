@@ -13,6 +13,7 @@ services:
       - ./apps/api/.dev.env
     ports:
       - '4000:4000'
+      - '3001:3001'  # WebSocket port
     volumes:
       - .:/usr/src/app
   auth:
@@ -167,6 +168,30 @@ services:
       - '4090:4090'
     volumes:
       - .:/usr/src/app
+      
+  notification:
+    container_name: notification
+    build:
+      context: .
+      dockerfile: ./apps/notification/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev notification"
+      ]
+    restart: always
+    depends_on:
+      - mongodb
+      - redis
+      - sms
+      - nostr
+    env_file:
+      - ./apps/notification/.dev.env
+    ports:
+      - '5000:5000'
+    volumes:
+      - .:/usr/src/app
 
   mongodb:
     image: mongo:7.0-jammy
@@ -238,7 +263,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
       - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
     ports:
-      - '5000:3000'
+      - '3010:3000'
     restart: always
     depends_on:
       - prometheus

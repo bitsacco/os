@@ -48,6 +48,7 @@ export interface ChamaWalletTx {
   reference: string;
   createdAt: string;
   updatedAt?: string | undefined;
+  context?: ChamaTxContext | undefined;
 }
 
 export interface ChamaTxReview {

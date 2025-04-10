@@ -5,7 +5,7 @@ import {
   collection_for_shares,
   EVENTS_SERVICE_BUS,
   FedimintContext,
-  FedimintReceiveSuccessEvent,
+  type FedimintReceiveSuccessEvent,
   FedimintService,
   LnurlMetricsService,
   SWAP_SERVICE_NAME,

@@ -1,3 +1,4 @@
+import axios from 'axios';
 import * as Joi from 'joi';
 import { join } from 'path';
 import { JwtModule } from '@nestjs/jwt';
@@ -24,6 +25,7 @@ import {
   UsersSchema,
   UsersService,
   createMeter,
+  NOTIFICATION_SERVICE_NAME,
 } from '@bitsacco/common';
 import { register } from 'prom-client';
 import { SwapController } from './swap';
@@ -34,7 +36,7 @@ import { SolowalletController } from './solowallet/solowallet.controller';
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
 import { ChamasController } from './chamas/chamas.controller';
-import axios from 'axios';
+import { NotificationGateway } from './notifications/notification.gateway';
 
 // Controller for federated metrics
 @Controller('metrics')
@@ -117,6 +119,7 @@ export class MetricsController {
         SHARES_GRPC_URL: Joi.string().required(),
         SOLOWALLET_GRPC_URL: Joi.string().required(),
         CHAMA_GRPC_URL: Joi.string().required(),
+        NOTIFICATION_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
         DATABASE_URL: Joi.string().required(),
@@ -221,6 +224,18 @@ export class MetricsController {
         inject: [ConfigService],
       },
       {
+        name: NOTIFICATION_SERVICE_NAME,
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.GRPC,
+          options: {
+            package: 'notification',
+            protoPath: join(__dirname, '../../../proto/notification.proto'),
+            url: configService.getOrThrow<string>('NOTIFICATION_GRPC_URL'),
+          },
+        }),
+        inject: [ConfigService],
+      },
+      {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
@@ -254,6 +269,7 @@ export class MetricsController {
     PhoneAuthStategy,
     NpubAuthStategy,
     JwtAuthStrategy,
+    NotificationGateway,
   ],
 })
 export class ApiModule {}
