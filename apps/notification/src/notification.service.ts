@@ -21,8 +21,10 @@ import {
   NotificationChannel,
   NotificationImportance,
   NotificationTopic,
+  extractUserIdFromEvent,
 } from '@bitsacco/common';
 import { NotificationMetrics } from './notification.metrics';
+import { RateLimitService } from './ratelimit';
 import {
   NotificationRepository,
   NotificationPreferencesRepository,
@@ -36,6 +38,7 @@ export class NotificationService {
     private readonly notifications: NotificationRepository,
     private readonly preferences: NotificationPreferencesRepository,
     private readonly metrics: NotificationMetrics,
+    private readonly rateLimitService: RateLimitService,
     @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
     @Inject(SMS_SERVICE_NAME) private readonly smsClient: ClientProxy,
     @Inject(NOSTR_SERVICE_NAME) private readonly nostrClient: ClientProxy,
@@ -208,6 +211,7 @@ export class NotificationService {
         body,
         topic,
         channel,
+        importance,
       ),
     );
 
@@ -280,11 +284,43 @@ export class NotificationService {
     body: string,
     topic: NotificationTopic,
     channel: NotificationChannel,
+    importance: NotificationImportance = NotificationImportance.MEDIUM,
   ): Promise<boolean> {
     const startTime = Date.now();
     let success = false;
+    let errorMessage: string | undefined;
 
     try {
+      // Apply rate limiting
+      const rateLimit = this.rateLimitService.checkRateLimit(
+        userId,
+        channel,
+        importance,
+      );
+
+      // Check if rate limited
+      if (!rateLimit.allowed) {
+        this.logger.warn(
+          `Rate limit exceeded for user ${userId} on channel ${NotificationChannel[channel]}. ` +
+            `Next allowed in ${Math.ceil(rateLimit.retryAfterMs / 1000)} seconds`,
+        );
+
+        errorMessage = `Rate limit exceeded. Retry after ${Math.ceil(rateLimit.retryAfterMs / 1000)} seconds`;
+
+        // For IN_APP notifications, we'll store them anyway but mark them as filtered by rate limit
+        // This ensures the user can still see them in their notification center
+        if (channel === NotificationChannel.IN_APP) {
+          // Mark as delivered with special handling
+          await this.notifications.addDeliveryChannel(notificationId, channel);
+
+          // We consider this a "success" for in-app, so the notification will be stored
+          // but we won't count it as successfully delivered in metrics
+          success = true;
+        }
+
+        return false;
+      }
+
       switch (channel) {
         case NotificationChannel.IN_APP:
           // In-app notifications are stored in DB and don't need additional delivery
@@ -319,6 +355,7 @@ export class NotificationService {
         await this.notifications.addDeliveryChannel(notificationId, channel);
       }
     } catch (error) {
+      errorMessage = error.message || 'Delivery failed';
       this.logger.error(
         `Failed to deliver notification ${notificationId} to channel ${NotificationChannel[channel]}`,
         error.stack,
@@ -337,7 +374,7 @@ export class NotificationService {
       userId,
       channel,
       success,
-      error: success ? undefined : 'Delivery failed',
+      error: success ? undefined : errorMessage || 'Delivery failed',
     });
 
     return success;
@@ -347,17 +384,24 @@ export class NotificationService {
    * Handle Fedimint receive success event
    */
   @OnEvent(fedimint_receive_success)
-  private async handleFedimintSuccess({
-    operationId,
-    context,
-  }: FedimintReceiveSuccessEvent) {
+  private async handleFedimintSuccess(event: FedimintReceiveSuccessEvent) {
+    const { operationId, context } = event;
     this.logger.log(
       `Received fedimint success event for operation: ${operationId}, context: ${context}`,
     );
 
+    // Extract userId using the utility
+    const userId = extractUserIdFromEvent(event);
+    if (!userId) {
+      this.logger.error(
+        `Could not extract valid user ID from Fedimint success event: ${JSON.stringify(event)}`,
+      );
+      return;
+    }
+
     // Create a notification based on the context
     await this.sendNotification(
-      operationId, // Using operationId as userId - will need to be adjusted with actual user ID
+      userId,
       'Payment Received',
       'Your payment has been successfully received',
       NotificationTopic.TRANSACTION,
@@ -370,17 +414,23 @@ export class NotificationService {
    * Handle Fedimint receive failure event
    */
   @OnEvent(fedimint_receive_failure)
-  private async handleFedimintFailure({
-    operationId,
-    context,
-    error,
-  }: FedimintReceiveFailureEvent) {
+  private async handleFedimintFailure(event: FedimintReceiveFailureEvent) {
+    const { operationId, context, error } = event;
     this.logger.log(
       `Received fedimint failure event for operation: ${operationId}, context: ${context}`,
     );
 
+    // Extract userId using the utility
+    const userId = extractUserIdFromEvent(event);
+    if (!userId) {
+      this.logger.error(
+        `Could not extract valid user ID from Fedimint failure event: ${JSON.stringify(event)}`,
+      );
+      return;
+    }
+
     await this.sendNotification(
-      operationId, // Using operationId as userId - will need to be adjusted with actual user ID
+      userId,
       'Payment Failed',
       `Your payment could not be processed: ${error || 'Unknown error'}`,
       NotificationTopic.TRANSACTION,
@@ -393,15 +443,22 @@ export class NotificationService {
    * Handle swap status change event
    */
   @OnEvent(swap_status_change)
-  private async handleSwapStatusChange({
-    context,
-    payload,
-    error,
-  }: SwapStatusChangeEvent) {
+  private async handleSwapStatusChange(event: SwapStatusChangeEvent) {
+    const { context, payload, error } = event;
     const { swapTracker, swapStatus, refundable } = payload;
+
     this.logger.log(
       `Received swap status change event for tracker: ${swapTracker}, status: ${swapStatus}`,
     );
+
+    // Extract userId using the utility
+    const userId = extractUserIdFromEvent(event);
+    if (!userId) {
+      this.logger.error(
+        `Could not extract valid user ID from swap status change event: ${JSON.stringify(event)}`,
+      );
+      return;
+    }
 
     let title = 'Swap Status Update';
     let body = 'Your swap transaction status has changed';
@@ -427,7 +484,7 @@ export class NotificationService {
     }
 
     await this.sendNotification(
-      swapTracker, // Using swapTracker as userId - will need to be adjusted with actual user ID
+      userId,
       title,
       body,
       NotificationTopic.SWAP,
@@ -440,15 +497,22 @@ export class NotificationService {
    * Handle collection for shares event
    */
   @OnEvent(collection_for_shares)
-  private async handleCollectionForShares({
-    context,
-    payload,
-    error,
-  }: WalletTxEvent) {
+  private async handleCollectionForShares(event: WalletTxEvent) {
+    const { context, payload, error } = event;
     const { paymentTracker, paymentStatus } = payload;
+
     this.logger.log(
       `Received collection for shares event for tracker: ${paymentTracker}, status: ${paymentStatus}`,
     );
+
+    // Extract userId using the utility
+    const userId = extractUserIdFromEvent(event);
+    if (!userId) {
+      this.logger.error(
+        `Could not extract valid user ID from collection for shares event: ${JSON.stringify(event)}`,
+      );
+      return;
+    }
 
     let title = 'Shares Collection Update';
     let body = 'Your shares collection status has changed';
@@ -474,7 +538,7 @@ export class NotificationService {
     }
 
     await this.sendNotification(
-      paymentTracker, // Using paymentTracker as userId - will need to be adjusted with actual user ID
+      userId,
       title,
       body,
       NotificationTopic.SHARES,

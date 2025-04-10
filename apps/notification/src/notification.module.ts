@@ -13,6 +13,7 @@ import {
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { NotificationMetrics } from './notification.metrics';
+import { RateLimitService } from './ratelimit';
 import {
   NotificationDocument,
   NotificationRepository,
@@ -90,6 +91,7 @@ import {
     NotificationMetrics,
     NotificationRepository,
     NotificationPreferencesRepository,
+    RateLimitService,
   ],
 })
 export class NotificationModule {}
