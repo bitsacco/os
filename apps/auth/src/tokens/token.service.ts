@@ -28,6 +28,13 @@ export class TokenService {
     private readonly usersService: UsersService,
     private readonly metricsService: TokenMetricsService,
   ) {
+    // Validate JWT secret strength at runtime
+    const jwtSecret = this.configService.get('AUTH_JWT_SECRET');
+    if (!jwtSecret || jwtSecret.length < 32) {
+      this.logger.error('JWT_SECRET is too weak - must be at least 32 characters');
+      throw new Error('JWT_SECRET is too weak - must be at least 32 characters');
+    }
+    
     // Schedule a periodic cleanup of expired tokens
     this.scheduleTokenCleanup();
   }

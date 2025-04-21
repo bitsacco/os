@@ -32,7 +32,7 @@ import { TokenMetricsService } from './tokens/token.metrics';
         AUTH_GRPC_URL: Joi.string().required(),
         SMS_GRPC_URL: Joi.string().required(),
         DATABASE_URL: Joi.string().required(),
-        AUTH_JWT_SECRET: Joi.string().required(),
+        AUTH_JWT_SECRET: Joi.string().min(32).required().description('JWT secret must be at least 32 characters for security'),
         AUTH_JWT_EXPIRATION: Joi.string().required(),
         AUTH_JWT_AUD: Joi.string().required(),
         AUTH_JWT_ISS: Joi.string().required(),
