@@ -367,14 +367,11 @@ describe('AuthService', () => {
     });
 
     it('should throw UnauthorizedException when token is expired', async () => {
-      const tokenPayload = {
-        user: mockUser,
-        expires: new Date(Date.now() - 1000), // Expired
-      };
-
+      // The JWT service now handles token expiration automatically
+      // So we should simulate a rejection from the verifyAccessToken method
       jest
         .spyOn(tokenService, 'verifyAccessToken')
-        .mockResolvedValue(tokenPayload);
+        .mockRejectedValue(new UnauthorizedException('Token expired'));
 
       const authRequest = {
         accessToken: 'expired-token',
@@ -388,7 +385,6 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException when user no longer exists', async () => {
       const tokenPayload = {
         user: mockUser,
-        expires: new Date(Date.now() + 3600 * 1000),
       };
 
       jest

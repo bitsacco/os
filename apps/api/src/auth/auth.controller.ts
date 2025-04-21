@@ -135,12 +135,12 @@ export class AuthController {
       ({ accessToken, refreshToken }) => {
         // Set the new access token cookie
         const accessTokenPayload =
-          this.jwtService.decode<AuthTokenPayload>(accessToken);
+          this.jwtService.decode<AuthTokenPayload & { exp: number }>(accessToken);
         res.cookie('Authentication', accessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
-          expires: new Date(accessTokenPayload.expires),
+          expires: new Date(accessTokenPayload.exp * 1000), // exp is in seconds since epoch
         });
 
         // Set the new refresh token cookie
@@ -198,8 +198,9 @@ export class AuthController {
     return firstValueFrom(auth).then(
       ({ user, accessToken, refreshToken }: AuthResponse) => {
         if (accessToken) {
-          const { user: jwtUser, expires } =
-            this.jwtService.decode<AuthTokenPayload>(accessToken);
+          const decodedToken =
+            this.jwtService.decode<AuthTokenPayload & { exp: number }>(accessToken);
+          const { user: jwtUser, exp } = decodedToken;
 
           if (user.id !== jwtUser.id) {
             this.logger.error('Invalid auth response');
@@ -210,7 +211,7 @@ export class AuthController {
             httpOnly: true,
             secure: true,
             sameSite: 'none',
-            expires: new Date(expires),
+            expires: new Date(exp * 1000), // exp is in seconds since epoch
           });
 
           if (refreshToken) {

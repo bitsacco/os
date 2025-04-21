@@ -19,9 +19,15 @@ export class UsersDocument extends AbstractDocument {
   @Prop({
     type: String,
     required: true,
-    default: '000000',
   })
-  otp: string;
+  otpHash: string;
+  
+  @Prop({
+    type: Date,
+    required: true,
+    default: () => new Date(Date.now() + 10 * 60 * 1000), // 10 minute expiry
+  })
+  otpExpiry: Date;
 
   @Prop({
     type: Object,

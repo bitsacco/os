@@ -31,7 +31,12 @@ describe('JwtAuthGuard', () => {
 
   const mockTokenPayload: AuthTokenPayload = {
     user: mockUser,
-    expires: new Date(Date.now() + 3600 * 1000), // 1 hour from now
+    exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
+    iat: Math.floor(Date.now() / 1000),
+    nbf: Math.floor(Date.now() / 1000),
+    iss: 'bitsacco-auth-service',
+    aud: 'bitsacco-api',
+    jti: 'test-token-id'
   };
 
   const mockJwt = 'valid.jwt.token';
@@ -88,7 +93,7 @@ describe('JwtAuthGuard', () => {
   });
 
   describe('canActivate', () => {
-    it('should return false when no token is present', () => {
+    it('should throw UnauthorizedException when no token is present', () => {
       const mockContext = {
         switchToHttp: () => ({
           getRequest: () => ({
@@ -99,8 +104,7 @@ describe('JwtAuthGuard', () => {
         getHandler: () => ({}),
       };
 
-      const result = guard.canActivate(mockContext as any);
-      expect(result).toBe(false);
+      expect(() => guard.canActivate(mockContext as any)).toThrow(UnauthorizedException);
     });
 
     it('should return true for public routes', () => {
@@ -143,10 +147,15 @@ describe('JwtAuthGuard', () => {
       expect(mockRequest.user).toEqual(mockUser);
     });
 
-    it('should return false when token is expired', () => {
+    it('should throw UnauthorizedException when token is expired', () => {
       jest.spyOn(jwtService, 'verify').mockReturnValueOnce({
         user: mockUser,
-        expires: new Date(Date.now() - 1000), // Expired
+        exp: Math.floor(Date.now() / 1000) - 60, // Expired
+        iat: Math.floor(Date.now() / 1000) - 3600,
+        nbf: Math.floor(Date.now() / 1000) - 3600,
+        iss: 'bitsacco-auth-service',
+        aud: 'bitsacco-api',
+        jti: 'test-token-id'
       });
 
       const mockContext = {
@@ -158,8 +167,7 @@ describe('JwtAuthGuard', () => {
         getHandler: () => ({}),
       };
 
-      const result = guard.canActivate(mockContext as any);
-      expect(result).toBe(false);
+      expect(() => guard.canActivate(mockContext as any)).toThrow(UnauthorizedException);
     });
 
     it('should fallback to gRPC auth service when local verification fails', async () => {
@@ -196,7 +204,7 @@ describe('JwtAuthGuard', () => {
       expect(mockRequest.user).toEqual(mockUser);
     });
 
-    it('should handle auth service errors', async () => {
+    it('should throw UnauthorizedException when auth service fails', async () => {
       jest.spyOn(jwtService, 'verify').mockImplementation(() => {
         throw new Error('Invalid token');
       });
@@ -216,12 +224,11 @@ describe('JwtAuthGuard', () => {
 
       const result = guard.canActivate(mockContext as any) as any;
 
-      // Extract value from observable
-      const value = await new Promise((resolve) => {
-        result.subscribe(resolve);
-      });
-
-      expect(value).toBe(false);
+      await expect(
+        new Promise((resolve, reject) => {
+          result.subscribe(resolve, reject);
+        })
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 });
@@ -279,7 +286,12 @@ describe('JwtAuthStrategy', () => {
       // Create auth token payload for this test
       const authTokenPayload = {
         user: mockUser,
-        expires: new Date(Date.now() + 3600 * 1000),
+        exp: Math.floor(Date.now() / 1000) + 3600, // Optional in interface, but included in tests
+        iat: Math.floor(Date.now() / 1000),
+        nbf: Math.floor(Date.now() / 1000),
+        iss: 'bitsacco-auth-service',
+        aud: 'bitsacco-api',
+        jti: 'test-token-id'
       };
 
       const result = await strategy.validate(authTokenPayload);
@@ -292,7 +304,12 @@ describe('JwtAuthStrategy', () => {
       // Create auth token payload for this test
       const authTokenPayload = {
         user: mockUser,
-        expires: new Date(Date.now() + 3600 * 1000),
+        exp: Math.floor(Date.now() / 1000) + 3600, // Optional in interface, but included in tests
+        iat: Math.floor(Date.now() / 1000),
+        nbf: Math.floor(Date.now() / 1000),
+        iss: 'bitsacco-auth-service',
+        aud: 'bitsacco-api',
+        jti: 'test-token-id'
       };
 
       jest

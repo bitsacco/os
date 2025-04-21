@@ -32,17 +32,19 @@ import { TokenMetricsService } from './tokens/token.metrics';
         AUTH_GRPC_URL: Joi.string().required(),
         SMS_GRPC_URL: Joi.string().required(),
         DATABASE_URL: Joi.string().required(),
-        JWT_SECRET: Joi.string().required(),
-        JWT_EXPIRATION: Joi.string().required(),
+        AUTH_JWT_SECRET: Joi.string().required(),
+        AUTH_JWT_EXPIRATION: Joi.string().required(),
+        AUTH_JWT_AUD: Joi.string().required(),
+        AUTH_JWT_ISS: Joi.string().required(),
         REFRESH_TOKEN_EXPIRATION_DAYS: Joi.number().default(7),
         SALT_ROUNDS: Joi.number().required(),
       }),
     }),
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
-        secret: configService.getOrThrow<string>('JWT_SECRET'),
+        secret: configService.getOrThrow<string>('AUTH_JWT_SECRET'),
         signOptions: {
-          expiresIn: `${configService.getOrThrow('JWT_EXPIRATION')}s`,
+          expiresIn: `${configService.getOrThrow('AUTH_JWT_EXPIRATION')}s`,
         },
       }),
       inject: [ConfigService],

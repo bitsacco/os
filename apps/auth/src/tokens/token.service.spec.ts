@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { UnauthorizedException } from '@nestjs/common';
+import { UnauthorizedException, NotFoundException } from '@nestjs/common';
 import {
   TokenRepository,
   RefreshTokenPayload,
@@ -37,13 +37,19 @@ describe('TokenService', () => {
   const mockRefreshPayload: RefreshTokenPayload = {
     userId: mockUser.id,
     tokenId: mockTokenId,
-    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+    exp: Math.floor((Date.now() + 7 * 24 * 60 * 60 * 1000) / 1000), // 7 days from now
+    iat: Math.floor(Date.now() / 1000),
+    jti: mockTokenId,
+    iss: 'bitsacco-auth-service',
+    sub: mockUser.id
   };
 
   const mockTokenDoc: TokenDocument = {
     _id: '',
     userId: mockUser.id,
     tokenId: mockTokenId,
+    tokenFamily: 'token-family-id',
+    previousTokenId: '',
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     revoked: false,
     createdAt: new Date(),
@@ -77,7 +83,7 @@ describe('TokenService', () => {
     const mockConfigService = {
       get: jest.fn().mockImplementation((key, defaultValue) => {
         const config = {
-          JWT_EXPIRATION: 3600,
+          AUTH_JWT_EXPIRATION: 3600,
           REFRESH_TOKEN_EXPIRATION_DAYS: 7,
         };
         return config[key] || defaultValue;
@@ -87,7 +93,11 @@ describe('TokenService', () => {
     const mockTokenRepository = {
       create: jest.fn().mockResolvedValue(mockTokenDoc),
       findByTokenId: jest.fn().mockResolvedValue(mockTokenDoc),
+      find: jest.fn().mockResolvedValue([]),
+      findByFamily: jest.fn().mockResolvedValue([]),
+      getTokenFamily: jest.fn().mockResolvedValue('token-family-id'),
       revokeToken: jest.fn().mockResolvedValue(true),
+      revokeFamily: jest.fn().mockResolvedValue(true),
       revokeAllUserTokens: jest.fn().mockResolvedValue(true),
       cleanupExpiredTokens: jest.fn().mockResolvedValue(5),
     };
@@ -160,6 +170,7 @@ describe('TokenService', () => {
       expect(tokenRepository.create).toHaveBeenCalledWith({
         userId: mockUser.id,
         tokenId: expect.any(String),
+        tokenFamily: expect.any(String),
         expires: expect.any(Date),
         revoked: false,
       });
@@ -233,7 +244,7 @@ describe('TokenService', () => {
 
       await expect(
         tokenService.refreshTokens(mockRefreshToken),
-      ).rejects.toThrow(UnauthorizedException);
+      ).rejects.toThrow(NotFoundException);
     });
   });
 

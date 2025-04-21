@@ -83,11 +83,16 @@ export class UsersService implements IUsersService {
     const pinHash = await argon2.hash(pin);
 
     const otp = generateOTP();
-    this.logger.log(`OTP-${otp}`);
+    const otpHash = await argon2.hash(otp);
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minute expiry
+    
+    // Don't log the OTP for security
+    this.logger.log(`OTP generated for user with phone: ${phone || 'none'}, npub: ${npub || 'none'}`);
 
     const ud = await this.users.create({
       pinHash,
-      otp,
+      otpHash,
+      otpExpiry,
       phone: phone && {
         number: phone,
         verified: false,
@@ -158,28 +163,72 @@ export class UsersService implements IUsersService {
     let ud: UsersDocument = await this.queryUser({ phone, npub });
 
     if (!ud) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Invalid credentials');
     }
 
-    if (!otp) {
+    // Check if OTP has expired
+    if (ud.otpExpiry < new Date()) {
+      // Generate new OTP if expired
+      const newOtp = generateOTP();
+      const otpHash = await argon2.hash(newOtp);
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      
+      this.logger.log(`New OTP generated for user ${ud._id} (previous expired)`);
+      
+      await this.users.findOneAndUpdate(
+        { _id: ud._id },
+        { otpHash, otpExpiry }
+      );
+      
       return {
         user: toUser(ud),
         authorized: false,
-        otp: ud.otp,
+        otp: newOtp,
       };
     }
 
-    if (otp !== ud.otp) {
-      throw new UnauthorizedException('Invalid otp');
+    // If no OTP provided, just return current state with a new OTP
+    if (!otp) {
+      const newOtp = generateOTP();
+      const otpHash = await argon2.hash(newOtp);
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      
+      this.logger.log(`New OTP generated for user ${ud._id}`);
+      
+      await this.users.findOneAndUpdate(
+        { _id: ud._id },
+        { otpHash, otpExpiry }
+      );
+      
+      return {
+        user: toUser(ud),
+        authorized: false,
+        otp: newOtp,
+      };
     }
 
+    // Verify OTP using secure comparison
+    try {
+      const isValidOtp = await argon2.verify(ud.otpHash, otp);
+      if (!isValidOtp) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+    } catch (error) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Generate new OTP for future use
     const newOtp = generateOTP();
-    this.logger.log(`OTP-${newOtp}`);
+    const newOtpHash = await argon2.hash(newOtp);
+    const newOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    
+    this.logger.log(`User ${ud._id} verified successfully`);
 
     ud = await this.users.findOneAndUpdate(
       { _id: ud._id },
       {
-        otp: newOtp,
+        otpHash: newOtpHash,
+        otpExpiry: newOtpExpiry,
         phone: phone &&
           ud.phone && {
             ...ud.phone,
@@ -247,16 +296,30 @@ export class UsersService implements IUsersService {
     const authorized = updatedUser.phone.verified || updatedUser.nostr.verified;
     const user = toUser(updatedUser);
 
-    return authorized
-      ? {
-          user,
-          authorized,
-        }
-      : {
-          user,
-          authorized,
-          otp: updatedUser.otp,
-        };
+    if (authorized) {
+      return {
+        user,
+        authorized,
+      };
+    } else {
+      // Generate a new OTP for verification
+      const newOtp = generateOTP();
+      const otpHash = await argon2.hash(newOtp);
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+      
+      this.logger.log(`New OTP generated for user ${userId} after update`);
+      
+      await this.users.findOneAndUpdate(
+        { _id: userId },
+        { otpHash, otpExpiry }
+      );
+      
+      return {
+        user,
+        authorized: false,
+        otp: newOtp,
+      };
+    }
   }
 
   async listUsers(): Promise<User[]> {

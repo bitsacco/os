@@ -47,7 +47,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
 
     if (!accessToken) {
       this.logger.error('No access token found');
-      return false;
+      throw new UnauthorizedException('Authentication required');
     }
 
     // Check if public route (skipping auth check)
@@ -66,11 +66,12 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
       // Verify token locally first to avoid unnecessary gRPC calls
       const tokenPayload =
         this.jwtService.verify<AuthTokenPayload>(accessToken);
-
-      // Check if token is expired
-      if (new Date(tokenPayload.expires) < new Date()) {
+      
+      // Check if token is expired - using standard JWT exp claim
+      const exp = tokenPayload.exp;
+      if (exp && exp < Math.floor(Date.now() / 1000)) {
         this.logger.warn('Token expired');
-        return false;
+        throw new UnauthorizedException('Token expired');
       }
 
       // Set user in request
@@ -84,12 +85,17 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
 
         if (!hasRole) {
           this.logger.error('User does not have required roles');
-          return false;
+          throw new UnauthorizedException('Insufficient permissions');
         }
       }
 
       return true;
-    } catch (_) {
+    } catch (error) {
+      // If it's already an HTTP exception, just rethrow it
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      
       // If local verification fails, fallback to gRPC auth service validation
       return this.authService
         .authenticate({
@@ -102,7 +108,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
           map(() => true),
           catchError((err) => {
             this.logger.error(`Authentication failed: ${err.message}`);
-            return of(false);
+            throw new UnauthorizedException('Authentication failed');
           }),
         );
     }

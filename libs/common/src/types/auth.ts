@@ -8,13 +8,22 @@ import {
 
 export interface AuthTokenPayload {
   user: User;
-  expires: Date;
+  iat: number;
+  nbf: number;
+  iss: string;
+  aud: string;
+  jti: string;
+  exp?: number; // Optional as it will be added by JWT service
 }
 
 export interface RefreshTokenPayload {
   userId: string;
   tokenId: string;
-  expires: Date;
+  iat: number;
+  jti: string;
+  iss: string;
+  sub: string;
+  exp?: number; // Optional as it will be added by JWT service
 }
 
 export interface TokenResponse {

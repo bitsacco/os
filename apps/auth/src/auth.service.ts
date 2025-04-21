@@ -197,13 +197,11 @@ export class AuthService {
       // We should modify TokenService to add a method for verifying access tokens
       // For now we'll delegate this to the tokenService by adjusting our approach
 
-      // First, verify that the user exists
-      const tokenData = await this.tokenService.verifyAccessToken(accessToken);
-      const { user, expires } = tokenData;
-
-      if (expires < new Date()) {
-        throw new UnauthorizedException('Token expired');
-      }
+      // Verify the token and get the token data
+      const { user} = await this.tokenService.verifyAccessToken(accessToken);
+      
+      // The token expiration is now checked by the JWT service automatically
+      // and the verifyAccessToken method will throw if the token is expired
 
       try {
         await this.userService.findUser({ id: user.id });
