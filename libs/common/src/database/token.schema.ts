@@ -8,10 +8,10 @@ export class TokenDocument extends AbstractDocument {
 
   @Prop({ required: true, unique: true })
   tokenId: string;
-  
+
   @Prop({ required: true })
   tokenFamily: string;
-  
+
   @Prop()
   previousTokenId: string;
 

@@ -31,10 +31,14 @@ export class TokenService {
     // Validate JWT secret strength at runtime
     const jwtSecret = this.configService.get('AUTH_JWT_SECRET');
     if (!jwtSecret || jwtSecret.length < 32) {
-      this.logger.error('JWT_SECRET is too weak - must be at least 32 characters');
-      throw new Error('JWT_SECRET is too weak - must be at least 32 characters');
+      this.logger.error(
+        'JWT_SECRET is too weak - must be at least 32 characters',
+      );
+      throw new Error(
+        'JWT_SECRET is too weak - must be at least 32 characters',
+      );
     }
-    
+
     // Schedule a periodic cleanup of expired tokens
     this.scheduleTokenCleanup();
   }
@@ -141,6 +145,23 @@ export class TokenService {
   async refreshTokens(refreshToken: string): Promise<TokenResponse> {
     const startTime = Date.now();
     let userId: string | undefined;
+    let tokenId: string | undefined;
+
+    // Extract token info for rate limiting
+    try {
+      const decoded = this.jwtService.decode(refreshToken) as {
+        sub?: string;
+        jti?: string;
+      };
+      if (decoded?.sub) {
+        userId = decoded.sub;
+      }
+      if (decoded?.jti) {
+        tokenId = decoded.jti;
+      }
+    } catch (e) {
+      // Continue even if we can't decode - the validation step will reject invalid tokens
+    }
 
     try {
       // Verify the refresh token signature
@@ -155,12 +176,14 @@ export class TokenService {
       if (!tokenDoc) {
         // If token doesn't exist, check if it might be a reused token
         const familyTokens = await this.tokenRepository.findByFamily(tokenId);
-        
+
         if (familyTokens.length > 0) {
           // This suggests token reuse - revoke the entire family
-          this.logger.warn(`Possible refresh token theft detected for user ${userId}`);
+          this.logger.warn(
+            `Possible refresh token theft detected for user ${userId}`,
+          );
           await this.tokenRepository.revokeAllUserTokens(userId);
-          
+
           this.metricsService.recordTokenOperationMetric({
             userId,
             operation: 'refresh',
@@ -168,10 +191,12 @@ export class TokenService {
             duration: Date.now() - startTime,
             errorType: 'token_theft_suspected',
           });
-          
-          throw new UnauthorizedException('Security alert: All sessions have been revoked');
+
+          throw new UnauthorizedException(
+            'Security alert: All sessions have been revoked',
+          );
         }
-        
+
         this.metricsService.recordTokenOperationMetric({
           userId,
           operation: 'refresh',
@@ -179,23 +204,23 @@ export class TokenService {
           duration: Date.now() - startTime,
           errorType: 'token_not_found',
         });
-        
+
         throw new UnauthorizedException('Invalid refresh token');
       }
-      
+
       // Check if token is revoked or expired
       if (tokenDoc.revoked || tokenDoc.expires < new Date()) {
         // Check for token reuse
         const newerFamilyTokens = await this.tokenRepository.find({
           tokenFamily: tokenDoc.tokenFamily,
-          createdAt: { $gt: tokenDoc.createdAt }
+          createdAt: { $gt: tokenDoc.createdAt },
         });
-        
+
         if (newerFamilyTokens.length > 0) {
           // This is likely a reused token
           this.logger.warn(`Refresh token reuse detected for user ${userId}`);
           await this.tokenRepository.revokeFamily(tokenDoc.tokenFamily);
-          
+
           this.metricsService.recordTokenOperationMetric({
             userId,
             operation: 'refresh',
@@ -203,18 +228,20 @@ export class TokenService {
             duration: Date.now() - startTime,
             errorType: 'token_reuse_detected',
           });
-          
-          throw new UnauthorizedException('Security alert: Token reuse detected. All related sessions revoked.');
+
+          throw new UnauthorizedException(
+            'Security alert: Token reuse detected. All related sessions revoked.',
+          );
         }
-        
+
         this.metricsService.recordTokenOperationMetric({
           userId,
           operation: 'refresh',
-          success: false, 
+          success: false,
           duration: Date.now() - startTime,
           errorType: tokenDoc.revoked ? 'token_revoked' : 'token_expired',
         });
-        
+
         throw new UnauthorizedException('Invalid refresh token');
       }
 
@@ -234,7 +261,9 @@ export class TokenService {
           errorType: 'user_not_found',
         });
 
-        this.logger.error(`User not found during token refresh: ${error.message}`);
+        this.logger.error(
+          `User not found during token refresh: ${error.message}`,
+        );
         throw new NotFoundException('User no longer exists');
       }
 
@@ -270,7 +299,8 @@ export class TokenService {
       }
 
       this.logger.error(`Error refreshing tokens: ${error.message}`);
-      throw error instanceof UnauthorizedException || error instanceof NotFoundException
+      throw error instanceof UnauthorizedException ||
+        error instanceof NotFoundException
         ? error
         : new UnauthorizedException('Invalid refresh token');
     }
@@ -354,28 +384,32 @@ export class TokenService {
 
   private createAuthToken(user: User): string {
     const now = Math.floor(Date.now() / 1000);
-    
+
     const payload: AuthTokenPayload = {
       user,
       iat: now,
       nbf: now,
       iss: this.configService.get('AUTH_JWT_ISS', 'bitsacco-auth-service'),
       aud: this.configService.get('AUTH_JWT_AUD', 'bitsacco-api'),
-      jti: uuidv4()
+      jti: uuidv4(),
     };
-    
+
     return this.jwtService.sign(payload);
   }
 
-  private async createRefreshToken(userId: string, prevTokenId?: string): Promise<string> {
+  private async createRefreshToken(
+    userId: string,
+    prevTokenId?: string,
+  ): Promise<string> {
     // Generate a unique token ID
     const tokenId = uuidv4();
-    
+
     // Get or create a token family ID
     let tokenFamily: string;
     if (prevTokenId) {
       // If we're refreshing, try to get the existing family
-      const existingFamily = await this.tokenRepository.getTokenFamily(prevTokenId);
+      const existingFamily =
+        await this.tokenRepository.getTokenFamily(prevTokenId);
       tokenFamily = existingFamily || uuidv4();
     } else {
       // If it's a new token chain, create a new family
@@ -384,7 +418,10 @@ export class TokenService {
 
     // Calculate expiration (longer than access token)
     const expires = new Date();
-    const expirationDays = this.configService.get('REFRESH_TOKEN_EXPIRATION_DAYS', 7);
+    const expirationDays = this.configService.get(
+      'REFRESH_TOKEN_EXPIRATION_DAYS',
+      7,
+    );
     expires.setDate(expires.getDate() + expirationDays);
 
     // Create payload with standard JWT claims
@@ -394,7 +431,7 @@ export class TokenService {
       iat: Math.floor(Date.now() / 1000),
       jti: tokenId,
       iss: this.configService.get('AUTH_JWT_ISS', 'bitsacco-auth-service'),
-      sub: userId
+      sub: userId,
     };
 
     // Store token in database

@@ -18,6 +18,7 @@ import {
 import { AuthService } from './auth.service';
 import { TokenService } from './tokens/token.service';
 import { AuthMetricsService } from './metrics/auth.metrics';
+import { RateLimitService } from './rate-limit/rate-limit.service';
 
 describe('AuthService', () => {
   let authService: AuthService;
@@ -25,6 +26,7 @@ describe('AuthService', () => {
   let tokenService: TokenService;
   let smsService: SmsServiceClient;
   let metricsService: AuthMetricsService;
+  let rateLimitService: RateLimitService;
 
   const mockUser: User = {
     id: 'test-user-id',
@@ -83,6 +85,15 @@ describe('AuthService', () => {
       resetMetrics: jest.fn(),
     };
 
+    // Create mock for RateLimitService
+    const mockRateLimitService = {
+      checkRateLimit: jest.fn().mockImplementation(() => {
+        // Return a successful rate limit result
+        return Promise.resolve();
+      }),
+      resetRateLimit: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
@@ -97,6 +108,10 @@ describe('AuthService', () => {
         {
           provide: AuthMetricsService,
           useValue: mockMetricsService,
+        },
+        {
+          provide: RateLimitService,
+          useValue: mockRateLimitService,
         },
         {
           provide: SMS_SERVICE_NAME,
@@ -115,6 +130,7 @@ describe('AuthService', () => {
     usersService = module.get<UsersService>(UsersService);
     tokenService = module.get<TokenService>(TokenService);
     metricsService = module.get<AuthMetricsService>(AuthMetricsService);
+    rateLimitService = module.get<RateLimitService>(RateLimitService);
   });
 
   it('should be defined', () => {
@@ -141,6 +157,12 @@ describe('AuthService', () => {
         refreshToken: mockTokens.refreshToken,
       });
 
+      expect(rateLimitService.checkRateLimit).toHaveBeenCalledWith(
+        loginRequest.phone,
+      );
+      expect(rateLimitService.resetRateLimit).toHaveBeenCalledWith(
+        loginRequest.phone,
+      );
       expect(usersService.validateUser).toHaveBeenCalledWith(loginRequest);
       expect(tokenService.generateTokens).toHaveBeenCalledWith(mockUser);
     });
@@ -162,6 +184,9 @@ describe('AuthService', () => {
         user: mockUser,
       });
 
+      expect(rateLimitService.checkRateLimit).toHaveBeenCalledWith(
+        loginRequest.phone,
+      );
       expect(usersService.validateUser).toHaveBeenCalledWith(loginRequest);
       expect(tokenService.generateTokens).not.toHaveBeenCalled();
     });
@@ -179,6 +204,32 @@ describe('AuthService', () => {
       await expect(authService.loginUser(loginRequest)).rejects.toThrow(
         UnauthorizedException,
       );
+
+      expect(rateLimitService.checkRateLimit).toHaveBeenCalledWith(
+        loginRequest.phone,
+      );
+    });
+
+    it('should handle rate limiting failure', async () => {
+      jest
+        .spyOn(rateLimitService, 'checkRateLimit')
+        .mockRejectedValue(
+          new UnauthorizedException('Too many authentication attempts'),
+        );
+
+      const loginRequest = {
+        phone: '+1234567890',
+        pin: '1234',
+      };
+
+      await expect(authService.loginUser(loginRequest)).rejects.toThrow(
+        UnauthorizedException,
+      );
+
+      expect(rateLimitService.checkRateLimit).toHaveBeenCalledWith(
+        loginRequest.phone,
+      );
+      expect(usersService.validateUser).not.toHaveBeenCalled();
     });
   });
 
@@ -202,6 +253,9 @@ describe('AuthService', () => {
         user: mockUser,
       });
 
+      expect(rateLimitService.checkRateLimit).toHaveBeenCalledWith(
+        registerRequest.phone,
+      );
       expect(usersService.registerUser).toHaveBeenCalledWith(registerRequest);
       // Should send OTP if not authorized
       expect(smsService.sendSms).toHaveBeenCalled();

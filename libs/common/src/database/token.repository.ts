@@ -18,11 +18,11 @@ export class TokenRepository extends AbstractRepository<TokenDocument> {
   async findByTokenId(tokenId: string): Promise<TokenDocument> {
     return this.findOne({ tokenId });
   }
-  
+
   async findByFamily(tokenFamily: string): Promise<TokenDocument[]> {
     return this.find({ tokenFamily });
   }
-  
+
   async getTokenFamily(tokenId: string): Promise<string | null> {
     const token = await this.findOne({ tokenId });
     return token?.tokenFamily || null;
@@ -32,7 +32,7 @@ export class TokenRepository extends AbstractRepository<TokenDocument> {
     const result = await this.findOneAndUpdate({ tokenId }, { revoked: true });
     return !!result;
   }
-  
+
   async revokeFamily(tokenFamily: string): Promise<boolean> {
     const result = await this.model.updateMany(
       { tokenFamily, revoked: false },

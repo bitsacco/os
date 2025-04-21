@@ -21,7 +21,7 @@ export class UsersDocument extends AbstractDocument {
     required: true,
   })
   otpHash: string;
-  
+
   @Prop({
     type: Date,
     required: true,

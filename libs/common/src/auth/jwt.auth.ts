@@ -66,7 +66,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
       // Verify token locally first to avoid unnecessary gRPC calls
       const tokenPayload =
         this.jwtService.verify<AuthTokenPayload>(accessToken);
-      
+
       // Check if token is expired - using standard JWT exp claim
       const exp = tokenPayload.exp;
       if (exp && exp < Math.floor(Date.now() / 1000)) {
@@ -95,7 +95,7 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      
+
       // If local verification fails, fallback to gRPC auth service validation
       return this.authService
         .authenticate({

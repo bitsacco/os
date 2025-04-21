@@ -41,7 +41,7 @@ describe('TokenService', () => {
     iat: Math.floor(Date.now() / 1000),
     jti: mockTokenId,
     iss: 'bitsacco-auth-service',
-    sub: mockUser.id
+    sub: mockUser.id,
   };
 
   const mockTokenDoc: TokenDocument = {
@@ -83,10 +83,24 @@ describe('TokenService', () => {
     const mockConfigService = {
       get: jest.fn().mockImplementation((key, defaultValue) => {
         const config = {
+          AUTH_JWT_SECRET: 'test-jwt-secret-which-is-at-least-32-chars-long',
           AUTH_JWT_EXPIRATION: 3600,
           REFRESH_TOKEN_EXPIRATION_DAYS: 7,
+          AUTH_JWT_ISSUER: 'bitsacco-auth-service',
+          AUTH_JWT_AUDIENCE: 'bitsacco-api',
         };
         return config[key] || defaultValue;
+      }),
+      getOrThrow: jest.fn().mockImplementation((key) => {
+        const config = {
+          AUTH_JWT_SECRET: 'test-jwt-secret-which-is-at-least-32-chars-long',
+          AUTH_JWT_EXPIRATION: 3600,
+          REFRESH_TOKEN_EXPIRATION_DAYS: 7,
+          AUTH_JWT_ISSUER: 'bitsacco-auth-service',
+          AUTH_JWT_AUDIENCE: 'bitsacco-api',
+        };
+        if (config[key]) return config[key];
+        throw new Error(`Config ${key} not found`);
       }),
     };
 

@@ -27,6 +27,7 @@ import {
   AuthRegisterMetric,
   AuthVerifyMetric,
 } from './metrics/auth.metrics';
+import { RateLimitService } from './rate-limit/rate-limit.service';
 
 @Injectable()
 export class AuthService {
@@ -37,6 +38,7 @@ export class AuthService {
     private readonly userService: UsersService,
     private readonly tokenService: TokenService,
     private readonly metricsService: AuthMetricsService,
+    private readonly rateLimitService: RateLimitService,
     @Inject(SMS_SERVICE_NAME) private readonly smsGrpc: ClientGrpc,
   ) {
     this.logger.debug('AuthService initialized');
@@ -48,6 +50,10 @@ export class AuthService {
   async loginUser(req: LoginUserRequestDto): Promise<AuthResponse> {
     const startTime = Date.now();
     const authType = req.phone ? 'phone' : req.npub ? 'npub' : 'unknown';
+    const identifier = req.phone || req.npub;
+
+    // Check rate limit before processing login attempt
+    await this.rateLimitService.checkRateLimit(identifier);
 
     try {
       const { user, authorized } = await this.userService.validateUser(req);
@@ -55,6 +61,9 @@ export class AuthService {
       if (authorized) {
         const { accessToken, refreshToken } =
           await this.tokenService.generateTokens(user);
+
+        // Reset rate limit counter after successful login
+        this.rateLimitService.resetRateLimit(identifier);
 
         // Record successful login metric
         this.metricsService.recordLoginMetric({
@@ -95,6 +104,10 @@ export class AuthService {
   async registerUser(req: RegisterUserRequestDto): Promise<AuthResponse> {
     const startTime = Date.now();
     const authType = req.phone ? 'phone' : req.npub ? 'npub' : 'unknown';
+    const identifier = req.phone || req.npub;
+
+    // Rate limit registration attempts to prevent enumeration attacks
+    await this.rateLimitService.checkRateLimit(identifier);
 
     try {
       const { user, authorized, otp } =
@@ -132,6 +145,10 @@ export class AuthService {
     const startTime = Date.now();
     const authType = req.phone ? 'phone' : req.npub ? 'npub' : 'unknown';
     const method = req.phone ? 'sms' : 'nostr';
+    const identifier = req.phone || req.npub;
+
+    // Rate limit verification attempts to prevent brute forcing OTPs
+    await this.rateLimitService.checkRateLimit(identifier);
 
     try {
       const auth = await this.userService.verifyUser(req);
@@ -153,6 +170,9 @@ export class AuthService {
 
       const { accessToken, refreshToken } =
         await this.tokenService.generateTokens(auth.user);
+
+      // Reset rate limit counter after successful verification
+      this.rateLimitService.resetRateLimit(identifier);
 
       // Record successful verification
       this.metricsService.recordVerifyMetric({
@@ -198,8 +218,8 @@ export class AuthService {
       // For now we'll delegate this to the tokenService by adjusting our approach
 
       // Verify the token and get the token data
-      const { user} = await this.tokenService.verifyAccessToken(accessToken);
-      
+      const { user } = await this.tokenService.verifyAccessToken(accessToken);
+
       // The token expiration is now checked by the JWT service automatically
       // and the verifyAccessToken method will throw if the token is expired
 

@@ -85,9 +85,11 @@ export class UsersService implements IUsersService {
     const otp = generateOTP();
     const otpHash = await argon2.hash(otp);
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minute expiry
-    
+
     // Don't log the OTP for security
-    this.logger.log(`OTP generated for user with phone: ${phone || 'none'}, npub: ${npub || 'none'}`);
+    this.logger.log(
+      `OTP generated for user with phone: ${phone || 'none'}, npub: ${npub || 'none'}`,
+    );
 
     const ud = await this.users.create({
       pinHash,
@@ -172,14 +174,16 @@ export class UsersService implements IUsersService {
       const newOtp = generateOTP();
       const otpHash = await argon2.hash(newOtp);
       const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-      
-      this.logger.log(`New OTP generated for user ${ud._id} (previous expired)`);
-      
+
+      this.logger.log(
+        `New OTP generated for user ${ud._id} (previous expired)`,
+      );
+
       await this.users.findOneAndUpdate(
         { _id: ud._id },
-        { otpHash, otpExpiry }
+        { otpHash, otpExpiry },
       );
-      
+
       return {
         user: toUser(ud),
         authorized: false,
@@ -192,14 +196,14 @@ export class UsersService implements IUsersService {
       const newOtp = generateOTP();
       const otpHash = await argon2.hash(newOtp);
       const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-      
+
       this.logger.log(`New OTP generated for user ${ud._id}`);
-      
+
       await this.users.findOneAndUpdate(
         { _id: ud._id },
-        { otpHash, otpExpiry }
+        { otpHash, otpExpiry },
       );
-      
+
       return {
         user: toUser(ud),
         authorized: false,
@@ -221,7 +225,7 @@ export class UsersService implements IUsersService {
     const newOtp = generateOTP();
     const newOtpHash = await argon2.hash(newOtp);
     const newOtpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-    
+
     this.logger.log(`User ${ud._id} verified successfully`);
 
     ud = await this.users.findOneAndUpdate(
@@ -306,14 +310,14 @@ export class UsersService implements IUsersService {
       const newOtp = generateOTP();
       const otpHash = await argon2.hash(newOtp);
       const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-      
+
       this.logger.log(`New OTP generated for user ${userId} after update`);
-      
+
       await this.users.findOneAndUpdate(
         { _id: userId },
-        { otpHash, otpExpiry }
+        { otpHash, otpExpiry },
       );
-      
+
       return {
         user,
         authorized: false,

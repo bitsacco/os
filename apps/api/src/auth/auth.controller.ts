@@ -134,8 +134,9 @@ export class AuthController {
     return firstValueFrom(tokensResponse).then(
       ({ accessToken, refreshToken }) => {
         // Set the new access token cookie
-        const accessTokenPayload =
-          this.jwtService.decode<AuthTokenPayload & { exp: number }>(accessToken);
+        const accessTokenPayload = this.jwtService.decode<
+          AuthTokenPayload & { exp: number }
+        >(accessToken);
         res.cookie('Authentication', accessToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -198,8 +199,9 @@ export class AuthController {
     return firstValueFrom(auth).then(
       ({ user, accessToken, refreshToken }: AuthResponse) => {
         if (accessToken) {
-          const decodedToken =
-            this.jwtService.decode<AuthTokenPayload & { exp: number }>(accessToken);
+          const decodedToken = this.jwtService.decode<
+            AuthTokenPayload & { exp: number }
+          >(accessToken);
           const { user: jwtUser, exp } = decodedToken;
 
           if (user.id !== jwtUser.id) {

@@ -36,7 +36,7 @@ describe('JwtAuthGuard', () => {
     nbf: Math.floor(Date.now() / 1000),
     iss: 'bitsacco-auth-service',
     aud: 'bitsacco-api',
-    jti: 'test-token-id'
+    jti: 'test-token-id',
   };
 
   const mockJwt = 'valid.jwt.token';
@@ -104,7 +104,9 @@ describe('JwtAuthGuard', () => {
         getHandler: () => ({}),
       };
 
-      expect(() => guard.canActivate(mockContext as any)).toThrow(UnauthorizedException);
+      expect(() => guard.canActivate(mockContext as any)).toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should return true for public routes', () => {
@@ -155,7 +157,7 @@ describe('JwtAuthGuard', () => {
         nbf: Math.floor(Date.now() / 1000) - 3600,
         iss: 'bitsacco-auth-service',
         aud: 'bitsacco-api',
-        jti: 'test-token-id'
+        jti: 'test-token-id',
       });
 
       const mockContext = {
@@ -167,7 +169,9 @@ describe('JwtAuthGuard', () => {
         getHandler: () => ({}),
       };
 
-      expect(() => guard.canActivate(mockContext as any)).toThrow(UnauthorizedException);
+      expect(() => guard.canActivate(mockContext as any)).toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should fallback to gRPC auth service when local verification fails', async () => {
@@ -227,7 +231,7 @@ describe('JwtAuthGuard', () => {
       await expect(
         new Promise((resolve, reject) => {
           result.subscribe(resolve, reject);
-        })
+        }),
       ).rejects.toThrow(UnauthorizedException);
     });
   });
@@ -291,7 +295,7 @@ describe('JwtAuthStrategy', () => {
         nbf: Math.floor(Date.now() / 1000),
         iss: 'bitsacco-auth-service',
         aud: 'bitsacco-api',
-        jti: 'test-token-id'
+        jti: 'test-token-id',
       };
 
       const result = await strategy.validate(authTokenPayload);
@@ -309,7 +313,7 @@ describe('JwtAuthStrategy', () => {
         nbf: Math.floor(Date.now() / 1000),
         iss: 'bitsacco-auth-service',
         aud: 'bitsacco-api',
-        jti: 'test-token-id'
+        jti: 'test-token-id',
       };
 
       jest
