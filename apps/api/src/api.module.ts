@@ -280,7 +280,9 @@ export class MetricsController {
             host: configService.getOrThrow<string>('REDIS_HOST'),
             port: configService.getOrThrow<number>('REDIS_PORT'),
             password: configService.get<string>('REDIS_PASSWORD'),
-            tls: configService.get<boolean>('REDIS_TLS', false) ? {} : undefined,
+            tls: configService.get<boolean>('REDIS_TLS', false)
+              ? {}
+              : undefined,
           },
         }),
         inject: [ConfigService],
@@ -311,6 +313,31 @@ export class MetricsController {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    // Provide Redis client for distributed services
+    {
+      provide: 'REDIS_CLIENT',
+      useFactory: (configService: ConfigService) => {
+        try {
+          const Redis = require('ioredis');
+          return new Redis({
+            host: configService.get('REDIS_HOST'),
+            port: configService.get('REDIS_PORT'),
+            password: configService.get('REDIS_PASSWORD'),
+            tls: configService.get('REDIS_TLS') ? {} : undefined,
+            // Add timeout for connection attempts
+            connectTimeout: 5000,
+            // Auto-reconnect with exponential backoff
+            retryStrategy: (times: number) => {
+              return Math.min(times * 100, 3000);
+            },
+          });
+        } catch (error) {
+          console.error('Failed to initialize Redis client:', error);
+          return null;
+        }
+      },
+      inject: [ConfigService],
+    },
     UsersRepository,
     UsersService,
     PhoneAuthStategy,
@@ -331,8 +358,6 @@ export class MetricsController {
 export class ApiModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Apply global middlewares
-    consumer
-      .apply(SecurityHeadersMiddleware, ApiKeyMiddleware)
-      .forRoutes('*');
+    consumer.apply(SecurityHeadersMiddleware, ApiKeyMiddleware).forRoutes('*');
   }
 }

@@ -9,6 +9,7 @@ import {
   LoggerModule,
   NOSTR_SERVICE_NAME,
   SMS_SERVICE_NAME,
+  DistributedRateLimitService,
 } from '@bitsacco/common';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
@@ -36,6 +37,8 @@ import {
         NOSTR_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
+        REDIS_PASSWORD: Joi.string().default('securepassword'),
+        REDIS_TLS: Joi.boolean().default(false),
         DATABASE_URL: Joi.string().required(),
       }),
     }),
@@ -79,6 +82,10 @@ import {
           options: {
             host: configService.getOrThrow<string>('REDIS_HOST'),
             port: configService.getOrThrow<number>('REDIS_PORT'),
+            password: configService.get<string>('REDIS_PASSWORD'),
+            tls: configService.get<boolean>('REDIS_TLS', false)
+              ? {}
+              : undefined,
           },
         }),
         inject: [ConfigService],
@@ -92,6 +99,29 @@ import {
     NotificationRepository,
     NotificationPreferencesRepository,
     RateLimitService,
+    // Provide Redis client for distributed services
+    {
+      provide: 'REDIS_CLIENT',
+      useFactory: (configService: ConfigService) => {
+        try {
+          const Redis = require('ioredis');
+          return new Redis({
+            host: configService.get('REDIS_HOST', 'localhost'),
+            port: configService.get('REDIS_PORT', 6379),
+            password: configService.get('REDIS_PASSWORD'),
+            tls: configService.get('REDIS_TLS', false) ? {} : undefined,
+            connectTimeout: 5000,
+            retryStrategy: (times) => Math.min(times * 100, 3000),
+          });
+        } catch (error) {
+          console.error('Failed to initialize Redis client:', error);
+          return null;
+        }
+      },
+      inject: [ConfigService],
+    },
+    // Provide the distributed rate limit service
+    DistributedRateLimitService,
   ],
 })
 export class NotificationModule {}

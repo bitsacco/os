@@ -19,7 +19,7 @@ export interface RateLimitResult {
 
   // How many requests are remaining in the current window
   remaining: number;
-  
+
   // When the rate limit will reset (Unix timestamp in seconds)
   resetAt: number;
 
@@ -43,9 +43,12 @@ export class RateLimitService implements OnModuleDestroy {
 
   // Store custom configurations
   private channelConfigs: Map<NotificationChannel, RateLimitConfig> = new Map();
-  private importanceConfigs: Map<NotificationImportance, RateLimitConfig> = new Map();
+  private importanceConfigs: Map<NotificationImportance, RateLimitConfig> =
+    new Map();
 
-  constructor(private readonly distributedRateLimitService: DistributedRateLimitService) {
+  constructor(
+    private readonly distributedRateLimitService: DistributedRateLimitService,
+  ) {
     // Set default configurations for different channels
     this.channelConfigs.set(NotificationChannel.SMS, {
       limit: 10, // Stricter limit for SMS
@@ -104,10 +107,10 @@ export class RateLimitService implements OnModuleDestroy {
   ): Promise<RateLimitResult> {
     // Get the appropriate config based on channel and importance
     const config = this.getEffectiveConfig(channel, importance);
-    
+
     // Create a channel-specific action name
     const action = `notification:${NotificationChannel[channel]}`;
-    
+
     // Check rate limit using the distributed service
     const result = await this.distributedRateLimitService.checkRateLimit(
       userId,
@@ -117,9 +120,9 @@ export class RateLimitService implements OnModuleDestroy {
         limit: config.limit,
         windowSeconds: config.windowSeconds,
         burstLimit: config.burstLimit,
-      }
+      },
     );
-    
+
     return {
       allowed: result.allowed,
       remaining: result.remaining,
@@ -136,10 +139,12 @@ export class RateLimitService implements OnModuleDestroy {
     importance: NotificationImportance,
   ): RateLimitConfig {
     // Get base config from channel
-    const channelConfig = this.channelConfigs.get(channel) || this.defaultConfig;
+    const channelConfig =
+      this.channelConfigs.get(channel) || this.defaultConfig;
 
     // Get importance config
-    const importanceConfig = this.importanceConfigs.get(importance) || this.defaultConfig;
+    const importanceConfig =
+      this.importanceConfigs.get(importance) || this.defaultConfig;
 
     // For critical importance, use the higher limits
     if (importance === NotificationImportance.CRITICAL) {
@@ -149,7 +154,10 @@ export class RateLimitService implements OnModuleDestroy {
     // For other importance levels, use the more restrictive of the two
     return {
       limit: Math.min(channelConfig.limit, importanceConfig.limit),
-      windowSeconds: Math.max(channelConfig.windowSeconds, importanceConfig.windowSeconds),
+      windowSeconds: Math.max(
+        channelConfig.windowSeconds,
+        importanceConfig.windowSeconds,
+      ),
       burstLimit: Math.min(
         channelConfig.burstLimit || 0,
         importanceConfig.burstLimit || 0,
@@ -204,15 +212,15 @@ export class RateLimitService implements OnModuleDestroy {
    */
   async resetUserLimits(userId: string): Promise<void> {
     if (!userId) return;
-    
+
     // Reset rate limits for all notification channels
     for (const channel of Object.values(NotificationChannel)) {
       if (typeof channel === 'string') continue; // Skip reverse mapping
-      
+
       const action = `notification:${NotificationChannel[channel]}`;
       await this.distributedRateLimitService.resetRateLimit(userId, action);
     }
-    
+
     this.logger.log(`Reset rate limits for user ${userId}`);
   }
 
