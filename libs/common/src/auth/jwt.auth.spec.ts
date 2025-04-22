@@ -83,9 +83,6 @@ describe('JwtAuthGuard', () => {
     guard = module.get<JwtAuthGuard>(JwtAuthGuard);
     jwtService = module.get<JwtService>(JwtService);
     reflector = module.get<Reflector>(Reflector);
-
-    // Initialize guard
-    guard.onModuleInit();
   });
 
   it('should be defined', () => {
@@ -179,6 +176,21 @@ describe('JwtAuthGuard', () => {
         throw new Error('Invalid token');
       });
 
+      // Access the private methods directly for testing
+      const mockAuthService = {
+        authenticate: jest.fn().mockReturnValue(
+          of({
+            user: mockUser,
+            accessToken: mockJwt,
+          }),
+        ),
+      };
+      
+      // Replace the private property directly for testing
+      (guard as any).grpc = {
+        getService: () => mockAuthService
+      };
+
       const mockRequest = {
         cookies: { Authentication: mockJwt },
         user: null,
@@ -202,7 +214,8 @@ describe('JwtAuthGuard', () => {
       });
 
       expect(value).toBe(true);
-      expect(authService.authenticate).toHaveBeenCalledWith({
+      // Verify that authenticate was called with the token
+      expect(mockAuthService.authenticate).toHaveBeenCalledWith({
         accessToken: mockJwt,
       });
       expect(mockRequest.user).toEqual(mockUser);
@@ -213,9 +226,17 @@ describe('JwtAuthGuard', () => {
         throw new Error('Invalid token');
       });
 
-      (authService.authenticate as jest.Mock).mockReturnValueOnce(
-        throwError(() => new Error('Authentication failed')),
-      );
+      // Setup mock auth service that fails
+      const mockAuthService = {
+        authenticate: jest.fn().mockReturnValue(
+          throwError(() => new Error('Authentication failed')),
+        ),
+      };
+      
+      // Replace the private property directly for testing
+      (guard as any).grpc = {
+        getService: () => mockAuthService
+      };
 
       const mockContext = {
         switchToHttp: () => ({

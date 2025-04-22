@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as Joi from 'joi';
 import { join } from 'path';
 import { JwtModule } from '@nestjs/jwt';
-import { Module, Controller, Get } from '@nestjs/common';
+import { Module, Controller, Get, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
@@ -26,7 +26,16 @@ import {
   UsersService,
   createMeter,
   NOTIFICATION_SERVICE_NAME,
+  ApiKeyDocument,
+  ApiKeySchema,
+  ApiKeyRepository,
+  ApiKeyService,
+  ApiKeyGuard,
+  ServiceRegistryService,
+  SecretsService,
 } from '@bitsacco/common';
+import { ApiKeyMiddleware } from './middleware/api-key.middleware';
+import { CombinedAuthGuard } from './auth/combined-auth.guard';
 import { register } from 'prom-client';
 import { SwapController } from './swap';
 import { NostrController } from './nostr';
@@ -251,6 +260,7 @@ export class MetricsController {
     DatabaseModule,
     DatabaseModule.forFeature([
       { name: UsersDocument.name, schema: UsersSchema },
+      { name: ApiKeyDocument.name, schema: ApiKeySchema },
     ]),
   ],
   controllers: [
@@ -272,6 +282,17 @@ export class MetricsController {
     NpubAuthStategy,
     JwtAuthStrategy,
     NotificationGateway,
+    ApiKeyRepository,
+    ApiKeyService,
+    ApiKeyGuard,
+    SecretsService,
+    ServiceRegistryService,
+    CombinedAuthGuard,
   ],
 })
-export class ApiModule {}
+export class ApiModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Apply API key middleware globally
+    consumer.apply(ApiKeyMiddleware).forRoutes('*');
+  }
+}

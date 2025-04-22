@@ -5,6 +5,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import {
   DatabaseModule,
   LoggerModule,
@@ -16,6 +17,13 @@ import {
   TokenDocument,
   TokenSchema,
   TokenRepository,
+  ApiKeyDocument,
+  ApiKeySchema,
+  ApiKeyRepository,
+  ApiKeyService,
+  ServiceRegistryService,
+  SecretsService,
+  ApiKeyCircuitBreakerService,
 } from '@bitsacco/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -23,6 +31,10 @@ import { TokenService } from './tokens/token.service';
 import { AuthMetricsService } from './metrics/auth.metrics';
 import { TokenMetricsService } from './tokens/token.metrics';
 import { RateLimitService } from './rate-limit/rate-limit.service';
+import { ApiKeyController } from './apikeys/apikey.controller';
+import { ApiKeyRotationController } from './apikeys/apikey-rotation.controller';
+import { ApiKeyMetricsService } from './apikeys/apikey.metrics';
+import { ApiKeyRotationService } from './apikeys/apikey-rotation.service';
 
 @Module({
   imports: [
@@ -73,14 +85,21 @@ import { RateLimitService } from './rate-limit/rate-limit.service';
     DatabaseModule.forFeature([
       { name: UsersDocument.name, schema: UsersSchema },
       { name: TokenDocument.name, schema: TokenSchema },
+      { name: ApiKeyDocument.name, schema: ApiKeySchema },
     ]),
     LoggerModule,
     EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
   ],
-  controllers: [AuthController],
+  controllers: [
+    AuthController,
+    ApiKeyController,
+    ApiKeyRotationController,
+  ],
   providers: [
     AuthMetricsService,
     TokenMetricsService,
+    ApiKeyMetricsService,
     AuthService,
     UsersRepository,
     UsersService,
@@ -88,8 +107,12 @@ import { RateLimitService } from './rate-limit/rate-limit.service';
     TokenRepository,
     TokenService,
     RateLimitService,
-    AuthMetricsService,
-    TokenMetricsService,
+    ApiKeyRepository,
+    ApiKeyService,
+    SecretsService,
+    ServiceRegistryService,
+    ApiKeyCircuitBreakerService,
+    ApiKeyRotationService,
   ],
 })
 export class AuthModule {}

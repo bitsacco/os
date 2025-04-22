@@ -4,3 +4,5 @@ export * from './abstract.schema';
 export * from './users.schema';
 export * from './token.schema';
 export * from './token.repository';
+export * from './apikey.schema';
+export * from './apikey.repository';

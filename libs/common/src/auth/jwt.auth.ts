@@ -11,7 +11,7 @@ import {
   Inject,
   Injectable,
   Logger,
-  OnModuleInit,
+  Optional,
   SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -24,19 +24,20 @@ import {
 import { UsersService } from '../users';
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate, OnModuleInit {
+export class JwtAuthGuard implements CanActivate {
   private readonly logger = new Logger(JwtAuthGuard.name);
-  private authService: AuthServiceClient;
 
   constructor(
-    @Inject(AUTH_SERVICE_NAME) private readonly grpc: ClientGrpc,
     private readonly reflector: Reflector,
     private readonly jwtService: JwtService,
+    @Optional() @Inject(AUTH_SERVICE_NAME) private readonly grpc?: ClientGrpc,
   ) {}
 
-  onModuleInit() {
-    this.authService =
-      this.grpc.getService<AuthServiceClient>(AUTH_SERVICE_NAME);
+  private get authService(): AuthServiceClient | null {
+    if (!this.grpc) {
+      return null;
+    }
+    return this.grpc.getService<AuthServiceClient>(AUTH_SERVICE_NAME);
   }
 
   canActivate(
@@ -96,7 +97,12 @@ export class JwtAuthGuard implements CanActivate, OnModuleInit {
         throw error;
       }
 
-      // If local verification fails, fallback to gRPC auth service validation
+      // If local verification fails, try to use gRPC auth service if available
+      if (!this.authService) {
+        this.logger.error('Token verification failed and no auth service available');
+        throw new UnauthorizedException('Authentication failed');
+      }
+      
       return this.authService
         .authenticate({
           accessToken,
