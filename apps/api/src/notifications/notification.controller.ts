@@ -27,6 +27,8 @@ import {
   NOTIFICATION_SERVICE_NAME,
   NotificationTopic,
   UsersDocument,
+  ResourceOwnerGuard,
+  CheckOwnership,
 } from '@bitsacco/common';
 import {
   GetNotificationsResponseDto,
@@ -54,6 +56,8 @@ export class NotificationController {
   }
 
   @Get()
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiOperation({
     summary: 'Get user notifications with filtering and pagination',
   })
@@ -117,6 +121,8 @@ export class NotificationController {
   }
 
   @Post('read')
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiOperation({ summary: 'Mark notifications as read' })
   @ApiResponse({
     status: 200,
@@ -149,6 +155,8 @@ export class NotificationController {
   }
 
   @Get('preferences')
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiOperation({ summary: 'Get user notification preferences' })
   @ApiResponse({
     status: 200,
@@ -175,6 +183,8 @@ export class NotificationController {
   }
 
   @Put('preferences')
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiOperation({ summary: 'Update user notification preferences' })
   @ApiResponse({
     status: 200,
