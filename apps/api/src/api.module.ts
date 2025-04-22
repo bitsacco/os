@@ -49,6 +49,7 @@ import {
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
+import { IpRateLimitMiddleware } from './middleware/ip-rate-limit.middleware';
 import { ThrottlerConfigService } from './middleware/throttler.config';
 import { CombinedAuthGuard } from './auth/combined-auth.guard';
 import { SwapController } from './swap';
@@ -153,6 +154,12 @@ export class MetricsController {
         JWT_SECRET: Joi.string().required(),
         THROTTLE_TTL: Joi.number().default(60),
         THROTTLE_LIMIT: Joi.number().default(120),
+        IP_RATE_LIMIT_ENABLED: Joi.boolean().default(true),
+        IP_RATE_LIMIT: Joi.number().default(30),
+        IP_RATE_LIMIT_WINDOW: Joi.number().default(60),
+        IP_RATE_LIMIT_BURST: Joi.number().default(10),
+        IP_RATE_LIMIT_TRUSTED: Joi.string().default(''),
+        CSP_REPORT_URI: Joi.string().optional(),
         DOCS_API_KEY: Joi.when('NODE_ENV', {
           is: 'production',
           then: Joi.string().required(),
@@ -334,7 +341,12 @@ export class MetricsController {
 })
 export class ApiModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Apply global middlewares
-    consumer.apply(SecurityHeadersMiddleware, ApiKeyMiddleware).forRoutes('*');
+    // Apply global middlewares in order:
+    // 1. Security headers - sets secure headers for all responses
+    // 2. IP rate limiting - protects against DDoS and brute force from anonymous clients
+    // 3. API key middleware - validates API keys in requests
+    consumer
+      .apply(SecurityHeadersMiddleware, IpRateLimitMiddleware, ApiKeyMiddleware)
+      .forRoutes('*');
   }
 }
