@@ -36,6 +36,6 @@ export class ResourceOwnerGuard implements CanActivate {
     if (user.roles && user.roles.includes(Role.Admin)) return true;
     if (user.roles && user.roles.includes(Role.SuperAdmin)) return true;
 
-    return resourceId === user[idField].toString();
+    return user[idField] != null && resourceId === user[idField].toString();
   }
 }

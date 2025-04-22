@@ -10,7 +10,7 @@ import {
   TransferSharesDto,
   UpdateSharesDto,
   ResourceOwnerGuard,
-  CheckOwnership
+  CheckOwnership,
 } from '@bitsacco/common';
 import {
   Body,
