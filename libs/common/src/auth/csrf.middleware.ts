@@ -1,21 +1,22 @@
 import {
   Injectable,
   NestMiddleware,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import * as crypto from 'crypto';
 
 /**
- * Middleware to protect against Cross-Site Request Forgery (CSRF) attacks.
- *
- * This middleware checks for a CSRF token in requests that use cookie-based authentication.
- * It skips the check for GET requests and requests that don't use cookie authentication.
+ * Middleware to protect against CSRF attacks
+ * Implements double-submit cookie pattern for enhanced security
  */
 @Injectable()
 export class CsrfProtectionMiddleware implements NestMiddleware {
+  private readonly logger = new Logger(CsrfProtectionMiddleware.name);
+
   use(req: Request, res: Response, next: NextFunction) {
-    // Skip for non-mutation requests
+    // Skip for safe methods that don't modify state
     if (
       req.method === 'GET' ||
       req.method === 'HEAD' ||
@@ -24,50 +25,97 @@ export class CsrfProtectionMiddleware implements NestMiddleware {
       return next();
     }
 
-    // Skip if not using cookie authentication
-    if (!req.cookies?.Authentication) {
-      return next();
-    }
+    // Verify CSRF for any authentication type using cookies (not just JWT)
+    if (this.usesCookieAuthentication(req)) {
+      // Validate CSRF token using timing-safe comparison
+      const csrfToken = req.headers['x-csrf-token'] as string;
 
-    const csrfToken = req.headers['x-csrf-token'] as string;
-    if (!csrfToken) {
-      throw new UnauthorizedException('CSRF token is required');
-    }
+      if (!csrfToken) {
+        this.logger.warn('Missing CSRF token in request');
+        throw new UnauthorizedException('Missing CSRF token');
+      }
 
-    if (!this.validateCsrfToken(csrfToken, req.cookies.Authentication)) {
-      throw new UnauthorizedException('Invalid CSRF token');
+      // Get the expected token from the CSRF cookie
+      const csrfCookie = this.extractCsrfCookie(req);
+      if (!csrfCookie) {
+        this.logger.warn('Missing CSRF cookie in request');
+        throw new UnauthorizedException('CSRF validation failed');
+      }
+
+      // Use timing-safe comparison to prevent timing attacks
+      const isValid = this.timingSafeEqual(csrfToken, csrfCookie);
+      if (!isValid) {
+        this.logger.warn('CSRF token mismatch');
+        throw new UnauthorizedException('Invalid CSRF token');
+      }
     }
 
     next();
   }
 
   /**
-   * Validates the CSRF token using a timing-safe comparison
+   * Check if the request uses any form of cookie-based authentication
    */
-  private validateCsrfToken(csrfToken: string, authToken: string): boolean {
-    try {
-      // The CSRF token should be a hash derived from the auth token
-      // This ensures the CSRF token is tied to the user's session
-      const expectedToken = this.generateCsrfTokenForAuth(authToken);
-
-      // Use timing-safe comparison to prevent timing attacks
-      return crypto.timingSafeEqual(
-        Buffer.from(csrfToken),
-        Buffer.from(expectedToken),
-      );
-    } catch (error) {
-      return false;
-    }
+  private usesCookieAuthentication(req: Request): boolean {
+    return !!(req.cookies?.Authentication || this.extractAuthCookie(req));
   }
 
   /**
-   * Generates a CSRF token based on the auth token
-   * This method can be exposed publicly to generate tokens for the client
+   * Extract Authentication cookie from Cookie header if req.cookies is not parsed
    */
-  public generateCsrfTokenForAuth(authToken: string): string {
-    // Create a derived token that doesn't expose the JWT
-    const hash = crypto.createHash('sha256');
-    hash.update(authToken);
-    return hash.digest('hex');
+  private extractAuthCookie(req: Request): string | null {
+    const cookieHeader = req.headers.cookie;
+    if (!cookieHeader) return null;
+
+    const cookies = cookieHeader.split(';').reduce(
+      (acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
+    return cookies['Authentication'] || null;
+  }
+
+  /**
+   * Extract CSRF cookie from request
+   */
+  private extractCsrfCookie(req: Request): string | null {
+    // Try parsed cookies first
+    if (req.cookies?.['XSRF-TOKEN']) {
+      return req.cookies['XSRF-TOKEN'];
+    }
+
+    // Fall back to parsing Cookie header
+    const cookieHeader = req.headers.cookie;
+    if (!cookieHeader) return null;
+
+    const cookies = cookieHeader.split(';').reduce(
+      (acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        acc[key] = value;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
+    return cookies['XSRF-TOKEN'] || null;
+  }
+
+  /**
+   * Perform timing-safe comparison of strings
+   */
+  private timingSafeEqual(a: string, b: string): boolean {
+    try {
+      return crypto.timingSafeEqual(
+        Buffer.from(a, 'utf8'),
+        Buffer.from(b, 'utf8'),
+      );
+    } catch (error) {
+      this.logger.error(`Error during CSRF token comparison: ${error.message}`);
+      return false;
+    }
   }
 }
