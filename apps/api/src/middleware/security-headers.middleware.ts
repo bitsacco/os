@@ -1,6 +1,7 @@
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
 
 /**
  * Middleware to add security headers to all responses
@@ -23,6 +24,12 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
   }
 
   use(req: Request, res: Response, next: NextFunction) {
+    // Generate CSP nonce for this request
+    const nonce = this.generateNonce();
+
+    // Store nonce in request object to make it available to templates
+    req['cspNonce'] = nonce;
+
     // Protect against content type sniffing
     res.setHeader('X-Content-Type-Options', 'nosniff');
 
@@ -37,17 +44,13 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     if (this.isProduction) {
       res.setHeader(
         'Strict-Transport-Security',
-        'max-age=31536000; includeSubDomains',
+        'max-age=31536000; includeSubDomains; preload',
       );
     }
 
-    // Add Content Security Policy in production
-    if (this.isProduction) {
-      res.setHeader(
-        'Content-Security-Policy',
-        "default-src 'self'; script-src 'self'; object-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline'",
-      );
-    }
+    // Build Content Security Policy
+    const cspDirectives = this.buildCspDirectives(nonce);
+    res.setHeader('Content-Security-Policy', cspDirectives);
 
     // Set referrer policy
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
@@ -55,7 +58,13 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     // Disable browser features as needed
     res.setHeader(
       'Permissions-Policy',
-      'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+      'camera=(), microphone=(), geolocation=(), interest-cohort=(), payment=(), usb=(), bluetooth=(), magnetometer=(), gyroscope=()',
+    );
+
+    // For older browsers that don't support Permissions-Policy
+    res.setHeader(
+      'Feature-Policy',
+      'camera none; microphone none; geolocation none; payment none; usb none',
     );
 
     // Add Cross-Origin policies
@@ -63,6 +72,71 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
     res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
 
+    // Add security header to prevent browsers from detecting the application framework
+    res.setHeader('X-Powered-By', 'Bitsacco OS');
+
     next();
+  }
+
+  /**
+   * Generate a cryptographically secure nonce
+   */
+  private generateNonce(): string {
+    return crypto.randomBytes(16).toString('base64');
+  }
+
+  /**
+   * Build Content Security Policy directives
+   * @param nonce Cryptographic nonce to use for the request
+   */
+  private buildCspDirectives(nonce: string): string {
+    const directives = [
+      // Default policy for all resources
+      `default-src 'self'`,
+
+      // Script execution restrictions
+      `script-src 'self' 'nonce-${nonce}'`,
+
+      // Block loading of plugins
+      `object-src 'none'`,
+
+      // Image loading restrictions
+      `img-src 'self' data:`,
+
+      // Style loading restrictions
+      // Using nonce instead of unsafe-inline
+      `style-src 'self' 'nonce-${nonce}'`,
+
+      // Font loading restrictions
+      `font-src 'self'`,
+
+      // Form submission restrictions
+      `form-action 'self'`,
+
+      // Frame restrictions
+      `frame-ancestors 'none'`,
+
+      // Disallow mixed content
+      `upgrade-insecure-requests`,
+
+      // Base URI restriction
+      `base-uri 'self'`,
+
+      // Block loading resources from external sites via frames
+      `frame-src 'self'`,
+    ];
+
+    // Add reporting in production
+    if (this.isProduction) {
+      const reportUri = this.configService.get<string>('CSP_REPORT_URI');
+      if (reportUri) {
+        directives.push(`report-uri ${reportUri}`);
+      }
+    } else {
+      // In development, allow websocket connections for hot reloading
+      directives.push(`connect-src 'self' ws: wss:`);
+    }
+
+    return directives.join('; ');
   }
 }
