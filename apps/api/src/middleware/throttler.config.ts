@@ -10,8 +10,8 @@ import type { Redis } from 'ioredis';
 /**
  * In-memory storage for ThrottlerModule (fallback for tests)
  */
-class InMemoryThrottlerStorage implements ThrottlerStorage {
-  private readonly storage = new Map<string, number>();
+export class InMemoryThrottlerStorage implements ThrottlerStorage {
+  private readonly storage = new Map<string, { ttl: number; count: number }>();
   private readonly logger = new Logger(InMemoryThrottlerStorage.name);
 
   constructor() {
@@ -25,8 +25,8 @@ class InMemoryThrottlerStorage implements ThrottlerStorage {
         const now = Date.now();
         let cleaned = 0;
 
-        for (const [key, ttl] of this.storage.entries()) {
-          if (ttl < now) {
+        for (const [key, record] of this.storage.entries()) {
+          if (record.ttl < now) {
             this.storage.delete(key);
             cleaned++;
           }
@@ -44,8 +44,14 @@ class InMemoryThrottlerStorage implements ThrottlerStorage {
    * Increment the number of requests in the time window
    */
   async increment(key: string, ttl: number): Promise<number> {
-    const count = (this.storage.get(key) || 0) + 1;
-    this.storage.set(key, Date.now() + ttl);
+    const record = this.storage.get(key);
+    const count = (record?.count || 0) + 1;
+
+    this.storage.set(key, {
+      ttl: Date.now() + ttl,
+      count,
+    });
+
     return count;
   }
 
@@ -53,12 +59,14 @@ class InMemoryThrottlerStorage implements ThrottlerStorage {
    * Get the current count of requests in the time window
    */
   async get(key: string): Promise<number> {
-    const ttl = this.storage.get(key);
-    if (!ttl || ttl < Date.now()) {
+    const record = this.storage.get(key);
+
+    if (!record || record.ttl < Date.now()) {
       this.storage.delete(key);
       return 0;
     }
-    return 1; // Return 1 if key exists
+
+    return record.count;
   }
 }
 
