@@ -208,9 +208,20 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis
+    command: [
+      "sh", "-c", 
+      "redis-server --requirepass ${REDIS_PASSWORD:-securepassword} --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes"
+    ]
     ports:
       - '6379:6379'
+    volumes:
+      - redis_data:/data
     restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-securepassword}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   clientd:
     image: okjodom/fedimint-clientd:v0.4.1
@@ -273,3 +284,4 @@ volumes:
   clientd_datadir:
   prometheus_data:
   grafana_data:
+  redis_data:
