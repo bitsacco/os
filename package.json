@@ -48,6 +48,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
     "@nestjs/platform-socket.io": "^11.0.14",
+    "@nestjs/schedule": "^6.0.0",
     "@nestjs/sequelize": "^10.0.1",
     "@nestjs/swagger": "^7.4.2",
     "@nestjs/terminus": "^10.2.2",

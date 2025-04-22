@@ -185,10 +185,10 @@ describe('JwtAuthGuard', () => {
           }),
         ),
       };
-      
+
       // Replace the private property directly for testing
       (guard as any).grpc = {
-        getService: () => mockAuthService
+        getService: () => mockAuthService,
       };
 
       const mockRequest = {
@@ -228,14 +228,16 @@ describe('JwtAuthGuard', () => {
 
       // Setup mock auth service that fails
       const mockAuthService = {
-        authenticate: jest.fn().mockReturnValue(
-          throwError(() => new Error('Authentication failed')),
-        ),
+        authenticate: jest
+          .fn()
+          .mockReturnValue(
+            throwError(() => new Error('Authentication failed')),
+          ),
       };
-      
+
       // Replace the private property directly for testing
       (guard as any).grpc = {
-        getService: () => mockAuthService
+        getService: () => mockAuthService,
       };
 
       const mockContext = {

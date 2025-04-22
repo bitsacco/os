@@ -8,3 +8,4 @@ export * from './service-registry.service';
 export * from './grpc-api-key.interceptor';
 export * from './grpc-api-key.middleware';
 export * from './apikey-circuit-breaker.service';
+export * from './combined.auth';

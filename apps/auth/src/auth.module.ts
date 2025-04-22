@@ -91,11 +91,7 @@ import { ApiKeyRotationService } from './apikeys/apikey-rotation.service';
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
   ],
-  controllers: [
-    AuthController,
-    ApiKeyController,
-    ApiKeyRotationController,
-  ],
+  controllers: [AuthController, ApiKeyController, ApiKeyRotationController],
   providers: [
     AuthMetricsService,
     TokenMetricsService,

@@ -1,6 +1,11 @@
-import { Controller, Post, Param, Body, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard, Roles, Role, ServiceRegistryService } from '@bitsacco/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { Controller, Post, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  JwtAuthGuard,
+  Roles,
+  Role,
+  ServiceRegistryService,
+} from '@bitsacco/common';
 
 @Controller('admin/api-keys/rotation')
 @UseGuards(JwtAuthGuard)
@@ -15,7 +20,7 @@ export class ApiKeyRotationController {
   async rotateServiceApiKey(@Param('serviceName') serviceName: string) {
     // Rotate the service key
     const success = await this.serviceRegistry.rotateServiceKey(serviceName);
-    
+
     if (success) {
       // Broadcast event to notify services to refresh their keys
       this.eventEmitter.emit('api-key.rotated', {
@@ -23,10 +28,10 @@ export class ApiKeyRotationController {
         timestamp: new Date().toISOString(),
       });
     }
-    
+
     return { success };
   }
-  
+
   @Post('schedule')
   async scheduleKeyRotation(@Body() schedule: any) {
     // Schedule a future rotation for non-disruptive updates

@@ -5,11 +5,11 @@ export enum ApiKeyScope {
   // User-related scopes
   UserRead = 'user:read',
   UserWrite = 'user:write',
-  
+
   // Transaction-related scopes
   TransactionRead = 'transaction:read',
   TransactionWrite = 'transaction:write',
-  
+
   // Financial scopes
   SharesRead = 'shares:read',
   SharesWrite = 'shares:write',
@@ -17,10 +17,10 @@ export enum ApiKeyScope {
   SolowalletWrite = 'solowallet:write',
   ChamaRead = 'chama:read',
   ChamaWrite = 'chama:write',
-  
+
   // Admin scopes
   AdminAccess = 'admin:access',
-  
+
   // Service-to-service scopes
   ServiceAuth = 'service:auth',
   ServiceSms = 'service:sms',
@@ -36,28 +36,28 @@ export enum ApiKeyScope {
 export class ApiKeyDocument extends AbstractDocument {
   @Prop({ required: true, unique: true, index: true })
   keyHash: string;
-  
+
   @Prop({ required: true })
   name: string;
-  
+
   @Prop({ required: true, index: true })
   ownerId: string;
-  
+
   @Prop({ type: [String], default: [] })
   scopes: ApiKeyScope[];
-  
+
   @Prop({ required: true })
   expiresAt: Date;
-  
+
   @Prop({ default: false })
   revoked: boolean;
-  
+
   @Prop({ type: Date, required: false })
   lastUsed?: Date;
-  
+
   @Prop({ default: false })
   isPermanent: boolean;
-  
+
   @Prop({ type: Object, default: {} })
   metadata: Record<string, any>;
 }

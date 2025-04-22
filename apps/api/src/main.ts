@@ -52,6 +52,24 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
+  // Add a custom 404 handler for the docs route if disabled in production
+  const environment = process.env.NODE_ENV || 'development';
+  const enableDocsInProduction = process.env.ENABLE_SWAGGER_DOCS === 'true';
+
+  if (environment === 'production' && !enableDocsInProduction) {
+    // Add a middleware that returns 404 for any docs-related requests
+    app.use('/docs*', (req, res) => {
+      res.status(404).json({
+        statusCode: 404,
+        message: 'Documentation is not available in production',
+      });
+    });
+
+    console.log(
+      '🔒 Added docs protection middleware for production environment',
+    );
+  }
+
   // Register shutdown hooks for OpenTelemetry
   app.enableShutdownHooks();
   process.on('SIGTERM', async () => {

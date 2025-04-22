@@ -12,7 +12,7 @@ export interface ApiKeyMetric {
 @Injectable()
 export class ApiKeyMetricsService extends MetricsService {
   protected override readonly logger = new Logger(ApiKeyMetricsService.name);
-  
+
   // Counter and histogram names
   private readonly OPERATIONS_COUNTER = 'apikey.operations.total';
   private readonly OPERATIONS_DURATION = 'apikey.operations.duration';
@@ -20,18 +20,18 @@ export class ApiKeyMetricsService extends MetricsService {
 
   constructor() {
     super('api-key-service');
-    
+
     // Create metrics
     this.createCounter(this.OPERATIONS_COUNTER, {
       description: 'Total number of API key operations',
       unit: '1',
     });
-    
+
     this.createHistogram(this.OPERATIONS_DURATION, {
       description: 'Duration of API key operations in seconds',
       unit: 's',
     });
-    
+
     this.createObservable(
       this.ACTIVE_KEYS_GAUGE,
       {
@@ -44,10 +44,10 @@ export class ApiKeyMetricsService extends MetricsService {
         observer.observe(this._activeKeyCount);
       },
     );
-    
+
     this.logger.log('API Key metrics initialized');
   }
-  
+
   // Store active key count for the observable
   private _activeKeyCount = 0;
 
@@ -56,15 +56,17 @@ export class ApiKeyMetricsService extends MetricsService {
     const labels = {
       operation: metric.operation,
       success: metric.success.toString(),
-      ...(metric.errorType ? { error_type: metric.errorType } : { error_type: 'none' }),
+      ...(metric.errorType
+        ? { error_type: metric.errorType }
+        : { error_type: 'none' }),
     };
-    
+
     // Increment counter
     this.incrementCounter(this.OPERATIONS_COUNTER, {
       value: 1,
       labels,
     });
-    
+
     // Record duration
     this.recordHistogram(this.OPERATIONS_DURATION, {
       value: metric.duration / 1000, // convert to seconds

@@ -2,7 +2,13 @@ import axios from 'axios';
 import * as Joi from 'joi';
 import { join } from 'path';
 import { JwtModule } from '@nestjs/jwt';
-import { Module, Controller, Get, MiddlewareConsumer, NestModule } from '@nestjs/common';
+import {
+  Module,
+  Controller,
+  Get,
+  MiddlewareConsumer,
+  NestModule,
+} from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
@@ -33,6 +39,7 @@ import {
   ApiKeyGuard,
   ServiceRegistryService,
   SecretsService,
+  JwtAuthGuard,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { CombinedAuthGuard } from './auth/combined-auth.guard';
@@ -47,6 +54,8 @@ import { UsersController } from './users/users.controller';
 import { ChamasController } from './chamas/chamas.controller';
 import { NotificationGateway } from './notifications/notification.gateway';
 import { NotificationController } from './notifications/notification.controller';
+import { HealthController } from './health/health.controller';
+import { Reflector } from '@nestjs/core';
 
 // Controller for federated metrics
 @Controller('metrics')
@@ -274,6 +283,7 @@ export class MetricsController {
     ChamasController,
     MetricsController,
     NotificationController,
+    HealthController,
   ],
   providers: [
     UsersRepository,
@@ -288,6 +298,8 @@ export class MetricsController {
     SecretsService,
     ServiceRegistryService,
     CombinedAuthGuard,
+    JwtAuthGuard,
+    Reflector,
   ],
 })
 export class ApiModule implements NestModule {

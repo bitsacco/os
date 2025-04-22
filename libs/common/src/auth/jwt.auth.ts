@@ -99,10 +99,12 @@ export class JwtAuthGuard implements CanActivate {
 
       // If local verification fails, try to use gRPC auth service if available
       if (!this.authService) {
-        this.logger.error('Token verification failed and no auth service available');
+        this.logger.error(
+          'Token verification failed and no auth service available',
+        );
         throw new UnauthorizedException('Authentication failed');
       }
-      
+
       return this.authService
         .authenticate({
           accessToken,
@@ -153,7 +155,7 @@ export function getAccessToken(request: any, logger: Logger) {
     const authCookie = request.cookies['Authentication'];
 
     if (authCookie) {
-      logger.log(`Request Authentication Cookie Present ${authCookie}`);
+      logger.log(`Request Authentication Cookie Present`);
       return authCookie;
     } else {
       logger.log('Request Authentication Cookie Missing');
@@ -171,7 +173,7 @@ export function getAccessToken(request: any, logger: Logger) {
     const authCookie = cookies['Authentication'];
 
     if (authCookie) {
-      logger.log(`Header Authentication Cookie Present ${authCookie}`);
+      logger.log(`Header Authentication Cookie Present`);
       return authCookie;
     } else {
       logger.log('Header Authentication Cookie Missing');

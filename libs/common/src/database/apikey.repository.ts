@@ -23,24 +23,21 @@ export class ApiKeyRepository extends AbstractRepository<ApiKeyDocument> {
   }
 
   async updateLastUsed(id: string): Promise<void> {
-    await this.model.updateOne(
-      { _id: id },
-      { lastUsed: new Date() },
-    );
+    await this.model.updateOne({ _id: id }, { lastUsed: new Date() });
   }
 
   async listUserKeys(ownerId: string): Promise<ApiKeyDocument[]> {
     return this.find({ ownerId });
   }
-  
+
   async getApiKey(id: string): Promise<ApiKeyDocument> {
     return this.findOne({ _id: id });
   }
 
   async findActiveKeys(): Promise<ApiKeyDocument[]> {
-    return this.find({ 
+    return this.find({
       revoked: false,
-      expiresAt: { $gt: new Date() }
+      expiresAt: { $gt: new Date() },
     });
   }
 }

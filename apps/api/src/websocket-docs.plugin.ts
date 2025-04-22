@@ -4,8 +4,20 @@ import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 /**
  * A custom plugin that enhances Swagger documentation with WebSocket endpoint details.
  * This plugin adds a custom section to the Swagger UI that displays WebSocket events.
+ *
+ * In production, the documentation can be disabled for security.
  */
 export function setupWebSocketDocs(app: INestApplication, path: string) {
+  // Check if we should disable docs in production
+  const environment = process.env.NODE_ENV || 'development';
+  const enableDocsInProduction = process.env.ENABLE_SWAGGER_DOCS === 'true';
+
+  // If we're in production and docs are not explicitly enabled, skip Swagger setup
+  if (environment === 'production' && !enableDocsInProduction) {
+    console.log('📚 API Documentation disabled in production environment');
+    return;
+  }
+
   const API_VERSION = 'v1';
 
   // Create the base document builder
