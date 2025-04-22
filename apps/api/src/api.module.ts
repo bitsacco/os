@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as Joi from 'joi';
 import { join } from 'path';
-import { JwtModule } from '@nestjs/jwt';
+import { register } from 'prom-client';
 import {
   Module,
   Controller,
@@ -9,6 +9,8 @@ import {
   MiddlewareConsumer,
   NestModule,
 } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { Reflector } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import {
@@ -43,7 +45,6 @@ import {
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { CombinedAuthGuard } from './auth/combined-auth.guard';
-import { register } from 'prom-client';
 import { SwapController } from './swap';
 import { NostrController } from './nostr';
 import { SmsController } from './sms/sms.controller';
@@ -55,7 +56,6 @@ import { ChamasController } from './chamas/chamas.controller';
 import { NotificationGateway } from './notifications/notification.gateway';
 import { NotificationController } from './notifications/notification.controller';
 import { HealthController } from './health/health.controller';
-import { Reflector } from '@nestjs/core';
 
 // Controller for federated metrics
 @Controller('metrics')
@@ -143,6 +143,11 @@ export class MetricsController {
         REDIS_PORT: Joi.number().required(),
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
+        DOCS_API_KEY: Joi.string().when('NODE_ENV', {
+          is: 'production',
+          then: Joi.string().required(),
+          otherwise: Joi.optional(),
+        }),
       }),
     }),
     ClientsModule.registerAsync([

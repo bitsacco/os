@@ -2,12 +2,13 @@ import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   HttpLoggingInterceptor,
   initializeOpenTelemetry,
 } from '@bitsacco/common';
 import { ApiModule } from './api.module';
-import { setupWebSocketDocs } from './websocket-docs.plugin';
+import { setupDocs } from './docs.plugin';
 
 const API_VERSION = 'v1';
 
@@ -48,27 +49,9 @@ async function bootstrap() {
   app.useWebSocketAdapter(new IoAdapter(app));
 
   // Add WebSocket documentation to Swagger UI (includes REST docs)
-  setupWebSocketDocs(app, 'docs');
+  setupDocs(app, 'docs');
 
   app.useGlobalInterceptors(new HttpLoggingInterceptor());
-
-  // Add a custom 404 handler for the docs route if disabled in production
-  const environment = process.env.NODE_ENV || 'development';
-  const enableDocsInProduction = process.env.ENABLE_SWAGGER_DOCS === 'true';
-
-  if (environment === 'production' && !enableDocsInProduction) {
-    // Add a middleware that returns 404 for any docs-related requests
-    app.use('/docs*', (req, res) => {
-      res.status(404).json({
-        statusCode: 404,
-        message: 'Documentation is not available in production',
-      });
-    });
-
-    console.log(
-      '🔒 Added docs protection middleware for production environment',
-    );
-  }
 
   // Register shutdown hooks for OpenTelemetry
   app.enableShutdownHooks();
@@ -91,7 +74,12 @@ bootstrap();
 // OpenAPI setup has been moved to websocket-docs.plugin.ts
 
 function setupCORS(app: INestApplication) {
-  const allowedOrigins = [
+  const configService = app.get(ConfigService);
+  const environment = process.env.NODE_ENV || 'development';
+  const isProduction = environment === 'production';
+
+  // Default allowed origins for development
+  const defaultAllowedOrigins = [
     'https://bitsacco.com',
     'http://localhost:3000',
     'http://localhost:3001',
@@ -99,10 +87,39 @@ function setupCORS(app: INestApplication) {
     'http://0.0.0.0:*',
   ];
 
+  // In production, use configured origins or fallback to defaults
+  const allowedOrigins = isProduction
+    ? configService.get<string>('ALLOWED_ORIGINS')?.split(',') || [
+        'https://bitsacco.com',
+      ]
+    : defaultAllowedOrigins;
+
   app.enableCors({
     origin: (origin, callback) => {
-      // TODO: Strict CORS origin check in production
-      callback(null, origin);
+      // In production, strictly check origins against allowlist
+      if (isProduction) {
+        if (
+          !origin ||
+          allowedOrigins.some((allowedOrigin) => {
+            // Handle wildcard patterns (e.g., "*.example.com")
+            if (allowedOrigin.includes('*')) {
+              const pattern = allowedOrigin.replace(/\*/g, '.*');
+              return new RegExp(`^${pattern}$`).test(origin);
+            }
+            return allowedOrigin === origin;
+          })
+        ) {
+          callback(null, origin);
+        } else {
+          callback(
+            new Error(`Origin ${origin} not allowed by CORS policy`),
+            false,
+          );
+        }
+      } else {
+        // In development, allow all origins for easier testing
+        callback(null, origin);
+      }
     },
     methods: 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     credentials: true,
@@ -113,10 +130,16 @@ function setupCORS(app: INestApplication) {
       'Cookie',
       'Origin',
       'X-Requested-With',
+      'X-API-Key',
+      'X-CSRF-Token',
       'Access-Control-Allow-Headers',
       'Access-Control-Allow-Origin',
       'Access-Control-Allow-Credentials',
     ].join(','),
     exposedHeaders: ['X-Session-Id', 'Set-Cookie'].join(', '),
   });
+
+  console.log(
+    `🔒 CORS configured with ${isProduction ? 'strict' : 'permissive'} rules for ${environment} environment`,
+  );
 }

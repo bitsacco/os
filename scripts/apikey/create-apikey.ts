@@ -59,16 +59,25 @@ async function createApiKey() {
       console.log(`${index + 1}. ${scope}`);
     });
     
-    const scopeInput = await askQuestion('\nEnter scope numbers (comma-separated, e.g., "1,3,5"): ');
-    const selectedScopeIndices = scopeInput.split(',').map(i => parseInt(i.trim()) - 1);
+    const scopeInput = await askQuestion('\nEnter scope numbers (comma-separated, e.g., "1,3,5") or "all" for all scopes: ');
     
-    // Validate selections
-    const selectedScopes = selectedScopeIndices
-      .filter(i => i >= 0 && i < AVAILABLE_SCOPES.length)
-      .map(i => AVAILABLE_SCOPES[i]);
+    let selectedScopes: string[] = [];
     
-    if (selectedScopes.length === 0) {
-      throw new Error('No valid scopes selected');
+    // Check if the user wants all scopes
+    if (scopeInput.trim().toLowerCase() === 'all') {
+      selectedScopes = [...AVAILABLE_SCOPES];
+    } else {
+      // Parse the scope indices
+      const selectedScopeIndices = scopeInput.split(',').map(i => parseInt(i.trim()) - 1);
+      
+      // Validate selections
+      selectedScopes = selectedScopeIndices
+        .filter(i => i >= 0 && i < AVAILABLE_SCOPES.length)
+        .map(i => AVAILABLE_SCOPES[i]);
+      
+      if (selectedScopes.length === 0) {
+        throw new Error('No valid scopes selected');
+      }
     }
     
     console.log(`\nSelected scopes: ${selectedScopes.join(', ')}`);
