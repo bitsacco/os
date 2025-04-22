@@ -29,8 +29,18 @@
     "test:e2e": "bun test apps/api/test/ --config ./apps/api/test/jest-e2e.json",
     "proto:gen": "bunx protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/common/src/types/proto --ts_proto_opt=nestJs=true --ts_proto_opt=exportCommonSymbols=false --ts_proto_opt=eslint_disable -I ./proto ./proto/*.proto",
     "proto:clean": "rm ./libs/common/src/types/proto/*.ts",
-    "seed": "bun run seeders/cli.ts seed",
-    "seed:clean": "bun run seeders/cli.ts clean"
+    "seed": "bun run scripts/seeder/cli.ts seed",
+    "seed:clean": "bun run scripts/seeder/cli.ts clean",
+    "apikey": "bun scripts/apikey/help.ts",
+    "apikey:generate": "bun scripts/apikey/generate-global-apikey.ts",
+    "apikey:test": "bun scripts/apikey/test-api-key-auth.ts",
+    "apikey:test:grpc": "bun scripts/apikey/test-grpc-api-key.ts",
+    "apikey:test:combined": "bun scripts/apikey/test-combined-auth.ts",
+    "apikey:diagnostic": "bun scripts/apikey/diagnostic.ts",
+    "apikey:list": "bun scripts/apikey/list-apikeys.ts",
+    "apikey:create": "bun scripts/apikey/create-apikey.ts",
+    "apikey:revoke": "bun scripts/apikey/revoke-apikey.ts",
+    "apikey:rotate": "bun scripts/apikey/rotate-service-apikey.ts"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.12.2",

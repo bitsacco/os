@@ -1,5 +1,5 @@
 import { ClientGrpc, ClientsModule, Transport } from '@nestjs/microservices';
-import { Injectable, Module } from '@nestjs/common';
+import { Injectable, Module, Inject } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { join } from 'path';
 import { AUTH_SERVICE_NAME, AuthServiceClient } from '@bitsacco/common';
@@ -47,7 +47,7 @@ class TestService {
           transport: Transport.GRPC,
           options: {
             package: 'auth',
-            protoPath: join(__dirname, '../proto/auth.proto'),
+            protoPath: join(__dirname, '../../proto/auth.proto'),
             url: configService.get('AUTH_GRPC_URL', 'localhost:4060'),
           },
         }),

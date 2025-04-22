@@ -5,7 +5,9 @@
 // User types
 export interface User {
   id: string;
-  pinHash?: string; // Added for seeding purposes
+  pinHash: string; // Required for seeding purposes
+  otpHash: string; // Required for seeding purposes
+  otpExpiry: Date; // Required for seeding purposes
   phone?: {
     number: string;
     verified: boolean;

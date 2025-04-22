@@ -1,6 +1,6 @@
 # Bitsacco OS Database Seeders
 
-This directory contains scripts to seed the Bitsacco OS database with test data.
+This directory contains scripts to seed the Bitsacco OS database with test data
 
 ## Structure
 

@@ -41,8 +41,9 @@ export async function seed() {
     await User.insertMany(
       users.map((user) => ({
         _id: user.id,
-        pinHash: user.pinHash, // Now using the actual hashed PIN from the seeder
-        otp: '000000', // Default OTP required by schema
+        pinHash: user.pinHash,
+        otpHash: user.otpHash, // Add the required otpHash field
+        otpExpiry: user.otpExpiry, // Add the required otpExpiry field
         phone: user.phone,
         nostr: user.nostr,
         profile: user.profile,

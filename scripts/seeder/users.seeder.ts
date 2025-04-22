@@ -152,9 +152,17 @@ export async function seedUsers(): Promise<User[]> {
       }
       logger.log(`Created user: ${loginInfo} with PIN: ${pin}`);
 
+      // Also hash the pin for OTP (required field as per schema)
+      const otpHash = await hashPin(pin);
+      
+      // Set OTP expiry to 10 minutes from now
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
       return {
         ...userData,
         pinHash,
+        otpHash,
+        otpExpiry,
       };
     }),
   );
