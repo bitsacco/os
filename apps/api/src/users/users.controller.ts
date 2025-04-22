@@ -18,6 +18,8 @@ import {
   JwtAuthGuard,
   UpdateUserRequestDto,
   UsersService,
+  ResourceOwnerGuard,
+  CheckOwnership,
 } from '@bitsacco/common';
 
 @Controller('users')
@@ -38,6 +40,8 @@ export class UsersController {
   }
 
   @Get('/find/id/:id')
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'id', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Get user by ID' })
@@ -65,6 +69,8 @@ export class UsersController {
   }
 
   @Patch('/update')
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'id', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Update user' })
