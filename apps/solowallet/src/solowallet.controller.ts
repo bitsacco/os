@@ -118,7 +118,7 @@ export class SolowalletController {
         // Verify maxWithdrawable matches our expected value (if provided in request)
         if (maxWithdrawable) {
           const expectedMsats = pendingTx.amountMsats;
-          if (parseInt(maxWithdrawable) > expectedMsats) {
+          if (parseInt(maxWithdrawable) !== expectedMsats) {
             this.logger.error(
               `Mismatched maxWithdrawable: expected ${expectedMsats}, got ${maxWithdrawable}`,
             );

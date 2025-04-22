@@ -388,8 +388,16 @@ export class SolowalletService {
     };
   }
 
-  async findTransaction({ txId }: FindTxRequestDto): Promise<SolowalletTx> {
-    const doc = await this.wallet.findOne({ _id: txId });
+  async findTransaction({
+    txId,
+    userId,
+  }: FindTxRequestDto): Promise<SolowalletTx> {
+    const filterQuery = { _id: txId };
+    if (userId) {
+      // If userId is provided, ensure we only return transactions owned by this user
+      filterQuery['userId'] = userId;
+    }
+    const doc = await this.wallet.findOne(filterQuery);
     return toSolowalletTx(doc, this.logger);
   }
 

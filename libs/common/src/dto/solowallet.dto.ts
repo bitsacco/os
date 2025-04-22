@@ -255,6 +255,15 @@ export class FindTxRequestDto implements FindTxRequest {
   @Type(() => String)
   @ApiProperty({ example: 'c7137197-a6dc-46c3-98bd-9dc3a7d003a1' })
   txId: string;
+
+  @IsOptional()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+    description: 'User ID for ownership validation',
+  })
+  userId?: string;
 }
 
 export class LnUrlWithdrawStatusRequestDto {

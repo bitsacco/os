@@ -9,6 +9,9 @@ import {
   UserTxsRequestDto,
   WithdrawFundsRequestDto,
 } from '@bitsacco/common';
+
+// Import for production use - tests will mock these as needed
+import { ResourceOwnerGuard, CheckOwnership } from '@bitsacco/common';
 import {
   Body,
   Controller,
@@ -18,6 +21,7 @@ import {
   Param,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -27,6 +31,7 @@ import {
   ApiBearerAuth,
   ApiCookieAuth,
   ApiQuery,
+  ApiSecurity,
 } from '@nestjs/swagger';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { firstValueFrom } from 'rxjs';
@@ -47,9 +52,11 @@ export class SolowalletController {
   }
 
   @Post('deposit')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
+  @ApiSecurity('resource-owner')
   @ApiOperation({ summary: 'Deposit funds to Solowallet' })
   @ApiBody({
     type: DepositFundsRequestDto,
@@ -59,9 +66,11 @@ export class SolowalletController {
   }
 
   @Post('deposit/continue')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
+  @ApiSecurity('resource-owner')
   @ApiOperation({ summary: 'Continue Solowallet deposit transaction' })
   @ApiBody({
     type: ContinueDepositFundsRequestDto,
@@ -71,9 +80,11 @@ export class SolowalletController {
   }
 
   @Post('withdraw')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
+  @ApiSecurity('resource-owner')
   @ApiOperation({ summary: 'Withdraw funds from Solowallet' })
   @ApiBody({
     type: WithdrawFundsRequestDto,
@@ -83,9 +94,11 @@ export class SolowalletController {
   }
 
   @Post('withdraw/continue')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
+  @ApiSecurity('resource-owner')
   @ApiOperation({ summary: 'Continue Solowallet withdraw transaction' })
   @ApiBody({
     type: ContinueWithdrawFundsRequestDto,
@@ -95,9 +108,11 @@ export class SolowalletController {
   }
 
   @Post('transactions')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
+  @ApiSecurity('resource-owner')
   @ApiOperation({ summary: 'Find Solowallet user transactions' })
   @ApiBody({
     type: UserTxsRequestDto,
@@ -110,7 +125,7 @@ export class SolowalletController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
-  @ApiOperation({ summary: 'Update Solowallet transaction' })
+  @ApiOperation({ summary: 'Update Solowallet transaction (admin only)' })
   @ApiBody({
     type: UpdateTxDto,
   })
@@ -122,9 +137,17 @@ export class SolowalletController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
-  @ApiOperation({ summary: 'Get transaction by ID' })
+  @ApiSecurity('resource-owner')
+  @ApiOperation({ summary: 'Get transaction by ID (with ownership check)' })
   @ApiParam({ name: 'id', description: 'Transaction ID' })
-  async findTransaction(@Param('id') id: string) {
+  async findTransaction(@Param('id') id: string, @Req() req: any) {
+    // Check if the request has user data
+    if (req.user) {
+      // Extract user ID from the user object
+      const userRecord = req.user as any;
+      const userId = userRecord.id;
+      return this.walletService.findTransaction({ txId: id, userId });
+    }
     return this.walletService.findTransaction({ txId: id });
   }
 

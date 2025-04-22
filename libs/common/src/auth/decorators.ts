@@ -16,3 +16,20 @@ export const CurrentUser = createParamDecorator(
 );
 
 export const Roles = (...roles: Role[]) => SetMetadata('roles', roles);
+
+/**
+ * Configuration for resource ownership validation
+ */
+export interface OwnershipConfig {
+  /** Parameter name containing the resource ID */
+  paramName: string;
+  /** User property to match against (defaults to '_id') */
+  idField?: string;
+}
+
+/**
+ * Decorator to check resource ownership
+ * @param config Ownership validation configuration
+ */
+export const CheckOwnership = (config: OwnershipConfig) =>
+  SetMetadata('ownership_check', config);

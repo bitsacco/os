@@ -9,3 +9,5 @@ export * from './grpc-api-key.interceptor';
 export * from './grpc-api-key.middleware';
 export * from './apikey-circuit-breaker.service';
 export * from './combined.auth';
+export * from './resource-owner.guard';
+export * from './decorators';

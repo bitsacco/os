@@ -21,6 +21,7 @@ message PaginatedRequest {
 
 message FindTxRequest {
   string tx_id = 1;
+  optional string user_id = 2;
 }
 
 enum TransactionType {

@@ -39,6 +39,7 @@ export interface PaginatedRequest {
 
 export interface FindTxRequest {
   txId: string;
+  userId?: string | undefined;
 }
 
 export interface OnrampSwapSource {

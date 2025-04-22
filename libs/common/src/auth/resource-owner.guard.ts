@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '../types';
-import { OwnershipConfig } from '../decorators/auth.decorator';
+import { OwnershipConfig } from './decorators';
 
 @Injectable()
 export class ResourceOwnerGuard implements CanActivate {

@@ -1,6 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { JwtModule } from '@nestjs/jwt';
 import { of } from 'rxjs';
+import { JwtModule } from '@nestjs/jwt';
+import { Test, TestingModule } from '@nestjs/testing';
 import {
   NotificationChannel,
   NotificationTopic,
