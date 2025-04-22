@@ -1,33 +1,34 @@
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { DistributedRateLimitService } from '@bitsacco/common';
 import { NotificationChannel, NotificationImportance } from '@bitsacco/common';
 
 export interface RateLimitConfig {
   // Number of allowed notifications per time window
   limit: number;
 
-  // Time window in milliseconds
-  windowMs: number;
+  // Time window in seconds
+  windowSeconds: number;
 
   // Maximum burst allowed (can exceed normal rate for this many messages)
   burstLimit?: number;
 }
 
 export interface RateLimitResult {
-  // Whether the request should be allowed
+  // Whether the request is allowed
   allowed: boolean;
-
-  // When the next request will be allowed (ms since epoch)
-  nextAllowedAt: number;
 
   // How many requests are remaining in the current window
   remaining: number;
+  
+  // When the rate limit will reset (Unix timestamp in seconds)
+  resetAt: number;
 
   // How long to wait before the next request (ms)
   retryAfterMs: number;
 }
 
 /**
- * Rate limiting service for notifications
+ * Rate limiting service for notifications using distributed Redis implementation
  */
 @Injectable()
 export class RateLimitService implements OnModuleDestroy {
@@ -36,70 +37,57 @@ export class RateLimitService implements OnModuleDestroy {
   // Default settings for rate limiting
   private defaultConfig: RateLimitConfig = {
     limit: 20, // 20 notifications
-    windowMs: 3600000, // Per hour (in ms)
+    windowSeconds: 3600, // Per hour
     burstLimit: 5, // Allow 5 extra in a burst
   };
 
-  // Store rate limit data by user
-  private userLimits: Map<
-    string,
-    Map<string, { count: number; resetAt: number }>
-  > = new Map();
-
   // Store custom configurations
   private channelConfigs: Map<NotificationChannel, RateLimitConfig> = new Map();
-  private importanceConfigs: Map<NotificationImportance, RateLimitConfig> =
-    new Map();
+  private importanceConfigs: Map<NotificationImportance, RateLimitConfig> = new Map();
 
-  // Store the cleanup interval ID for proper resource cleanup
-  private cleanupIntervalId: any = null;
-
-  constructor() {
+  constructor(private readonly distributedRateLimitService: DistributedRateLimitService) {
     // Set default configurations for different channels
     this.channelConfigs.set(NotificationChannel.SMS, {
       limit: 10, // Stricter limit for SMS
-      windowMs: 3600000, // Per hour
+      windowSeconds: 3600, // Per hour
       burstLimit: 3, // Small burst allowed
     });
 
     this.channelConfigs.set(NotificationChannel.NOSTR, {
       limit: 15, // Medium limit for Nostr
-      windowMs: 3600000, // Per hour
+      windowSeconds: 3600, // Per hour
       burstLimit: 5, // Medium burst allowed
     });
 
     this.channelConfigs.set(NotificationChannel.IN_APP, {
       limit: 50, // Higher limit for in-app
-      windowMs: 3600000, // Per hour
+      windowSeconds: 3600, // Per hour
       burstLimit: 10, // Larger burst allowed
     });
 
     // Set default configurations for different importance levels
     this.importanceConfigs.set(NotificationImportance.LOW, {
       limit: 20,
-      windowMs: 3600000,
+      windowSeconds: 3600,
     });
 
     this.importanceConfigs.set(NotificationImportance.MEDIUM, {
       limit: 30,
-      windowMs: 3600000,
+      windowSeconds: 3600,
       burstLimit: 5,
     });
 
     this.importanceConfigs.set(NotificationImportance.HIGH, {
       limit: 40,
-      windowMs: 3600000,
+      windowSeconds: 3600,
       burstLimit: 8,
     });
 
     this.importanceConfigs.set(NotificationImportance.CRITICAL, {
       limit: 50, // Higher limit for critical
-      windowMs: 3600000,
+      windowSeconds: 3600,
       burstLimit: 10, // Larger burst allowed for critical
     });
-
-    // Start cleanup task
-    this.startCleanupTask();
   }
 
   /**
@@ -109,70 +97,34 @@ export class RateLimitService implements OnModuleDestroy {
    * @param importance Notification importance
    * @returns Rate limit result
    */
-  checkRateLimit(
+  async checkRateLimit(
     userId: string,
     channel: NotificationChannel,
     importance: NotificationImportance,
-  ): RateLimitResult {
+  ): Promise<RateLimitResult> {
     // Get the appropriate config based on channel and importance
     const config = this.getEffectiveConfig(channel, importance);
-
-    // Get the current time
-    const now = Date.now();
-
-    // Get or create the user's rate limit data
-    // Using fixed channel number for the key to ensure consistency even if enum names change
-    const userKey = `${userId}:${channel}`;
-    if (!this.userLimits.has(userId)) {
-      this.userLimits.set(userId, new Map());
-    }
-
-    const userMap = this.userLimits.get(userId);
-    if (!userMap.has(userKey)) {
-      userMap.set(userKey, {
-        count: 0,
-        resetAt: now + config.windowMs,
-      });
-    }
-
-    // Get the rate limit data
-    const limitData = userMap.get(userKey);
-
-    // Reset if window expired
-    if (now >= limitData.resetAt) {
-      limitData.count = 0;
-      limitData.resetAt = now + config.windowMs;
-    }
-
-    // Check if limit exceeded
-    const effectiveLimit = config.limit + (config.burstLimit || 0);
-    if (limitData.count >= effectiveLimit) {
-      const retryAfterMs = limitData.resetAt - now;
-
-      return {
-        allowed: false,
-        nextAllowedAt: limitData.resetAt,
-        remaining: 0,
-        retryAfterMs,
-      };
-    }
-
-    // Increment counter and return
-    limitData.count++;
-
-    const exceededStandardRate = limitData.count > config.limit;
-    if (exceededStandardRate) {
-      this.logger.warn(
-        `User ${userId} exceeded standard rate limit for ${NotificationChannel[channel]} ` +
-          `(${limitData.count}/${config.limit}), using burst capacity`,
-      );
-    }
-
+    
+    // Create a channel-specific action name
+    const action = `notification:${NotificationChannel[channel]}`;
+    
+    // Check rate limit using the distributed service
+    const result = await this.distributedRateLimitService.checkRateLimit(
+      userId,
+      action,
+      {
+        prefix: 'notification',
+        limit: config.limit,
+        windowSeconds: config.windowSeconds,
+        burstLimit: config.burstLimit,
+      }
+    );
+    
     return {
-      allowed: true,
-      nextAllowedAt: now,
-      remaining: effectiveLimit - limitData.count,
-      retryAfterMs: 0,
+      allowed: result.allowed,
+      remaining: result.remaining,
+      resetAt: result.resetAt,
+      retryAfterMs: result.retryAfterMs,
     };
   }
 
@@ -184,12 +136,10 @@ export class RateLimitService implements OnModuleDestroy {
     importance: NotificationImportance,
   ): RateLimitConfig {
     // Get base config from channel
-    const channelConfig =
-      this.channelConfigs.get(channel) || this.defaultConfig;
+    const channelConfig = this.channelConfigs.get(channel) || this.defaultConfig;
 
     // Get importance config
-    const importanceConfig =
-      this.importanceConfigs.get(importance) || this.defaultConfig;
+    const importanceConfig = this.importanceConfigs.get(importance) || this.defaultConfig;
 
     // For critical importance, use the higher limits
     if (importance === NotificationImportance.CRITICAL) {
@@ -199,7 +149,7 @@ export class RateLimitService implements OnModuleDestroy {
     // For other importance levels, use the more restrictive of the two
     return {
       limit: Math.min(channelConfig.limit, importanceConfig.limit),
-      windowMs: Math.max(channelConfig.windowMs, importanceConfig.windowMs),
+      windowSeconds: Math.max(channelConfig.windowSeconds, importanceConfig.windowSeconds),
       burstLimit: Math.min(
         channelConfig.burstLimit || 0,
         importanceConfig.burstLimit || 0,
@@ -252,52 +202,24 @@ export class RateLimitService implements OnModuleDestroy {
   /**
    * Reset rate limits for a user
    */
-  resetUserLimits(userId: string): void {
-    this.userLimits.delete(userId);
+  async resetUserLimits(userId: string): Promise<void> {
+    if (!userId) return;
+    
+    // Reset rate limits for all notification channels
+    for (const channel of Object.values(NotificationChannel)) {
+      if (typeof channel === 'string') continue; // Skip reverse mapping
+      
+      const action = `notification:${NotificationChannel[channel]}`;
+      await this.distributedRateLimitService.resetRateLimit(userId, action);
+    }
+    
     this.logger.log(`Reset rate limits for user ${userId}`);
   }
 
   /**
-   * Start the cleanup task to remove expired rate limit data
-   */
-  private startCleanupTask(): void {
-    const cleanupInterval = 60 * 60 * 1000; // 1 hour
-
-    this.cleanupIntervalId = setInterval(() => {
-      const now = Date.now();
-      let expiredEntries = 0;
-
-      // Clean up expired entries
-      for (const [userId, userMap] of this.userLimits.entries()) {
-        for (const [key, data] of userMap.entries()) {
-          if (now >= data.resetAt) {
-            userMap.delete(key);
-            expiredEntries++;
-          }
-        }
-
-        // Remove user if no entries left
-        if (userMap.size === 0) {
-          this.userLimits.delete(userId);
-        }
-      }
-
-      if (expiredEntries > 0) {
-        this.logger.debug(
-          `Cleaned up ${expiredEntries} expired rate limit entries`,
-        );
-      }
-    }, cleanupInterval);
-  }
-
-  /**
-   * Clean up resources when the module is destroyed to prevent memory leaks
+   * Clean up resources when the module is destroyed
    */
   onModuleDestroy(): void {
-    if (this.cleanupIntervalId) {
-      clearInterval(this.cleanupIntervalId);
-      this.logger.log('Rate limit cleanup interval cleared');
-      this.cleanupIntervalId = null;
-    }
+    // No need to clean up intervals as they're handled by the distributed service
   }
 }

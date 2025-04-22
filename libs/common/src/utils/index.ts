@@ -5,3 +5,4 @@ export * from './parser';
 export * from './swap';
 export * from './notification';
 export * from './secrets.service';
+export * from './rate-limit';
