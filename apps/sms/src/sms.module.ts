@@ -1,7 +1,7 @@
 import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { LoggerModule } from '@bitsacco/common';
+import { LoggerModule, RedisProvider } from '@bitsacco/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SmsController } from './sms.controller';
 import { SmsService } from './sms.service';
@@ -28,6 +28,6 @@ import { SmsMetricsService } from './sms.metrics';
     }),
   ],
   controllers: [SmsController],
-  providers: [SmsService, ConfigService, SmsMetricsService],
+  providers: [SmsService, ConfigService, SmsMetricsService, RedisProvider],
 })
 export class SmsModule {}

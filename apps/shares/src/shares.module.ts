@@ -6,6 +6,7 @@ import {
   EVENTS_SERVICE_BUS,
   LnurlMetricsService,
   LoggerModule,
+  RedisProvider,
 } from '@bitsacco/common';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-store';
@@ -35,6 +36,8 @@ import { SharesMetricsService } from './shares.metrics';
         DATABASE_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
+        REDIS_PASSWORD: Joi.string().required(),
+        REDIS_TLS: Joi.boolean().default(false),
       }),
     }),
     EventEmitterModule.forRoot(),
@@ -46,6 +49,10 @@ import { SharesMetricsService } from './shares.metrics';
           options: {
             host: configService.getOrThrow<string>('REDIS_HOST'),
             port: configService.getOrThrow<number>('REDIS_PORT'),
+            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
+            tls: configService.get<boolean>('REDIS_TLS', false)
+              ? {}
+              : undefined,
           },
         }),
         inject: [ConfigService],
@@ -60,7 +67,9 @@ import { SharesMetricsService } from './shares.metrics';
             host: configService.getOrThrow<string>('REDIS_HOST'),
             port: configService.getOrThrow<number>('REDIS_PORT'),
           },
+          password: configService.getOrThrow<string>('REDIS_PASSWORD'),
           ttl: 60 * 60 * 5, // 5 hours
+          tls: configService.get<boolean>('REDIS_TLS', false) ? {} : undefined,
         });
 
         return {
@@ -85,6 +94,7 @@ import { SharesMetricsService } from './shares.metrics';
     SharesOfferRepository,
     SharesRepository,
     SharesMetricsService,
+    RedisProvider,
   ],
 })
 export class SharesModule {}

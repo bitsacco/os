@@ -21,6 +21,7 @@ import {
   UsersRepository,
   UsersSchema,
   UsersService,
+  RedisProvider,
 } from '@bitsacco/common';
 import {
   ChamaWalletDocument,
@@ -54,6 +55,8 @@ import { ChamaController } from './chama.controller';
         BITLY_TOKEN: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
+        REDIS_PASSWORD: Joi.string().required(),
+        REDIS_TLS: Joi.boolean().default(false),
       }),
     }),
     JwtModule.registerAsync({
@@ -97,6 +100,10 @@ import { ChamaController } from './chama.controller';
           options: {
             host: configService.getOrThrow<string>('REDIS_HOST'),
             port: configService.getOrThrow<number>('REDIS_PORT'),
+            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
+            tls: configService.get<boolean>('REDIS_TLS', false)
+              ? {}
+              : undefined,
           },
         }),
         inject: [ConfigService],
@@ -148,6 +155,7 @@ import { ChamaController } from './chama.controller';
     FedimintService,
     LnurlMetricsService,
     ChamaMetricsService,
+    RedisProvider,
   ],
 })
 export class ChamaModule {}

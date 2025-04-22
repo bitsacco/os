@@ -12,6 +12,7 @@ import {
   EVENTS_SERVICE_BUS,
   FedimintService,
   LoggerModule,
+  RedisProvider,
 } from '@bitsacco/common';
 import { SwapController } from './swap.controller';
 import { SwapService } from './swap.service';
@@ -36,6 +37,8 @@ import {
         SWAP_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
+        REDIS_PASSWORD: Joi.string().required(),
+        REDIS_TLS: Joi.boolean().default(false),
         MOCK_BTC_KES_RATE: Joi.number(),
         CURRENCY_API_KEY: Joi.string(),
         DATABASE_URL: Joi.string().required(),
@@ -62,6 +65,10 @@ import {
           options: {
             host: configService.getOrThrow<string>('REDIS_HOST'),
             port: configService.getOrThrow<number>('REDIS_PORT'),
+            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
+            tls: configService.get<boolean>('REDIS_TLS', false)
+              ? {}
+              : undefined,
           },
         }),
         inject: [ConfigService],
@@ -75,6 +82,10 @@ import {
           socket: {
             host: configService.getOrThrow<string>('REDIS_HOST'),
             port: configService.getOrThrow<number>('REDIS_PORT'),
+            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
+            tls: configService.get<boolean>('REDIS_TLS', false)
+              ? {}
+              : undefined,
           },
           ttl: 60 * 60 * 5, // 5 hours
         });
@@ -103,6 +114,7 @@ import {
     MpesaOfframpSwapRepository,
     MpesaOnrampSwapRepository,
     SwapMetricsService,
+    RedisProvider,
   ],
 })
 export class SwapModule {}

@@ -9,6 +9,7 @@ services:
     restart: always
     depends_on:
       - mongodb
+      - redis
     env_file:
       - ./apps/api/.dev.env
     ports:
@@ -27,6 +28,7 @@ services:
     depends_on:
       - mongodb
       - sms
+      - redis
     env_file:
       - ./apps/auth/.dev.env
     ports:

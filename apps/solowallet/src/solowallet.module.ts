@@ -11,6 +11,7 @@ import {
   FedimintService,
   LnurlMetricsService,
   LoggerModule,
+  RedisProvider,
   SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
 import { SolowalletMetricsService } from './solowallet.metrics';
@@ -38,6 +39,8 @@ import { SolowalletService } from './solowallet.service';
         LNURL_CALLBACK: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
+        REDIS_PASSWORD: Joi.string().required(),
+        REDIS_TLS: Joi.boolean().default(false),
       }),
     }),
     DatabaseModule,
@@ -66,6 +69,10 @@ import { SolowalletService } from './solowallet.service';
           options: {
             host: configService.getOrThrow<string>('REDIS_HOST'),
             port: configService.getOrThrow<number>('REDIS_PORT'),
+            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
+            tls: configService.get<boolean>('REDIS_TLS', false)
+              ? {}
+              : undefined,
           },
         }),
         inject: [ConfigService],
@@ -85,6 +92,7 @@ import { SolowalletService } from './solowallet.service';
     FedimintService,
     LnurlMetricsService,
     SolowalletMetricsService,
+    RedisProvider,
   ],
 })
 export class SolowalletModule {}

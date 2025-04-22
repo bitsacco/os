@@ -45,6 +45,7 @@ import {
   SecretsService,
   JwtAuthGuard,
   DistributedRateLimitService,
+  RedisProvider,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
@@ -146,12 +147,12 @@ export class MetricsController {
         NOTIFICATION_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
+        REDIS_PASSWORD: Joi.string().required(),
+        REDIS_TLS: Joi.boolean().default(false),
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         THROTTLE_TTL: Joi.number().default(60),
         THROTTLE_LIMIT: Joi.number().default(120),
-        REDIS_PASSWORD: Joi.string().default('securepassword'),
-        REDIS_TLS: Joi.boolean().default(false),
         DOCS_API_KEY: Joi.when('NODE_ENV', {
           is: 'production',
           then: Joi.string().required(),
@@ -279,7 +280,7 @@ export class MetricsController {
           options: {
             host: configService.getOrThrow<string>('REDIS_HOST'),
             port: configService.getOrThrow<number>('REDIS_PORT'),
-            password: configService.get<string>('REDIS_PASSWORD'),
+            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
             tls: configService.get<boolean>('REDIS_TLS', false)
               ? {}
               : undefined,
@@ -313,31 +314,7 @@ export class MetricsController {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    // Provide Redis client for distributed services
-    {
-      provide: 'REDIS_CLIENT',
-      useFactory: (configService: ConfigService) => {
-        try {
-          const Redis = require('ioredis');
-          return new Redis({
-            host: configService.get('REDIS_HOST'),
-            port: configService.get('REDIS_PORT'),
-            password: configService.get('REDIS_PASSWORD'),
-            tls: configService.get('REDIS_TLS') ? {} : undefined,
-            // Add timeout for connection attempts
-            connectTimeout: 5000,
-            // Auto-reconnect with exponential backoff
-            retryStrategy: (times: number) => {
-              return Math.min(times * 100, 3000);
-            },
-          });
-        } catch (error) {
-          console.error('Failed to initialize Redis client:', error);
-          return null;
-        }
-      },
-      inject: [ConfigService],
-    },
+    RedisProvider,
     UsersRepository,
     UsersService,
     PhoneAuthStategy,

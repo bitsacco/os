@@ -25,6 +25,7 @@ import {
   SecretsService,
   ApiKeyCircuitBreakerService,
   DistributedRateLimitService,
+  RedisProvider,
 } from '@bitsacco/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -59,7 +60,7 @@ import { ApiKeyRotationService } from './apikeys/apikey-rotation.service';
         SALT_ROUNDS: Joi.number().required(),
         REDIS_HOST: Joi.string().default('localhost'),
         REDIS_PORT: Joi.number().default(6379),
-        REDIS_PASSWORD: Joi.string().default('securepassword'),
+        REDIS_PASSWORD: Joi.string().required(),
         REDIS_TLS: Joi.boolean().default(false),
       }),
     }),
@@ -114,32 +115,8 @@ import { ApiKeyRotationService } from './apikeys/apikey-rotation.service';
     ServiceRegistryService,
     ApiKeyCircuitBreakerService,
     ApiKeyRotationService,
-    // Provide Redis client for distributed services
-    {
-      provide: 'REDIS_CLIENT',
-      useFactory: (configService: ConfigService) => {
-        try {
-          const Redis = require('ioredis');
-          return new Redis({
-            host: configService.get('REDIS_HOST', 'localhost'),
-            port: configService.get('REDIS_PORT', 6379),
-            password: configService.get('REDIS_PASSWORD'),
-            tls: configService.get('REDIS_TLS', false) ? {} : undefined,
-            connectTimeout: 5000,
-            retryStrategy: (times) => Math.min(times * 100, 3000),
-          });
-        } catch (error) {
-          console.error('Failed to initialize Redis client:', error);
-          return null;
-        }
-      },
-      inject: [ConfigService],
-    },
-    // Provide the distributed rate limit service
-    {
-      provide: DistributedRateLimitService,
-      useClass: DistributedRateLimitService,
-    },
+    DistributedRateLimitService,
+    RedisProvider,
   ],
 })
 export class AuthModule {}
