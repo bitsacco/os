@@ -8,8 +8,8 @@ import {
   Get,
   MiddlewareConsumer,
   NestModule,
-  APP_GUARD,
 } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';

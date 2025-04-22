@@ -299,13 +299,14 @@ export class NotificationService {
       );
 
       // Check if rate limited
-      if (!rateLimit.allowed) {
+      const rateLimitResult = await rateLimit;
+      if (!rateLimitResult.allowed) {
         this.logger.warn(
           `Rate limit exceeded for user ${userId} on channel ${NotificationChannel[channel]}. ` +
-            `Next allowed in ${Math.ceil(rateLimit.retryAfterMs / 1000)} seconds`,
+            `Next allowed in ${Math.ceil(rateLimitResult.retryAfterMs / 1000)} seconds`,
         );
 
-        errorMessage = `Rate limit exceeded. Retry after ${Math.ceil(rateLimit.retryAfterMs / 1000)} seconds`;
+        errorMessage = `Rate limit exceeded. Retry after ${Math.ceil(rateLimitResult.retryAfterMs / 1000)} seconds`;
 
         // For IN_APP notifications, we'll store them anyway but mark them as filtered by rate limit
         // This ensures the user can still see them in their notification center

@@ -89,16 +89,18 @@ describe('ThrottlerConfig', () => {
 
     it('should track request counts correctly', async () => {
       // First request
-      const count1 = await storage.increment('test-key', 1000);
-      expect(count1).toBe(1);
+      const result1 = await storage.increment('test-key', 1000, 10);
+      expect(result1.totalHits).toBe(1);
+      expect(result1.isBlocked).toBe(false);
 
       // Verify count
       const storedCount = await storage.get('test-key');
       expect(storedCount).toBe(1);
 
       // Second request
-      const count2 = await storage.increment('test-key', 1000);
-      expect(count2).toBe(2);
+      const result2 = await storage.increment('test-key', 1000, 10);
+      expect(result2.totalHits).toBe(2);
+      expect(result2.isBlocked).toBe(false);
 
       // Verify updated count
       const updatedCount = await storage.get('test-key');
@@ -133,16 +135,18 @@ describe('ThrottlerConfig', () => {
 
     it('should increment and get counts correctly', async () => {
       // First request
-      const count1 = await storage.increment('redis-key', 1000);
-      expect(count1).toBe(1);
+      const result1 = await storage.increment('redis-key', 1000, 10);
+      expect(result1.totalHits).toBe(1);
+      expect(result1.isBlocked).toBe(false);
 
       // Verify count
       const storedCount = await storage.get('redis-key');
       expect(storedCount).toBe(1);
 
       // Second request
-      const count2 = await storage.increment('redis-key', 1000);
-      expect(count2).toBe(2);
+      const result2 = await storage.increment('redis-key', 1000, 10);
+      expect(result2.totalHits).toBe(2);
+      expect(result2.isBlocked).toBe(false);
 
       // Verify updated count
       const updatedCount = await storage.get('redis-key');
@@ -153,8 +157,9 @@ describe('ThrottlerConfig', () => {
       const fallbackStorage = new RedisThrottlerStorage(null);
 
       // Should work with in-memory fallback
-      const count = await fallbackStorage.increment('fallback-key', 1000);
-      expect(count).toBe(1);
+      const result = await fallbackStorage.increment('fallback-key', 1000, 10);
+      expect(result.totalHits).toBe(1);
+      expect(result.isBlocked).toBe(false);
 
       const storedCount = await fallbackStorage.get('fallback-key');
       expect(storedCount).toBe(1);
@@ -168,8 +173,8 @@ describe('ThrottlerConfig', () => {
 
       const options = service.createThrottlerOptions();
 
-      expect(options.ttl).toBe(60);
-      expect(options.limit).toBe(120);
+      expect(options.throttlers[0].ttl).toBe(60);
+      expect(options.throttlers[0].limit).toBe(120);
       expect(options.storage).toBeInstanceOf(RedisThrottlerStorage);
     });
 

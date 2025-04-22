@@ -7,6 +7,14 @@ import {
 import { ConfigService } from '@nestjs/config';
 import type { Redis } from 'ioredis';
 
+// Define ThrottlerStorageRecord type to match the expected interface
+interface ThrottlerStorageRecord {
+  totalHits: number;
+  timeToExpire: number;
+  isBlocked: boolean;
+  timeToBlockExpire: number;
+}
+
 /**
  * In-memory storage for ThrottlerModule (fallback for tests)
  */
@@ -43,20 +51,35 @@ export class InMemoryThrottlerStorage implements ThrottlerStorage {
   /**
    * Increment the number of requests in the time window
    */
-  async increment(key: string, ttl: number): Promise<number> {
+  async increment(
+    key: string,
+    ttl: number,
+    limit: number = 60,
+    blockDuration: number = 0,
+    throttlerName: string = 'default',
+  ): Promise<ThrottlerStorageRecord> {
     const record = this.storage.get(key);
+    const now = Date.now();
     const count = (record?.count || 0) + 1;
+    const isBlocked = count > limit;
+    const expiresAt = now + ttl;
 
     this.storage.set(key, {
-      ttl: Date.now() + ttl,
+      ttl: expiresAt,
       count,
     });
 
-    return count;
+    return {
+      totalHits: count,
+      timeToExpire: Math.ceil((expiresAt - now) / 1000), // ttl in seconds
+      isBlocked,
+      timeToBlockExpire: isBlocked ? Math.ceil(blockDuration / 1000) : 0,
+    };
   }
 
   /**
    * Get the current count of requests in the time window
+   * Note: This method is kept for backward compatibility with tests
    */
   async get(key: string): Promise<number> {
     const record = this.storage.get(key);
@@ -90,22 +113,49 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
   /**
    * Increment the number of requests in the time window
    */
-  async increment(key: string, ttl: number): Promise<number> {
+  async increment(
+    key: string,
+    ttl: number,
+    limit: number = 60,
+    blockDuration: number = 0,
+    throttlerName: string = 'default',
+  ): Promise<ThrottlerStorageRecord> {
     if (!this.redis) {
-      return this.inMemoryFallback.increment(key, ttl);
+      return this.inMemoryFallback.increment(
+        key,
+        ttl,
+        limit,
+        blockDuration,
+        throttlerName,
+      );
     }
 
     try {
+      const now = Date.now();
       const multi = this.redis.multi();
       multi.incr(key);
       multi.pexpire(key, ttl);
       const results = await multi.exec();
-      return results ? (results[0][1] as number) : 1;
+      const count = results ? (results[0][1] as number) : 1;
+      const isBlocked = count > limit;
+
+      return {
+        totalHits: count,
+        timeToExpire: Math.ceil(ttl / 1000), // ttl in seconds
+        isBlocked,
+        timeToBlockExpire: isBlocked ? Math.ceil(blockDuration / 1000) : 0,
+      };
     } catch (error) {
       this.logger.error(
         `Redis throttler error during increment: ${error.message}`,
       );
-      return this.inMemoryFallback.increment(key, ttl);
+      return this.inMemoryFallback.increment(
+        key,
+        ttl,
+        limit,
+        blockDuration,
+        throttlerName,
+      );
     }
   }
 
@@ -150,8 +200,12 @@ export class ThrottlerConfigService implements ThrottlerOptionsFactory {
    */
   createThrottlerOptions(): ThrottlerModuleOptions {
     return {
-      ttl: this.configService.get<number>('THROTTLE_TTL', 60),
-      limit: this.configService.get<number>('THROTTLE_LIMIT', 120),
+      throttlers: [
+        {
+          ttl: this.configService.get<number>('THROTTLE_TTL', 60),
+          limit: this.configService.get<number>('THROTTLE_LIMIT', 120),
+        },
+      ],
       storage: new RedisThrottlerStorage(this.redis),
     };
   }
