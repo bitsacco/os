@@ -16,7 +16,7 @@ export class ApiKeyMiddleware implements NestMiddleware {
     // Determine if docs should be public based on environment
     const environment = this.configService.get('NODE_ENV', 'development');
     const enableDocsInProduction =
-      this.configService.get('ENABLE_SWAGGER_DOCS') === 'true';
+      this.configService.get('ENABLE_SWAGGER_DOCS') === 'false';
 
     // Only enable docs if we're not in production or if explicitly enabled
     this.docsEnabled = environment !== 'production' || enableDocsInProduction;

@@ -19,6 +19,7 @@ export const ApiKeyScopes = (...scopes: ApiKeyScope[]) =>
 export class ApiKeyGuard implements CanActivate {
   private readonly logger = new Logger(ApiKeyGuard.name);
   private readonly isDev: boolean;
+  private readonly isProduction: boolean;
 
   constructor(
     private readonly apiKeyService: ApiKeyService,
@@ -26,6 +27,17 @@ export class ApiKeyGuard implements CanActivate {
     private readonly configService: ConfigService,
   ) {
     this.isDev = this.configService.get('NODE_ENV') === 'development';
+    this.isProduction = this.configService.get('NODE_ENV') === 'production';
+
+    if (
+      this.isDev &&
+      !this.configService.get<boolean>('ENFORCE_DEV_SECURITY', true)
+    ) {
+      this.logger.warn(
+        'API key scope checking is relaxed in development mode. ' +
+          'Set ENFORCE_DEV_SECURITY=true for production-like security.',
+      );
+    }
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -60,27 +72,38 @@ export class ApiKeyGuard implements CanActivate {
       );
 
       if (requiredScopes && requiredScopes.length > 0) {
-        // In development with global key, be more permissive with scope checking
-        if (isGlobalDevKey) {
+        // Check if we should enforce security even in development
+        const enforceDevSecurity = this.configService.get<boolean>(
+          'ENFORCE_DEV_SECURITY',
+          true,
+        );
+
+        // In development with global key, and not enforcing security
+        if (isGlobalDevKey && !this.isProduction && !enforceDevSecurity) {
           const missingScopes = requiredScopes.filter(
             (scope) => !apiKeyDoc.scopes.includes(scope),
           );
 
           if (missingScopes.length > 0) {
-            // Just log a warning but still allow access in dev mode
+            // Log a warning but still allow access
             this.logger.warn(
-              `DEV MODE: Global API key missing some required scopes: ${missingScopes.join(', ')}`,
+              `DEV MODE: Global API key missing required scopes: ${missingScopes.join(', ')}. ` +
+                'Set ENFORCE_DEV_SECURITY=true to strictly enforce scopes in development.',
             );
           }
         } else {
-          // For production or non-global keys, strictly enforce scopes
+          // For all other cases (production or enforced dev), strictly check scopes
           const hasAllScopes = requiredScopes.every((scope) =>
             apiKeyDoc.scopes.includes(scope),
           );
 
           if (!hasAllScopes) {
+            const missingScopes = requiredScopes.filter(
+              (scope) => !apiKeyDoc.scopes.includes(scope),
+            );
+
             this.logger.warn(
-              `API key ${apiKeyDoc._id} missing required scopes: ${requiredScopes}`,
+              `API key ${apiKeyDoc._id} missing required scopes: ${missingScopes.join(', ')}`,
             );
             throw new UnauthorizedException('Insufficient API key permissions');
           }
