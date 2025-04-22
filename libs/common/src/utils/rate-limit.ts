@@ -59,7 +59,7 @@ export class DistributedRateLimitService implements OnModuleDestroy {
   private readonly logger = new Logger(DistributedRateLimitService.name);
   private readonly defaultOptions: RateLimitOptions;
   private readonly cleanupScript: string;
-  private cleanupIntervalId: NodeJS.Timeout | null = null;
+  private cleanupIntervalId: ReturnType<typeof setInterval> | null = null;
 
   // In-memory fallback for tests
   private readonly memoryStore = new Map<string, RateLimitEntry>();
@@ -409,12 +409,12 @@ export class DistributedRateLimitService implements OnModuleDestroy {
 
         if (this.redis) {
           try {
-            const deletedCount = await this.redis.eval(
+            const deletedCount = (await this.redis.eval(
               this.cleanupScript,
               0,
               this.defaultOptions.prefix,
               now.toString(),
-            );
+            )) as number;
 
             if (deletedCount > 0) {
               this.logger.debug(
