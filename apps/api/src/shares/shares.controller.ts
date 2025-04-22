@@ -9,6 +9,8 @@ import {
   SubscribeSharesDto,
   TransferSharesDto,
   UpdateSharesDto,
+  ResourceOwnerGuard,
+  CheckOwnership
 } from '@bitsacco/common';
 import {
   Body,
@@ -44,6 +46,8 @@ export class SharesController {
   }
 
   @Post('offer')
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Offer Bitsacco shares' })
@@ -63,6 +67,8 @@ export class SharesController {
   }
 
   @Post('subscribe')
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Subscribe Bitsacco shares' })
@@ -74,6 +80,8 @@ export class SharesController {
   }
 
   @Post('transfer')
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Transfer Bitsacco shares' })
@@ -104,6 +112,8 @@ export class SharesController {
   }
 
   @Get('transactions/:userId')
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({
