@@ -17,6 +17,8 @@ import {
   PaginatedRequestDto,
   default_page,
   default_page_size,
+  ResourceOwnerGuard,
+  CheckOwnership,
 } from '@bitsacco/common';
 import {
   Body,
@@ -72,7 +74,8 @@ export class ChamasController {
   }
 
   @Patch('update')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'chamaId', idField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Update existing Chama' })
@@ -108,7 +111,8 @@ export class ChamasController {
   }
 
   @Get('find/:chamaId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'chamaId', idField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Find existing Chama by ID' })
@@ -164,7 +168,8 @@ export class ChamasController {
   }
 
   @Post('tx/deposit')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'memberId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Chama deposit transaction' })
@@ -188,7 +193,8 @@ export class ChamasController {
   }
 
   @Post('tx/withdraw/request')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'memberId', idField: 'id' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Chama withdrawal transaction' })
@@ -224,7 +230,8 @@ export class ChamasController {
   }
 
   @Get('tx/find/:txId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'txId', idField: 'txId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Find Chama transaction by ID' })
