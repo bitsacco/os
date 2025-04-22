@@ -104,18 +104,7 @@ export class ApiKeyGuard implements CanActivate {
   }
 
   private extractApiKey(request: any): string | undefined {
-    // Try header first (preferred method)
-    const headerKey = request.headers['x-api-key'];
-    if (headerKey) {
-      return headerKey;
-    }
-
-    // Try query parameter as fallback
-    const queryKey = request.query?.api_key;
-    if (queryKey) {
-      return queryKey;
-    }
-
-    return undefined;
+    // Only accept API key from header
+    return request.headers['x-api-key'];
   }
 }
