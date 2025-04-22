@@ -8,11 +8,13 @@ import {
   Get,
   MiddlewareConsumer,
   NestModule,
+  APP_GUARD,
 } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import {
   AUTH_SERVICE_NAME,
   CHAMA_WALLET_SERVICE_NAME,
@@ -42,8 +44,11 @@ import {
   ServiceRegistryService,
   SecretsService,
   JwtAuthGuard,
+  DistributedRateLimitService,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
+import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
+import { ThrottlerConfigService } from './middleware/throttler.config';
 import { CombinedAuthGuard } from './auth/combined-auth.guard';
 import { SwapController } from './swap';
 import { NostrController } from './nostr';
@@ -143,12 +148,20 @@ export class MetricsController {
         REDIS_PORT: Joi.number().required(),
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
-        DOCS_API_KEY: Joi.string().when('NODE_ENV', {
+        THROTTLE_TTL: Joi.number().default(60),
+        THROTTLE_LIMIT: Joi.number().default(120),
+        REDIS_PASSWORD: Joi.string().default('securepassword'),
+        REDIS_TLS: Joi.boolean().default(false),
+        DOCS_API_KEY: Joi.when('NODE_ENV', {
           is: 'production',
           then: Joi.string().required(),
           otherwise: Joi.optional(),
         }),
       }),
+    }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      useClass: ThrottlerConfigService,
     }),
     ClientsModule.registerAsync([
       {
@@ -266,6 +279,8 @@ export class MetricsController {
           options: {
             host: configService.getOrThrow<string>('REDIS_HOST'),
             port: configService.getOrThrow<number>('REDIS_PORT'),
+            password: configService.get<string>('REDIS_PASSWORD'),
+            tls: configService.get<boolean>('REDIS_TLS', false) ? {} : undefined,
           },
         }),
         inject: [ConfigService],
@@ -291,6 +306,11 @@ export class MetricsController {
     HealthController,
   ],
   providers: [
+    // Global rate limiting guard
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     UsersRepository,
     UsersService,
     PhoneAuthStategy,
@@ -305,11 +325,14 @@ export class MetricsController {
     CombinedAuthGuard,
     JwtAuthGuard,
     Reflector,
+    DistributedRateLimitService,
   ],
 })
 export class ApiModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    // Apply API key middleware globally
-    consumer.apply(ApiKeyMiddleware).forRoutes('*');
+    // Apply global middlewares
+    consumer
+      .apply(SecurityHeadersMiddleware, ApiKeyMiddleware)
+      .forRoutes('*');
   }
 }
