@@ -1,18 +1,19 @@
 import * as Joi from 'joi';
+import { redisStore } from 'cache-manager-redis-store';
+import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import {
   CustomStore,
   DatabaseModule,
   EVENTS_SERVICE_BUS,
+  getRedisConfig,
   LnurlMetricsService,
   LoggerModule,
   RedisProvider,
 } from '@bitsacco/common';
-import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-store';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SharesController } from './shares.controller';
 import { SharesService } from './shares.service';
 import {
@@ -45,14 +46,7 @@ import { SharesMetricsService } from './shares.metrics';
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
-          options: {
-            host: configService.getOrThrow<string>('REDIS_HOST'),
-            port: configService.getOrThrow<number>('REDIS_PORT'),
-            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
-            tls: configService.get<boolean>('REDIS_TLS', false)
-              ? {}
-              : undefined,
-          },
+          options: getRedisConfig(configService),
         }),
         inject: [ConfigService],
       },
@@ -62,11 +56,7 @@ import { SharesMetricsService } from './shares.metrics';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
         const store = await redisStore({
-          socket: {
-            host: configService.getOrThrow<string>('REDIS_HOST'),
-            port: configService.getOrThrow<number>('REDIS_PORT'),
-          },
-          password: configService.getOrThrow<string>('REDIS_PASSWORD'),
+          ...getRedisConfig(configService),
           ttl: 60 * 60 * 5, // 5 hours
           tls: configService.get<boolean>('REDIS_TLS', false) ? {} : undefined,
         });

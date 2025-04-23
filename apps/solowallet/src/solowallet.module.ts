@@ -9,6 +9,7 @@ import {
   DatabaseModule,
   EVENTS_SERVICE_BUS,
   FedimintService,
+  getRedisConfig,
   LnurlMetricsService,
   LoggerModule,
   RedisProvider,
@@ -66,14 +67,7 @@ import { SolowalletService } from './solowallet.service';
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
-          options: {
-            host: configService.getOrThrow<string>('REDIS_HOST'),
-            port: configService.getOrThrow<number>('REDIS_PORT'),
-            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
-            tls: configService.get<boolean>('REDIS_TLS', false)
-              ? {}
-              : undefined,
-          },
+          options: getRedisConfig(configService),
         }),
         inject: [ConfigService],
       },

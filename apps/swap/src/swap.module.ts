@@ -11,6 +11,7 @@ import {
   DatabaseModule,
   EVENTS_SERVICE_BUS,
   FedimintService,
+  getRedisConfig,
   LoggerModule,
   RedisProvider,
 } from '@bitsacco/common';
@@ -62,14 +63,7 @@ import {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
-          options: {
-            host: configService.getOrThrow<string>('REDIS_HOST'),
-            port: configService.getOrThrow<number>('REDIS_PORT'),
-            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
-            tls: configService.get<boolean>('REDIS_TLS', false)
-              ? {}
-              : undefined,
-          },
+          options: getRedisConfig(configService),
         }),
         inject: [ConfigService],
       },
@@ -79,14 +73,7 @@ import {
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
         const store = await redisStore({
-          socket: {
-            host: configService.getOrThrow<string>('REDIS_HOST'),
-            port: configService.getOrThrow<number>('REDIS_PORT'),
-            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
-            tls: configService.get<boolean>('REDIS_TLS', false)
-              ? {}
-              : undefined,
-          },
+          socket: getRedisConfig(configService),
           ttl: 60 * 60 * 5, // 5 hours
         });
 

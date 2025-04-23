@@ -46,6 +46,7 @@ import {
   JwtAuthGuard,
   DistributedRateLimitService,
   RedisProvider,
+  getRedisConfig,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
@@ -284,14 +285,7 @@ export class MetricsController {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
-          options: {
-            host: configService.getOrThrow<string>('REDIS_HOST'),
-            port: configService.getOrThrow<number>('REDIS_PORT'),
-            password: configService.getOrThrow<string>('REDIS_PASSWORD'),
-            tls: configService.get<boolean>('REDIS_TLS', false)
-              ? {}
-              : undefined,
-          },
+          options: getRedisConfig(configService),
         }),
         inject: [ConfigService],
       },

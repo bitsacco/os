@@ -1,7 +1,15 @@
 import Redis from 'ioredis';
 import { ConfigService } from '@nestjs/config';
-import { Provider } from '@nestjs/common';
-import { Logger } from '@nestjs/common';
+import { Provider, Logger } from '@nestjs/common';
+
+export const getRedisConfig = (configService: ConfigService) => {
+  return {
+    host: configService.getOrThrow<string>('REDIS_HOST'),
+    port: configService.getOrThrow<number>('REDIS_PORT'),
+    password: configService.getOrThrow<string>('REDIS_PASSWORD'),
+    tls: configService.get<boolean>('REDIS_TLS', false) ? {} : undefined,
+  };
+};
 
 /**
  * Standard Redis client provider for all microservices
@@ -13,12 +21,7 @@ export const RedisProvider: Provider = {
     const logger = new Logger('RedisProvider');
 
     try {
-      const host = configService.getOrThrow<string>('REDIS_HOST');
-      const port = configService.getOrThrow<number>('REDIS_PORT');
-      const password = configService.getOrThrow<string>('REDIS_PASSWORD');
-      const tls = configService.get<boolean>('REDIS_TLS', false)
-        ? {}
-        : undefined;
+      const { host, port, password, tls } = getRedisConfig(configService);
 
       logger.log(`Connecting to Redis at ${host}:${port} (TLS: ${!!tls})`);
       logger.log(

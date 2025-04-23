@@ -11,6 +11,7 @@ import {
   SMS_SERVICE_NAME,
   DistributedRateLimitService,
   RedisProvider,
+  getRedisConfig,
 } from '@bitsacco/common';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
@@ -80,14 +81,7 @@ import {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
-          options: {
-            host: configService.getOrThrow<string>('REDIS_HOST'),
-            port: configService.getOrThrow<number>('REDIS_PORT'),
-            password: configService.get<string>('REDIS_PASSWORD'),
-            tls: configService.get<boolean>('REDIS_TLS', false)
-              ? {}
-              : undefined,
-          },
+          options: getRedisConfig(configService),
         }),
         inject: [ConfigService],
       },

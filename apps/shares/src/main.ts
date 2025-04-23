@@ -4,7 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ReflectionService } from '@grpc/reflection';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { initializeOpenTelemetry } from '@bitsacco/common';
+import { getRedisConfig, initializeOpenTelemetry } from '@bitsacco/common';
 import { SharesModule } from './shares.module';
 
 async function bootstrap() {
@@ -30,10 +30,7 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.REDIS,
     options: {
-      host: configService.getOrThrow<string>('REDIS_HOST'),
-      port: configService.getOrThrow<number>('REDIS_PORT'),
-      password: configService.getOrThrow<string>('REDIS_PASSWORD'),
-      tls: configService.get<boolean>('REDIS_TLS', false) ? {} : undefined,
+      ...getRedisConfig(configService),
       retryAttempts: 2,
       retryDelay: 100,
     },
