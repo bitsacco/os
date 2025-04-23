@@ -69,6 +69,8 @@ export function toUser(doc: UsersDocument): User {
     phone: doc.phone,
     nostr: doc.nostr,
     profile: doc.profile,
-    roles: doc.roles,
+    roles: doc.roles.map((role) =>
+      typeof role === 'string' ? parseInt(role, 10) : role,
+    ),
   };
 }
