@@ -2,12 +2,11 @@ import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
-  CustomStore,
+  configRedisCacheStore,
   DatabaseModule,
   EVENTS_SERVICE_BUS,
   FedimintService,
@@ -72,15 +71,8 @@ import {
       isGlobal: true,
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        const store = await redisStore({
-          socket: getRedisConfig(configService),
-          ttl: 60 * 60 * 5, // 5 hours
-        });
-
-        return {
-          store: new CustomStore(store, undefined /* TODO: inject logger */),
-          ttl: 60 * 60 * 5, // 5 hours
-        };
+        const ttl = 60 * 60 * 5; // 5 hours
+        return configRedisCacheStore(configService, ttl);
       },
       inject: [ConfigService],
     }),

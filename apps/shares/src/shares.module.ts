@@ -1,18 +1,17 @@
 import * as Joi from 'joi';
-import { redisStore } from 'cache-manager-redis-store';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { CacheModule } from '@nestjs/cache-manager';
 import { Module } from '@nestjs/common';
 import {
-  CustomStore,
   DatabaseModule,
   EVENTS_SERVICE_BUS,
   getRedisConfig,
   LnurlMetricsService,
   LoggerModule,
   RedisProvider,
+  configRedisCacheStore,
 } from '@bitsacco/common';
 import { SharesController } from './shares.controller';
 import { SharesService } from './shares.service';
@@ -55,16 +54,8 @@ import { SharesMetricsService } from './shares.metrics';
       isGlobal: true,
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        const store = await redisStore({
-          ...getRedisConfig(configService),
-          ttl: 60 * 60 * 5, // 5 hours
-          tls: configService.get<boolean>('REDIS_TLS', false) ? {} : undefined,
-        });
-
-        return {
-          store: new CustomStore(store, undefined /* TODO: inject logger */),
-          ttl: 60 * 60 * 5, // 5 hours
-        };
+        const ttl = 60 * 60 * 5; // 5 hours
+        return configRedisCacheStore(configService, ttl);
       },
       inject: [ConfigService],
     }),

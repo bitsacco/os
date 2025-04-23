@@ -3,13 +3,11 @@ import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { CacheModule } from '@nestjs/cache-manager';
-import { redisStore } from 'cache-manager-redis-store';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { HttpModule } from '@nestjs/axios';
 import {
-  CustomStore,
   DatabaseModule,
   EVENTS_SERVICE_BUS,
   FedimintService,
@@ -23,6 +21,7 @@ import {
   UsersService,
   RedisProvider,
   getRedisConfig,
+  configRedisCacheStore,
 } from '@bitsacco/common';
 import {
   ChamaWalletDocument,
@@ -107,15 +106,8 @@ import { ChamaController } from './chama.controller';
       isGlobal: true,
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
-        const store = await redisStore({
-          socket: getRedisConfig(configService),
-          ttl: 60 * 60 * 5, // 5 hours
-        });
-
-        return {
-          store: new CustomStore(store, undefined /* TODO: inject logger */),
-          ttl: 60 * 60 * 5, // 5 hours
-        };
+        const ttl = 60 * 60 * 5; // 5 hours
+        return configRedisCacheStore(configService, ttl);
       },
       inject: [ConfigService],
     }),

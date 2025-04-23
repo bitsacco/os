@@ -1,6 +1,8 @@
 import Redis from 'ioredis';
-import { ConfigService } from '@nestjs/config';
+import { redisStore } from 'cache-manager-redis-store';
 import { Provider, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { CustomStore } from './cache';
 
 export const getRedisConfig = (configService: ConfigService) => {
   return {
@@ -79,4 +81,26 @@ export const RedisProvider: Provider = {
     }
   },
   inject: [ConfigService],
+};
+
+export const configRedisCacheStore = async (
+  configService: ConfigService,
+  ttl: number,
+) => {
+  const { host, port, password, tls } = getRedisConfig(configService);
+
+  const store = await redisStore({
+    socket: {
+      host,
+      port,
+    },
+    password,
+    tls,
+    ttl,
+  });
+
+  return {
+    store: new CustomStore(store, undefined /* TODO: inject logger */),
+    ttl,
+  };
 };
