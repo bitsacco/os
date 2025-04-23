@@ -30,6 +30,8 @@ export async function seedUsers(): Promise<User[]> {
           avatar_url: 'https://example.com/avatars/admin.jpg',
         },
         roles: [Role.Member, Role.Admin, Role.SuperAdmin],
+        otpHash: '',
+        otpExpiry: undefined
       },
       '123456',
     ],
@@ -46,6 +48,8 @@ export async function seedUsers(): Promise<User[]> {
           name: 'Isaack',
         },
         roles: [Role.Member, Role.Admin],
+        otpHash: '',
+        otpExpiry: undefined
       },
       '111111',
     ],
@@ -62,6 +66,8 @@ export async function seedUsers(): Promise<User[]> {
           name: 'Nostr Admin',
         },
         roles: [Role.Member, Role.Admin],
+        otpHash: '',
+        otpExpiry: undefined
       },
       '222222',
     ],
@@ -78,6 +84,8 @@ export async function seedUsers(): Promise<User[]> {
           name: 'Phone Member',
         },
         roles: [Role.Member],
+        otpHash: '',
+        otpExpiry: undefined
       },
       '333333',
     ],
@@ -94,6 +102,8 @@ export async function seedUsers(): Promise<User[]> {
           name: 'Nostr Member',
         },
         roles: [Role.Member],
+        otpHash: '',
+        otpExpiry: undefined
       },
       '444444',
     ],
@@ -115,6 +125,8 @@ export async function seedUsers(): Promise<User[]> {
           avatar_url: 'https://example.com/avatars/member.jpg',
         },
         roles: [Role.Member],
+        otpHash: '',
+        otpExpiry: undefined
       },
       '555555',
     ],
@@ -131,6 +143,8 @@ export async function seedUsers(): Promise<User[]> {
           name: 'Unverified Phone Member',
         },
         roles: [Role.Member],
+        otpHash: '',
+        otpExpiry: undefined
       },
       '666666',
     ],
