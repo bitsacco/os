@@ -32,7 +32,6 @@ import { SharesMetricsService } from './shares.metrics';
       validationSchema: Joi.object({
         NODE_ENV: Joi.string().required(),
         SHARES_GRPC_URL: Joi.string().required(),
-        SHARES_ISSUED: Joi.number().required(),
         DATABASE_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
