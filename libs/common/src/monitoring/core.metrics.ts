@@ -68,6 +68,9 @@ export class CoreMetricsService extends MetricsService {
   private apiRequestCounter!: Counter;
   private apiRequestDurationHistogram!: Histogram;
   private apiErrorCounter!: Counter;
+  private errorsByEndpoint!: Counter;
+  private errorsByType!: Counter;
+  private errorsByService!: Counter;
 
   // gRPC metrics
   private grpcRequestCounter!: Counter;
@@ -235,6 +238,19 @@ export class CoreMetricsService extends MetricsService {
 
     this.apiErrorCounter = this.createCounter('core.api.errors', {
       description: 'Number of API errors',
+    });
+
+    // Detailed error metrics
+    this.errorsByEndpoint = this.createCounter(`core.errors_by_endpoint`, {
+      description: 'Number of errors by endpoint path',
+    });
+
+    this.errorsByType = this.createCounter(`core.errors_by_type`, {
+      description: 'Number of errors by error type/code',
+    });
+
+    this.errorsByService = this.createCounter(`core.errors_by_service`, {
+      description: 'Number of errors by downstream service',
     });
 
     // gRPC metrics
@@ -667,6 +683,29 @@ export class CoreMetricsService extends MetricsService {
   private calculateSuccessRate(successful: number, total: number): number {
     if (total === 0) return 0;
     return (successful / total) * 100;
+  }
+
+  /**
+   * Record detailed error metrics
+   *
+   * @param endpoint The API endpoint that encountered the error
+   * @param errorType The type or code of the error
+   * @param service Optional downstream service that caused the error
+   */
+  recordError(endpoint: string, errorType: string, service?: string): void {
+    // Record error by endpoint
+    this.errorsByEndpoint.add(1, { endpoint });
+
+    // Record error by type
+    this.errorsByType.add(1, { error_type: errorType });
+
+    // Record error by service if provided
+    if (service) {
+      this.errorsByService.add(1, { service });
+    }
+
+    // Update in-memory metrics
+    this.metrics.errors[errorType] = (this.metrics.errors[errorType] || 0) + 1;
   }
 
   /**

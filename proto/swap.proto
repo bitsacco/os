@@ -154,4 +154,7 @@ message SwapResponse {
   string createdAt = 7;
 
   optional string updatedAt = 8;
+  
+  // Optional human-readable message about the swap status
+  optional string message = 9;
 }

@@ -138,6 +138,8 @@ export interface SwapResponse {
   retryCount: number;
   createdAt: string;
   updatedAt?: string | undefined;
+  /** Optional human-readable message about the swap status */
+  message?: string | undefined;
 }
 
 /** SwapService: Defines the main service for handling swap operations. */

@@ -9,3 +9,4 @@ export * from './fedimint';
 export * from './users';
 export * from './auth';
 export * from './monitoring';
+export * from './exceptions';

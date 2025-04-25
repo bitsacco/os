@@ -9,12 +9,13 @@ import {
   MiddlewareConsumer,
   NestModule,
 } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
   AUTH_SERVICE_NAME,
   CHAMA_WALLET_SERVICE_NAME,
@@ -48,6 +49,8 @@ import {
   RedisProvider,
   getRedisConfig,
   RoleValidationService,
+  CoreMetricsService,
+  GlobalExceptionFilter,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
@@ -135,6 +138,7 @@ export class MetricsController {
   imports: [
     JwtModule,
     LoggerModule,
+    EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
@@ -315,6 +319,14 @@ export class MetricsController {
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    // Global exception filter
+    {
+      provide: APP_FILTER,
+      useFactory: (metricsService: CoreMetricsService) => {
+        return new GlobalExceptionFilter(metricsService);
+      },
+      inject: [CoreMetricsService],
     },
     RedisProvider,
     UsersRepository,

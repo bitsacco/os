@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { object } from 'joi';
 import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
+import { Observable } from 'rxjs';
 import {
   ApiBearerAuth,
   ApiCookieAuth,
@@ -35,6 +36,9 @@ import {
   SwapServiceClient,
   SWAP_SERVICE_NAME,
   JwtAuthGuard,
+  HandleServiceErrors,
+  CircuitBreakerService,
+  TransactionStatus,
 } from '@bitsacco/common';
 
 @Controller('swap')
@@ -45,6 +49,7 @@ export class SwapController {
   constructor(
     @Inject(SWAP_SERVICE_NAME) private readonly grpc: ClientGrpc,
     @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
+    private readonly circuitBreaker: CircuitBreakerService,
   ) {
     this.swapService =
       this.grpc.getService<SwapServiceClient>(SWAP_SERVICE_NAME);
@@ -81,8 +86,25 @@ export class SwapController {
   @ApiBody({
     type: CreateOnrampSwapDto,
   })
-  postOnrampTransaction(@Body() req: CreateOnrampSwapDto) {
-    return this.swapService.createOnrampSwap(req);
+  @HandleServiceErrors()
+  postOnrampTransaction(@Body() req: CreateOnrampSwapDto): Observable<any> {
+    return this.circuitBreaker.execute(
+      'swap-service-onramp',
+      this.swapService.createOnrampSwap(req),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: {
+          id: 'error-fallback',
+          rate: '0',
+          lightning: '',
+          status: TransactionStatus.FAILED,
+          retryCount: 0,
+          createdAt: new Date().toISOString(),
+          message: 'Swap service temporarily unavailable',
+        },
+      },
+    );
   }
 
   @Get('onramp/find/:id')
@@ -152,8 +174,25 @@ export class SwapController {
   @ApiBody({
     type: CreateOfframpSwapDto,
   })
-  postOfframpTransaction(@Body() req: CreateOfframpSwapDto) {
-    return this.swapService.createOfframpSwap(req);
+  @HandleServiceErrors()
+  postOfframpTransaction(@Body() req: CreateOfframpSwapDto): Observable<any> {
+    return this.circuitBreaker.execute(
+      'swap-service-offramp',
+      this.swapService.createOfframpSwap(req),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: {
+          id: 'error-fallback',
+          rate: '0',
+          lightning: '',
+          status: TransactionStatus.FAILED,
+          retryCount: 0,
+          createdAt: new Date().toISOString(),
+          message: 'Swap service temporarily unavailable',
+        },
+      },
+    );
   }
 
   @Get('offramp/find/:id')

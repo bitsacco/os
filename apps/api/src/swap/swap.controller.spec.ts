@@ -1,10 +1,13 @@
 import { TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
+import { of } from 'rxjs';
 import {
   Currency,
   EVENTS_SERVICE_BUS,
   SupportedCurrencies,
   SWAP_SERVICE_NAME,
   SwapServiceClient,
+  CircuitBreakerService,
 } from '@bitsacco/common';
 import {
   createTestingModuleWithValidation,
@@ -17,14 +20,16 @@ import { SwapController } from './swap.controller';
 describe('SwapController', () => {
   let serviceGenerator: ClientGrpc;
   let swapController: SwapController;
+  let circuitBreakerService: CircuitBreakerService;
+
   const swapServiceClient: SwapServiceClient = {
-    getQuote: jest.fn(),
-    createOnrampSwap: jest.fn(),
-    findOnrampSwap: jest.fn(),
-    listOnrampSwaps: jest.fn(),
-    createOfframpSwap: jest.fn(),
-    findOfframpSwap: jest.fn(),
-    listOfframpSwaps: jest.fn(),
+    getQuote: jest.fn().mockReturnValue(of({})),
+    createOnrampSwap: jest.fn().mockReturnValue(of({})),
+    findOnrampSwap: jest.fn().mockReturnValue(of({})),
+    listOnrampSwaps: jest.fn().mockReturnValue(of({})),
+    createOfframpSwap: jest.fn().mockReturnValue(of({})),
+    findOfframpSwap: jest.fn().mockReturnValue(of({})),
+    listOfframpSwaps: jest.fn().mockReturnValue(of({})),
   };
   let serviceBus: ClientProxy;
 
@@ -35,6 +40,13 @@ describe('SwapController', () => {
     };
 
     const jwtAuthMocks = provideJwtAuthStrategyMocks();
+
+    // Create a mock for the CircuitBreakerService
+    const mockCircuitBreaker = {
+      execute: jest.fn().mockImplementation((serviceKey, observable) => {
+        return observable;
+      }),
+    };
 
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [SwapController],
@@ -49,12 +61,19 @@ describe('SwapController', () => {
             emit: jest.fn(),
           },
         },
+        {
+          provide: CircuitBreakerService,
+          useValue: mockCircuitBreaker,
+        },
         ...jwtAuthMocks,
       ],
     });
 
     swapController = module.get<SwapController>(SwapController);
     serviceBus = module.get<ClientProxy>(EVENTS_SERVICE_BUS);
+    circuitBreakerService = module.get<CircuitBreakerService>(
+      CircuitBreakerService,
+    );
   });
 
   it('should be defined', () => {
@@ -159,7 +178,7 @@ describe('SwapController', () => {
   describe('findOfframpTransaction', () => {
     it('should call swapService.findOfframpTransaction', () => {
       swapController.findOfframpTransaction('swap_id');
-      expect(swapServiceClient.findOnrampSwap).toHaveBeenCalled();
+      expect(swapServiceClient.findOfframpSwap).toHaveBeenCalled();
     });
   });
 });

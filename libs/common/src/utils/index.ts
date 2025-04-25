@@ -7,3 +7,5 @@ export * from './notification';
 export * from './secrets.service';
 export * from './rate-limit';
 export * from './redis-provider';
+export * from './service-client.decorator';
+export * from './circuit-breaker.service';
