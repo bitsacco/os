@@ -5,10 +5,11 @@ import {
   Logger,
   NotFoundException,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { toUser, UsersDocument } from '../database';
 import { generateOTP } from '../utils';
-import { type User } from '../types';
+import { type User, Role } from '../types';
 import {
   LoginUserRequestDto,
   RegisterUserRequestDto,
@@ -18,6 +19,7 @@ import {
   RecoverUserRequestDto,
 } from '../dto';
 import { UsersRepository } from './users.repository';
+import { RoleValidationService } from '../auth/role-validation.service';
 
 export interface PreUserAuth {
   user: User;
@@ -52,7 +54,10 @@ export interface IUsersService {
 export class UsersService implements IUsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private readonly users: UsersRepository) {
+  constructor(
+    private readonly users: UsersRepository,
+    private readonly roleValidationService: RoleValidationService,
+  ) {
     this.logger.log('UsersService initialized');
   }
 
@@ -263,7 +268,8 @@ export class UsersService implements IUsersService {
   async updateUser({
     userId,
     updates,
-  }: UpdateUserRequestDto): Promise<UserAuth> {
+    requestingUser, // Added parameter to track who's making the update
+  }: UpdateUserRequestDto & { requestingUser?: User }): Promise<UserAuth> {
     const ud: UsersDocument = await this.queryUser({ id: userId });
     if (!ud) {
       throw new NotFoundException(`User with id ${userId} not found`);
@@ -293,6 +299,27 @@ export class UsersService implements IUsersService {
     }
 
     if (updates.roles) {
+      // Get the current user document - requestingUser comes from JWT context
+      if (!requestingUser) {
+        this.logger.warn('No requesting user provided for role update');
+        throw new ForbiddenException(
+          'User information required for role updates',
+        );
+      }
+
+      // Validate the role update using our role validation service
+      const currentRoles = (ud.roles || []).map((role) =>
+        typeof role === 'string' ? parseInt(role, 10) : role,
+      );
+
+      this.roleValidationService.validateRoleUpdate(
+        requestingUser,
+        userId,
+        currentRoles as Role[],
+        updates.roles,
+      );
+
+      // If validation passes, apply the role update
       hunk.roles = updates.roles;
     }
 

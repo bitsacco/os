@@ -20,6 +20,8 @@ import {
   UsersService,
   ResourceOwnerGuard,
   CheckOwnership,
+  CurrentUser,
+  type User,
 } from '@bitsacco/common';
 
 @Controller('users')
@@ -75,7 +77,14 @@ export class UsersController {
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Update user' })
   @ApiBody({ type: UpdateUserRequestDto })
-  async updateUser(@Body() request: UpdateUserRequestDto) {
-    return this.usersService.updateUser(request);
+  async updateUser(
+    @Body() request: UpdateUserRequestDto,
+    @CurrentUser() currentUser: User,
+  ) {
+    // Pass the requesting user to the service for role validation
+    return this.usersService.updateUser({
+      ...request,
+      requestingUser: currentUser,
+    });
   }
 }

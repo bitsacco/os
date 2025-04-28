@@ -11,3 +11,4 @@ export * from './apikey-circuit-breaker.service';
 export * from './combined.auth';
 export * from './resource-owner.guard';
 export * from './decorators';
+export * from './role-validation.service';

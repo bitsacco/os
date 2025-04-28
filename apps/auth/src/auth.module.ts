@@ -26,6 +26,7 @@ import {
   ApiKeyCircuitBreakerService,
   DistributedRateLimitService,
   RedisProvider,
+  RoleValidationService,
 } from '@bitsacco/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
@@ -117,6 +118,7 @@ import { ApiKeyRotationService } from './apikeys/apikey-rotation.service';
     ApiKeyRotationService,
     DistributedRateLimitService,
     RedisProvider,
+    RoleValidationService,
   ],
 })
 export class AuthModule {}
