@@ -22,6 +22,7 @@ import {
   RedisProvider,
   getRedisConfig,
   configRedisCacheStore,
+  RoleValidationService,
 } from '@bitsacco/common';
 import {
   ChamaWalletDocument,
@@ -139,6 +140,7 @@ import { ChamaController } from './chama.controller';
     LnurlMetricsService,
     ChamaMetricsService,
     RedisProvider,
+    RoleValidationService,
   ],
 })
 export class ChamaModule {}

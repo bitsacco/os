@@ -13,6 +13,7 @@ import {
   getRedisConfig,
   LoggerModule,
   RedisProvider,
+  RoleValidationService,
 } from '@bitsacco/common';
 import { SwapController } from './swap.controller';
 import { SwapService } from './swap.service';
@@ -94,6 +95,7 @@ import {
     MpesaOnrampSwapRepository,
     SwapMetricsService,
     RedisProvider,
+    RoleValidationService,
   ],
 })
 export class SwapModule {}

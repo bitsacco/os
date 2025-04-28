@@ -14,6 +14,7 @@ import {
   LoggerModule,
   RedisProvider,
   SWAP_SERVICE_NAME,
+  RoleValidationService,
 } from '@bitsacco/common';
 import { SolowalletMetricsService } from './solowallet.metrics';
 import {
@@ -87,6 +88,7 @@ import { SolowalletService } from './solowallet.service';
     LnurlMetricsService,
     SolowalletMetricsService,
     RedisProvider,
+    RoleValidationService,
   ],
 })
 export class SolowalletModule {}

@@ -12,6 +12,7 @@ import {
   DistributedRateLimitService,
   RedisProvider,
   getRedisConfig,
+  RoleValidationService,
 } from '@bitsacco/common';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
@@ -96,6 +97,7 @@ import {
     RateLimitService,
     DistributedRateLimitService,
     RedisProvider,
+    RoleValidationService,
   ],
 })
 export class NotificationModule {}

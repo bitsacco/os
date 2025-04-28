@@ -12,6 +12,7 @@ import {
   LoggerModule,
   RedisProvider,
   configRedisCacheStore,
+  RoleValidationService,
 } from '@bitsacco/common';
 import { SharesController } from './shares.controller';
 import { SharesService } from './shares.service';
@@ -75,6 +76,7 @@ import { SharesMetricsService } from './shares.metrics';
     SharesRepository,
     SharesMetricsService,
     RedisProvider,
+    RoleValidationService,
   ],
 })
 export class SharesModule {}

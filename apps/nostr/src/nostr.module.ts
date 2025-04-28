@@ -1,7 +1,11 @@
 import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { LoggerModule, RedisProvider } from '@bitsacco/common';
+import {
+  LoggerModule,
+  RedisProvider,
+  RoleValidationService,
+} from '@bitsacco/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NostrController } from './nostr.controller';
 import { NostrService } from './nostr.service';
@@ -26,6 +30,12 @@ import { NostrMetricsService } from './nostr.metrics';
     }),
   ],
   controllers: [NostrController],
-  providers: [NostrService, ConfigService, NostrMetricsService, RedisProvider],
+  providers: [
+    NostrService,
+    ConfigService,
+    NostrMetricsService,
+    RedisProvider,
+    RoleValidationService,
+  ],
 })
 export class NostrModule {}
