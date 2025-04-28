@@ -65,6 +65,11 @@ export class RegisterUserRequestDto
     type: [Role],
     enum: Role,
     isArray: true,
+    description: 'Only Role.Member (0) is allowed for user registration',
+  })
+  @IsEnum(Role, {
+    each: true,
+    message: 'Only the Member role is allowed during registration',
   })
   roles: Role[];
 }

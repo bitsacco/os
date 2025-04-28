@@ -80,6 +80,14 @@ export class UsersService implements IUsersService {
     npub,
     roles,
   }: RegisterUserRequestDto): Promise<PreUserAuth> {
+    // Ensure only Member role is allowed during registration
+    if (roles.some((role) => role !== 0)) {
+      // Role.Member = 0
+      throw new UnauthorizedException(
+        'Only Member role is allowed during registration',
+      );
+    }
+
     const pinHash = await argon2.hash(pin);
 
     const otp = generateOTP();
@@ -104,7 +112,7 @@ export class UsersService implements IUsersService {
         verified: false,
       },
       profile: undefined,
-      roles,
+      roles: [0], // Explicitly set to Role.Member only
     });
 
     const user = toUser(ud);
