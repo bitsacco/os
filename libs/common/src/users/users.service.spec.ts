@@ -4,10 +4,12 @@ import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { SmsServiceClient } from '../types';
 import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
+import { RoleValidationService } from '../auth/role-validation.service';
 
 describe('UsersService', () => {
   let usersService: UsersService;
   let mockUsersRepository: UsersRepository;
+  let mockRoleValidationService: RoleValidationService;
   let serviceGenerator: ClientGrpc;
   let mockSmsServiceClient: Partial<SmsServiceClient>;
 
@@ -19,6 +21,10 @@ describe('UsersService', () => {
       findOneAndUpdate: jest.fn(),
       findOneAndDelete: jest.fn(),
     } as unknown as UsersRepository;
+
+    mockRoleValidationService = {
+      validateRoleUpdate: jest.fn(),
+    } as unknown as RoleValidationService;
 
     serviceGenerator = {
       getService: jest.fn().mockReturnValue(mockSmsServiceClient),
@@ -32,9 +38,16 @@ describe('UsersService', () => {
           useValue: mockUsersRepository,
         },
         {
+          provide: RoleValidationService,
+          useValue: mockRoleValidationService,
+        },
+        {
           provide: UsersService,
           useFactory: () => {
-            return new UsersService(mockUsersRepository);
+            return new UsersService(
+              mockUsersRepository,
+              mockRoleValidationService,
+            );
           },
         },
       ],

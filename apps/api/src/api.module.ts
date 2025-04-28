@@ -47,6 +47,7 @@ import {
   DistributedRateLimitService,
   RedisProvider,
   getRedisConfig,
+  RoleValidationService,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
@@ -331,6 +332,7 @@ export class MetricsController {
     JwtAuthGuard,
     Reflector,
     DistributedRateLimitService,
+    RoleValidationService,
   ],
 })
 export class ApiModule implements NestModule {

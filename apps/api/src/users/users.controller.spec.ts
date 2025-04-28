@@ -4,12 +4,17 @@ import {
   provideJwtAuthStrategyMocks,
 } from '@bitsacco/testing';
 import { UsersController } from './users.controller';
-import { UsersService, UsersRepository } from '@bitsacco/common';
+import {
+  UsersService,
+  UsersRepository,
+  RoleValidationService,
+} from '@bitsacco/common';
 
 describe('UsersController', () => {
   let controller: UsersController;
   let service: UsersService;
   let mockUsersRepository: UsersRepository;
+  let mockRoleValidationService: RoleValidationService;
 
   beforeEach(async () => {
     mockUsersRepository = {
@@ -20,6 +25,10 @@ describe('UsersController', () => {
       findOneAndDelete: jest.fn(),
     } as unknown as UsersRepository;
 
+    mockRoleValidationService = {
+      validateRoleUpdate: jest.fn(),
+    } as unknown as RoleValidationService;
+
     const jwtAuthMocks = provideJwtAuthStrategyMocks();
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [UsersController],
@@ -27,8 +36,15 @@ describe('UsersController', () => {
         {
           provide: UsersService,
           useFactory: () => {
-            return new UsersService(mockUsersRepository);
+            return new UsersService(
+              mockUsersRepository,
+              mockRoleValidationService,
+            );
           },
+        },
+        {
+          provide: RoleValidationService,
+          useValue: mockRoleValidationService,
         },
         ...jwtAuthMocks,
       ],
