@@ -38,6 +38,7 @@ export interface RecoverUserRequest {
   pin: string;
   phone?: string | undefined;
   npub?: string | undefined;
+  otp?: string | undefined;
 }
 
 export interface AuthRequest {

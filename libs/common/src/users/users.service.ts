@@ -39,7 +39,7 @@ export interface IUsersService {
 
   registerUser(registerDto: RegisterUserRequestDto): Promise<PreUserAuth>;
 
-  recoverUser(recoverDto: RecoverUserRequestDto): Promise<PostUserAuth>;
+  recoverUser(recoverDto: RecoverUserRequestDto): Promise<UserAuth>;
 
   findUser(findDto: FindUserDto): Promise<User>;
 
@@ -133,13 +133,50 @@ export class UsersService implements IUsersService {
     pin,
     phone,
     npub,
-  }: RecoverUserRequestDto): Promise<PostUserAuth> {
+    otp,
+  }: RecoverUserRequestDto): Promise<UserAuth> {
     let ud: UsersDocument = await this.queryUser({ phone, npub });
 
     if (!ud) {
       throw new UnauthorizedException('User not found');
     }
 
+    // If no OTP provided, generate a new one and require verification first
+    if (!otp) {
+      const newOtp = generateOTP();
+      const otpHash = await argon2.hash(newOtp);
+      const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minute expiry
+
+      this.logger.log(`Recovery OTP generated for user ${ud._id}`);
+
+      await this.users.findOneAndUpdate(
+        { _id: ud._id },
+        { otpHash, otpExpiry },
+      );
+
+      return {
+        user: toUser(ud),
+        authorized: false,
+        otp: newOtp,
+      };
+    }
+
+    // Verify OTP before allowing PIN recovery
+    try {
+      // Check if OTP has expired
+      if (ud.otpExpiry < new Date()) {
+        throw new UnauthorizedException('OTP has expired');
+      }
+
+      const isValidOtp = await argon2.verify(ud.otpHash, otp);
+      if (!isValidOtp) {
+        throw new UnauthorizedException('Invalid OTP');
+      }
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired OTP');
+    }
+
+    // After OTP verification, update the PIN
     const pinHash = await argon2.hash(pin);
 
     ud = await this.users.findOneAndUpdate(

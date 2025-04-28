@@ -202,6 +202,16 @@ export class AuthService {
     try {
       const auth = await this.userService.recoverUser(req);
 
+      // If not authorized (needs OTP verification), return user without tokens
+      if (!auth.authorized) {
+        // If we have an OTP and a phone number, send the OTP
+        if ('otp' in auth && auth.otp && req.phone) {
+          await this.sendOtp(auth.otp, req.phone, req.npub);
+        }
+        return { user: auth.user };
+      }
+
+      // User is authorized, generate tokens
       const { accessToken, refreshToken } =
         await this.tokenService.generateTokens(auth.user);
 

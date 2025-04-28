@@ -86,7 +86,11 @@ export class VerifyUserRequestDto implements VerifyUserRequest {
   otp?: string;
 }
 
-export class RecoverUserRequestDto extends AuthRequestBase {}
+export class RecoverUserRequestDto extends AuthRequestBase {
+  @IsOptional()
+  @PinDecorators()
+  otp?: string;
+}
 
 export class AuthRequestDto implements AuthRequest {
   @IsString()

@@ -35,6 +35,7 @@ message RecoverUserRequest {
   string pin = 1;
   optional string phone = 2;
   optional string npub = 3;
+  optional string otp = 4;
 }
 
 message AuthRequest {
