@@ -328,6 +328,7 @@ export class MetricsController {
       },
       inject: [CoreMetricsService],
     },
+    CoreMetricsService,
     RedisProvider,
     UsersRepository,
     UsersService,
