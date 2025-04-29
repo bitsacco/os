@@ -1,14 +1,6 @@
-import axios from 'axios';
 import * as Joi from 'joi';
 import { join } from 'path';
-import { register } from 'prom-client';
-import {
-  Module,
-  Controller,
-  Get,
-  MiddlewareConsumer,
-  NestModule,
-} from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
@@ -70,75 +62,14 @@ import { NotificationGateway } from './notifications/notification.gateway';
 import { NotificationController } from './notifications/notification.controller';
 import { HealthController } from './health/health.controller';
 
-// Controller for federated metrics
-@Controller('metrics')
-export class MetricsController {
-  private readonly serviceEndpoints = {
-    shares: process.env.SHARES_GRPC_URL,
-    chama: process.env.CHAMA_GRPC_URL,
-    solowallet: process.env.SOLOWALLET_GRPC_URL,
-    swap: process.env.SWAP_GRPC_URL,
-    auth: process.env.AUTH_GRPC_URL,
-    sms: process.env.SMS_GRPC_URL,
-    nostr: process.env.NOSTR_GRPC_URL,
-  };
-
-  constructor() {
-    // Initialize metrics specific to API gateway
-    const meter = createMeter('api-gateway');
-
-    meter.createCounter('api_gateway.requests_total', {
-      description: 'Total number of requests processed by the API gateway',
-    });
-
-    meter.createCounter('api_gateway.errors_total', {
-      description: 'Total number of errors encountered by the API gateway',
-    });
-  }
-
-  @Get()
-  async getMetrics() {
-    try {
-      // First, get metrics from API gateway itself
-      const ownMetrics = await register.metrics();
-      let combinedMetrics = ownMetrics;
-
-      // Collect metrics from individual services
-      for (const [service, url] of Object.entries(this.serviceEndpoints)) {
-        if (!url) continue;
-
-        try {
-          // Extract hostname/port from gRPC URL format like "hostname:port"
-          const [host, port] = url.split(':');
-          if (!host || !port) continue;
-
-          const metricsUrl = `http://${host}:${port}/metrics`;
-          const response = await axios.get(metricsUrl, { timeout: 500 });
-
-          if (response.status === 200) {
-            // Add service metrics to combined output
-            combinedMetrics += `\n# Metrics from ${service} service\n${response.data}`;
-          }
-        } catch (err) {
-          // Skip services that don't have metrics endpoints available
-          console.log(
-            `Could not fetch metrics from ${service}: ${err.message}`,
-          );
-        }
-      }
-
-      return combinedMetrics;
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-      return 'Error fetching metrics';
-    }
-  }
-}
+// Import the metrics module
+import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
     JwtModule,
     LoggerModule,
+    MetricsModule,
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -311,7 +242,6 @@ export class MetricsController {
     SharesController,
     SolowalletController,
     ChamasController,
-    MetricsController,
     NotificationController,
     HealthController,
   ],
