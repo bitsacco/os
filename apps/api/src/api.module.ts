@@ -51,6 +51,7 @@ import {
   RoleValidationService,
   CoreMetricsService,
   GlobalExceptionFilter,
+  CircuitBreakerService,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
@@ -328,6 +329,7 @@ export class MetricsController {
       },
       inject: [CoreMetricsService],
     },
+    CircuitBreakerService,
     CoreMetricsService,
     RedisProvider,
     UsersRepository,
