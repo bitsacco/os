@@ -9,9 +9,10 @@ import { SmsModule } from './sms.module';
 
 async function bootstrap() {
   const port = process.env.PORT ?? 4060;
+  const metricsPort = process.env.METRICS_PORT ?? 4062;
   try {
     // Initialize OpenTelemetry for metrics and tracing
-    bootstrapTelemetry('sms-service', Number(port));
+    bootstrapTelemetry('sms-service', Number(metricsPort));
   } catch (e) {
     console.error('Failed to bootstrap telemetry', e);
   }
@@ -39,7 +40,9 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
 
   await app.startAllMicroservices();
-  console.log(`🔍 Telemetry enabled - Metrics available at ${sms_url}/metrics`);
+  console.log(
+    `🔍 Telemetry enabled - Metrics available at 0.0.0.0:${metricsPort}/metrics`,
+  );
 }
 
 bootstrap();

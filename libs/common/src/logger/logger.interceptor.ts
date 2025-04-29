@@ -14,8 +14,15 @@ export class HttpLoggingInterceptor implements NestInterceptor {
     const url = request.url;
     const now = Date.now();
 
+    // Check if this is a metrics endpoint
+    const isMetricsEndpoint = url.includes('/metrics');
+
     console.log(`[HTTP Request] ${method} ${url}`);
-    console.log('Request Body:', JSON.stringify(request.body, null, 2));
+
+    // Only log request body for non-metrics endpoints
+    if (!isMetricsEndpoint) {
+      console.log('Request Body:', JSON.stringify(request.body, null, 2));
+    }
 
     return next.handle().pipe(
       tap((data) => {
@@ -24,7 +31,11 @@ export class HttpLoggingInterceptor implements NestInterceptor {
         console.log(
           `[HTTP Response] ${method} ${url} ${response.statusCode} - ${delay}ms`,
         );
-        console.log('Response Body:', JSON.stringify(data, null, 2));
+
+        // Skip logging response body for metrics endpoints
+        if (!isMetricsEndpoint) {
+          console.log('Response Body:', JSON.stringify(data, null, 2));
+        }
       }),
     );
   }

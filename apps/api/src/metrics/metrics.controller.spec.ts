@@ -32,10 +32,12 @@ describe('MetricsController', () => {
     it('should return metrics when all services are available', async () => {
       // Create a basic test that doesn't rely on mocking
       jest.spyOn(register, 'metrics').mockResolvedValue('api_metrics');
-      jest.spyOn(axios, 'get').mockResolvedValue({ status: 200, data: 'service_metrics' });
-      
+      jest
+        .spyOn(axios, 'get')
+        .mockResolvedValue({ status: 200, data: 'service_metrics' });
+
       const result = await controller.getMetrics();
-      
+
       expect(result).toBeDefined();
       expect(typeof result).toBe('string');
     });

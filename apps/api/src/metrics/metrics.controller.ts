@@ -12,14 +12,14 @@ export class MetricsController {
   constructor(private readonly configService: ConfigService) {
     // Map service names to their HTTP metric endpoints
     this.serviceEndpoints = {
-      shares: 'shares:4070',
-      chama: 'chama:4090',
-      solowallet: 'solowallet:4080',
-      swap: 'swap:4040',
-      auth: 'auth:4010',
-      sms: 'sms:4060',
-      nostr: 'nostr:4050',
-      notification: 'notification:5000',
+      auth: 'auth:4012',
+      swap: 'swap:4042',
+      nostr: 'nostr:4052',
+      sms: 'sms:4062',
+      shares: 'shares:4072',
+      solowallet: 'solowallet:4082',
+      chama: 'chama:4092',
+      notification: 'notification:5002',
     };
   }
 
@@ -40,7 +40,7 @@ export class MetricsController {
           const response = await axios.get(metricsUrl, { timeout: 500 });
 
           if (response.status === 200) {
-            // Add service metrics to combined output
+            // Add service metrics to combined output without logging the data
             combinedMetrics += `\n# Metrics from ${service} service\n${response.data}`;
           }
         } catch (err) {

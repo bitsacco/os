@@ -32,46 +32,46 @@ scrape_configs:
     scrape_interval: 10s
     metrics_path: /metrics
     static_configs:
-      - targets: ["auth:4010"]
+      - targets: ["auth:4012"]
       
   - job_name: "nostr"
     scrape_interval: 10s
     metrics_path: /metrics
     static_configs:
-      - targets: ["nostr:4050"]
+      - targets: ["nostr:4052"]
       
   - job_name: "sms"
     scrape_interval: 10s
     metrics_path: /metrics
     static_configs:
-      - targets: ["sms:4060"]
+      - targets: ["sms:4062"]
       
   - job_name: "shares"
     scrape_interval: 10s
     metrics_path: /metrics
     static_configs:
-      - targets: ["shares:4070"]
+      - targets: ["shares:4072"]
     
   - job_name: "solowallet"
     scrape_interval: 10s
     metrics_path: /metrics
     static_configs:
-      - targets: ["solowallet:4080"]
+      - targets: ["solowallet:4082"]
     
   - job_name: "chama"
     scrape_interval: 10s
     metrics_path: /metrics
     static_configs:
-      - targets: ["chama:4090"]
+      - targets: ["chama:4092"]
     
   - job_name: "swap"
     scrape_interval: 10s
     metrics_path: /metrics
     static_configs:
-      - targets: ["swap:4040"]
+      - targets: ["swap:4042"]
 
   - job_name: "notification"
     scrape_interval: 10s
     metrics_path: /metrics
     static_configs:
-      - targets: ["notification:5000"]
+      - targets: ["notification:5002"]

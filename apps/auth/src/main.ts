@@ -9,9 +9,10 @@ import { AuthModule } from './auth.module';
 
 async function bootstrap() {
   const port = process.env.PORT ?? 4010;
+  const metricsPort = process.env.METRICS_PORT ?? 8010;
   try {
     // Initialize OpenTelemetry for metrics and tracing
-    bootstrapTelemetry('auth-service', Number(port));
+    bootstrapTelemetry('auth-service', Number(metricsPort));
   } catch (e) {
     console.error('Failed to bootstrap telemetry', e);
   }
@@ -40,7 +41,7 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
   console.log(
-    `🔍 Telemetry enabled - Metrics available at ${auth_url}/metrics`,
+    `🔍 Telemetry enabled - Metrics available at 0.0.0.0:${metricsPort}/metrics`,
   );
 }
 

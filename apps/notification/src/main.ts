@@ -9,9 +9,10 @@ import { NotificationModule } from './notification.module';
 
 async function bootstrap() {
   const port = process.env.PORT ?? 5000;
+  const metricsPort = process.env.METRICS_PORT ?? 5002;
   try {
     // Initialize OpenTelemetry for metrics and tracing
-    bootstrapTelemetry('notification-service', Number(port));
+    bootstrapTelemetry('notification-service', Number(metricsPort));
   } catch (e) {
     console.error('Failed to bootstrap telemetry', e);
   }
@@ -42,7 +43,7 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
   console.log(
-    `🔍 Telemetry enabled - Prometheus metrics available at ${notification_url}/metrics`,
+    `🔍 Telemetry enabled - Prometheus metrics available at 0.0.0.0:${metricsPort}/metrics`,
   );
 }
 

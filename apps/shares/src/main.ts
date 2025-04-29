@@ -9,9 +9,10 @@ import { SharesModule } from './shares.module';
 
 async function bootstrap() {
   const port = process.env.PORT ?? 4070;
+  const metricsPort = process.env.METRICS_PORT ?? 4072;
   try {
     // Initialize OpenTelemetry for metrics and tracing
-    bootstrapTelemetry('shares-service', Number(port));
+    bootstrapTelemetry('shares-service', Number(metricsPort));
   } catch (e) {
     console.error('Failed to bootstrap telemetry', e);
   }
@@ -49,7 +50,7 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
   console.log(
-    `🔍 Telemetry enabled - Prometheus metrics available at ${shares_url}/metrics`,
+    `🔍 Telemetry enabled - Prometheus metrics available at 0.0.0.0:${metricsPort}/metrics`,
   );
 }
 
