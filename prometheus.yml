@@ -20,38 +20,58 @@ scrape_configs:
     static_configs:
       - targets: ["localhost:9090"]
 
-  - job_name: "shares"
-    scrape_interval: 10s
-    metrics_path: /metrics
-    static_configs:
-      - targets: ["shares:4070"]
-    
-  - job_name: "chama"
-    scrape_interval: 10s
-    metrics_path: /metrics
-    static_configs:
-      - targets: ["chama:4090"]
-    
-  - job_name: "solowallet"
-    scrape_interval: 10s
-    metrics_path: /metrics
-    static_configs:
-      - targets: ["solowallet:4080"]
-    
-  - job_name: "swap"
-    scrape_interval: 10s
-    metrics_path: /metrics
-    static_configs:
-      - targets: ["swap:4040"]
-    
+  # API Gateway (federates metrics from all services)
   - job_name: "api"
     scrape_interval: 10s
-    metrics_path: /metrics
+    metrics_path: /v1/metrics
     static_configs:
       - targets: ["api:4000"]
 
-  - job_name: "notification"
-    scrape_interval: 10s
-    metrics_path: /metrics
-    static_configs:
-      - targets: ["notification:4100"]
+  # Individual service metrics endpoints
+  # - job_name: "auth"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["auth:4010"]
+      
+  # - job_name: "nostr"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["nostr:4050"]
+      
+  # - job_name: "sms"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["sms:4060"]
+      
+  # - job_name: "shares"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["shares:4070"]
+    
+  # - job_name: "solowallet"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["solowallet:4080"]
+    
+  # - job_name: "chama"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["chama:4090"]
+    
+  # - job_name: "swap"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["swap:4040"]
+
+  # - job_name: "notification"
+  #   scrape_interval: 10s
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ["notification:5000"]
