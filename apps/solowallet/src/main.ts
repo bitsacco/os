@@ -4,18 +4,25 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ReflectionService } from '@grpc/reflection';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { getRedisConfig } from '@bitsacco/common';
+import { bootstrapTelemetry, getRedisConfig } from '@bitsacco/common';
 import { SolowalletModule } from './solowallet.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(SolowalletModule);
+  const port = process.env.PORT ?? 4080;
+  try {
+    // Initialize OpenTelemetry for metrics and tracing
+    bootstrapTelemetry('solowallet-service', Number(port));
+  } catch (e) {
+    console.error('Failed to bootstrap telemetry', e);
+  }
 
+  const app = await NestFactory.create(SolowalletModule);
   const configService = app.get(ConfigService);
 
   const solowallet_url = configService.getOrThrow<string>(
     'SOLOWALLET_GRPC_URL',
   );
-  const solowallet = app.connectMicroservice<MicroserviceOptions>({
+  app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
       package: 'solowallet',
@@ -36,10 +43,16 @@ async function bootstrap() {
     },
   });
 
-  // setup pino logging
+  // Enable graceful shutdown
+  app.enableShutdownHooks();
+
+  // Setup pino logging
   app.useLogger(app.get(Logger));
 
   await app.startAllMicroservices();
+  console.log(
+    `🔍 Telemetry enabled - Metrics available at ${solowallet_url}/metrics`,
+  );
 }
 
 bootstrap();

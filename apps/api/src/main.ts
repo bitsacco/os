@@ -3,24 +3,22 @@ import { NestFactory } from '@nestjs/core';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  HttpLoggingInterceptor,
-  initializeOpenTelemetry,
-} from '@bitsacco/common';
+import { HttpLoggingInterceptor, bootstrapTelemetry } from '@bitsacco/common';
 import { ApiModule } from './api.module';
 import { setupDocs } from './docs.plugin';
 
 const API_VERSION = 'v1';
 
 async function bootstrap() {
-  // Initialize OpenTelemetry for metrics and tracing
-  // Set up metrics endpoint for API gateway that will aggregate all metrics
-  // Pass true as the third parameter to indicate this is the API gateway
-  const telemetrySdk = initializeOpenTelemetry(
-    'api-gateway-service',
-    4000,
-    true,
-  );
+  const port = process.env.PORT ?? 4000;
+
+  try {
+    // Initialize OpenTelemetry for metrics and tracing
+    // Set up metrics endpoint for API gateway that will aggregate all metrics
+    bootstrapTelemetry('api-gateway-service');
+  } catch (e) {
+    console.error('Failed to bootstrap telemetry', e);
+  }
 
   const app = await NestFactory.create(ApiModule);
 
@@ -53,19 +51,12 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new HttpLoggingInterceptor());
 
-  // Register shutdown hooks for OpenTelemetry
+  // Register shutdown hooks
   app.enableShutdownHooks();
-  process.on('SIGTERM', async () => {
-    await telemetrySdk
-      .shutdown()
-      .then(() => console.log('OpenTelemetry shut down successfully'))
-      .catch((err) => console.error('OpenTelemetry shut down error', err));
-  });
 
-  const port = process.env.PORT ?? 4000;
   await app.listen(port);
   console.log(
-    `🔍 Telemetry enabled - Aggregated metrics available at http://localhost:${port}/metrics`,
+    `🔍 Telemetry enabled - Aggregated metrics available at http://127.0.0.1:${port}/metrics`,
   );
 }
 

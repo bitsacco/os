@@ -4,12 +4,19 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ReflectionService } from '@grpc/reflection';
-import { getRedisConfig } from '@bitsacco/common';
+import { bootstrapTelemetry, getRedisConfig } from '@bitsacco/common';
 import { SwapModule } from './swap.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(SwapModule);
+  const port = process.env.PORT ?? 4040;
+  try {
+    // Initialize OpenTelemetry for metrics and tracing
+    bootstrapTelemetry('swap-service', Number(port));
+  } catch (e) {
+    console.error('Failed to bootstrap telemetry', e);
+  }
 
+  const app = await NestFactory.create(SwapModule);
   const configService = app.get(ConfigService);
 
   const swap_url = configService.getOrThrow<string>('SWAP_GRPC_URL');
@@ -34,10 +41,16 @@ async function bootstrap() {
     },
   });
 
-  // setup pino logging
+  // Enable graceful shutdown
+  app.enableShutdownHooks();
+
+  // Setup pino logging
   app.useLogger(app.get(Logger));
 
   await app.startAllMicroservices();
+  console.log(
+    `🔍 Telemetry enabled - Metrics available at ${swap_url}/metrics`,
+  );
 }
 
 bootstrap();

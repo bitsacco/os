@@ -180,12 +180,34 @@ All services implement a standard set of operational metrics:
 
 ## Adding New Metrics
 
+## Setting Up Telemetry in a Service
+
+All services in Bitsacco OS use a standardized approach to initialize telemetry:
+
+1. Use the `bootstrapTelemetry` helper in each service's `main.ts`:
+
+```typescript
+import { bootstrapTelemetry } from '@bitsacco/common';
+
+async function bootstrap() {
+  // Initialize telemetry with service name and metrics port
+  const telemetrySdk = bootstrapTelemetry('service-name', 4000);
+  
+  // Rest of bootstrap code...
+  
+  // Enable graceful shutdown
+  app.enableShutdownHooks();
+}
+```
+
+## Creating a Metrics Service
+
 To add new metrics to an existing service:
 
 1. Use the standard `MetricsService` or `OperationMetricsService` as a base class
 2. Initialize your metrics in the constructor or `onModuleInit` lifecycle hook
 3. Create methods to record specific metrics
-4. Register your metrics service.
+4. Register your metrics service in the module
 
 Example:
 
@@ -213,6 +235,13 @@ export class UserMetricsService extends OperationMetricsService {
       success: true,
       duration: 0,
       labels: { userId },
+    });
+    
+    // Emit event for potential subscribers
+    this.eventEmitter.emit('users:activity', {
+      userId,
+      activityType,
+      timestamp: new Date().toISOString(),
     });
   }
 }

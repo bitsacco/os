@@ -1,50 +1,52 @@
+import {
+  BatchSpanProcessor,
+  SimpleSpanProcessor,
+} from '@opentelemetry/sdk-trace-base';
+import {
+  ATTR_SERVICE_NAME,
+  ATTR_SERVICE_VERSION,
+} from '@opentelemetry/semantic-conventions';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { trace, metrics } from '@opentelemetry/api';
 import { Resource } from '@opentelemetry/resources';
 import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import {
-  ATTR_SERVICE_NAME,
-  ATTR_SERVICE_VERSION,
-} from '@opentelemetry/semantic-conventions';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
-import {
-  BatchSpanProcessor,
-  SimpleSpanProcessor,
-} from '@opentelemetry/sdk-trace-base';
 import { ATTR_DEPLOYMENT_ENVIRONMENT } from './semconv';
 
 /**
  * Initialize OpenTelemetry for the application
  * @param serviceName Name of the service to use in metrics and tracing
- * @param prometheusPort Port to expose Prometheus metrics on
- * @param isGateway Whether this service is the API gateway that federates metrics
+ * @param prometheusPort Port to expose Prometheus metrics on. If provided, start a PrometheusExporter
  * @returns The NodeSDK instance that can be used to shut down telemetry
  */
 export function initializeOpenTelemetry(
   serviceName: string,
-  prometheusPort = 9464,
-  isGateway = false,
+  prometheusPort?: number,
 ) {
   // Create Prometheus exporter
-  // If this is the API gateway, we'll handle metrics in a custom controller
-  const prometheusExporter = isGateway
-    ? null
-    : new PrometheusExporter({
+  const exporter = prometheusPort
+    ? new PrometheusExporter({
         port: prometheusPort,
         endpoint: '/metrics',
-      });
+      })
+    : null;
+
+  // Optional: configure endpoint. If not provided, it will try to use the default
+  // which is http://localhost:4318/v1/traces
+  const otlpExporterUrl =
+    process.env.OTLP_EXPORTER_URL || 'http://jaeger:4318/v1/traces';
 
   // Configure tracing
   // No exporter by default, we'll use OTLP HTTP when needed
   const traceExporter = new OTLPTraceExporter({
-    // Optional: configure endpoint. If not provided, it will try to use the default
-    // which is http://localhost:4318/v1/traces
-    url: process.env.OTLP_EXPORTER_URL || 'http://jaeger:4318/v1/traces',
+    url: otlpExporterUrl,
   });
 
+  const env = process.env.NODE_ENV || 'development';
+
   const spanProcessor =
-    process.env.NODE_ENV === 'production'
+    env === 'production'
       ? new BatchSpanProcessor(traceExporter)
       : new SimpleSpanProcessor(traceExporter);
 
@@ -52,7 +54,7 @@ export function initializeOpenTelemetry(
     resource: new Resource({
       [ATTR_SERVICE_NAME]: serviceName,
       [ATTR_SERVICE_VERSION]: '1.0.0',
-      [ATTR_DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
+      [ATTR_DEPLOYMENT_ENVIRONMENT]: env,
     }),
     instrumentations: [
       getNodeAutoInstrumentations({
@@ -62,7 +64,7 @@ export function initializeOpenTelemetry(
         '@opentelemetry/instrumentation-nestjs-core': { enabled: true },
       }),
     ],
-    metricReader: prometheusExporter,
+    metricReader: exporter,
     spanProcessor,
   });
 
@@ -70,7 +72,7 @@ export function initializeOpenTelemetry(
     sdk.start();
     console.log(`OpenTelemetry initialized for ${serviceName}`);
 
-    if (!isGateway && prometheusExporter) {
+    if (exporter) {
       console.log(
         `Prometheus metrics available at port ${prometheusPort}/metrics`,
       );

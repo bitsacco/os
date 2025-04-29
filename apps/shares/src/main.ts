@@ -4,12 +4,17 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ReflectionService } from '@grpc/reflection';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { getRedisConfig, initializeOpenTelemetry } from '@bitsacco/common';
+import { bootstrapTelemetry, getRedisConfig } from '@bitsacco/common';
 import { SharesModule } from './shares.module';
 
 async function bootstrap() {
-  // Initialize OpenTelemetry for metrics and tracing
-  const telemetrySdk = initializeOpenTelemetry('shares-service');
+  const port = process.env.PORT ?? 4070;
+  try {
+    // Initialize OpenTelemetry for metrics and tracing
+    bootstrapTelemetry('shares-service', Number(port));
+  } catch (e) {
+    console.error('Failed to bootstrap telemetry', e);
+  }
 
   const app = await NestFactory.create(SharesModule);
   const configService = app.get(ConfigService);
@@ -36,16 +41,10 @@ async function bootstrap() {
     },
   });
 
+  // Enable graceful shutdown
   app.enableShutdownHooks();
 
-  process.on('SIGTERM', async () => {
-    await telemetrySdk
-      .shutdown()
-      .then(() => console.log('OpenTelemetry shut down successfully'))
-      .catch((err) => console.error('OpenTelemetry shut down error', err));
-  });
-
-  // setup pino logging
+  // Setup pino logging
   app.useLogger(app.get(Logger));
 
   await app.startAllMicroservices();
