@@ -21,12 +21,7 @@ import {
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { TokenService } from './tokens/token.service';
-import {
-  AuthLoginMetric,
-  AuthMetricsService,
-  AuthRegisterMetric,
-  AuthVerifyMetric,
-} from './metrics/auth.metrics';
+import { AuthMetricsService } from './metrics/auth.metrics';
 import { RateLimitService } from './rate-limit/rate-limit.service';
 
 @Injectable()
@@ -143,7 +138,6 @@ export class AuthService {
 
   async verifyUser(req: VerifyUserRequestDto): Promise<AuthResponse> {
     const startTime = Date.now();
-    const authType = req.phone ? 'phone' : req.npub ? 'npub' : 'unknown';
     const method = req.phone ? 'sms' : 'nostr';
     const identifier = req.phone || req.npub;
 
@@ -199,26 +193,75 @@ export class AuthService {
   }
 
   async recoverUser(req: RecoverUserRequestDto): Promise<AuthResponse> {
-    try {
-      const auth = await this.userService.recoverUser(req);
+    const startTime = Date.now();
+    const method = req.phone ? 'sms' : 'nostr';
+    const identifier = req.phone || req.npub;
 
-      // If not authorized (needs OTP verification), return user without tokens
-      if (!auth.authorized) {
-        // If we have an OTP and a phone number, send the OTP
-        if ('otp' in auth && auth.otp && req.phone) {
+    try {
+      // Step 1: If no OTP provided, this is the initial recovery request
+      // We should generate and send an OTP
+      if (!req.otp) {
+        const auth = await this.userService.recoverUser(req);
+
+        // Send the generated OTP if one was created
+        if (isPreUserAuth(auth) && auth.otp) {
           await this.sendOtp(auth.otp, req.phone, req.npub);
         }
+
+        // Record recovery initiation (OTP sent)
+        this.metricsService.recordVerifyMetric({
+          userId: auth.user.id,
+          success: false,
+          duration: Date.now() - startTime,
+          method,
+          errorType: 'recovery_otp_sent',
+        });
+
+        // Return just the user info, without tokens
         return { user: auth.user };
       }
 
-      // User is authorized, generate tokens
-      const { accessToken, refreshToken } =
-        await this.tokenService.generateTokens(auth.user);
+      // Step 2: OTP is provided along with a PIN to reset
+      // This is the actual PIN reset request
+      const auth = await this.userService.recoverUser(req);
 
-      return { user: auth.user, accessToken, refreshToken };
+      // If the OTP verification was successful and account was recovered
+      if (auth.authorized) {
+        // Generate tokens for the now-recovered account
+        const { accessToken, refreshToken } =
+          await this.tokenService.generateTokens(auth.user);
+
+        // Reset rate limit counter after successful recovery
+        this.rateLimitService.resetRateLimit(identifier);
+
+        // Record successful account recovery
+        this.metricsService.recordVerifyMetric({
+          userId: auth.user.id,
+          success: true,
+          duration: Date.now() - startTime,
+          method,
+        });
+
+        // Return user with auth tokens
+        return { user: auth.user, accessToken, refreshToken };
+      }
+
+      // OTP verification failed or account not found
+      return { user: auth.user };
     } catch (e) {
-      this.logger.error(e);
-      throw new UnauthorizedException('Invalid credentials');
+      // Record failed recovery attempt
+      this.metricsService.recordVerifyMetric({
+        userId: undefined,
+        success: false,
+        duration: Date.now() - startTime,
+        method,
+        errorType: e.name || 'recovery_failed',
+      });
+
+      this.logger.error('Account recovery failed', e);
+      throw new UnauthorizedException(
+        'Invalid credentials for account recovery',
+      );
     }
   }
 

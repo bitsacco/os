@@ -4,15 +4,15 @@ import { Counter, Histogram } from '@opentelemetry/api';
 import { OperationMetricsService } from '@bitsacco/common';
 
 // Event constants for metrics
-export const AUTH_LOGIN_METRIC = 'auth:login';
-export const AUTH_REGISTER_METRIC = 'auth:register';
-export const AUTH_VERIFY_METRIC = 'auth:verify';
-export const AUTH_TOKEN_METRIC = 'auth:token';
+const AUTH_LOGIN_METRIC = 'auth:login';
+const AUTH_REGISTER_METRIC = 'auth:register';
+const AUTH_VERIFY_METRIC = 'auth:verify';
+const AUTH_TOKEN_METRIC = 'auth:token';
 
 /**
  * Metrics for login operations
  */
-export interface AuthLoginMetric {
+interface AuthLoginMetric {
   userId?: string;
   success: boolean;
   duration: number;
@@ -23,7 +23,7 @@ export interface AuthLoginMetric {
 /**
  * Metrics for registration operations
  */
-export interface AuthRegisterMetric {
+interface AuthRegisterMetric {
   userId?: string;
   success: boolean;
   duration: number;
@@ -34,7 +34,7 @@ export interface AuthRegisterMetric {
 /**
  * Metrics for verification operations
  */
-export interface AuthVerifyMetric {
+interface AuthVerifyMetric {
   userId?: string;
   success: boolean;
   duration: number;
@@ -45,7 +45,7 @@ export interface AuthVerifyMetric {
 /**
  * Metrics for token operations
  */
-export interface AuthTokenMetric {
+interface AuthTokenMetric {
   userId?: string;
   operation: 'issue' | 'refresh' | 'verify' | 'revoke';
   success: boolean;

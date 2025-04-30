@@ -34,7 +34,6 @@ import { PhoneDecorators, NpubDecorators } from './decorators';
 
 const PinDecorators = () => {
   return applyDecorators(
-    IsNotEmpty(),
     IsString(),
     Validate(IsStringifiedNumberConstraint, [{ digits: 6, positive: true }]),
     ApiProperty({ example: '123456' }),
@@ -81,13 +80,21 @@ export class VerifyUserRequestDto implements VerifyUserRequest {
   @NpubDecorators()
   npub?: string;
 
-  @IsOptional()
   @PinDecorators()
   otp?: string;
 }
 
-export class RecoverUserRequestDto extends AuthRequestBase {
+export class RecoverUserRequestDto implements RecoverUserRequest {
+  @PinDecorators()
+  pin: string;
+
+  @PhoneDecorators()
   @IsOptional()
+  phone?: string;
+
+  @NpubDecorators()
+  npub?: string;
+
   @PinDecorators()
   otp?: string;
 }

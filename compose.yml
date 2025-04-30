@@ -14,7 +14,6 @@ services:
       - ./apps/api/.dev.env
     ports:
       - '4000:4000'
-      - '3001:3001'  # WebSocket port
     volumes:
       - .:/usr/src/app
   auth:
