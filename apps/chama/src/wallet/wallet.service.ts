@@ -370,7 +370,7 @@ export class ChamaWalletService {
           id: withdrawal.memberId,
         });
 
-        this.messenger.sendChamaWithdrawalRequests(chama, admins, withdrawal, {
+        this.messenger.sendChamaWithdrawalRequests(chama, withdrawal.id, admins, {
           name: beneficiary.profile?.name,
           phoneNumber: beneficiary.phone?.number,
           // nostrNpub: beneficiary.nostr?.npub,
