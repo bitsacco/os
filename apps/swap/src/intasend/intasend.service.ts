@@ -59,7 +59,11 @@ export class IntasendService {
     const resp = await this.intasend.payouts().mpesa({
       currency: 'KES',
       requires_approval: 'NO',
-      transactions: [payload],
+      mobile_tarrif: 'CUSTOMER-PAYS',
+      transactions: [{
+        ...payload,
+        mobile_tarrif: 'CUSTOMER-PAYS',
+      }],
     });
 
     return {
