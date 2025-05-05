@@ -68,6 +68,22 @@ export class IntasendService {
     };
   }
 
+  // Calculate withdrawal fee: 1.5% with minimum 15 KES and maximum 100 KES
+  calculateWithdrawalFee(amount: number): number {
+    if (amount <= 0) return 0;
+
+    const calculatedFee = amount * 0.015;
+
+    // Apply minimum and maximum constraints
+    if (calculatedFee < 15) {
+      return 15;
+    } else if (calculatedFee > 100) {
+      return 100;
+    }
+
+    return Math.round(calculatedFee * 100) / 100;
+  }
+
   async getMpesaTrackerFromCollectionUpdate({
     invoice_id,
     state,

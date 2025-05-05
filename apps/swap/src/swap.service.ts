@@ -477,12 +477,13 @@ export class SwapService {
       amountSats: Number(swap.amountSats),
       fiatToBtcRate: Number(swap.rate),
     });
+    const fee = this.intasendService.calculateWithdrawalFee(amountFiat);
 
     let statusEvent: SwapStatusChangeEvent;
 
     try {
       const { id } = await this.intasendService.sendMpesaPayment({
-        amount: amountFiat.toFixed(0).toString(),
+        amount: (amountFiat - fee).toFixed(0).toString(),
         account: swap.phone,
         name: 'bitsacco',
         narrative: 'withdrawal',
