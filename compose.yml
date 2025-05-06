@@ -248,49 +248,7 @@ services:
       - clientd_datadir:/var/lib/clientd
     restart: always
 
-  prometheus:
-    image: prom/prometheus:v2.47.0
-    container_name: prometheus
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
-    ports:
-      - '9090:9090'
-    restart: always
-    depends_on:
-      - shares
-      - solowallet
-      - chama
-      - swap
-      - api
-
-  grafana:
-    image: grafana/grafana:10.2.0
-    container_name: grafana
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=password
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
-    ports:
-      - '3010:3000'
-    restart: always
-    depends_on:
-      - prometheus
-
 volumes:
   mongodb_datadir:
   clientd_datadir:
-  prometheus_data:
-  grafana_data:
   redis_data:

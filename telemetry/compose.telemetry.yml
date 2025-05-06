@@ -1,0 +1,177 @@
+services:
+  traefik:
+    image: traefik:2.11
+    container_name: traefik
+    restart: always
+    command:
+      #- "--log.level=DEBUG"
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.web.http.redirections.entryPoint.to=websecure
+      - --entrypoints.web.http.redirections.entryPoint.scheme=https
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.myresolver.acme.tlschallenge=true
+      - --certificatesresolvers.myresolver.acme.email=admin@bitsacco.com
+      - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
+    ports:
+      - 80:80 # http
+      - 443:443 # ssl
+    volumes:
+      - letsencrypt_datadir:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: always
+    user: "65534:65534" # nobody:nogroup
+    ports:
+      - 9090:9090
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prometheus.rule=Host(`prometheus.<example.com>`)
+      - traefik.http.routers.prometheus.entrypoints=websecure
+      - traefik.http.routers.prometheus.tls.certresolver=myresolver
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+      - traefik.http.routers.prometheus.middlewares=prometheus-auth
+      - traefik.http.middlewares.prometheus-auth.basicauth.users=${PROMETHEUS_BASIC_AUTH}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: alertmanager
+    volumes:
+      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    restart: always
+    user: "65534:65534" # nobody:nogroup
+    ports:
+      - 9093:9093
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.alertmanager.rule=Host(`alertmanager.<example.com>`)
+      - traefik.http.routers.alertmanager.entrypoints=websecure
+      - traefik.http.routers.alertmanager.tls.certresolver=myresolver
+      - traefik.http.services.alertmanager.loadbalancer.server.port=9093
+      - traefik.http.routers.alertmanager.middlewares=alertmanager-auth
+      - traefik.http.middlewares.alertmanager-auth.basicauth.users=${PROMETHEUS_BASIC_AUTH}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+    user: "472:472" # grafana:grafana
+    restart: always
+    ports:
+      - 3000:3000
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.rule=Host(`grafana.<example.com>`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls.certresolver=myresolver
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  node_exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|var/lib/docker/.+)($|/)'
+    restart: always
+    volumes:
+      - /:/host:ro,rslave
+    user: "65534:65534" # nobody:nogroup
+    ports:
+      - 9100:9100
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.node-exporter.rule=Host(`node-exporter.<example.com>`)
+      - traefik.http.routers.node-exporter.entrypoints=websecure
+      - traefik.http.routers.node-exporter.tls.certresolver=myresolver
+      - traefik.http.services.node-exporter.loadbalancer.server.port=9100
+      - traefik.http.routers.node-exporter.middlewares=node-exporter-auth
+      - traefik.http.middlewares.node-exporter-auth.basicauth.users=${PROMETHEUS_BASIC_AUTH}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: cadvisor
+    restart: always
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      - '--housekeeping_interval=10s'
+      - '--docker_only=true'
+      - '--disable_metrics=disk,network,tcp,udp,percpu,sched,process'
+    ports:
+      - 8080:8080
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.cadvisor.rule=Host(`cadvisor.<example.com>`)
+      - traefik.http.routers.cadvisor.entrypoints=websecure
+      - traefik.http.routers.cadvisor.tls.certresolver=myresolver
+      - traefik.http.services.cadvisor.loadbalancer.server.port=8080
+      - traefik.http.routers.cadvisor.middlewares=cadvisor-auth
+      - traefik.http.middlewares.cadvisor-auth.basicauth.users=${PROMETHEUS_BASIC_AUTH}
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  alertmanager_data:
+  letsencrypt_datadir:
+
