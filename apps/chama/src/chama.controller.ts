@@ -23,6 +23,8 @@ import {
   type FindChamaRequest,
   type ChamaDepositRequest,
   type ChamaTxMetaRequest,
+  type BulkChamaTxMetaRequest,
+  type GetMemberProfilesRequest,
 } from '@bitsacco/common';
 import { ChamasService } from './chamas/chamas.service';
 import { ChamaWalletService } from './wallet/wallet.service';
@@ -62,6 +64,11 @@ export class ChamaController {
   @GrpcMethod()
   findChama(request: FindChamaRequest) {
     return this.chamasService.findChama(request);
+  }
+
+  @GrpcMethod()
+  getMemberProfiles(request: GetMemberProfilesRequest) {
+    return this.chamasService.getMemberProfiles(request);
   }
 
   @GrpcMethod()
@@ -122,11 +129,7 @@ export class ChamaController {
     chamaIds,
     selectMemberIds,
     skipMemberMeta,
-  }: {
-    chamaIds: string[];
-    selectMemberIds?: string[];
-    skipMemberMeta?: boolean;
-  }) {
+  }: BulkChamaTxMetaRequest) {
     return this.walletService.aggregateBulkWalletMeta({
       chamaIds,
       selectMemberIds,

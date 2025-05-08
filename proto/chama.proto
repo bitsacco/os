@@ -11,6 +11,7 @@ service ChamasService {
   rpc InviteMembers(InviteMembersRequest) returns (Chama);
   rpc FindChama(FindChamaRequest) returns (Chama);
   rpc FilterChamas(FilterChamasRequest) returns (PaginatedFilterChamasResponse);
+  rpc GetMemberProfiles(GetMemberProfilesRequest) returns (MemberProfilesResponse);
 }
 
 message Chama {
@@ -96,4 +97,21 @@ message JoinChamaRequest {
 message InviteMembersRequest {
   string chama_id = 1;
   repeated ChamaInvite invites = 3;
+}
+
+message GetMemberProfilesRequest {
+  string chama_id = 1;
+}
+
+message MemberProfile {
+  string user_id = 1;
+  repeated ChamaMemberRole roles = 2;
+  optional string name = 3;
+  optional string avatar_url = 4;
+  optional string phone_number = 5;
+  optional string nostr_npub = 6;
+}
+
+message MemberProfilesResponse {
+  repeated MemberProfile members = 1;
 }

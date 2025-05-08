@@ -344,6 +344,45 @@ export class ChamasService {
       };
     }
   }
+
+  async getMemberProfiles({ chamaId }): Promise<{ members: Array<any> }> {
+    try {
+      // Get the chama to access its members
+      const cd = await this.chamas.findOne({ _id: chamaId });
+      if (!cd) {
+        throw new BadRequestException(`Chama with ID ${chamaId} not found`);
+      }
+
+      // Extract user IDs from chama members
+      const userIds = cd.members.map((member) => member.userId);
+
+      // Fetch user profiles from the users service
+      const users = await this.users.findUsersById(new Set(userIds));
+
+      // Map chama members to their profiles
+      const memberProfiles = cd.members.map((member) => {
+        const user = users.find((u) => u.id === member.userId);
+        return {
+          userId: member.userId,
+          roles: member.roles.map((role) =>
+            typeof role === 'string' ? parseInt(role, 10) : role,
+          ),
+          name: user?.profile?.name,
+          avatarUrl: user?.profile?.avatarUrl,
+          phoneNumber: user?.phone?.number,
+          nostrNpub: user?.nostr?.npub,
+        };
+      });
+
+      return { members: memberProfiles };
+    } catch (error) {
+      this.logger.error(
+        `Error getting member profiles for chama ${chamaId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
 }
 
 interface ChamaFilter {

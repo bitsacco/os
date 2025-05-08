@@ -88,6 +88,23 @@ export interface InviteMembersRequest {
   invites: ChamaInvite[];
 }
 
+export interface GetMemberProfilesRequest {
+  chamaId: string;
+}
+
+export interface MemberProfile {
+  userId: string;
+  roles: ChamaMemberRole[];
+  name?: string | undefined;
+  avatarUrl?: string | undefined;
+  phoneNumber?: string | undefined;
+  nostrNpub?: string | undefined;
+}
+
+export interface MemberProfilesResponse {
+  members: MemberProfile[];
+}
+
 export interface ChamasServiceClient {
   createChama(request: CreateChamaRequest): Observable<Chama>;
 
@@ -102,6 +119,10 @@ export interface ChamasServiceClient {
   filterChamas(
     request: FilterChamasRequest,
   ): Observable<PaginatedFilterChamasResponse>;
+
+  getMemberProfiles(
+    request: GetMemberProfilesRequest,
+  ): Observable<MemberProfilesResponse>;
 }
 
 export interface ChamasServiceController {
@@ -131,6 +152,13 @@ export interface ChamasServiceController {
     | Promise<PaginatedFilterChamasResponse>
     | Observable<PaginatedFilterChamasResponse>
     | PaginatedFilterChamasResponse;
+
+  getMemberProfiles(
+    request: GetMemberProfilesRequest,
+  ):
+    | Promise<MemberProfilesResponse>
+    | Observable<MemberProfilesResponse>
+    | MemberProfilesResponse;
 }
 
 export function ChamasServiceControllerMethods() {
@@ -142,6 +170,7 @@ export function ChamasServiceControllerMethods() {
       'inviteMembers',
       'findChama',
       'filterChamas',
+      'getMemberProfiles',
     ];
     for (const method of grpcMethods) {
       const descriptor: any = Reflect.getOwnPropertyDescriptor(

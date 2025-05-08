@@ -31,6 +31,7 @@ describe('ChamasController', () => {
     inviteMembers: jest.fn().mockReturnValue(of({})),
     findChama: jest.fn().mockReturnValue(of({})),
     filterChamas: jest.fn().mockReturnValue(of({})),
+    getMemberProfiles: jest.fn().mockReturnValue(of({})),
   };
 
   const chamaWalletServiceMock = {
@@ -303,6 +304,56 @@ describe('ChamasController', () => {
         status: 'ERROR',
         reason: 'Withdrawal request not found or expired',
       });
+    });
+  });
+
+  describe('getMemberProfiles', () => {
+    it('should call chamasService.getMemberProfiles with correct parameters', async () => {
+      const chamaId = 'test-chama-id';
+      const mockMemberProfiles = {
+        members: [
+          {
+            userId: 'user-1',
+            roles: [0, 1],
+            name: 'John Doe',
+            avatarUrl: 'https://example.com/avatar.jpg',
+            phoneNumber: '+1234567890',
+            nostrNpub: 'npub123456789',
+          },
+          {
+            userId: 'user-2',
+            roles: [0],
+            name: 'Jane Smith',
+            phoneNumber: '+0987654321',
+          },
+        ],
+      };
+
+      chamasServiceMock.getMemberProfiles.mockReturnValue(
+        of(mockMemberProfiles),
+      );
+
+      // Just test that the right service is called with the right parameters
+      await chamaController.getMemberProfiles(chamaId);
+      expect(chamasServiceMock.getMemberProfiles).toHaveBeenCalledWith({
+        chamaId,
+      });
+    });
+
+    it('should handle errors when getting member profiles', async () => {
+      const chamaId = 'test-chama-id';
+      const errorMessage = 'Error fetching member profiles';
+
+      chamasServiceMock.getMemberProfiles.mockImplementation(() => {
+        throw new Error(errorMessage);
+      });
+
+      try {
+        await chamaController.getMemberProfiles(chamaId);
+        fail('Should have thrown an error');
+      } catch (error) {
+        expect(error.message).toEqual(errorMessage);
+      }
     });
   });
 });

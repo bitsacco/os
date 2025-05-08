@@ -95,8 +95,16 @@ describe('ChamaBulkAccessGuard', () => {
       mockChamaService.filterChamas.mockReturnValue(
         of({
           chamas: [
-            { id: 'chama-3', name: 'Test Chama 3', members: [{ userId: 'user-id' }] },
-            { id: 'chama-4', name: 'Test Chama 4', members: [{ userId: 'user-id' }] },
+            {
+              id: 'chama-3',
+              name: 'Test Chama 3',
+              members: [{ userId: 'user-id' }],
+            },
+            {
+              id: 'chama-4',
+              name: 'Test Chama 4',
+              members: [{ userId: 'user-id' }],
+            },
           ],
           page: 0,
           size: 0,
@@ -127,8 +135,16 @@ describe('ChamaBulkAccessGuard', () => {
       mockChamaService.filterChamas.mockReturnValue(
         of({
           chamas: [
-            { id: 'chama-3', name: 'Test Chama 3', members: [{ userId: 'user-id' }] },
-            { id: 'chama-4', name: 'Test Chama 4', members: [{ userId: 'user-id' }] },
+            {
+              id: 'chama-3',
+              name: 'Test Chama 3',
+              members: [{ userId: 'user-id' }],
+            },
+            {
+              id: 'chama-4',
+              name: 'Test Chama 4',
+              members: [{ userId: 'user-id' }],
+            },
           ],
           page: 0,
           size: 0,
@@ -157,9 +173,21 @@ describe('ChamaBulkAccessGuard', () => {
       mockChamaService.filterChamas.mockReturnValue(
         of({
           chamas: [
-            { id: 'chama-1', name: 'Test Chama 1', members: [{ userId: 'user-id' }] },
-            { id: 'chama-2', name: 'Test Chama 2', members: [{ userId: 'user-id' }] },
-            { id: 'chama-3', name: 'Test Chama 3', members: [{ userId: 'user-id' }] },
+            {
+              id: 'chama-1',
+              name: 'Test Chama 1',
+              members: [{ userId: 'user-id' }],
+            },
+            {
+              id: 'chama-2',
+              name: 'Test Chama 2',
+              members: [{ userId: 'user-id' }],
+            },
+            {
+              id: 'chama-3',
+              name: 'Test Chama 3',
+              members: [{ userId: 'user-id' }],
+            },
           ],
           page: 0,
           size: 0,
@@ -189,8 +217,16 @@ describe('ChamaBulkAccessGuard', () => {
       mockChamaService.filterChamas.mockReturnValue(
         of({
           chamas: [
-            { id: 'chama-1', name: 'Test Chama 1', members: [{ userId: 'user-id' }] },
-            { id: 'chama-3', name: 'Test Chama 3', members: [{ userId: 'user-id' }] },
+            {
+              id: 'chama-1',
+              name: 'Test Chama 1',
+              members: [{ userId: 'user-id' }],
+            },
+            {
+              id: 'chama-3',
+              name: 'Test Chama 3',
+              members: [{ userId: 'user-id' }],
+            },
           ],
           page: 0,
           size: 0,

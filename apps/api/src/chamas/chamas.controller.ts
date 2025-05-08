@@ -116,20 +116,7 @@ export class ChamasController {
     @Query('createdBy') createdBy: string,
     @Query('page') page: number = default_page,
     @Query('size') size: number = default_page_size,
-    @Param() params: any,
   ) {
-    this.logger.debug(`Request params: ${JSON.stringify(params)}`);
-
-    const q = {
-      memberId,
-      createdBy,
-      pagination: {
-        page,
-        size,
-      },
-    };
-    this.logger.debug(`Filter query for CHAMA LIST: ${JSON.stringify(q)}`);
-
     try {
       // Make sure we're actually calling filterChamas and not findChama
       this.logger.debug('Calling chama service filterChamas method');
@@ -141,7 +128,9 @@ export class ChamasController {
           size,
         },
       });
-      this.logger.debug(`Filter result: ${result ? 'success' : 'failed'}`);
+      this.logger.debug(
+        `Filter result: ${result ? 'success' : 'failed'} , ${JSON.stringify(result)}`,
+      );
       return result;
     } catch (error) {
       this.logger.error(
@@ -219,6 +208,26 @@ export class ChamasController {
   @ApiParam({ name: 'chamaId', description: 'Chama ID' })
   async getChama(@Param('chamaId') chamaId: string) {
     return this.chamas.findChama({ chamaId });
+  }
+
+  @Get(':chamaId/members')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiOperation({ summary: 'Get member profiles for a chama' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
+  async getMemberProfiles(@Param('chamaId') chamaId: string) {
+    try {
+      this.logger.debug(`Getting member profiles for chama ${chamaId}`);
+      return this.chamas.getMemberProfiles({ chamaId });
+    } catch (error) {
+      this.logger.error(
+        `Error getting member profiles for chama ${chamaId}: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
   }
 
   @Post(':chamaId/transactions/deposit')
@@ -314,11 +323,11 @@ export class ChamasController {
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Find Chama transaction by ID' })
-  @ApiQuery({ name: 'chamaId', description: 'Chama ID' })
-  @ApiQuery({ name: 'txId', description: 'Transaction ID' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
+  @ApiParam({ name: 'txId', description: 'Transaction ID' })
   async getTransaction(
-    @Query('chamaId') _: string,
-    @Query('txId') txId: string,
+    @Param('chamaId') _: string,
+    @Param('txId') txId: string,
   ) {
     return this.wallet.findTransaction({ txId });
   }
