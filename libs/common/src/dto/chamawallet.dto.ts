@@ -10,7 +10,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsRequiredUUID, PaginatedRequestDto } from './lib.dto';
+import { applyDecorators } from '@nestjs/common';
 import {
   Review,
   ChamaTxStatus,
@@ -26,15 +26,16 @@ import {
   type ChamaDepositRequest,
   type ChamaTxMetaRequest,
   type ChamaTxContext,
+  type BulkChamaTxMetaRequest,
 } from '../types';
 import {
   Bolt11InvoiceDto,
   OfframpSwapTargetDto,
   OnrampSwapSourceDto,
 } from './swap.dto';
-import { applyDecorators } from '@nestjs/common';
+import { IsRequiredUUID, PaginatedRequestDto } from './lib.dto';
 
-const MemberIdDecorator = () => {
+const UUIDDecorator = () => {
   return applyDecorators(
     IsRequiredUUID(),
     ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' }),
@@ -70,9 +71,14 @@ class ChamaTxContextDto implements ChamaTxContext {
   sharesSubscriptionTracker?: string;
 }
 
-class ChamaBaseDto {
+class PaginationDto {
   @PaginationDecorator()
   pagination?: PaginatedRequest;
+}
+
+class ChamaBaseDto extends PaginationDto {
+  @UUIDDecorator()
+  chamaId: string;
 }
 
 class ChamaTransactionBaseDto extends ChamaBaseDto {
@@ -84,11 +90,8 @@ class ChamaTransactionBaseDto extends ChamaBaseDto {
 }
 
 class ChamaMemberBaseDto extends ChamaTransactionBaseDto {
-  @MemberIdDecorator()
+  @UUIDDecorator()
   memberId: string;
-
-  @MemberIdDecorator()
-  chamaId: string;
 }
 
 export class ChamaDepositDto
@@ -112,7 +115,7 @@ export class ChamaContinueDepositDto
   extends ChamaTransactionBaseDto
   implements ChamaContinueDepositRequest
 {
-  @MemberIdDecorator()
+  @UUIDDecorator()
   txId: string;
 
   @IsNotEmpty()
@@ -130,10 +133,10 @@ export class ChamaContinueWithdrawDto
   extends ChamaBaseDto
   implements ChamaContinueWithdrawRequest
 {
-  @MemberIdDecorator()
+  @UUIDDecorator()
   memberId: string;
 
-  @MemberIdDecorator()
+  @UUIDDecorator()
   txId: string;
 
   @ValidateNested()
@@ -153,7 +156,7 @@ export class ChamaContinueWithdrawDto
 }
 
 export class ChamaTxReviewDto implements ChamaTxReview {
-  @MemberIdDecorator()
+  @UUIDDecorator()
   memberId: string;
 
   @IsOptional()
@@ -188,7 +191,7 @@ export class UpdateChamaTransactionDto
   extends ChamaBaseDto
   implements ChamaTxUpdateRequest
 {
-  @MemberIdDecorator()
+  @UUIDDecorator()
   txId: string;
 
   @ValidateNested()
@@ -198,28 +201,72 @@ export class UpdateChamaTransactionDto
 }
 
 export class FilterChamaTransactionsDto
-  extends ChamaBaseDto
+  extends PaginationDto
   implements ChamaTxsFilterRequest
 {
   @IsOptional()
-  @MemberIdDecorator()
+  @UUIDDecorator()
   memberId?: string;
 
   @IsOptional()
-  @MemberIdDecorator()
+  @UUIDDecorator()
   chamaId?: string;
 }
 
-export class AggregateChamaTransactionsDto implements ChamaTxMetaRequest {
+export class ChamaTxMetaRequestDto
+  implements Omit<ChamaTxMetaRequest, 'chamaId'>
+{
   @IsArray()
   @IsString({ each: true })
-  selectChamaId: string[];
-
-  @IsArray()
-  @IsString({ each: true })
-  selectMemberId: string[];
+  @ApiProperty({
+    description: 'Optional array of member IDs to include for each chama',
+    type: [String],
+    required: false,
+    example: ['63040650-5090-4dd4-8e93-8fd342533e9c'],
+  })
+  selectMemberIds: string[];
 
   @IsOptional()
   @IsBoolean()
+  @ApiProperty({
+    description: 'If true, skip member meta and only return group meta',
+    required: false,
+    type: Boolean,
+    example: false,
+  })
+  skipMemberMeta?: boolean;
+}
+
+export class BulkChamaTxMetaRequestDto implements BulkChamaTxMetaRequest {
+  @IsArray()
+  @IsString({ each: true })
+  @ApiProperty({
+    description: 'Array of chama IDs to aggregate wallet meta for',
+    type: [String],
+    example: [
+      '43040650-5090-4dd4-8e93-8fd342533e7c',
+      '53040650-5090-4dd4-8e93-8fd342533e8c',
+    ],
+  })
+  chamaIds: string[];
+
+  @IsArray()
+  @IsString({ each: true })
+  @ApiProperty({
+    description: 'Optional array of member IDs to include for each chama',
+    type: [String],
+    required: false,
+    example: ['63040650-5090-4dd4-8e93-8fd342533e9c'],
+  })
+  selectMemberIds: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  @ApiProperty({
+    description: 'If true, skip member meta and only return group meta',
+    required: false,
+    type: Boolean,
+    example: false,
+  })
   skipMemberMeta?: boolean;
 }

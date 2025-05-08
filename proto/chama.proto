@@ -84,6 +84,8 @@ message PaginatedFilterChamasResponse {
   int32 size = 3;
   // Number of pages given the current page size
   int32 pages = 4;
+  // Total number of items across all pages
+  int32 total = 5;
 }
 
 message JoinChamaRequest {

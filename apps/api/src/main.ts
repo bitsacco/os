@@ -40,6 +40,21 @@ async function bootstrap() {
   //   defaultVersion: API_VERSION,
   // });
 
+  // Add URL normalization middleware to remove trailing slashes
+  app.use((req, res, next) => {
+    if (req.url.endsWith('/') && req.url.length > 1) {
+      const query = req.url.indexOf('?');
+      const base = query !== -1 ? req.url.slice(0, query) : req.url;
+
+      if (base.length > 1 && base.endsWith('/')) {
+        const normalizedUrl =
+          base.slice(0, -1) + (query !== -1 ? req.url.slice(query) : '');
+        req.url = normalizedUrl;
+      }
+    }
+    next();
+  });
+
   // Set up CORS
   setupCORS(app);
 

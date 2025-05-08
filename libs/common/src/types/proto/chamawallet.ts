@@ -71,6 +71,7 @@ export interface ChamaDepositRequest {
 }
 
 export interface ChamaContinueDepositRequest {
+  chamaId: string;
   txId: string;
   amountFiat: number;
   reference?: string | undefined;
@@ -87,6 +88,7 @@ export interface ChamaWithdrawRequest {
 }
 
 export interface ChamaContinueWithdrawRequest {
+  chamaId: string;
   memberId: string;
   txId: string;
   reference?: string | undefined;
@@ -132,6 +134,7 @@ export interface PaginatedChamaTxsResponse {
 }
 
 export interface ChamaTxUpdateRequest {
+  chamaId: string;
   txId: string;
   updates: ChamaTxUpdates | undefined;
   pagination?: PaginatedRequest | undefined;
@@ -145,17 +148,14 @@ export interface ChamaTxUpdates {
 }
 
 export interface ChamaTxMetaRequest {
+  /** chama whose transaction meta is to be aggregated */
+  chamaId: string;
   /**
-   * list one or more chamas whose transaction meta is to be aggregated
-   * if empty, we aggregate meta for all chamas
+   * list one or more members whose transaction meta within chama specified will be aggregated
+   * if empty, we aggregate meta for all members in the chama specified by `chama_id`
    */
-  selectChamaId: string[];
-  /**
-   * list one or more members whose transaction meta will be ggregated across all chamas requested
-   * if empty, we aggregate meta for all members in all chamas listed by `select_chama_id`
-   */
-  selectMemberId: string[];
-  /** `true`, to skip aggregating member meta. overrides `select_member_id` behavior */
+  selectMemberIds: string[];
+  /** `true`, to skip aggregating member meta. overrides `select_member_ids` behavior */
   skipMemberMeta?: boolean | undefined;
 }
 
@@ -176,6 +176,23 @@ export interface ChamaMeta {
 }
 
 export interface ChamaTxMetaResponse {
+  meta: ChamaMeta | undefined;
+}
+
+export interface BulkChamaTxMetaRequest {
+  /** list of chama IDs to aggregate wallet meta for */
+  chamaIds: string[];
+  /**
+   * Optional: specific member IDs to include for each chama
+   * If empty, all members of each chama will be included
+   */
+  selectMemberIds: string[];
+  /** If true, skip member meta and only return group meta */
+  skipMemberMeta?: boolean | undefined;
+}
+
+export interface BulkChamaTxMetaResponse {
+  /** List of meta data for each requested chama */
   meta: ChamaMeta[];
 }
 
@@ -205,6 +222,10 @@ export interface ChamaWalletServiceClient {
   aggregateWalletMeta(
     request: ChamaTxMetaRequest,
   ): Observable<ChamaTxMetaResponse>;
+
+  aggregateBulkWalletMeta(
+    request: BulkChamaTxMetaRequest,
+  ): Observable<BulkChamaTxMetaResponse>;
 
   processLnUrlWithdraw(
     request: LnUrlWithdrawRequest,
@@ -265,6 +286,13 @@ export interface ChamaWalletServiceController {
     | Observable<ChamaTxMetaResponse>
     | ChamaTxMetaResponse;
 
+  aggregateBulkWalletMeta(
+    request: BulkChamaTxMetaRequest,
+  ):
+    | Promise<BulkChamaTxMetaResponse>
+    | Observable<BulkChamaTxMetaResponse>
+    | BulkChamaTxMetaResponse;
+
   processLnUrlWithdraw(
     request: LnUrlWithdrawRequest,
   ):
@@ -284,6 +312,7 @@ export function ChamaWalletServiceControllerMethods() {
       'findTransaction',
       'filterTransactions',
       'aggregateWalletMeta',
+      'aggregateBulkWalletMeta',
       'processLnUrlWithdraw',
     ];
     for (const method of grpcMethods) {

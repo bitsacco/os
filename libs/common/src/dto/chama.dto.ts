@@ -61,7 +61,7 @@ const IsInvites = (minSize: number, maxSize: number, isOptional = false) => {
   };
 };
 
-class ChamaMemberDto implements ChamaMember {
+export class ChamaMemberDto implements ChamaMember {
   @IsRequiredUUID()
   @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   userId: string;
@@ -78,7 +78,7 @@ class ChamaMemberDto implements ChamaMember {
   roles: ChamaMemberRole[];
 }
 
-class ChamaInviteDto implements ChamaInvite {
+export class ChamaInviteDto implements ChamaInvite {
   @PhoneDecorators()
   phoneNumber?: string;
 
@@ -166,18 +166,6 @@ export class ChamaUpdatesDto implements ChamaUpdates {
   updateMembers: ChamaMember[];
 }
 
-export class UpdateChamaDto implements UpdateChamaRequest {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
-  chamaId: string;
-
-  @ValidateNested()
-  @Type(() => ChamaUpdatesDto)
-  @IsNotEmpty()
-  @ApiProperty({ type: ChamaUpdatesDto })
-  updates: ChamaUpdates;
-}
-
 export class FindChamaDto implements FindChamaRequest {
   @IsRequiredUUID()
   @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
@@ -206,22 +194,7 @@ export class FilterChamasDto implements FilterChamasRequest {
   pagination?: PaginatedRequest;
 }
 
-export class JoinChamaDto implements JoinChamaRequest {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
-  chamaId: string;
-
-  @ValidateNested()
-  @Type(() => ChamaMemberDto)
-  @ApiProperty({ type: ChamaMemberDto })
-  memberInfo: ChamaMember;
-}
-
-export class InviteMembersDto implements InviteMembersRequest {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
-  chamaId: string;
-
+export class MemberInvitesDto implements Pick<InviteMembersRequest, 'invites'> {
   @IsInvites(1, 100, true)
   @ApiProperty({
     type: [ChamaInviteDto],

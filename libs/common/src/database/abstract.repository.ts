@@ -26,7 +26,9 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
       .lean<TDocument>(true);
 
     if (!document) {
-      this.logger.warn('Document was not found with filterQuery', filterQuery);
+      this.logger.warn(
+        `Document was not found with filterQuery:  ${JSON.stringify(filterQuery)}`,
+      );
       throw new NotFoundException('Document was not found');
     }
 
@@ -51,7 +53,9 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
       .lean<TDocument>(true);
 
     if (!document) {
-      this.logger.warn('Document was not found with filterQuery', filterQuery);
+      this.logger.warn(
+        `Document was not found with filterQuery:  ${JSON.stringify(filterQuery)}`,
+      );
       throw new NotFoundException('Document was not found');
     }
 

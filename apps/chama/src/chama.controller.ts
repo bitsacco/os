@@ -1,31 +1,31 @@
+import { ConfigService } from '@nestjs/config';
 import { Controller, Logger } from '@nestjs/common';
 import { EventPattern, GrpcMethod } from '@nestjs/microservices';
 import {
-  AggregateChamaTransactionsDto,
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
-  ChamaDepositDto,
   ChamasServiceControllerMethods,
   ChamaTxStatus,
   ChamaWalletServiceControllerMethods,
   ChamaWithdrawDto,
-  CreateChamaDto,
-  FilterChamasDto,
   FilterChamaTransactionsDto,
-  FindChamaDto,
   FindTxRequestDto,
-  InviteMembersDto,
-  JoinChamaDto,
-  type LnUrlWithdrawRequest,
-  type SwapStatusChangeEvent,
   LnUrlWithdrawResponse,
   swap_status_change,
-  UpdateChamaDto,
   UpdateChamaTransactionDto,
+  type LnUrlWithdrawRequest,
+  type SwapStatusChangeEvent,
+  type UpdateChamaRequest,
+  type JoinChamaRequest,
+  type InviteMembersRequest,
+  type CreateChamaRequest,
+  type FilterChamasRequest,
+  type FindChamaRequest,
+  type ChamaDepositRequest,
+  type ChamaTxMetaRequest,
 } from '@bitsacco/common';
 import { ChamasService } from './chamas/chamas.service';
 import { ChamaWalletService } from './wallet/wallet.service';
-import { ConfigService } from '@nestjs/config';
 
 @Controller()
 @ChamasServiceControllerMethods()
@@ -40,37 +40,37 @@ export class ChamaController {
   ) {}
 
   @GrpcMethod()
-  createChama(request: CreateChamaDto) {
+  createChama(request: CreateChamaRequest) {
     return this.chamasService.createChama(request);
   }
 
   @GrpcMethod()
-  updateChama(request: UpdateChamaDto) {
+  updateChama(request: UpdateChamaRequest) {
     return this.chamasService.updateChama(request);
   }
 
   @GrpcMethod()
-  joinChama(request: JoinChamaDto) {
+  joinChama(request: JoinChamaRequest) {
     return this.chamasService.joinChama(request);
   }
 
   @GrpcMethod()
-  inviteMembers(request: InviteMembersDto) {
+  inviteMembers(request: InviteMembersRequest) {
     return this.chamasService.inviteMembers(request);
   }
 
   @GrpcMethod()
-  findChama(request: FindChamaDto) {
+  findChama(request: FindChamaRequest) {
     return this.chamasService.findChama(request);
   }
 
   @GrpcMethod()
-  filterChamas(request: FilterChamasDto) {
+  async filterChamas(request: FilterChamasRequest) {
     return this.chamasService.filterChamas(request);
   }
 
   @GrpcMethod()
-  deposit(request: ChamaDepositDto) {
+  deposit(request: ChamaDepositRequest) {
     return this.walletService.deposit(request);
   }
 
@@ -106,24 +106,30 @@ export class ChamaController {
 
   @GrpcMethod()
   async aggregateWalletMeta({
-    selectChamaId,
-    selectMemberId,
+    chamaId,
+    selectMemberIds,
     skipMemberMeta,
-  }: AggregateChamaTransactionsDto) {
-    const chamaIds = selectChamaId?.length
-      ? selectChamaId
-      : (
-          await this.chamasService.filterChamas({
-            pagination: {
-              page: 0,
-              size: 0, // flag to all chama data in a single page
-            },
-          })
-        ).chamas.map((chama) => chama.id);
-
+  }: ChamaTxMetaRequest) {
     return this.walletService.aggregateWalletMeta({
-      selectChamaId: chamaIds,
-      selectMemberId,
+      chamaId,
+      selectMemberIds,
+      skipMemberMeta,
+    });
+  }
+
+  @GrpcMethod()
+  async aggregateBulkWalletMeta({
+    chamaIds,
+    selectMemberIds,
+    skipMemberMeta,
+  }: {
+    chamaIds: string[];
+    selectMemberIds?: string[];
+    skipMemberMeta?: boolean;
+  }) {
+    return this.walletService.aggregateBulkWalletMeta({
+      chamaIds,
+      selectMemberIds,
       skipMemberMeta,
     });
   }

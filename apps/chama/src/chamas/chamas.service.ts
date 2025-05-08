@@ -13,14 +13,15 @@ import {
   CreateChamaDto,
   FilterChamasDto,
   FindChamaDto,
-  InviteMembersDto,
-  JoinChamaDto,
-  UpdateChamaDto,
   UsersService,
+  InviteMembersRequest,
+  JoinChamaRequest,
+  UpdateChamaRequest,
 } from '@bitsacco/common';
 import { ChamasRepository, parseMemberRole, toChama } from './db';
 import { ChamaMessageService } from './chamas.messaging';
 import { ChamaMetricsService } from './chama.metrics';
+
 @Injectable()
 export class ChamasService {
   private readonly logger = new Logger(ChamasService.name);
@@ -149,7 +150,7 @@ export class ChamasService {
     );
   }
 
-  async updateChama({ chamaId, updates }: UpdateChamaDto): Promise<Chama> {
+  async updateChama({ chamaId, updates }: UpdateChamaRequest): Promise<Chama> {
     const cd = await this.chamas.findOne({ _id: chamaId });
 
     const hunk: Partial<Chama> = {};
@@ -205,7 +206,7 @@ export class ChamasService {
     return toChama(ucd);
   }
 
-  async joinChama({ chamaId, memberInfo }: JoinChamaDto): Promise<Chama> {
+  async joinChama({ chamaId, memberInfo }: JoinChamaRequest): Promise<Chama> {
     const startTime = Date.now();
     let success = false;
     let errorType: string | undefined;
@@ -262,7 +263,10 @@ export class ChamasService {
     }
   }
 
-  async inviteMembers({ chamaId, invites }: InviteMembersDto): Promise<Chama> {
+  async inviteMembers({
+    chamaId,
+    invites,
+  }: InviteMembersRequest): Promise<Chama> {
     const cd = await this.chamas.findOne({ _id: chamaId });
     const chama = toChama(cd);
 
@@ -290,31 +294,55 @@ export class ChamasService {
       filter.members = { $elemMatch: { userId: memberId } };
     }
 
-    const cds = await this.chamas.find(filter);
+    try {
+      this.logger.debug(
+        `Filtering chamas with filter: ${JSON.stringify(filter)}`,
+      );
+      // Fetch all chamas matching the filter
+      const cds = await this.chamas.find(filter);
 
-    let { page, size } = pagination || {
-      page: default_page,
-      size: default_page_size,
-    };
+      let { page, size } = pagination || {
+        page: default_page,
+        size: default_page_size,
+      };
 
-    // if size is set to 0, we should return all available data in a single page
-    size = size || cds.length;
+      // if size is set to 0, we should return all available data in a single page
+      size = size || cds.length || default_page_size;
 
-    const pages = Math.ceil(cds.length / size);
+      // Handle empty results case
+      const totalItems = cds.length;
+      const pages = Math.max(1, Math.ceil(totalItems / size));
 
-    // select the last page if requested page exceeds total pages possible
-    const selectPage = page > pages ? pages - 1 : page;
+      // Handle pagination edge cases
+      // If page is out of bounds or invalid, default to page 0
+      const selectPage = !page || page < 0 || page >= pages ? 0 : page;
 
-    const chamas = cds
-      .slice(selectPage * size, (selectPage + 1) * size)
-      .map(toChama);
+      const chamas =
+        totalItems > 0
+          ? cds.slice(selectPage * size, (selectPage + 1) * size).map(toChama)
+          : [];
 
-    return {
-      chamas,
-      page: selectPage,
-      size,
-      pages,
-    };
+      return {
+        chamas,
+        page: selectPage,
+        size,
+        pages,
+        total: totalItems,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Error filtering chamas: ${error.message}`,
+        error.stack,
+      );
+      // Return empty result instead of throwing an error
+      return {
+        chamas: [],
+        page: 0,
+        size: pagination?.size || default_page_size,
+        pages: 0,
+        total: 0,
+      };
+    }
   }
 }
 

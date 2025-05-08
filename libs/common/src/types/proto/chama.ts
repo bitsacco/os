@@ -74,6 +74,8 @@ export interface PaginatedFilterChamasResponse {
   size: number;
   /** Number of pages given the current page size */
   pages: number;
+  /** Total number of items across all pages */
+  total: number;
 }
 
 export interface JoinChamaRequest {

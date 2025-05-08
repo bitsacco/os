@@ -22,9 +22,10 @@ service ChamaWalletService {
 
   rpc AggregateWalletMeta(ChamaTxMetaRequest) returns (ChamaTxMetaResponse) {}
 
+  rpc AggregateBulkWalletMeta(BulkChamaTxMetaRequest) returns (BulkChamaTxMetaResponse) {}
+
   rpc ProcessLnUrlWithdraw(lib.LnUrlWithdrawRequest) returns (lib.LnUrlWithdrawResponse) {}
 }
-
 
 message ChamaWalletTx {
   string id = 1;
@@ -97,16 +98,18 @@ message ChamaDepositRequest {
 }
 
 message ChamaContinueDepositRequest {
-  string tx_id = 1;
+  string chama_id = 1;
 
-  int32 amount_fiat = 2;
+  string tx_id = 2;
 
-  optional string reference = 3;
+  int32 amount_fiat = 3;
 
-  optional lib.OnrampSwapSource onramp = 4;
+  optional string reference = 4;
+
+  optional lib.OnrampSwapSource onramp = 5;
 
   // Add more optional funding sources, like direct lightning deposit
-  reserved 5,6,7,8,9,10;
+  reserved 6,7,8,9,10;
 
   optional lib.PaginatedRequest pagination = 11;
 }
@@ -126,20 +129,22 @@ message ChamaWithdrawRequest {
 }
 
 message ChamaContinueWithdrawRequest {
-  string member_id = 1;
+  string chama_id = 1;
 
-  string tx_id = 2;
+  string member_id = 2;
 
-  optional string reference = 3;
+  string tx_id = 3;
 
-  optional lib.OfframpSwapTarget offramp = 4;
+  optional string reference = 4;
 
-  optional lib.Bolt11 lightning = 5;
+  optional lib.OfframpSwapTarget offramp = 5;
 
-  optional bool lnurl_request = 6;
+  optional lib.Bolt11 lightning = 6;
+
+  optional bool lnurl_request = 7;
 
   // Add more optional funding sources, like direct lightning deposit
-  reserved 7,8,9,10;
+  reserved 8,9,10;
 
   optional lib.PaginatedRequest pagination = 11;
 }
@@ -191,11 +196,13 @@ message PaginatedChamaTxsResponse {
 }
 
 message ChamaTxUpdateRequest {
-  string tx_id = 1;
+  string chama_id = 1;
 
-  ChamaTxUpdates updates = 2;
+  string tx_id = 2;
 
-  reserved 3,4,5,6,7,8,9,10;
+  ChamaTxUpdates updates = 3;
+
+  reserved 4,5,6,7,8,9,10;
 
   optional lib.PaginatedRequest pagination = 11;
 }
@@ -211,15 +218,14 @@ message ChamaTxUpdates {
 }
 
 message ChamaTxMetaRequest {
-  // list one or more chamas whose transaction meta is to be aggregated
-  // if empty, we aggregate meta for all chamas
-  repeated string select_chama_id = 1;
+  // chama whose transaction meta is to be aggregated
+  string chama_id = 1;
 
-  // list one or more members whose transaction meta will be ggregated across all chamas requested
-  // if empty, we aggregate meta for all members in all chamas listed by `select_chama_id`
-  repeated string select_member_id = 2;
+  // list one or more members whose transaction meta within chama specified will be aggregated
+  // if empty, we aggregate meta for all members in the chama specified by `chama_id`
+  repeated string select_member_ids = 2;
 
-  // `true`, to skip aggregating member meta. overrides `select_member_id` behavior
+  // `true`, to skip aggregating member meta. overrides `select_member_ids` behavior
   optional bool skip_member_meta = 3;
 }
 
@@ -230,7 +236,6 @@ message MemberMeta {
   // transaction meta for the selected member
   ChamaTxMemberMeta member_meta = 2;
 }
-
 
 message ChamaMeta {
   // selected chama id
@@ -243,7 +248,23 @@ message ChamaMeta {
   repeated MemberMeta member_meta = 3;
 }
 
-
 message ChamaTxMetaResponse {
+  ChamaMeta meta = 1;
+}
+
+message BulkChamaTxMetaRequest {
+  // list of chama IDs to aggregate wallet meta for
+  repeated string chama_ids = 1;
+
+  // Optional: specific member IDs to include for each chama
+  // If empty, all members of each chama will be included
+  repeated string select_member_ids = 2;
+
+  // If true, skip member meta and only return group meta
+  optional bool skip_member_meta = 3;
+}
+
+message BulkChamaTxMetaResponse {
+  // List of meta data for each requested chama
   repeated ChamaMeta meta = 1;
 }

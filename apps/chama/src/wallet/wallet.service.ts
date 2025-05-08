@@ -2,10 +2,8 @@ import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
-  AggregateChamaTransactionsDto,
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
-  ChamaDepositDto,
   ChamaMemberRole,
   ChamaTxStatus,
   ChamaWithdrawDto,
@@ -31,7 +29,6 @@ import {
   UpdateChamaTransactionDto,
   UsersService,
   WalletTxContext,
-  type ChamaMeta,
   type MemberMeta,
   type ChamaTxGroupMeta,
   type ChamaTxMemberMeta,
@@ -44,6 +41,9 @@ import {
   parseTransactionStatus,
   WalletTxEvent,
   LnurlMetricsService,
+  ChamaDepositRequest,
+  ChamaTxMetaRequest,
+  ChamaMeta,
 } from '@bitsacco/common';
 import {
   ChamaMemberContact,
@@ -96,7 +96,7 @@ export class ChamaWalletService {
     onramp,
     context,
     pagination,
-  }: ChamaDepositDto) {
+  }: ChamaDepositRequest) {
     // TODO: Validate member and chama exist
 
     const { quote, amountMsats } = await getQuote(
@@ -785,56 +785,97 @@ export class ChamaWalletService {
   }
 
   async aggregateWalletMeta({
-    selectChamaId,
-    selectMemberId,
+    chamaId,
+    selectMemberIds,
     skipMemberMeta,
-  }: AggregateChamaTransactionsDto) {
-    const chamaIds = selectChamaId?.length
-      ? selectChamaId
+  }: ChamaTxMetaRequest) {
+    this.logger.debug(`Aggregating wallet meta for chama with id: ${chamaId}`);
+
+    const groupMeta: ChamaTxGroupMeta = await this.getGroupWalletMeta(chamaId);
+
+    let memberIds = skipMemberMeta ? [] : selectMemberIds;
+    if (!selectMemberIds?.length && !skipMemberMeta) {
+      try {
+        memberIds = (await this.chamas.findChama({ chamaId })).members.map(
+          (member) => member.userId,
+        );
+      } catch (_) {
+        this.logger.error(`Chama with id ${chamaId} not found`);
+        memberIds = [];
+      }
+    }
+
+    const memberMeta: MemberMeta[] = await Promise.all(
+      memberIds.map(async (memberId) => {
+        const memberMeta = await this.getMemberWalletMeta(chamaId, memberId);
+        return {
+          memberId,
+          memberMeta,
+        };
+      }),
+    );
+
+    return {
+      chamaId,
+      groupMeta,
+      memberMeta,
+    };
+  }
+
+  /**
+   * Aggregates wallet meta data for multiple chamas at once
+   * This is an optimized version that allows fetching meta for many chamas in one call
+   * @param chamaIds List of chama IDs to aggregate wallet meta for
+   * @param selectMemberIds Optional list of specific member IDs to include (applies to all chamas)
+   * @param skipMemberMeta If true, skip member meta and only return group meta
+   * @returns Object containing meta data for each requested chama
+   */
+  async aggregateBulkWalletMeta({
+    chamaIds,
+    selectMemberIds,
+    skipMemberMeta,
+  }: {
+    chamaIds: string[];
+    selectMemberIds?: string[];
+    skipMemberMeta?: boolean;
+  }) {
+    const selectChamaId = chamaIds?.length
+      ? chamaIds
       : (
           await this.chamas.filterChamas({
             pagination: {
               page: 0,
-              size: 0, // flag to all chama data in a single page
+              size: 0, // flag to get all chama data in a single page
             },
           })
         ).chamas.map((chama) => chama.id);
 
+    // Process all chamas in parallel for better performance
     const meta: ChamaMeta[] = await Promise.all(
-      chamaIds.map(async (chamaId) => {
-        const groupMeta: ChamaTxGroupMeta =
-          await this.getGroupWalletMeta(chamaId);
-
-        let memberIds = skipMemberMeta ? [] : selectMemberId;
-        if (!selectMemberId?.length && !skipMemberMeta) {
-          try {
-            memberIds = (await this.chamas.findChama({ chamaId })).members.map(
-              (member) => member.userId,
-            );
-          } catch (_) {
-            this.logger.error(`Chama with id ${chamaId} not found`);
-            memberIds = [];
-          }
+      selectChamaId.map(async (chamaId) => {
+        try {
+          // Reuse the existing aggregateWalletMeta method for each chama
+          return await this.aggregateWalletMeta({
+            chamaId,
+            selectMemberIds,
+            skipMemberMeta,
+          });
+        } catch (error) {
+          this.logger.error(
+            `Error aggregating wallet meta for chama ${chamaId}:`,
+            error,
+          );
+          // Return a minimal valid result for this chama if there's an error
+          return {
+            chamaId,
+            groupMeta: {
+              groupDeposits: 0,
+              groupWithdrawals: 0,
+              groupBalance: 0,
+            },
+            memberMeta: [],
+          };
         }
-
-        const memberMeta: MemberMeta[] = await Promise.all(
-          memberIds.map(async (memberId) => {
-            const memberMeta = await this.getMemberWalletMeta(
-              chamaId,
-              memberId,
-            );
-            return {
-              memberId,
-              memberMeta,
-            };
-          }),
-        );
-
-        return {
-          chamaId,
-          groupMeta,
-          memberMeta,
-        };
       }),
     );
 

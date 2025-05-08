@@ -1,25 +1,4 @@
-import {
-  InviteMembersDto,
-  CreateChamaDto,
-  JoinChamaDto,
-  UpdateChamaDto,
-  ChamasServiceClient,
-  CHAMAS_SERVICE_NAME,
-  ChamaWalletServiceClient,
-  CHAMA_WALLET_SERVICE_NAME,
-  UpdateChamaTransactionDto,
-  ChamaContinueWithdrawDto,
-  ChamaContinueDepositDto,
-  ChamaWithdrawDto,
-  ChamaDepositDto,
-  AggregateChamaTransactionsDto,
-  JwtAuthGuard,
-  PaginatedRequestDto,
-  default_page,
-  default_page_size,
-  ResourceOwnerGuard,
-  CheckOwnership,
-} from '@bitsacco/common';
+import { firstValueFrom } from 'rxjs';
 import {
   Body,
   Controller,
@@ -41,7 +20,31 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { firstValueFrom } from 'rxjs';
+import {
+  CreateChamaDto,
+  ChamasServiceClient,
+  CHAMAS_SERVICE_NAME,
+  ChamaWalletServiceClient,
+  CHAMA_WALLET_SERVICE_NAME,
+  UpdateChamaTransactionDto,
+  ChamaContinueWithdrawDto,
+  ChamaContinueDepositDto,
+  ChamaWithdrawDto,
+  ChamaDepositDto,
+  JwtAuthGuard,
+  PaginatedRequestDto,
+  default_page,
+  default_page_size,
+  ChamaUpdatesDto,
+  ChamaMemberDto,
+  MemberInvitesDto,
+  ChamaTxMetaRequestDto,
+  BulkChamaTxMetaRequestDto,
+} from '@bitsacco/common';
+import { ChamaMemberGuard, CheckChamaMembership } from './chama-member.guard';
+import { ChamaFilterGuard } from './chama-filter.guard';
+import { ChamaBulkAccessGuard } from './chama-bulk-access.guard';
+
 @Controller('chamas')
 export class ChamasController {
   private readonly logger = new Logger(ChamasController.name);
@@ -61,7 +64,7 @@ export class ChamasController {
     this.logger.debug('ChamasController created');
   }
 
-  @Post('create')
+  @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
@@ -69,75 +72,32 @@ export class ChamasController {
   @ApiBody({
     type: CreateChamaDto,
   })
-  async createChama(@Body() req: CreateChamaDto) {
-    return this.chamas.createChama(req);
+  async createChama(@Body() details: CreateChamaDto) {
+    return this.chamas.createChama(details);
   }
 
-  @Patch('update')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'chamaId', idField: 'chamaId' })
+  @Get()
+  @UseGuards(JwtAuthGuard, ChamaFilterGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
-  @ApiOperation({ summary: 'Update existing Chama' })
-  @ApiBody({
-    type: UpdateChamaDto,
+  @ApiOperation({
+    summary: 'Filter existing Chamas by queries',
+    description:
+      'Admins can filter all chamas. Non-admins can only see chamas they are members of.',
   })
-  async updateChama(@Body() req: UpdateChamaDto) {
-    return this.chamas.updateChama(req);
-  }
-
-  @Post('join')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiOperation({ summary: 'Join existing Chama' })
-  @ApiBody({
-    type: JoinChamaDto,
-  })
-  async joinChama(@Body() req: JoinChamaDto) {
-    return this.chamas.joinChama(req);
-  }
-
-  @Post('invite')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiOperation({ summary: 'Invite members to existing Chama' })
-  @ApiBody({
-    type: InviteMembersDto,
-  })
-  async inviteMembers(@Body() req: InviteMembersDto) {
-    return this.chamas.inviteMembers(req);
-  }
-
-  @Get('find/:chamaId')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'chamaId', idField: 'chamaId' })
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiOperation({ summary: 'Find existing Chama by ID' })
-  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
-  async findChama(@Param('chamaId') chamaId: string) {
-    return this.chamas.findChama({ chamaId });
-  }
-
-  @Get('filter/')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiOperation({ summary: 'Filter existing Chamas by queries' })
   @ApiQuery({
     name: 'memberId',
     type: String,
     required: false,
-    description: 'chama member id',
+    description:
+      'Chama member ID (automatically set to current user ID for non-admins)',
     example: '43040650-5090-4dd4-8e93-8fd342533e7c',
   })
   @ApiQuery({
     name: 'createdBy',
     type: String,
     required: false,
-    description: 'chama created by',
+    description: 'Chama created by user ID',
   })
   @ApiQuery({
     name: 'page',
@@ -156,107 +116,226 @@ export class ChamasController {
     @Query('createdBy') createdBy: string,
     @Query('page') page: number = default_page,
     @Query('size') size: number = default_page_size,
+    @Param() params: any,
   ) {
-    return this.chamas.filterChamas({
+    this.logger.debug(`Request params: ${JSON.stringify(params)}`);
+
+    const q = {
       memberId,
       createdBy,
       pagination: {
         page,
         size,
       },
-    });
+    };
+    this.logger.debug(`Filter query for CHAMA LIST: ${JSON.stringify(q)}`);
+
+    try {
+      // Make sure we're actually calling filterChamas and not findChama
+      this.logger.debug('Calling chama service filterChamas method');
+      const result = await this.chamas.filterChamas({
+        memberId,
+        createdBy,
+        pagination: {
+          page,
+          size,
+        },
+      });
+      this.logger.debug(`Filter result: ${result ? 'success' : 'failed'}`);
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error filtering chamas: ${error.message}`,
+        error.stack,
+      );
+      // Return empty result instead of throwing an error
+      return {
+        chamas: [],
+        page: page || 0,
+        size: size || 10,
+        pages: 0,
+        total: 0,
+      };
+    }
   }
 
-  @Post('tx/deposit')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'memberId', idField: 'id' })
+  @Patch(':chamaId')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiOperation({ summary: 'Update existing Chama' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
+  @ApiBody({
+    type: ChamaUpdatesDto,
+  })
+  async updateChama(
+    @Param('chamaId') chamaId: string,
+    @Body() updates: ChamaUpdatesDto,
+  ) {
+    return this.chamas.updateChama({ chamaId, updates });
+  }
+
+  @Post(':chamaId/join')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiOperation({ summary: 'Join existing Chama' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
+  @ApiBody({
+    type: ChamaMemberDto,
+  })
+  async joinChama(
+    @Param('chamaId') chamaId: string,
+    @Body() memberInfo: ChamaMemberDto,
+  ) {
+    return this.chamas.joinChama({ chamaId, memberInfo });
+  }
+
+  @Post(':chamaId/invite')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiOperation({ summary: 'Invite members to existing Chama' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
+  @ApiBody({
+    type: MemberInvitesDto,
+  })
+  async inviteMembers(
+    @Param('chamaId') chamaId: string,
+    @Body() invites: MemberInvitesDto,
+  ) {
+    return this.chamas.inviteMembers({ chamaId, ...invites });
+  }
+
+  @Get(':chamaId')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiOperation({ summary: 'Get Chama by ID' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
+  async getChama(@Param('chamaId') chamaId: string) {
+    return this.chamas.findChama({ chamaId });
+  }
+
+  @Post(':chamaId/transactions/deposit')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Chama deposit transaction' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
   @ApiBody({
     type: ChamaDepositDto,
   })
-  async deposit(@Body() req: ChamaDepositDto) {
-    return this.wallet.deposit(req);
+  async deposit(
+    @Param('chamaId') chamaId: string,
+    @Body() req: ChamaDepositDto,
+  ) {
+    return this.wallet.deposit({ ...req, chamaId });
   }
 
-  @Post('tx/deposit/continue')
-  @UseGuards(JwtAuthGuard)
+  @Post(':chamaId/transactions/deposit/continue')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Continue Chama deposit transaction' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
   @ApiBody({
     type: ChamaContinueDepositDto,
   })
-  async continueDeposit(@Body() req: ChamaContinueDepositDto) {
-    return this.wallet.continueDeposit(req);
+  async continueDeposit(
+    @Param('chamaId') chamaId: string,
+    @Body() req: ChamaContinueDepositDto,
+  ) {
+    return this.wallet.continueDeposit({ ...req, chamaId });
   }
 
-  @Post('tx/withdraw/request')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'memberId', idField: 'id' })
+  @Post(':chamaId/transactions/withdraw')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Chama withdrawal transaction' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
   @ApiBody({
     type: ChamaWithdrawDto,
   })
-  async requestWithdraw(@Body() req: ChamaWithdrawDto) {
-    return this.wallet.requestWithdraw(req);
+  async requestWithdraw(
+    @Param('chamaId') chamaId: string,
+    @Body() req: ChamaWithdrawDto,
+  ) {
+    return this.wallet.requestWithdraw({ ...req, chamaId });
   }
 
-  @Post('tx/withdraw/continue')
-  @UseGuards(JwtAuthGuard)
+  @Post(':chamaId/transactions/withdraw/continue')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Continue Chama withdrawal transaction' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
   @ApiBody({
     type: ChamaContinueWithdrawDto,
   })
-  async continueWithdraw(@Body() req: ChamaContinueWithdrawDto) {
-    return this.wallet.continueWithdraw(req);
+  async continueWithdraw(
+    @Param('chamaId') chamaId: string,
+    @Body() req: ChamaContinueWithdrawDto,
+  ) {
+    return this.wallet.continueWithdraw({ ...req, chamaId });
   }
 
-  @Patch('tx/update')
-  @UseGuards(JwtAuthGuard)
+  @Patch(':chamaId/transactions/:txId')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Update Chama transaction' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
+  @ApiParam({ name: 'txId', description: 'Transaction ID' })
   @ApiBody({
     type: UpdateChamaTransactionDto,
   })
-  async updateTransaction(@Body() req: UpdateChamaTransactionDto) {
-    return this.wallet.updateTransaction(req);
+  async updateTransaction(
+    @Param('chamaId') chamaId: string,
+    @Param('txId') txId: string,
+    @Body() req: UpdateChamaTransactionDto,
+  ) {
+    return this.wallet.updateTransaction({ ...req, chamaId, txId });
   }
 
-  @Get('tx/find/:txId')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'txId', idField: 'txId' })
+  @Get(':chamaId/transactions/:txId')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Find Chama transaction by ID' })
-  @ApiParam({ name: 'txId', description: 'Transaction ID' })
-  async findTransaction(@Param('txId') txId: string) {
+  @ApiQuery({ name: 'chamaId', description: 'Chama ID' })
+  @ApiQuery({ name: 'txId', description: 'Transaction ID' })
+  async getTransaction(
+    @Query('chamaId') _: string,
+    @Query('txId') txId: string,
+  ) {
     return this.wallet.findTransaction({ txId });
   }
 
-  @Get('tx/filter/')
-  @UseGuards(JwtAuthGuard)
+  @Get(':chamaId/transactions')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Filter chama transactions' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
   @ApiQuery({
     name: 'memberId',
     type: String,
     required: false,
     description: 'chama member id',
     example: '43040650-5090-4dd4-8e93-8fd342533e7c',
-  })
-  @ApiQuery({
-    name: 'chamaId',
-    type: String,
-    required: false,
-    description: 'chama id',
   })
   @ApiQuery({
     name: 'page',
@@ -270,9 +349,9 @@ export class ChamasController {
     type: PaginatedRequestDto['size'],
     required: false,
   })
-  async filterTransactions(
+  async getTransactions(
+    @Param('chamaId') chamaId: string,
     @Query('memberId') memberId: string,
-    @Query('chamaId') chamaId: string,
     @Query('page') page: number = default_page,
     @Query('size') size: number = default_page_size,
   ) {
@@ -286,19 +365,45 @@ export class ChamasController {
     });
   }
 
-  @Post('tx/aggregate/')
-  @UseGuards(JwtAuthGuard)
+  @Post(':chamaId/transactions/aggregate')
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Aggregate chama transactions' })
+  @ApiParam({ name: 'chamaId', description: 'Chama ID' })
   @ApiBody({
-    type: AggregateChamaTransactionsDto,
+    type: ChamaTxMetaRequestDto,
   })
-  async aggregateTransactions(@Body() req: AggregateChamaTransactionsDto) {
-    return this.wallet.aggregateWalletMeta(req);
+  async aggregateWalletMeta(
+    @Param('chamaId') chamaId: string,
+    @Body() req: ChamaTxMetaRequestDto,
+  ) {
+    return this.wallet.aggregateWalletMeta({ ...req, chamaId });
   }
 
-  @Get('tx/lnurl')
+  @Post('transactions/bulk-aggregate')
+  @UseGuards(JwtAuthGuard, ChamaBulkAccessGuard)
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiOperation({
+    summary: 'Aggregate transactions for multiple chamas at once',
+    description:
+      'For admins: can aggregate data for any chamas. For regular users: can only aggregate data for chamas they are members of. All chamas in the request must be accessible to the user.',
+  })
+  @ApiBody({
+    type: BulkChamaTxMetaRequestDto,
+    description:
+      'Request body containing a list of chamaIds and optional filtering parameters',
+  })
+  async aggregateBulkWalletMeta(@Body() req: BulkChamaTxMetaRequestDto) {
+    // this.logger.debug(
+    //   `Bulk wallet meta aggregation requested for ${req.chamaIds.length} chamas`,
+    // );
+    return this.wallet.aggregateBulkWalletMeta(req);
+  }
+
+  @Get('lnurl')
   @ApiOperation({ summary: 'Chamawallet LNURL callback' })
   @ApiQuery({
     name: 'k1',
