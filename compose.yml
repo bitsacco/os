@@ -1,4 +1,21 @@
 services:
+  admin:
+    container_name: admin
+    build:
+      context: .
+      dockerfile: ./apps/admin/Dockerfile
+      target: development
+    command: sh -c "cd /app/apps/admin && bun run dev"
+    restart: always
+    depends_on:
+      - api
+    env_file:
+      - ./apps/admin/.dev.env
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+
   api:
     container_name: api
     build:
