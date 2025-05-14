@@ -166,6 +166,5 @@
       "^@bitsacco/common(|/.*)$": "<rootDir>/libs/common/src/$1",
       "^@bitsacco/testing(|/.*)$": "<rootDir>/libs/testing/src/$1"
     }
-  },
-  "packageManager": "bun@1.1.30"
+  }
 }

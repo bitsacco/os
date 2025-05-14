@@ -11,6 +11,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Configure which routes should not be static
+  experimental: {
+    serverComponentsExternalPackages: ['@opentelemetry/api'],
+  },
 };
 
 // Export for Next.js

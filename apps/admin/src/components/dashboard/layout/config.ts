@@ -6,7 +6,7 @@ export const navItems = [
     key: 'overview',
     title: 'Overview',
     href: paths.dashboard.overview,
-    icon: 'chart-pie',
+    icon: 'chart-line',
   },
   {
     key: 'Membership',

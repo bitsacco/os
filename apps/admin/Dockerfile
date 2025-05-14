@@ -1,33 +1,42 @@
 # Stage 1: Base
-FROM oven/bun:latest AS base
+FROM node:lts-alpine AS base
 WORKDIR /app
-RUN apt-get update && apt-get install -y libc6
+RUN apk update
 
-# Stage 2: Development
-FROM base AS development
+# Stage 2: Install dependencies 
+FROM base AS deps
 WORKDIR /app
-ENV NODE_ENV=development
 
-# Copy project files for development
-COPY . .
-WORKDIR /app
-RUN bun install
+# Copy package.json files
+COPY apps/admin/package.json ./apps/admin/
+COPY apps/admin/yarn.lock ./apps/admin/
+
+# Create directory structure for workspaces
+RUN mkdir -p apps/admin
+
+# Install dependencies
+RUN yarn install
 
 # Stage 3: Builder
 FROM base AS builder
 WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 
 # Copy all project files
 COPY . .
-RUN bun install
 
-# Build the admin app
+# Only build the admin package
 WORKDIR /app/apps/admin
-# Use node_modules/.bin/next directly to avoid PATH issues
-RUN SKIP_TYPE_CHECK=true NEXT_DISABLE_ESLINT=1 npm run build
+# Set environment variables for build
+ENV NODE_ENV=production
+ENV SKIP_TYPE_CHECK=true
+ENV NEXT_DISABLE_ESLINT=1
+
+# Use yarn to run the build command
+RUN yarn build
 
 # Stage 4: Production image
-FROM base AS production
+FROM base AS runner
 WORKDIR /app
 
 # Set environment variables
@@ -36,14 +45,13 @@ ENV NODE_ENV=production
 ENV NEXT_PUBLIC_API_URL=""
 
 # Create a non-root user for security
-RUN groupadd --system --gid 1001 nodejs
-RUN useradd --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
 # Copy built app
-COPY --from=builder /app/apps/admin/out ./apps/admin/out
+COPY --from=builder /app/apps/admin/.next/standalone ./
+COPY --from=builder /app/apps/admin/.next/static ./apps/admin/.next/static
 COPY --from=builder /app/apps/admin/public ./apps/admin/public
-COPY --from=builder /app/apps/admin/next.config.mjs ./apps/admin/next.config.mjs
-COPY --from=builder /app/apps/admin/package.json ./apps/admin/package.json
 
 # Set proper permissions
 RUN chown -R nextjs:nodejs /app
@@ -55,4 +63,4 @@ USER nextjs
 EXPOSE 3000
 
 # Set the proper command to run the app
-CMD ["bun", "run", "start", "--prefix", "apps/admin"]
+CMD ["node", "apps/admin/server.js"]
