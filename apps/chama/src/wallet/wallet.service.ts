@@ -792,6 +792,7 @@ export class ChamaWalletService {
     this.logger.debug(`Aggregating wallet meta for chama with id: ${chamaId}`);
 
     const groupMeta: ChamaTxGroupMeta = await this.getGroupWalletMeta(chamaId);
+    this.logger.debug(`Group meta retrieved for chamaId: ${chamaId}`);
 
     let memberIds = skipMemberMeta ? [] : selectMemberIds;
     if (!selectMemberIds?.length && !skipMemberMeta) {
@@ -814,11 +815,14 @@ export class ChamaWalletService {
         };
       }),
     );
+    this.logger.debug(`Member meta retrieved: ${JSON.stringify(memberMeta)}`);
 
     return {
-      chamaId,
-      groupMeta,
-      memberMeta,
+      meta: {
+        chamaId,
+        groupMeta,
+        memberMeta,
+      },
     };
   }
 
@@ -855,11 +859,14 @@ export class ChamaWalletService {
       selectChamaId.map(async (chamaId) => {
         try {
           // Reuse the existing aggregateWalletMeta method for each chama
-          return await this.aggregateWalletMeta({
-            chamaId,
-            selectMemberIds,
-            skipMemberMeta,
-          });
+          const walletMeta = (
+            await this.aggregateWalletMeta({
+              chamaId,
+              selectMemberIds,
+              skipMemberMeta,
+            })
+          ).meta;
+          return walletMeta;
         } catch (error) {
           this.logger.error(
             `Error aggregating wallet meta for chama ${chamaId}:`,
