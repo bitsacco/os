@@ -364,7 +364,13 @@ export class SwapService {
     let updates: { state: SwapTransactionState };
     switch (mpesa.state) {
       case MpesaTransactionState.Complete:
-        const { state } = await this.swapToBtc(swap);
+        // First update to PROCESSING state
+        updates = { state: SwapTransactionState.PROCESSING };
+        await this.onramp.findOneAndUpdate({ _id: swap._id }, updates);
+
+        // Then trigger the actual BTC swap
+        const updatedSwap = await this.onramp.findOne({ _id: swap._id });
+        const { state } = await this.swapToBtc(updatedSwap);
         updates = { state };
         break;
       case MpesaTransactionState.Processing:
@@ -389,7 +395,7 @@ export class SwapService {
 
   private async swapToBtc(
     swap: MpesaOnrampSwapDocument,
-  ): Promise<{ state: SwapTransactionState; operationId: string }> {
+  ): Promise<{ state: SwapTransactionState; operationId?: string }> {
     this.logger.log('Swapping to BTC');
     this.logger.log('Swap', swap);
 
@@ -397,22 +403,29 @@ export class SwapService {
       swap.state === SwapTransactionState.COMPLETE ||
       swap.state === SwapTransactionState.FAILED
     ) {
-      throw new Error('Swap transaction alread finalized');
+      throw new Error('Swap transaction already finalized');
     }
 
     if (swap.state === SwapTransactionState.PROCESSING) {
-      this.logger.log(`Attempting to pay : ${swap.lightning}`);
+      try {
+        this.logger.log(`Attempting to pay : ${swap.lightning}`);
 
-      const { operationId } = await this.fedimintService.pay(swap.lightning);
-      this.logger.log('Completed onramp Swap', swap._id, operationId);
+        const { operationId } = await this.fedimintService.pay(swap.lightning);
+        this.logger.log('Completed onramp Swap', swap._id, operationId);
 
-      return {
-        state: SwapTransactionState.COMPLETE,
-        operationId,
-      };
+        return {
+          state: SwapTransactionState.COMPLETE,
+          operationId,
+        };
+      } catch (error) {
+        this.logger.error('Failed to complete BTC payment', error);
+        return {
+          state: SwapTransactionState.FAILED,
+        };
+      }
     }
 
-    throw new Error('Attempted swap to btc while mpesa is still pending');
+    throw new Error('Attempted swap to btc while not in processing state');
   }
 
   private async processMpesaPaymentUpdate(update: MpesaPaymentUpdateDto) {
