@@ -42,8 +42,8 @@ import {
   BulkChamaTxMetaRequestDto,
 } from '@bitsacco/common';
 import { ChamaMemberGuard, CheckChamaMembership } from './chama-member.guard';
-import { ChamaFilterGuard } from './chama-filter.guard';
 import { ChamaBulkAccessGuard } from './chama-bulk-access.guard';
+import { ChamaFilterGuard } from './chama-filter.guard';
 
 @Controller('chamas')
 export class ChamasController {
@@ -231,8 +231,7 @@ export class ChamasController {
   }
 
   @Post(':chamaId/transactions/deposit')
-  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
-  @CheckChamaMembership({ chamaIdField: 'chamaId' })
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Chama deposit transaction' })
@@ -248,8 +247,7 @@ export class ChamasController {
   }
 
   @Post(':chamaId/transactions/deposit/continue')
-  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
-  @CheckChamaMembership({ chamaIdField: 'chamaId' })
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Continue Chama deposit transaction' })
