@@ -1,0 +1,22 @@
+[test]
+# Test configuration for Bun
+timeout = 30000
+coverage = true
+coverageDir = "coverage"
+coverageReporters = ["text", "lcov", "html"]
+
+# Test file patterns
+testNamePattern = "**/*.{test,spec}.{js,ts}"
+
+# Setup files
+setupFiles = ["./test/setup.ts"]
+
+# Module resolution
+[test.env]
+NODE_ENV = "test"
+
+# Path mapping to match TypeScript paths
+[test.module]
+"@/*" = "./src/*"
+"@bitsacco/common/*" = "../../libs/common/src/*"
+"@bitsacco/testing/*" = "../../libs/testing/src/*"
