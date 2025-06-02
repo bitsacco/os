@@ -56,7 +56,8 @@ export class TelemetryService implements OnModuleInit {
             requestHook: (span, request) => {
               if ('headers' in request) {
                 span.setAttributes({
-                  'http.request.header.user-agent': request.headers['user-agent'],
+                  'http.request.header.user-agent':
+                    request.headers['user-agent'],
                   'http.request.header.x-forwarded-for':
                     request.headers['x-forwarded-for'],
                 });

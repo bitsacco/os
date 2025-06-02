@@ -38,10 +38,12 @@ export class UserService extends BaseDomainService {
           number: userData.phone,
           verified: userData.isPhoneVerified,
         },
-        nostr: userData.npub ? {
-          npub: userData.npub,
-          verified: false,
-        } : undefined,
+        nostr: userData.npub
+          ? {
+              npub: userData.npub,
+              verified: false,
+            }
+          : undefined,
         profile: {
           name: userData.name,
           avatarUrl: undefined,
@@ -68,6 +70,15 @@ export class UserService extends BaseDomainService {
 
   async updateUser(id: string, updates: Partial<CreateUserDto>): Promise<any> {
     return this.executeWithErrorHandling('updateUser', async () => {
+      return this.userRepository.findOneAndUpdate(
+        { _id: id },
+        { ...updates, updatedAt: new Date() },
+      );
+    });
+  }
+
+  async update(id: string, updates: any): Promise<any> {
+    return this.executeWithErrorHandling('update', async () => {
       return this.userRepository.findOneAndUpdate(
         { _id: id },
         { ...updates, updatedAt: new Date() },

@@ -18,13 +18,13 @@ export class ApiKeyService extends BaseDomainService {
 
   async findByKeyId(keyId: string): Promise<any> {
     return this.executeWithErrorHandling('findByKeyId', async () => {
-      return this.apiKeyRepository.findByKeyId(keyId);
+      return this.apiKeyRepository.findOne({ _id: keyId });
     });
   }
 
   async validateApiKey(keyId: string, hashedKey: string): Promise<boolean> {
     return this.executeWithErrorHandling('validateApiKey', async () => {
-      const apiKey = await this.apiKeyRepository.findByKeyId(keyId);
+      const apiKey = await this.apiKeyRepository.findOne({ _id: keyId });
       return apiKey && apiKey.keyHash === hashedKey && !apiKey.revoked;
     });
   }
@@ -50,7 +50,47 @@ export class ApiKeyService extends BaseDomainService {
 
   async revokeApiKey(keyId: string): Promise<any> {
     return this.executeWithErrorHandling('revokeApiKey', async () => {
-      return this.apiKeyRepository.deactivateKey(keyId);
+      return this.baseApiKeyService.revokeKey(keyId);
     });
+  }
+
+  async revokeKey(keyId: string): Promise<any> {
+    return this.executeWithErrorHandling('revokeKey', async () => {
+      return this.baseApiKeyService.revokeKey(keyId);
+    });
+  }
+
+  async rotateKey(keyId: string): Promise<any> {
+    return this.executeWithErrorHandling('rotateKey', async () => {
+      return this.baseApiKeyService.rotateKey(keyId);
+    });
+  }
+
+  async getKeyUsage(keyId: string): Promise<any> {
+    return this.executeWithErrorHandling('getKeyUsage', async () => {
+      return this.baseApiKeyService.getKeyUsage(keyId);
+    });
+  }
+
+  async updateKeyScopes(keyId: string, scopes: string[]): Promise<any> {
+    return this.executeWithErrorHandling('updateKeyScopes', async () => {
+      return this.baseApiKeyService.updateKeyScopes(keyId, scopes);
+    });
+  }
+
+  // Legacy compatibility methods for the microservice interface
+  async createApiKeyLegacy(service: string, hashedKey: string): Promise<any> {
+    return this.createServiceApiKey(service, hashedKey);
+  }
+
+  async validateApiKeyLegacy(
+    keyId: string,
+    hashedKey: string,
+  ): Promise<boolean> {
+    return this.validateApiKey(keyId, hashedKey);
+  }
+
+  async revokeApiKeyLegacy(keyId: string): Promise<any> {
+    return this.revokeApiKey(keyId);
   }
 }

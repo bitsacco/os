@@ -45,9 +45,7 @@ import { MetricsInterceptor } from './interceptors/metrics.interceptor';
     NotificationsDomainModule,
     CommunicationsDomainModule,
   ],
-  controllers: [
-    AuthController,
-  ],
+  controllers: [AuthController],
   providers: [ResponseInterceptor, MetricsInterceptor],
   exports: [ResponseInterceptor, MetricsInterceptor],
 })

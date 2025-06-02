@@ -117,7 +117,8 @@ export class TestApp {
 
   async clearDatabase(): Promise<void> {
     try {
-      const connection = this.module.get<mongoose.Connection>(getConnectionToken());
+      const connection =
+        this.module.get<mongoose.Connection>(getConnectionToken());
       await TestDatabase.clearDatabase(connection);
     } catch (error) {
       // Database not available in this test module
@@ -126,7 +127,8 @@ export class TestApp {
 
   async seedDatabase(seedData: any): Promise<void> {
     try {
-      const connection = this.module.get<mongoose.Connection>(getConnectionToken());
+      const connection =
+        this.module.get<mongoose.Connection>(getConnectionToken());
       await TestDatabase.seedDatabase(connection, seedData);
     } catch (error) {
       // Database not available in this test module

@@ -25,6 +25,94 @@ export class BusinessMetricsService {
     );
   }
 
+  // Auth-specific metrics
+  async recordTokenOperation(
+    userId: string,
+    operation: 'issue' | 'verify' | 'refresh' | 'revoke',
+    success: boolean,
+    duration: number,
+    errorType?: string,
+  ) {
+    const status = success ? 'success' : 'failure';
+    this.metricsService.recordTransaction(`token_${operation}`, status);
+
+    await this.telemetryService.executeWithSpan(
+      'auth.token_operation',
+      async () => {
+        this.telemetryService.recordEvent('token_operation', {
+          user_id: userId,
+          operation,
+          success,
+          duration_ms: duration,
+          error_type: errorType,
+        });
+      },
+      {
+        'auth.token.operation': operation,
+        'auth.token.success': success,
+        'auth.token.duration_ms': duration,
+      },
+    );
+  }
+
+  async recordApiKeyOperation(
+    keyId: string,
+    operation: 'create' | 'validate' | 'revoke' | 'rotate',
+    success: boolean,
+    duration: number,
+    errorType?: string,
+  ) {
+    const status = success ? 'success' : 'failure';
+    this.metricsService.recordTransaction(`apikey_${operation}`, status);
+
+    await this.telemetryService.executeWithSpan(
+      'auth.apikey_operation',
+      async () => {
+        this.telemetryService.recordEvent('apikey_operation', {
+          key_id: keyId,
+          operation,
+          success,
+          duration_ms: duration,
+          error_type: errorType,
+        });
+      },
+      {
+        'auth.apikey.operation': operation,
+        'auth.apikey.success': success,
+        'auth.apikey.duration_ms': duration,
+      },
+    );
+  }
+
+  async recordAuthMetric(metric: {
+    userId?: string;
+    success: boolean;
+    duration: number;
+    authType: string;
+    errorType?: string;
+  }) {
+    const status = metric.success ? 'success' : 'failure';
+    this.metricsService.recordTransaction(`auth_${metric.authType}`, status);
+
+    await this.telemetryService.executeWithSpan(
+      'auth.attempt',
+      async () => {
+        this.telemetryService.recordEvent('auth_attempt', {
+          user_id: metric.userId,
+          auth_type: metric.authType,
+          success: metric.success,
+          duration_ms: metric.duration,
+          error_type: metric.errorType,
+        });
+      },
+      {
+        'auth.type': metric.authType,
+        'auth.success': metric.success,
+        'auth.duration_ms': metric.duration,
+      },
+    );
+  }
+
   async recordUserLogin(
     method: 'jwt' | 'apikey' | 'phone' | 'nostr',
     success: boolean,
@@ -43,6 +131,39 @@ export class BusinessMetricsService {
       },
       { 'auth.method': method, 'auth.success': success },
     );
+  }
+
+  async recordLoginMetric(metric: {
+    userId?: string;
+    success: boolean;
+    duration: number;
+    authType: string;
+    errorType?: string;
+  }) {
+    await this.recordAuthMetric(metric);
+  }
+
+  async recordRegisterMetric(metric: {
+    userId?: string;
+    success: boolean;
+    duration: number;
+    authType: string;
+    errorType?: string;
+  }) {
+    await this.recordAuthMetric(metric);
+  }
+
+  async recordVerifyMetric(metric: {
+    userId?: string;
+    success: boolean;
+    duration: number;
+    method: string;
+    errorType?: string;
+  }) {
+    await this.recordAuthMetric({
+      ...metric,
+      authType: `verify_${metric.method}`,
+    });
   }
 
   // Chama metrics

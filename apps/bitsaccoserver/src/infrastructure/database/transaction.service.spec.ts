@@ -189,7 +189,9 @@ describe('TransactionService', () => {
     });
 
     it('should throw last error after all retries exhausted', async () => {
-      const mockOperation = mock(() => Promise.reject(new Error('Always fails')));
+      const mockOperation = mock(() =>
+        Promise.reject(new Error('Always fails')),
+      );
 
       await expect(
         service.executeWithRetry(mockOperation, 2, 10),
