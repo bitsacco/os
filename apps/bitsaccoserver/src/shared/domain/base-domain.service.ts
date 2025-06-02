@@ -2,16 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BusinessMetricsService } from '../../infrastructure/monitoring/business-metrics.service';
 import { TelemetryService } from '../../infrastructure/monitoring/telemetry.service';
-
-export interface DomainEvent {
-  eventType: string;
-  aggregateId: string;
-  aggregateType: string;
-  payload: any;
-  timestamp: Date;
-  version: number;
-  userId?: string;
-}
+import { DomainEvent } from './types';
 
 @Injectable()
 export abstract class BaseDomainService {
@@ -26,11 +17,11 @@ export abstract class BaseDomainService {
   protected async publishEvent(
     event: Omit<DomainEvent, 'timestamp' | 'version'>,
   ): Promise<void> {
-    const domainEvent: DomainEvent = {
+    const domainEvent = new DomainEvent({
       ...event,
       timestamp: new Date(),
       version: 1,
-    };
+    });
 
     try {
       await this.eventEmitter.emitAsync(event.eventType, domainEvent);

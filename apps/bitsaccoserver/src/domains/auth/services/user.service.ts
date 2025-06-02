@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import * as argon2 from 'argon2';
 import { BaseDomainService } from '../../../shared/domain/base-domain.service';
 import { BusinessMetricsService } from '../../../infrastructure/monitoring/business-metrics.service';
 import { TelemetryService } from '../../../infrastructure/monitoring/telemetry.service';
@@ -64,7 +65,11 @@ export class UserService extends BaseDomainService {
 
   async findById(id: string): Promise<any> {
     return this.executeWithErrorHandling('findById', async () => {
-      return this.userRepository.findOne({ _id: id });
+      const user = await this.userRepository.findOne({ _id: id });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      return user;
     });
   }
 
@@ -83,6 +88,33 @@ export class UserService extends BaseDomainService {
         { _id: id },
         { ...updates, updatedAt: new Date() },
       );
+    });
+  }
+
+  async findByNpub(npub: string): Promise<any> {
+    return this.executeWithErrorHandling('findByNpub', async () => {
+      return this.userRepository.findOne({ 'nostr.npub': npub });
+    });
+  }
+
+  async validatePin(user: any, plainPin: string): Promise<boolean> {
+    return this.executeWithErrorHandling('validatePin', async () => {
+      try {
+        return await argon2.verify(user.pin || user.pinHash, plainPin);
+      } catch (error) {
+        return false;
+      }
+    });
+  }
+
+  async hashPin(plainPin: string): Promise<string> {
+    return this.executeWithErrorHandling('hashPin', async () => {
+      return await argon2.hash(plainPin, {
+        type: argon2.argon2id,
+        memoryCost: 2 ** 16, // 64 MB
+        timeCost: 3,
+        parallelism: 1,
+      });
     });
   }
 }

@@ -13,10 +13,19 @@ export class TestDatabase {
   }
 
   static async clearDatabase(connection: mongoose.Connection) {
-    const collections = connection.db.collections();
+    if (!connection || !connection.db) {
+      console.warn('Database connection not available for clearing');
+      return;
+    }
 
-    for (const collection of await collections) {
-      await collection.deleteMany({});
+    try {
+      const collections = await connection.db.collections();
+
+      for (const collection of collections) {
+        await collection.deleteMany({});
+      }
+    } catch (error) {
+      console.warn('Failed to clear database:', error.message);
     }
   }
 

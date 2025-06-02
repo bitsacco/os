@@ -12,7 +12,7 @@ import { Logger, UseGuards } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { ConnectionManagerService } from '../services/connection-manager.service';
 import { MetricsService } from '../../../infrastructure/monitoring/metrics.service';
-import { DomainEvent } from '../../../shared/domain/base-domain.service';
+import { DomainEvent } from '../../../shared/domain/types';
 import { WsJwtGuard } from '../guards/ws-jwt.guard';
 
 interface AuthenticatedSocket extends Socket {

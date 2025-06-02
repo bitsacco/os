@@ -6,7 +6,9 @@ import { ApiKeyDocument } from '@bitsacco/common/database/apikey.schema';
 
 @Injectable()
 export class ApiKeyRepository extends BaseRepository<ApiKeyDocument> {
-  constructor(@InjectModel('ApiKey') apiKeyModel: Model<ApiKeyDocument>) {
+  constructor(
+    @InjectModel(ApiKeyDocument.name) apiKeyModel: Model<ApiKeyDocument>,
+  ) {
     super(apiKeyModel);
   }
 

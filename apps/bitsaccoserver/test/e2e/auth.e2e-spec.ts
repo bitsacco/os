@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { Connection } from 'mongoose';
 import { getConnectionToken } from '@nestjs/mongoose';
-import { AppModule } from '../../src/app.module';
+import { TestAppModule } from '../utils/test-app.module';
 import { TestDatabase } from '../utils/test-database';
 import { TestDataFactory } from '../utils/test-module';
 
@@ -12,25 +12,31 @@ describe('Authentication (E2E)', () => {
   let connection: Connection;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    })
-      .overrideProvider('SWAP_SERVICE')
-      .useValue({
-        getService: () => ({
-          createSwap: jest.fn(),
-          getSwap: jest.fn(),
-          listSwaps: jest.fn(),
-          getExchangeRate: jest.fn(),
-          cancelSwap: jest.fn(),
-        }),
-      })
-      .compile();
+    try {
+      const moduleFixture: TestingModule = await Test.createTestingModule({
+        imports: [TestAppModule],
+      }).compile();
 
-    app = moduleFixture.createNestApplication();
-    connection = moduleFixture.get<Connection>(getConnectionToken());
+      app = moduleFixture.createNestApplication();
 
-    await app.init();
+      // Set global prefix to match main application
+      app.setGlobalPrefix('api/v1');
+
+      try {
+        connection = moduleFixture.get<Connection>(getConnectionToken());
+      } catch (error) {
+        console.warn('Could not get database connection:', error.message);
+        connection = null;
+      }
+
+      await app.init();
+      console.log('Test application initialized successfully');
+    } catch (error) {
+      console.error('Failed to initialize test application:', error);
+      // Set app to null so tests can detect initialization failure
+      app = null;
+      throw error;
+    }
   });
 
   beforeEach(async () => {
@@ -39,8 +45,12 @@ describe('Authentication (E2E)', () => {
   });
 
   afterAll(async () => {
-    await TestDatabase.clearDatabase(connection);
-    await app.close();
+    if (connection) {
+      await TestDatabase.clearDatabase(connection);
+    }
+    if (app) {
+      await app.close();
+    }
   });
 
   describe('User Registration Flow', () => {

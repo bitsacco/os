@@ -318,6 +318,36 @@ export class BusinessMetricsService {
   }
 
   // Communication metrics
+  async recordCommunicationMetric(
+    service: 'sms' | 'nostr',
+    operation: string,
+    success: boolean,
+    duration: number,
+    metadata?: Record<string, any>,
+  ) {
+    const status = success ? 'success' : 'failure';
+    this.metricsService.recordTransaction(`${service}_${operation}`, status);
+
+    await this.telemetryService.executeWithSpan(
+      `communication.${service}`,
+      async () => {
+        this.telemetryService.recordEvent('communication_operation', {
+          service,
+          operation,
+          success,
+          duration_ms: duration,
+          ...metadata,
+        });
+      },
+      {
+        'communication.service': service,
+        'communication.operation': operation,
+        'communication.success': success,
+        'communication.duration_ms': duration,
+      },
+    );
+  }
+
   async recordSMSSent(phone: string, success: boolean, cost?: number) {
     const status = success ? 'success' : 'failure';
     this.metricsService.recordTransaction('sms', status);
@@ -360,25 +390,27 @@ export class BusinessMetricsService {
   // Error tracking
   async recordDomainError(
     domain: string,
-    errorType: string,
+    operation: string,
     error: Error,
     userId?: string,
   ) {
-    this.metricsService.recordError(domain, errorType, 'high');
+    this.metricsService.recordError(domain, operation, 'high');
 
     await this.telemetryService.executeWithSpan(
       'error.occurred',
       async () => {
         this.telemetryService.recordEvent('domain_error', {
           domain,
-          error_type: errorType,
+          operation,
+          error_type: error.name,
           error_message: error.message,
           user_id: userId || 'unknown',
         });
       },
       {
         'error.domain': domain,
-        'error.type': errorType,
+        'error.operation': operation,
+        'error.type': error.name,
         'error.message': error.message,
       },
     );

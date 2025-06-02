@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { BaseDomainService, DomainEvent } from './base-domain.service';
+import { BaseDomainService } from './base-domain.service';
+import { DomainEvent } from './types';
 import { BusinessMetricsService } from '../../infrastructure/monitoring/business-metrics.service';
 import { TelemetryService } from '../../infrastructure/monitoring/telemetry.service';
 import {
