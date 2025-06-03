@@ -5,14 +5,12 @@ import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 // Schemas
+import { UsersDocument, UsersSchema } from '../../shared/database/users.schema';
+import { TokenDocument, TokenSchema } from '../../shared/database/token.schema';
 import {
-  UsersDocument,
-  UsersSchema,
-  TokenDocument,
-  TokenSchema,
   ApiKeyDocument,
   ApiKeySchema,
-} from '@bitsacco/common';
+} from '../../shared/database/apikey.schema';
 
 // Services
 import { AuthService } from './services/auth.service';

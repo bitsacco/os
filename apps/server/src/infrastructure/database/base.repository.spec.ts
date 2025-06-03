@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { BaseRepository } from './base.repository';
-import { AbstractDocument } from '@bitsacco/common/database';
+import { AbstractDocument } from '../../shared/database/abstract.schema';
 
 // Test document interface
 interface TestDocument extends AbstractDocument {

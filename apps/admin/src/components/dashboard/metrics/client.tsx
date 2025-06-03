@@ -7,15 +7,25 @@ import Box from '@mui/material/Box';
 
 // Dynamically import the metrics dashboard with no SSR
 const MetricsDashboardDynamic = dynamic(
-  () => import('./metrics-dashboard').then(mod => ({ default: mod.MetricsDashboard })),
-  { 
+  () =>
+    import('./metrics-dashboard').then((mod) => ({
+      default: mod.MetricsDashboard,
+    })),
+  {
     ssr: false,
     loading: () => (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '50vh',
+        }}
+      >
         <CircularProgress />
       </Box>
-    )
-  }
+    ),
+  },
 );
 
 // Memoize the dashboard to prevent unnecessary re-renders

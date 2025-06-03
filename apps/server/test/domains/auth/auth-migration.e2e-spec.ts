@@ -1,9 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { HttpStatus, INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import * as request from 'supertest';
 import { AuthDomainModule } from '../../../src/domains/auth/auth-domain.module';
 import { AuthService } from '../../../src/domains/auth/services/auth.service';
 import { TokenService } from '../../../src/domains/auth/services/token.service';
@@ -11,7 +10,6 @@ import { ApiKeyService } from '../../../src/domains/auth/services/apikey.service
 import { UserService } from '../../../src/domains/auth/services/user.service';
 import { BusinessMetricsService } from '../../../src/infrastructure/monitoring/business-metrics.service';
 import { TelemetryService } from '../../../src/infrastructure/monitoring/telemetry.service';
-import { createTestingModuleWithValidation } from '@bitsacco/testing';
 
 describe.skip('Auth Domain Migration E2E Tests', () => {
   let app: INestApplication;
@@ -52,32 +50,34 @@ describe.skip('Auth Domain Migration E2E Tests', () => {
       recordEvent: () => {},
     };
 
-    const moduleFixture: TestingModule =
-      await createTestingModuleWithValidation({
-        imports: [
-          ConfigModule.forRoot({
-            isGlobal: true,
-            envFilePath: '.env.test',
-          }),
-          MongooseModule.forRoot(
-            process.env.TEST_DATABASE_URL || 'mongodb://localhost/test',
-          ),
-          EventEmitterModule.forRoot(),
-          AuthDomainModule,
-        ],
-        providers: [
-          {
-            provide: BusinessMetricsService,
-            useValue: mockBusinessMetricsService,
-          },
-          {
-            provide: TelemetryService,
-            useValue: mockTelemetryService,
-          },
-        ],
-      });
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: '.env.test',
+        }),
+        MongooseModule.forRoot(
+          process.env.TEST_DATABASE_URL || 'mongodb://localhost/test',
+        ),
+        EventEmitterModule.forRoot(),
+        AuthDomainModule,
+      ],
+      providers: [
+        {
+          provide: BusinessMetricsService,
+          useValue: mockBusinessMetricsService,
+        },
+        {
+          provide: TelemetryService,
+          useValue: mockTelemetryService,
+        },
+      ],
+    }).compile();
 
-    app = moduleFixture.createNestApplication();
+    app = await moduleFixture
+      .createNestApplication()
+      .useGlobalPipes(new ValidationPipe())
+      .init();
 
     authService = moduleFixture.get<AuthService>(AuthService);
     tokenService = moduleFixture.get<TokenService>(TokenService);

@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 
-import type { User } from "@/types/user";
-import { authClient } from "@/lib/auth/client";
-import { logger } from "@/lib/default-logger";
+import type { User } from '@/types/user';
+import { authClient } from '@/lib/auth/client';
+import { logger } from '@/lib/default-logger';
 
 export interface UserContextValue {
   user: User | null;
@@ -43,7 +43,7 @@ export function UserProvider({
         setState((prev) => ({
           ...prev,
           user: null,
-          error: "Something went wrong",
+          error: 'Something went wrong',
           isLoading: false,
         }));
         return;
@@ -60,7 +60,7 @@ export function UserProvider({
       setState((prev) => ({
         ...prev,
         user: null,
-        error: "Something went wrong",
+        error: 'Something went wrong',
         isLoading: false,
       }));
     }

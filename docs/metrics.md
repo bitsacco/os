@@ -26,12 +26,15 @@ Bitsacco OS uses OpenTelemetry for metrics collection with Prometheus as the sto
 Bitsacco OS collects the following types of metrics:
 
 1. **Counters**: Monotonically increasing values that track the number of occurrences of an event.
+
    - Examples: Number of login attempts, number of transactions, error counts.
 
 2. **Histograms**: Record distribution of values, such as request durations or transaction amounts.
+
    - Examples: API request durations, transaction amounts.
 
 3. **Gauges**: Values that can increase and decrease over time.
+
    - Examples: Current number of active users, current memory usage.
 
 4. **Observables**: Lazy measurements collected only when scraped.
@@ -46,12 +49,14 @@ service.entity.operation.result
 ```
 
 Where:
+
 - `service`: The microservice generating the metric (e.g., auth, swap, shares)
 - `entity`: The entity being tracked (e.g., login, token, transaction)
 - `operation`: The specific operation (e.g., total, success, failure)
 - `result`: The outcome or aspect being measured (e.g., count, duration)
 
 Examples:
+
 - `auth.login.total` - Total login attempts
 - `swap.onramp.amount_kes` - Distribution of onramp amounts in KES
 - `core.database.duration` - Duration of database operations
@@ -70,6 +75,7 @@ All services implement a standard set of operational metrics:
 ### Authentication Metrics
 
 #### Login Metrics
+
 - `auth.login.attempts` - Total login attempts
 - `auth.login.successful` - Successful logins
 - `auth.login.failed` - Failed logins
@@ -77,6 +83,7 @@ All services implement a standard set of operational metrics:
 - `auth.login.by_type.duration` - Login duration by authentication type
 
 #### Registration Metrics
+
 - `auth.register.attempts` - Total registration attempts
 - `auth.register.successful` - Successful registrations
 - `auth.register.failed` - Failed registrations
@@ -84,6 +91,7 @@ All services implement a standard set of operational metrics:
 - `auth.register.by_type.duration` - Registration duration by authentication type
 
 #### Verification Metrics
+
 - `auth.verify.attempts` - Total verification attempts
 - `auth.verify.successful` - Successful verifications
 - `auth.verify.failed` - Failed verifications
@@ -91,6 +99,7 @@ All services implement a standard set of operational metrics:
 - `auth.verify.by_method.duration` - Verification duration by method
 
 #### Token Metrics
+
 - `auth.token.operations` - Token operations by operation type (issue, refresh, verify, revoke)
 - `auth.token.issued` - Tokens issued
 - `auth.token.refreshed` - Tokens refreshed
@@ -102,6 +111,7 @@ All services implement a standard set of operational metrics:
 ### LNURL Metrics
 
 #### Withdrawal Metrics
+
 - `lnurl.withdrawal.total` - Total number of LNURL withdrawals
 - `lnurl.withdrawal.success` - Successful withdrawals
 - `lnurl.withdrawal.failure` - Failed withdrawals
@@ -112,22 +122,26 @@ All services implement a standard set of operational metrics:
 ### Swap Metrics
 
 #### Onramp Metrics (KES → BTC)
+
 - `swap.onramp.count` - Number of onramp transactions
 - `swap.onramp.amount_kes` - Distribution of onramp amounts in KES
 - `swap.onramp.amount_sats` - Distribution of onramp amounts in satoshis
 - `swap.onramp.duration` - Duration of onramp transactions
 
 #### Offramp Metrics (BTC → KES)
+
 - `swap.offramp.count` - Number of offramp transactions
 - `swap.offramp.amount_kes` - Distribution of offramp amounts in KES
 - `swap.offramp.amount_sats` - Distribution of offramp amounts in satoshis
 - `swap.offramp.duration` - Duration of offramp transactions
 
 #### Quote Metrics
+
 - `swap.quote.count` - Number of quote requests
 - `swap.quote.duration` - Duration of quote operations
 
 #### FX Rate Metrics
+
 - `swap.fx.update` - Number of FX rate updates
 - `swap.fx.buy_rate` - Current buy rate (KES/BTC)
 - `swap.fx.sell_rate` - Current sell rate (KES/BTC)
@@ -135,18 +149,21 @@ All services implement a standard set of operational metrics:
 ### Shares Metrics
 
 #### Shares Transaction Metrics
+
 - `shares.transaction.total` - Total number of share transactions
 - `shares.transaction.success` - Successful share transactions
 - `shares.transaction.failure` - Failed share transactions
 - `shares.transaction.duration` - Duration of share transactions
 
 #### Shares Subscription Metrics
+
 - `shares.subscriptions.total` - Total number of share subscription attempts
 - `shares.subscriptions.successful` - Successful share subscriptions
 - `shares.subscriptions.failed` - Failed share subscriptions
 - `shares.subscriptions.duration` - Duration of share subscription operations
 
 #### Shares Transfer Metrics
+
 - `shares.transfers.total` - Total number of share transfer attempts
 - `shares.transfers.successful` - Successful share transfers
 - `shares.transfers.failed` - Failed share transfers
@@ -157,21 +174,25 @@ All services implement a standard set of operational metrics:
 ### Core Metrics
 
 #### Database Metrics
+
 - `core.database.operations` - Number of database operations
 - `core.database.duration` - Duration of database operations
 - `core.database.errors` - Number of database errors
 
 #### API Metrics
+
 - `core.api.requests` - Number of API requests
 - `core.api.duration` - Duration of API requests
 - `core.api.errors` - Number of API errors
 
 #### gRPC Metrics
+
 - `core.grpc.requests` - Number of gRPC requests
 - `core.grpc.duration` - Duration of gRPC requests
 - `core.grpc.errors` - Number of gRPC errors
 
 #### Resource Metrics
+
 - `core.resources.cpu_usage` - CPU usage percentage
 - `core.resources.memory_usage` - Memory usage in megabytes
 - `core.resources.disk_usage` - Disk usage percentage
@@ -192,9 +213,9 @@ import { bootstrapTelemetry } from '@bitsacco/common';
 async function bootstrap() {
   // Initialize telemetry with service name and metrics port
   const telemetrySdk = bootstrapTelemetry('service-name', 4000);
-  
+
   // Rest of bootstrap code...
-  
+
   // Enable graceful shutdown
   app.enableShutdownHooks();
 }
@@ -215,28 +236,28 @@ Example:
 @Injectable()
 export class UserMetricsService extends OperationMetricsService {
   private userActivityCounter!: Counter;
-  
+
   constructor(private eventEmitter: EventEmitter2) {
     super('users', 'activity');
     this.initializeMetrics();
   }
-  
+
   private initializeMetrics() {
     this.userActivityCounter = this.createCounter('users.activity.count', {
       description: 'User activity count',
     });
   }
-  
+
   recordUserActivity(userId: string, activityType: string) {
     this.userActivityCounter.add(1, { userId, activityType });
-    
+
     this.recordOperationMetric({
       operation: activityType,
       success: true,
       duration: 0,
       labels: { userId },
     });
-    
+
     // Emit event for potential subscribers
     this.eventEmitter.emit('users:activity', {
       userId,
@@ -263,6 +284,7 @@ Metrics are exposed via the `/metrics` endpoint on each service and collected by
 Grafana dashboards visualize the collected metrics with customizable panels and alerts. Default dashboards are provided for key services and can be extended for specific monitoring needs.
 
 To access the metrics:
+
 - Prometheus: http://localhost:9090
 - Grafana: http://localhost:3000 (default credentials: admin/admin)
 

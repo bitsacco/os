@@ -1,32 +1,32 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Avatar from "@mui/material/Avatar";
-import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import Checkbox from "@mui/material/Checkbox";
-import Divider from "@mui/material/Divider";
-import IconButton from "@mui/material/IconButton";
-import Stack from "@mui/material/Stack";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableHead from "@mui/material/TableHead";
-import TablePagination from "@mui/material/TablePagination";
-import TableRow from "@mui/material/TableRow";
-import Typography from "@mui/material/Typography";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
-import CircularProgress from "@mui/material/CircularProgress";
-import { Pencil as PencilIcon } from "@phosphor-icons/react/dist/ssr/Pencil";
-import { DotsThree as DotsThreeIcon } from "@phosphor-icons/react/dist/ssr/DotsThree";
-import { Trash as TrashIcon } from "@phosphor-icons/react/dist/ssr/Trash";
-import { CopySimple as CopyIcon } from "@phosphor-icons/react/dist/ssr/CopySimple";
-import dayjs from "dayjs";
+import * as React from 'react';
+import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Checkbox from '@mui/material/Checkbox';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Stack from '@mui/material/Stack';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
+import TableRow from '@mui/material/TableRow';
+import Typography from '@mui/material/Typography';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import CircularProgress from '@mui/material/CircularProgress';
+import { Pencil as PencilIcon } from '@phosphor-icons/react/dist/ssr/Pencil';
+import { DotsThree as DotsThreeIcon } from '@phosphor-icons/react/dist/ssr/DotsThree';
+import { Trash as TrashIcon } from '@phosphor-icons/react/dist/ssr/Trash';
+import { CopySimple as CopyIcon } from '@phosphor-icons/react/dist/ssr/CopySimple';
+import dayjs from 'dayjs';
 
-import { useSelection } from "@/hooks/use-selection";
-import { Member, isSuperAdmin } from "@/lib/members/client";
-import { useUser } from "@/hooks/use-user";
+import { useSelection } from '@/hooks/use-selection';
+import { Member, isSuperAdmin } from '@/lib/members/client';
+import { useUser } from '@/hooks/use-user';
 
 interface MembersTableProps {
   count: number;
@@ -122,10 +122,10 @@ export function MembersTable({
           if (onCopyId) {
             onCopyId(activeRow.id);
           }
-          console.log("Member ID copied to clipboard");
+          console.log('Member ID copied to clipboard');
         })
         .catch((err) => {
-          console.error("Failed to copy ID:", err);
+          console.error('Failed to copy ID:', err);
         });
     }
     handleCloseMenu();
@@ -133,8 +133,8 @@ export function MembersTable({
 
   return (
     <Card>
-      <Box sx={{ overflowX: "auto" }}>
-        <Table sx={{ minWidth: "800px" }}>
+      <Box sx={{ overflowX: 'auto' }}>
+        <Table sx={{ minWidth: '800px' }}>
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox">
@@ -199,44 +199,44 @@ export function MembersTable({
                     </TableCell>
                     <TableCell>
                       <Stack
-                        sx={{ alignItems: "center" }}
+                        sx={{ alignItems: 'center' }}
                         direction="row"
                         spacing={2}
                       >
                         <Avatar src={row.avatar} alt={row.name}>
-                          {row.name?.charAt(0) || "?"}
+                          {row.name?.charAt(0) || '?'}
                         </Avatar>
                         <Typography variant="subtitle2">{row.name}</Typography>
                       </Stack>
                     </TableCell>
-                    <TableCell>{row.phone || "-"}</TableCell>
+                    <TableCell>{row.phone || '-'}</TableCell>
                     <TableCell>
                       {row.roles && row.roles.length > 0
                         ? row.roles
                             .map((role) => {
                               switch (role) {
                                 case 0:
-                                  return "Member";
+                                  return 'Member';
                                 case 1:
-                                  return "Admin";
+                                  return 'Admin';
                                 case 3:
-                                  return "Super Admin";
+                                  return 'Super Admin';
                                 default:
                                   return `Role ${role}`;
                               }
                             })
-                            .join(", ")
-                        : "Member"}
+                            .join(', ')
+                        : 'Member'}
                     </TableCell>
                     <TableCell>
                       {row.createdAt
-                        ? dayjs(row.createdAt).format("MMM D, YYYY")
-                        : "-"}
+                        ? dayjs(row.createdAt).format('MMM D, YYYY')
+                        : '-'}
                     </TableCell>
                     <TableCell>
                       {row.updatedAt
-                        ? dayjs(row.updatedAt).format("MMM D, YYYY")
-                        : "-"}
+                        ? dayjs(row.updatedAt).format('MMM D, YYYY')
+                        : '-'}
                     </TableCell>
                     <TableCell align="right">
                       <IconButton
@@ -276,12 +276,12 @@ export function MembersTable({
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
         anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "right",
+          vertical: 'bottom',
+          horizontal: 'right',
         }}
         transformOrigin={{
-          vertical: "top",
-          horizontal: "right",
+          vertical: 'top',
+          horizontal: 'right',
         }}
       >
         <MenuItem onClick={handleCopyId}>
@@ -299,7 +299,7 @@ export function MembersTable({
           Edit
         </MenuItem>
         {currentUserIsSuperAdmin && (
-          <MenuItem onClick={handleDelete} sx={{ color: "error.main" }}>
+          <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
             <TrashIcon
               fontSize="var(--icon-fontSize-md)"
               style={{ marginRight: 8 }}

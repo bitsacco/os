@@ -1,7 +1,6 @@
-# Bitsacco Open Source
+# Bitsacco Server
 
-[Bitsacco Open Source](https://github.com/bitsacco/opensource) is home to services and components powering the [Bitsacco](https://bitsacco.com) platform.
-
+[Bitsacco Server](https://github.com/bitsacco/opensource) is an open source model for running Savings and Credit Cooperatives (SACCO) community banks. This service provides for
 
 ## Contributing
 
@@ -16,7 +15,7 @@ Check out a few resources that may come in handy when working services and compo
 
 ## Support
 
-Bitsacco Open Source is MIT-licensed. We grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://bitsacco.com/opensource).
+Bitsacco Server is MIT-licensed. We grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://bitsacco.com/opensource).
 
 ## Stay in touch
 
@@ -26,4 +25,4 @@ Bitsacco Open Source is MIT-licensed. We grow thanks to the sponsors and support
 
 ## License
 
-Bitsacco Open Source is [MIT licensed](https://github.com/bitsacco/opensource/blob/main/LICENSE).
+Bitsacco Server is [MIT licensed](https://github.com/bitsacco/opensource/blob/main/LICENSE).

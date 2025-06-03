@@ -1,19 +1,19 @@
-import React from "react";
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardActions from "@mui/material/CardActions";
-import CardHeader from "@mui/material/CardHeader";
-import Divider from "@mui/material/Divider";
-import IconButton from "@mui/material/IconButton";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
-import ListItemAvatar from "@mui/material/ListItemAvatar";
-import ListItemText from "@mui/material/ListItemText";
-import type { SxProps } from "@mui/material/styles";
-import { ArrowRight as ArrowRightIcon } from "@phosphor-icons/react/dist/ssr/ArrowRight";
-import { DotsThreeVertical as DotsThreeVerticalIcon } from "@phosphor-icons/react/dist/ssr/DotsThreeVertical";
-import dayjs from "dayjs";
+import React from 'react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardActions from '@mui/material/CardActions';
+import CardHeader from '@mui/material/CardHeader';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemText from '@mui/material/ListItemText';
+import type { SxProps } from '@mui/material/styles';
+import { ArrowRight as ArrowRightIcon } from '@phosphor-icons/react/dist/ssr/ArrowRight';
+import { DotsThreeVertical as DotsThreeVerticalIcon } from '@phosphor-icons/react/dist/ssr/DotsThreeVertical';
+import dayjs from 'dayjs';
 
 export interface Product {
   id: string;
@@ -43,24 +43,24 @@ export function LatestProducts({
                 <Box
                   component="img"
                   src={product.image}
-                  sx={{ borderRadius: 1, height: "48px", width: "48px" }}
+                  sx={{ borderRadius: 1, height: '48px', width: '48px' }}
                 />
               ) : (
                 <Box
                   sx={{
                     borderRadius: 1,
-                    backgroundColor: "var(--mui-palette-neutral-200)",
-                    height: "48px",
-                    width: "48px",
+                    backgroundColor: 'var(--mui-palette-neutral-200)',
+                    height: '48px',
+                    width: '48px',
                   }}
                 />
               )}
             </ListItemAvatar>
             <ListItemText
               primary={product.name}
-              primaryTypographyProps={{ variant: "subtitle1" }}
-              secondary={`Updated ${dayjs(product.updatedAt).format("MMM D, YYYY")}`}
-              secondaryTypographyProps={{ variant: "body2" }}
+              primaryTypographyProps={{ variant: 'subtitle1' }}
+              secondary={`Updated ${dayjs(product.updatedAt).format('MMM D, YYYY')}`}
+              secondaryTypographyProps={{ variant: 'body2' }}
             />
             <IconButton edge="end">
               <DotsThreeVerticalIcon weight="bold" />
@@ -69,7 +69,7 @@ export function LatestProducts({
         ))}
       </List>
       <Divider />
-      <CardActions sx={{ justifyContent: "flex-end" }}>
+      <CardActions sx={{ justifyContent: 'flex-end' }}>
         <Button
           color="inherit"
           endIcon={<ArrowRightIcon fontSize="var(--icon-fontSize-md)" />}

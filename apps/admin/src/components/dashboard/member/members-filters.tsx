@@ -1,30 +1,30 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Card from "@mui/material/Card";
-import InputAdornment from "@mui/material/InputAdornment";
-import OutlinedInput from "@mui/material/OutlinedInput";
-import Button from "@mui/material/Button";
-import Stack from "@mui/material/Stack";
-import MenuItem from "@mui/material/MenuItem";
-import Select, { SelectChangeEvent } from "@mui/material/Select";
-import InputLabel from "@mui/material/InputLabel";
-import FormControl from "@mui/material/FormControl";
-import Box from "@mui/material/Box";
-import { MagnifyingGlass as MagnifyingGlassIcon } from "@phosphor-icons/react/dist/ssr/MagnifyingGlass";
-import { FunnelSimple as FilterIcon } from "@phosphor-icons/react/dist/ssr/FunnelSimple";
-import { X as ClearIcon } from "@phosphor-icons/react/dist/ssr/X";
+import * as React from 'react';
+import Card from '@mui/material/Card';
+import InputAdornment from '@mui/material/InputAdornment';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import MenuItem from '@mui/material/MenuItem';
+import Select, { SelectChangeEvent } from '@mui/material/Select';
+import InputLabel from '@mui/material/InputLabel';
+import FormControl from '@mui/material/FormControl';
+import Box from '@mui/material/Box';
+import { MagnifyingGlass as MagnifyingGlassIcon } from '@phosphor-icons/react/dist/ssr/MagnifyingGlass';
+import { FunnelSimple as FilterIcon } from '@phosphor-icons/react/dist/ssr/FunnelSimple';
+import { X as ClearIcon } from '@phosphor-icons/react/dist/ssr/X';
 
-import { Role } from "@/types/user";
-import { useUser } from "@/hooks/use-user";
-import { isSuperAdmin } from "@/lib/members/client";
+import { Role } from '@/types/user';
+import { useUser } from '@/hooks/use-user';
+import { isSuperAdmin } from '@/lib/members/client';
 
 interface MembersFiltersProps {
   onSearch: (value: string) => void;
-  onSort: (field: string, order: "asc" | "desc") => void;
+  onSort: (field: string, order: 'asc' | 'desc') => void;
   onFilterRole?: (role: Role | null) => void;
   sortField?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
   selectedRole?: Role | null;
 }
 
@@ -32,18 +32,18 @@ export function MembersFilters({
   onSearch,
   onSort,
   onFilterRole,
-  sortField = "createdAt",
-  sortOrder = "desc",
+  sortField = 'createdAt',
+  sortOrder = 'desc',
   selectedRole = null,
 }: MembersFiltersProps): React.JSX.Element {
   // Get current user and check if they're a super admin
   const { user } = useUser();
   const currentUserIsSuperAdmin = isSuperAdmin(user);
 
-  const [searchValue, setSearchValue] = React.useState("");
+  const [searchValue, setSearchValue] = React.useState('');
   const [showFilters, setShowFilters] = React.useState(false);
   const [localSortField, setLocalSortField] = React.useState(sortField);
-  const [localSortOrder, setLocalSortOrder] = React.useState<"asc" | "desc">(
+  const [localSortOrder, setLocalSortOrder] = React.useState<'asc' | 'desc'>(
     sortOrder,
   );
   const [localSelectedRole, setLocalSelectedRole] = React.useState<Role | null>(
@@ -57,8 +57,8 @@ export function MembersFilters({
   };
 
   const handleClearSearch = () => {
-    setSearchValue("");
-    onSearch("");
+    setSearchValue('');
+    onSearch('');
   };
 
   const handleSortFieldChange = (event: SelectChangeEvent) => {
@@ -68,7 +68,7 @@ export function MembersFilters({
   };
 
   const handleSortOrderChange = (event: SelectChangeEvent) => {
-    const newSortOrder = event.target.value as "asc" | "desc";
+    const newSortOrder = event.target.value as 'asc' | 'desc';
     setLocalSortOrder(newSortOrder);
     onSort(localSortField, newSortOrder);
   };
@@ -76,11 +76,11 @@ export function MembersFilters({
   const handleRoleFilterChange = (event: SelectChangeEvent) => {
     const value = event.target.value;
     // If "all" is selected, set to null, otherwise convert to number
-    const newRole = value === "all" ? null : (Number(value) as Role);
+    const newRole = value === 'all' ? null : (Number(value) as Role);
 
     // Prevent non-super-admins from filtering by SuperAdmin role
     if (!currentUserIsSuperAdmin && newRole === Role.SuperAdmin) {
-      console.warn("Regular admins cannot filter by Super Admin role");
+      console.warn('Regular admins cannot filter by Super Admin role');
       return;
     }
 
@@ -98,7 +98,7 @@ export function MembersFilters({
     <Card sx={{ p: 2 }}>
       <Stack spacing={2}>
         <Stack direction="row" spacing={2} alignItems="center">
-          <Box sx={{ position: "relative", width: "100%", maxWidth: "500px" }}>
+          <Box sx={{ position: 'relative', width: '100%', maxWidth: '500px' }}>
             <OutlinedInput
               value={searchValue}
               onChange={handleSearch}
@@ -116,7 +116,7 @@ export function MembersFilters({
                       onClick={handleClearSearch}
                       color="inherit"
                       size="small"
-                      sx={{ minWidth: "auto", p: 0.5 }}
+                      sx={{ minWidth: 'auto', p: 0.5 }}
                     >
                       <ClearIcon fontSize="var(--icon-fontSize-md)" />
                     </Button>
@@ -135,7 +135,7 @@ export function MembersFilters({
         </Stack>
 
         {showFilters && (
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <FormControl sx={{ minWidth: 200 }}>
               <InputLabel id="sort-field-label">Sort By</InputLabel>
               <Select
@@ -172,7 +172,7 @@ export function MembersFilters({
                 labelId="role-filter-label"
                 value={
                   localSelectedRole === null
-                    ? "all"
+                    ? 'all'
                     : localSelectedRole.toString()
                 }
                 onChange={handleRoleFilterChange}

@@ -1,0 +1,88 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": ["NODE_ENV"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "inputs": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "test/**/*.ts",
+        "**/*.spec.ts",
+        "**/*.test.ts"
+      ]
+    },
+    "test:cov": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "inputs": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "test/**/*.ts",
+        "**/*.spec.ts",
+        "**/*.test.ts"
+      ]
+    },
+    "test:e2e": {
+      "dependsOn": ["^build"],
+      "outputs": ["coverage/**"],
+      "inputs": ["src/**/*.ts", "test/**/*.ts"]
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "*.js",
+        "*.ts",
+        "*.tsx",
+        "!node_modules/**",
+        "!dist/**",
+        "!build/**",
+        "!.next/**",
+        "!.turbo/**"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "*.ts",
+        "*.tsx",
+        "tsconfig.json"
+      ]
+    },
+    "format": {
+      "inputs": [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "*.js",
+        "*.ts",
+        "*.tsx",
+        "*.json",
+        "*.md",
+        "!node_modules/**",
+        "!dist/**",
+        "!build/**",
+        "!.next/**",
+        "!.turbo/**"
+      ],
+      "outputs": []
+    },
+    "clean": {
+      "cache": false
+    }
+  },
+  "globalDependencies": [".env", ".env.local", "turbo.json"]
+}

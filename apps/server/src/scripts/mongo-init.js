@@ -8,9 +8,9 @@ db.createUser({
   roles: [
     {
       role: 'readWrite',
-      db: 'bitsacco'
-    }
-  ]
+      db: 'bitsacco',
+    },
+  ],
 });
 
 // Create collections with validation
@@ -22,23 +22,23 @@ db.createCollection('users', {
       properties: {
         phone: {
           bsonType: 'string',
-          pattern: '^\\+[1-9]\\d{1,14}$'
+          pattern: '^\\+[1-9]\\d{1,14}$',
         },
         email: {
           bsonType: ['string', 'null'],
-          pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'
+          pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$',
         },
         role: {
           bsonType: 'string',
-          enum: ['user', 'admin', 'superadmin']
+          enum: ['user', 'admin', 'superadmin'],
         },
         status: {
           bsonType: 'string',
-          enum: ['active', 'inactive', 'suspended']
-        }
-      }
-    }
-  }
+          enum: ['active', 'inactive', 'suspended'],
+        },
+      },
+    },
+  },
 });
 
 db.createCollection('tokens', {
@@ -49,11 +49,11 @@ db.createCollection('tokens', {
       properties: {
         type: {
           bsonType: 'string',
-          enum: ['refresh', 'access', 'reset', 'verify']
-        }
-      }
-    }
-  }
+          enum: ['refresh', 'access', 'reset', 'verify'],
+        },
+      },
+    },
+  },
 });
 
 db.createCollection('apikeys', {
@@ -63,14 +63,14 @@ db.createCollection('apikeys', {
       required: ['keyId', 'hashedKey', 'service', 'createdAt'],
       properties: {
         service: {
-          bsonType: 'string'
+          bsonType: 'string',
         },
         isActive: {
-          bsonType: 'bool'
-        }
-      }
-    }
-  }
+          bsonType: 'bool',
+        },
+      },
+    },
+  },
 });
 
 // Create indexes for performance

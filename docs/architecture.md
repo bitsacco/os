@@ -30,11 +30,11 @@ The architecture emphasizes:
 
 The Bitsacco OS platform consists of the following core applications:
 
-| Application | Description | Primary Responsibilities |
-|-------------|-------------|--------------------------|
-| **Admin** | Admin Dashboard | Frontend interface for platform administration |
-| **Server** | Core Backend | Authentication, user management, business logic |
-| **Swap** | Currency Exchange | BTC/KES conversion, FX rates, payment processing |
+| Application | Description       | Primary Responsibilities                         |
+| ----------- | ----------------- | ------------------------------------------------ |
+| **Admin**   | Admin Dashboard   | Frontend interface for platform administration   |
+| **Server**  | Core Backend      | Authentication, user management, business logic  |
+| **Swap**    | Currency Exchange | BTC/KES conversion, FX rates, payment processing |
 
 ### Application Details
 
@@ -90,6 +90,7 @@ Service contracts are defined using Protocol Buffers (.proto files) which:
 - Generate client/server code
 
 Example service interfaces are defined in the `/proto` directory, with files like:
+
 - `auth.proto` - Authentication service
 - `swap.proto` - Currency exchange service
 - `shares.proto` - Shares management service
@@ -143,6 +144,7 @@ Data access is abstracted through repositories:
 - **Schemas**: Mongoose schemas define document structure and validation
 
 Example repository hierarchy:
+
 ```
 AbstractRepository (common)
 ├── UserRepository (auth)
@@ -171,6 +173,7 @@ Logging is implemented throughout the platform:
 ### Log Content
 
 Logs capture:
+
 - Request/response details
 - Error information and stack traces
 - Performance metrics
@@ -190,6 +193,7 @@ The monitoring infrastructure provides comprehensive observability:
 ### Standard Metrics
 
 All services implement standard metrics:
+
 - Operation counts (total, success, failure)
 - Operation durations
 - Error rates
@@ -198,6 +202,7 @@ All services implement standard metrics:
 ### Service-Specific Metrics
 
 Domain-specific metrics include:
+
 - **Auth**: Login attempts, registration success, token operations
 - **Swap**: Transaction volumes, currency rates, processing times
 - **Shares**: Share transactions, ownership distribution
@@ -207,11 +212,13 @@ Domain-specific metrics include:
 ### Metric Implementation
 
 Metrics are implemented using:
+
 - **MetricsService**: Base service for standard metrics
 - **OperationMetricsService**: For tracking operation outcomes
 - **Service-Specific Services**: Extending the base classes for domain metrics
 
 The metrics system is designed for:
+
 - **Scalability**: Handles high-volume metric collection
 - **Extensibility**: Easy to add new metrics
 - **Low Overhead**: Minimal performance impact
@@ -228,6 +235,7 @@ Bitsacco OS supports multiple deployment models:
 ### Infrastructure Components
 
 The infrastructure includes:
+
 - **MongoDB**: Document database
 - **Redis**: Caching and message queuing
 - **Prometheus**: Metrics collection
@@ -237,6 +245,7 @@ The infrastructure includes:
 ### Configuration
 
 Services are configured via:
+
 - Environment variables
 - Configuration files
 - Secrets management (in production)
@@ -244,6 +253,7 @@ Services are configured via:
 ### Scaling
 
 The architecture supports:
+
 - **Horizontal Scaling**: Adding more service instances
 - **Vertical Scaling**: Increasing resources per instance
 - **Database Sharding**: For large data volumes

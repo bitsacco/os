@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useRouter } from "next/navigation";
-import Alert from "@mui/material/Alert";
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import Alert from '@mui/material/Alert';
 
-import { paths } from "@/paths";
-import { logger } from "@/lib/default-logger";
-import { useUser } from "@/hooks/use-user";
-import { Role } from "@/types/user";
-import { authClient } from "@/lib/auth/client";
+import { paths } from '@/paths';
+import { logger } from '@/lib/default-logger';
+import { useUser } from '@/hooks/use-user';
+import { Role } from '@/types/user';
+import { authClient } from '@/lib/auth/client';
 
 export interface AuthGuardProps {
   children: React.ReactNode;
@@ -35,7 +35,7 @@ export function AuthGuard({
 
     if (!user) {
       logger.debug(
-        "[AuthGuard]: User is not logged in, redirecting to sign in",
+        '[AuthGuard]: User is not logged in, redirecting to sign in',
       );
       router.replace(paths.auth.signIn);
       return;
@@ -48,14 +48,14 @@ export function AuthGuard({
 
     if (!hasAdminRole) {
       logger.debug(
-        "[AuthGuard]: User does not have admin privileges, redirecting to sign in",
+        '[AuthGuard]: User does not have admin privileges, redirecting to sign in',
       );
       setAuthError("You don't have permission to access this dashboard");
 
       // Sign out the user since they don't have permission
       const { error: signOutError } = await authClient.signOut();
       if (signOutError) {
-        logger.error("[AuthGuard]: Error signing out user:", signOutError);
+        logger.error('[AuthGuard]: Error signing out user:', signOutError);
       }
 
       router.replace(paths.auth.signIn);

@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import React, { useState, useMemo } from "react";
-import { styled } from "@mui/material/styles";
+import React, { useState, useMemo } from 'react';
+import { styled } from '@mui/material/styles';
 import {
   FormControl,
   FormHelperText,
   InputLabel,
   Menu,
   MenuItem,
-} from "@mui/material";
-import { Box } from "@mui/system";
+} from '@mui/material';
+import { Box } from '@mui/system';
 
 interface PhoneInputProps {
   value: string;
@@ -22,9 +22,9 @@ export function PhoneInput({
   value,
   onChange,
   error,
-  label = "Phone",
+  label = 'Phone',
 }: PhoneInputProps) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [selectedCountry, setSelectedCountry] =
     useState<Country>(DEFAULT_COUNTRY);
 
@@ -39,7 +39,7 @@ export function PhoneInput({
   const handleCountrySelect = (country: (typeof countries)[0]) => {
     setSelectedCountry(country);
     onChange(`+${country.dialCode}`);
-    setSearch("");
+    setSearch('');
   };
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,7 +56,7 @@ export function PhoneInput({
 
   const handleMenuClose = () => {
     setAnchorEl(null);
-    setSearch("");
+    setSearch('');
   };
 
   return (
@@ -111,44 +111,44 @@ export function PhoneInput({
   );
 }
 
-const Container = styled("div")({
-  width: "100%",
+const Container = styled('div')({
+  width: '100%',
 });
 
-const InputWrapper = styled("div")({
-  display: "flex",
-  alignItems: "center",
-  gap: "8px",
-  marginBottom: "16px",
+const InputWrapper = styled('div')({
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+  marginBottom: '16px',
 });
 
-const CountryButton = styled("button")({
-  display: "flex",
-  alignItems: "center",
-  padding: "4px 10px",
-  border: "2px solid #008080",
-  borderRadius: "4px",
-  fontSize: "24px",
-  background: "white",
-  cursor: "pointer",
-  "&:hover": {
-    backgroundColor: "#f5f5f5",
+const CountryButton = styled('button')({
+  display: 'flex',
+  alignItems: 'center',
+  padding: '4px 10px',
+  border: '2px solid #008080',
+  borderRadius: '4px',
+  fontSize: '24px',
+  background: 'white',
+  cursor: 'pointer',
+  '&:hover': {
+    backgroundColor: '#f5f5f5',
   },
 });
 
-const PhoneNumberInput = styled("input")({
+const PhoneNumberInput = styled('input')({
   flex: 1,
-  padding: "8px 12px",
-  border: "2px solid #008080",
-  borderRadius: "4px",
-  fontSize: "16px",
+  padding: '8px 12px',
+  border: '2px solid #008080',
+  borderRadius: '4px',
+  fontSize: '16px',
 });
 
-const SearchInput = styled("input")({
-  width: "100%",
-  padding: "12px",
-  borderRadius: "4px",
-  marginBottom: "8px",
+const SearchInput = styled('input')({
+  width: '100%',
+  padding: '12px',
+  borderRadius: '4px',
+  marginBottom: '8px',
 });
 
 const getFlagEmoji = (countryCode: string) => {
@@ -165,23 +165,23 @@ interface Country {
 }
 
 const DEFAULT_COUNTRY: Country = {
-  code: "KE",
-  name: "Kenya",
-  dialCode: "254",
+  code: 'KE',
+  name: 'Kenya',
+  dialCode: '254',
 };
 
 const countries: Country[] = [
   // Africa
-  { code: "KE", name: "Kenya", dialCode: "254" },
-  { code: "NG", name: "Nigeria", dialCode: "234" },
-  { code: "TZ", name: "Tanzania", dialCode: "255" },
-  { code: "UG", name: "Uganda", dialCode: "256" },
+  { code: 'KE', name: 'Kenya', dialCode: '254' },
+  { code: 'NG', name: 'Nigeria', dialCode: '234' },
+  { code: 'TZ', name: 'Tanzania', dialCode: '255' },
+  { code: 'UG', name: 'Uganda', dialCode: '256' },
 
   // North America
-  { code: "CA", name: "Canada", dialCode: "1" },
-  { code: "US", name: "United States", dialCode: "1" },
-  { code: "MX", name: "Mexico", dialCode: "52" },
+  { code: 'CA', name: 'Canada', dialCode: '1' },
+  { code: 'US', name: 'United States', dialCode: '1' },
+  { code: 'MX', name: 'Mexico', dialCode: '52' },
 
   // Caribbean
-  { code: "JM", name: "Jamaica", dialCode: "1876" },
+  { code: 'JM', name: 'Jamaica', dialCode: '1876' },
 ];

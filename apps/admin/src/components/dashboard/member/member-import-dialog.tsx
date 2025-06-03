@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
-import Box from "@mui/material/Box";
-import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
-import { Upload as UploadIcon } from "@phosphor-icons/react/dist/ssr/Upload";
-import { FileArrowUp as FileIcon } from "@phosphor-icons/react/dist/ssr/FileArrowUp";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z as zod } from "zod";
-import { useForm } from "react-hook-form";
+import * as React from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import { Upload as UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
+import { FileArrowUp as FileIcon } from '@phosphor-icons/react/dist/ssr/FileArrowUp';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z as zod } from 'zod';
+import { useForm } from 'react-hook-form';
 
 interface MemberImportDialogProps {
   open: boolean;
@@ -48,18 +48,18 @@ export function MemberImportDialog({
         try {
           const content = JSON.parse(e.target?.result as string);
           if (!Array.isArray(content)) {
-            setFileError("Invalid file format. Expected an array of members.");
+            setFileError('Invalid file format. Expected an array of members.');
             return;
           }
           setFileContent(content);
         } catch (err) {
           setFileError(
-            "Error parsing JSON file. Please check the file format.",
+            'Error parsing JSON file. Please check the file format.',
           );
         }
       };
       reader.onerror = () => {
-        setFileError("Error reading file. Please try again.");
+        setFileError('Error reading file. Please try again.');
       };
       reader.readAsText(selectedFile);
     }
@@ -91,19 +91,19 @@ export function MemberImportDialog({
         )}
         <Box
           sx={{
-            border: "1px dashed",
-            borderColor: "divider",
+            border: '1px dashed',
+            borderColor: 'divider',
             borderRadius: 1,
             p: 3,
-            textAlign: "center",
-            bgcolor: "background.neutral",
+            textAlign: 'center',
+            bgcolor: 'background.neutral',
             mb: 2,
           }}
         >
           <input
             type="file"
             ref={fileInputRef}
-            style={{ display: "none" }}
+            style={{ display: 'none' }}
             accept=".json"
             onChange={handleFileChange}
           />
@@ -130,10 +130,10 @@ export function MemberImportDialog({
         {file && (
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
-              border: "1px solid",
-              borderColor: "divider",
+              display: 'flex',
+              alignItems: 'center',
+              border: '1px solid',
+              borderColor: 'divider',
               borderRadius: 1,
               p: 1,
               mb: 2,
@@ -166,7 +166,7 @@ export function MemberImportDialog({
           disabled={isLoading || !fileContent}
           startIcon={isLoading ? <CircularProgress size={20} /> : null}
         >
-          {isLoading ? "Importing..." : "Import Members"}
+          {isLoading ? 'Importing...' : 'Import Members'}
         </Button>
       </DialogActions>
     </Dialog>

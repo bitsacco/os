@@ -4,7 +4,6 @@ on:
   push:
     paths:
       - apps/server/**
-      - libs/**
       - package.json
       - .github/workflows/publish-server.yml
   workflow_dispatch:

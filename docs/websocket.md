@@ -4,7 +4,7 @@ The API service provides a WebSocket interface for real-time notifications about
 
 ## Documentation
 
-The WebSocket API is documented in the Swagger UI alongside the REST API endpoints. 
+The WebSocket API is documented in the Swagger UI alongside the REST API endpoints.
 Visit `/docs` to see the API documentation, which includes both HTTP and WebSocket endpoints.
 
 ## Connection
@@ -16,8 +16,8 @@ import { io } from 'socket.io-client';
 
 const socket = io('ws://your-api-server/notifications', {
   auth: {
-    token: 'your-jwt-token-here'
-  }
+    token: 'your-jwt-token-here',
+  },
 });
 
 // Listen for connection events
@@ -81,20 +81,21 @@ socket.on('notification:topic', (notification) => {
 
 ```javascript
 // Get user's notifications
-socket.emit('getNotifications', 
-  { 
+socket.emit(
+  'getNotifications',
+  {
     unreadOnly: true,
     page: 0,
     size: 10,
-    topics: [0, 3] // TRANSACTION and SWAP topics
-  }, 
+    topics: [0, 3], // TRANSACTION and SWAP topics
+  },
   (response) => {
     if (response.success) {
       console.log('Notifications:', response.data.notifications);
     } else {
       console.error('Error fetching notifications:', response.error);
     }
-  }
+  },
 );
 ```
 
@@ -102,17 +103,18 @@ socket.emit('getNotifications',
 
 ```javascript
 // Mark specific notifications as read
-socket.emit('markAsRead', 
-  { 
-    notificationIds: ['notification-id-1', 'notification-id-2'] 
-  }, 
+socket.emit(
+  'markAsRead',
+  {
+    notificationIds: ['notification-id-1', 'notification-id-2'],
+  },
   (response) => {
     if (response.success) {
       console.log('Notifications marked as read');
     } else {
       console.error('Error marking notifications as read:', response.error);
     }
-  }
+  },
 );
 
 // Mark all notifications as read
@@ -127,27 +129,28 @@ socket.emit('markAsRead', {}, (response) => {
 
 ```javascript
 // Update notification preferences
-socket.emit('updatePreferences', 
+socket.emit(
+  'updatePreferences',
   {
     channels: [
-      { channel: 0, enabled: true },  // IN_APP
+      { channel: 0, enabled: true }, // IN_APP
       { channel: 1, enabled: false }, // SMS
-      { channel: 2, enabled: true }   // NOSTR
+      { channel: 2, enabled: true }, // NOSTR
     ],
     topics: [
       {
         topic: 0, // TRANSACTION
         enabled: true,
-        channels: [0, 2] // IN_APP and NOSTR
-      }
-    ]
-  }, 
+        channels: [0, 2], // IN_APP and NOSTR
+      },
+    ],
+  },
   (response) => {
     if (response.success) {
       console.log('Preferences updated successfully');
     } else {
       console.error('Error updating preferences:', response.error);
     }
-  }
+  },
 );
 ```

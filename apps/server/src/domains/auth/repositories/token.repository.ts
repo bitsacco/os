@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BaseRepository } from '../../../infrastructure/database/base.repository';
-import { TokenDocument } from '@bitsacco/common/database/token.schema';
+import { TokenDocument } from '../../../shared/database/token.schema';
 
 @Injectable()
 export class TokenRepository extends BaseRepository<TokenDocument> {

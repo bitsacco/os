@@ -6,11 +6,7 @@
     "moduleDetection": "force",
     "noUncheckedIndexedAccess": true,
     "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": false,
@@ -24,7 +20,7 @@
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"]}
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": [
     "next-env.d.ts",
@@ -35,7 +31,5 @@
     "../material-kit-react/src/paths.ts",
     "out/types/**/*.ts"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

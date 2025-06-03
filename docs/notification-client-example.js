@@ -5,8 +5,8 @@ import { io } from 'socket.io-client';
 const connectToNotifications = (serverUrl, jwtToken) => {
   const socket = io(`${serverUrl}/notifications`, {
     auth: {
-      token: jwtToken
-    }
+      token: jwtToken,
+    },
   });
 
   // Connection Events
@@ -33,12 +33,13 @@ const setupNotificationListeners = (socket) => {
   // Listen for new notifications
   socket.on('notification:created', (notification) => {
     console.log('New notification received:', notification);
-    
+
     // Show notification to user (browser notification, UI toast, etc.)
-    if (notification.importance >= 2) { // HIGH or CRITICAL
+    if (notification.importance >= 2) {
+      // HIGH or CRITICAL
       showBrowserNotification(notification.title, notification.body);
     }
-    
+
     // Update notification list in UI
     updateNotificationList(notification);
   });
@@ -78,7 +79,9 @@ const notificationActions = {
         if (response.success) {
           resolve(true);
         } else {
-          reject(new Error(response.error || 'Failed to mark notifications as read'));
+          reject(
+            new Error(response.error || 'Failed to mark notifications as read'),
+          );
         }
       });
     });
@@ -126,7 +129,7 @@ const notificationActions = {
         }
       });
     });
-  }
+  },
 };
 
 // Helper Functions
@@ -139,7 +142,7 @@ const showBrowserNotification = (title, body) => {
   if (Notification.permission === 'granted') {
     new Notification(title, { body });
   } else if (Notification.permission !== 'denied') {
-    Notification.requestPermission().then(permission => {
+    Notification.requestPermission().then((permission) => {
       if (permission === 'granted') {
         new Notification(title, { body });
       }
@@ -176,14 +179,13 @@ const fetchNotificationPreferences = async () => {
 
 const updatePreferencesUI = (preferences) => {
   // Example implementation - would be integrated with your UI framework
-  const preferencesContainer = document.getElementById('notification-preferences');
+  const preferencesContainer = document.getElementById(
+    'notification-preferences',
+  );
   if (preferencesContainer) {
     // Update UI elements based on preferences
   }
 };
 
 // Export functions for use in application
-export {
-  connectToNotifications,
-  notificationActions
-};
+export { connectToNotifications, notificationActions };

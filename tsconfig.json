@@ -17,13 +17,6 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@bitsacco/common": [
-        "libs/common/src"
-      ],
-      "@bitsacco/testing": [
-        "libs/testing/src"
-      ]
-    }
+    "paths": {}
   }
 }

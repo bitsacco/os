@@ -1,29 +1,29 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import * as React from 'react';
 // Client component - metadata is defined in metadata.ts
-import Button from "@mui/material/Button";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
-import Snackbar from "@mui/material/Snackbar";
-import Alert from "@mui/material/Alert";
-import { Download as DownloadIcon } from "@phosphor-icons/react/dist/ssr/Download";
-import { Plus as PlusIcon } from "@phosphor-icons/react/dist/ssr/Plus";
-import { Upload as UploadIcon } from "@phosphor-icons/react/dist/ssr/Upload";
-import CircularProgress from "@mui/material/CircularProgress";
-import Box from "@mui/material/Box";
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import { Download as DownloadIcon } from '@phosphor-icons/react/dist/ssr/Download';
+import { Plus as PlusIcon } from '@phosphor-icons/react/dist/ssr/Plus';
+import { Upload as UploadIcon } from '@phosphor-icons/react/dist/ssr/Upload';
+import CircularProgress from '@mui/material/CircularProgress';
+import Box from '@mui/material/Box';
 
-import { config } from "@/config";
-import { useMembers } from "@/hooks/use-members";
-import { membersClient, Member, isSuperAdmin } from "@/lib/members/client";
-import { MembersFilters } from "@/components/dashboard/member/members-filters";
-import { MembersTable } from "@/components/dashboard/member/members-table";
-import { MemberForm } from "@/components/dashboard/member/member-form";
-import { MemberImportDialog } from "@/components/dashboard/member/member-import-dialog";
-import { DeleteConfirmDialog } from "@/components/dashboard/member/delete-confirm-dialog";
-import { logger } from "@/lib/default-logger";
-import { useUser } from "@/hooks/use-user";
-import { Role } from "@/types/user";
+import { config } from '@/config';
+import { useMembers } from '@/hooks/use-members';
+import { membersClient, Member, isSuperAdmin } from '@/lib/members/client';
+import { MembersFilters } from '@/components/dashboard/member/members-filters';
+import { MembersTable } from '@/components/dashboard/member/members-table';
+import { MemberForm } from '@/components/dashboard/member/member-form';
+import { MemberImportDialog } from '@/components/dashboard/member/member-import-dialog';
+import { DeleteConfirmDialog } from '@/components/dashboard/member/delete-confirm-dialog';
+import { logger } from '@/lib/default-logger';
+import { useUser } from '@/hooks/use-user';
+import { Role } from '@/types/user';
 
 // Simple loading component
 function LoadingState() {
@@ -49,7 +49,7 @@ function ErrorState({ message }: { message: string }) {
       justifyContent="center"
       sx={{ py: 8 }}
     >
-      <Alert severity="error" sx={{ width: "100%", maxWidth: 500 }}>
+      <Alert severity="error" sx={{ width: '100%', maxWidth: 500 }}>
         {message}
       </Alert>
     </Stack>
@@ -118,19 +118,19 @@ function MembershipPageContent() {
   const [notification, setNotification] = React.useState<{
     open: boolean;
     message: string;
-    severity: "success" | "error" | "info" | "warning";
+    severity: 'success' | 'error' | 'info' | 'warning';
   }>({
     open: false,
-    message: "",
-    severity: "success",
+    message: '',
+    severity: 'success',
   });
 
   // Handle copying member ID
   const handleCopyMemberId = (id: string) => {
     setNotification({
       open: true,
-      message: "Member ID copied to clipboard",
-      severity: "success",
+      message: 'Member ID copied to clipboard',
+      severity: 'success',
     });
   };
 
@@ -150,7 +150,7 @@ function MembershipPageContent() {
     search(term);
   };
 
-  const handleSort = (field: string, order: "asc" | "desc") => {
+  const handleSort = (field: string, order: 'asc' | 'desc') => {
     setSort(field, order);
   };
 
@@ -193,8 +193,8 @@ function MembershipPageContent() {
 
         setNotification({
           open: true,
-          message: "Member updated successfully",
-          severity: "success",
+          message: 'Member updated successfully',
+          severity: 'success',
         });
       } else {
         // Create new member
@@ -206,16 +206,16 @@ function MembershipPageContent() {
 
         setNotification({
           open: true,
-          message: "Member added successfully",
-          severity: "success",
+          message: 'Member added successfully',
+          severity: 'success',
         });
       }
 
       setMemberFormOpen(false);
       refetch();
     } catch (err) {
-      logger.error("Member form submission error:", err);
-      setFormError("An unexpected error occurred. Please try again.");
+      logger.error('Member form submission error:', err);
+      setFormError('An unexpected error occurred. Please try again.');
     } finally {
       setFormSubmitting(false);
     }
@@ -227,8 +227,8 @@ function MembershipPageContent() {
     if (!isAdmin) {
       setNotification({
         open: true,
-        message: "Only Super Admins can delete members",
-        severity: "error",
+        message: 'Only Super Admins can delete members',
+        severity: 'error',
       });
       return;
     }
@@ -252,13 +252,13 @@ function MembershipPageContent() {
       // The users API doesn't support direct deletion
       // Instead, we'll show a message indicating this limitation
       setDeleteError(
-        "Delete operation is not supported by the API. You would need to implement soft deletion by updating the user status or a similar approach.",
+        'Delete operation is not supported by the API. You would need to implement soft deletion by updating the user status or a similar approach.',
       );
 
       // Don't close the dialog so user can see the message
     } catch (err) {
-      logger.error("Delete member error:", err);
-      setDeleteError("An unexpected error occurred. Please try again.");
+      logger.error('Delete member error:', err);
+      setDeleteError('An unexpected error occurred. Please try again.');
     } finally {
       setDeleteLoading(false);
     }
@@ -288,14 +288,14 @@ function MembershipPageContent() {
       setNotification({
         open: true,
         message: `${data.length} members imported successfully`,
-        severity: "success",
+        severity: 'success',
       });
 
       setImportDialogOpen(false);
       refetch();
     } catch (err) {
-      logger.error("Import members error:", err);
-      setImportError("An unexpected error occurred. Please try again.");
+      logger.error('Import members error:', err);
+      setImportError('An unexpected error occurred. Please try again.');
     } finally {
       setImportLoading(false);
     }
@@ -305,20 +305,20 @@ function MembershipPageContent() {
     if (members.length === 0) {
       setNotification({
         open: true,
-        message: "No members to export",
-        severity: "info",
+        message: 'No members to export',
+        severity: 'info',
       });
       return;
     }
 
     try {
       const exportData = membersClient.createExportData(members);
-      const blob = new Blob([exportData], { type: "application/json" });
+      const blob = new Blob([exportData], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
 
-      const link = document.createElement("a");
+      const link = document.createElement('a');
       link.href = url;
-      link.download = `members-export-${new Date().toISOString().split("T")[0]}.json`;
+      link.download = `members-export-${new Date().toISOString().split('T')[0]}.json`;
       document.body.appendChild(link);
       link.click();
 
@@ -330,14 +330,14 @@ function MembershipPageContent() {
       setNotification({
         open: true,
         message: `${members.length} members exported successfully`,
-        severity: "success",
+        severity: 'success',
       });
     } catch (err) {
-      logger.error("Export members error:", err);
+      logger.error('Export members error:', err);
       setNotification({
         open: true,
-        message: "Failed to export members",
-        severity: "error",
+        message: 'Failed to export members',
+        severity: 'error',
       });
     }
   };
@@ -349,9 +349,9 @@ function MembershipPageContent() {
   return (
     <Stack spacing={3}>
       <Stack direction="row" spacing={3}>
-        <Stack spacing={1} sx={{ flex: "1 1 auto" }}>
+        <Stack spacing={1} sx={{ flex: '1 1 auto' }}>
           <Typography variant="h4">Members</Typography>
-          <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'center' }}>
             <Button
               color="inherit"
               startIcon={<UploadIcon fontSize="var(--icon-fontSize-md)" />}
@@ -435,12 +435,12 @@ function MembershipPageContent() {
         open={notification.open}
         autoHideDuration={5000}
         onClose={handleCloseNotification}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
         <Alert
           onClose={handleCloseNotification}
           severity={notification.severity}
-          sx={{ width: "100%" }}
+          sx={{ width: '100%' }}
         >
           {notification.message}
         </Alert>

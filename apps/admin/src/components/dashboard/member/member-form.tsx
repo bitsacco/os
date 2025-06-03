@@ -1,39 +1,39 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import DialogActions from "@mui/material/DialogActions";
-import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
-import Grid from "@mui/material/Grid";
-import FormControl from "@mui/material/FormControl";
-import FormHelperText from "@mui/material/FormHelperText";
-import InputLabel from "@mui/material/InputLabel";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import Checkbox from "@mui/material/Checkbox";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import Alert from "@mui/material/Alert";
-import CircularProgress from "@mui/material/CircularProgress";
-import Typography from "@mui/material/Typography";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z as zod } from "zod";
+import * as React from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import TextField from '@mui/material/TextField';
+import Grid from '@mui/material/Grid';
+import FormControl from '@mui/material/FormControl';
+import FormHelperText from '@mui/material/FormHelperText';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import Typography from '@mui/material/Typography';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z as zod } from 'zod';
 
-import { Member, isSuperAdmin } from "@/lib/members/client";
-import { Role } from "@/types/user";
-import { useUser } from "@/hooks/use-user";
+import { Member, isSuperAdmin } from '@/lib/members/client';
+import { Role } from '@/types/user';
+import { useUser } from '@/hooks/use-user';
 
 // Define the schema for member form validation
 const memberSchema = zod.object({
-  name: zod.string().min(1, { message: "Name is required" }),
-  phone: zod.string().min(1, { message: "Phone number is required" }),
-  npub: zod.string().optional().or(zod.literal("")),
+  name: zod.string().min(1, { message: 'Name is required' }),
+  phone: zod.string().min(1, { message: 'Phone number is required' }),
+  npub: zod.string().optional().or(zod.literal('')),
   pin: zod
     .string()
-    .min(6, { message: "PIN must be at least 6 characters" })
+    .min(6, { message: 'PIN must be at least 6 characters' })
     .optional(),
   roles: zod.array(zod.number()),
 });
@@ -63,10 +63,10 @@ export function MemberForm({
 
   const defaultValues: MemberFormValues = React.useMemo(
     () => ({
-      name: member?.name || "",
-      phone: member?.phone || "",
-      npub: member?.npub || "",
-      pin: "", // PIN is always blank for security
+      name: member?.name || '',
+      phone: member?.phone || '',
+      npub: member?.npub || '',
+      pin: '', // PIN is always blank for security
       roles: member?.roles || [Role.Member],
     }),
     [member],
@@ -93,7 +93,7 @@ export function MemberForm({
   const handleFormSubmit = async (data: MemberFormValues) => {
     // Security check: Prevent non-super-admins from setting SuperAdmin role
     if (!currentUserIsSuperAdmin && data.roles.includes(Role.SuperAdmin)) {
-      setFormError("You do not have permission to assign the Super Admin role");
+      setFormError('You do not have permission to assign the Super Admin role');
       return;
     }
 
@@ -101,12 +101,12 @@ export function MemberForm({
     const submissionData = { ...data };
     if (
       isEditMode &&
-      (!submissionData.pin || submissionData.pin.trim() === "")
+      (!submissionData.pin || submissionData.pin.trim() === '')
     ) {
       delete submissionData.pin;
     }
 
-    console.log("Submitting form data:", submissionData);
+    console.log('Submitting form data:', submissionData);
     await onSubmit(submissionData);
   };
 
@@ -115,7 +115,7 @@ export function MemberForm({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>{isEditMode ? "Edit Member" : "Add New Member"}</DialogTitle>
+      <DialogTitle>{isEditMode ? 'Edit Member' : 'Add New Member'}</DialogTitle>
       <form onSubmit={handleSubmit(handleFormSubmit)}>
         <DialogContent>
           {(error || formError) && (
@@ -189,7 +189,7 @@ export function MemberForm({
                       error={!!errors.pin}
                       helperText={
                         errors.pin?.message ||
-                        "Leave blank to generate random PIN"
+                        'Leave blank to generate random PIN'
                       }
                       disabled={isLoading}
                     />
@@ -295,10 +295,10 @@ export function MemberForm({
             startIcon={isLoading ? <CircularProgress size={20} /> : null}
           >
             {isLoading
-              ? "Saving..."
+              ? 'Saving...'
               : isEditMode
-                ? "Save Changes"
-                : "Add Member"}
+                ? 'Save Changes'
+                : 'Add Member'}
           </Button>
         </DialogActions>
       </form>

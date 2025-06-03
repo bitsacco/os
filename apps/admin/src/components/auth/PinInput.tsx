@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import React, { useState, useRef, useEffect } from "react";
-import Box from "@mui/material/Box";
-import TextField from "@mui/material/TextField";
-import FormControl from "@mui/material/FormControl";
-import FormHelperText from "@mui/material/FormHelperText";
-import InputLabel from "@mui/material/InputLabel";
-import Stack from "@mui/material/Stack";
+import React, { useState, useRef, useEffect } from 'react';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import FormControl from '@mui/material/FormControl';
+import FormHelperText from '@mui/material/FormHelperText';
+import InputLabel from '@mui/material/InputLabel';
+import Stack from '@mui/material/Stack';
 
 interface PinInputProps {
   value: string;
@@ -21,9 +21,9 @@ export function PinInput({
   value,
   onChange,
   error,
-  label = "PIN",
+  label = 'PIN',
 }: PinInputProps): React.JSX.Element {
-  const [pins, setPins] = useState<string[]>(Array(PIN_LENGTH).fill(""));
+  const [pins, setPins] = useState<string[]>(Array(PIN_LENGTH).fill(''));
   const inputRefs = useRef<(HTMLInputElement | null)[]>(
     Array(PIN_LENGTH).fill(null),
   );
@@ -32,18 +32,18 @@ export function PinInput({
   useEffect(() => {
     if (value) {
       // Process string value into array of single digits
-      const pinArray = value.split("").slice(0, PIN_LENGTH);
+      const pinArray = value.split('').slice(0, PIN_LENGTH);
 
       // Pad with empty strings if needed
       const paddedArray = [...pinArray];
       while (paddedArray.length < PIN_LENGTH) {
-        paddedArray.push("");
+        paddedArray.push('');
       }
 
       setPins(paddedArray);
     } else {
       // Reset pins if value is empty
-      setPins(Array(PIN_LENGTH).fill(""));
+      setPins(Array(PIN_LENGTH).fill(''));
     }
   }, [value]);
 
@@ -58,11 +58,11 @@ export function PinInput({
     // Handle paste operation
     if (newValue.length > 1) {
       const pastedValue = newValue.slice(0, PIN_LENGTH);
-      const pastedPins = pastedValue.split("");
+      const pastedPins = pastedValue.split('');
 
       // Fill pins from current index
       for (let i = 0; i < pastedPins.length && index + i < PIN_LENGTH; i++) {
-        newPins[index + i] = pastedPins[i] || "";
+        newPins[index + i] = pastedPins[i] || '';
       }
 
       // Focus the next input after paste if exists
@@ -79,7 +79,7 @@ export function PinInput({
     }
 
     setPins(newPins);
-    onChange(newPins.join(""));
+    onChange(newPins.join(''));
   };
 
   const handleKeyDown = (
@@ -87,23 +87,23 @@ export function PinInput({
     e: React.KeyboardEvent<HTMLDivElement>,
   ) => {
     // Handle backspace: move to previous input if current is empty
-    if (e.key === "Backspace" && !pins[index] && index > 0) {
+    if (e.key === 'Backspace' && !pins[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
 
       // Update pin value for previous cell
       const newPins = [...pins];
-      newPins[index - 1] = "";
+      newPins[index - 1] = '';
       setPins(newPins);
-      onChange(newPins.join(""));
+      onChange(newPins.join(''));
     }
 
     // Handle left arrow: move focus to previous input
-    if (e.key === "ArrowLeft" && index > 0) {
+    if (e.key === 'ArrowLeft' && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
 
     // Handle right arrow: move focus to next input
-    if (e.key === "ArrowRight" && index < PIN_LENGTH - 1) {
+    if (e.key === 'ArrowRight' && index < PIN_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
   };
@@ -126,12 +126,12 @@ export function PinInput({
               inputProps={{
                 maxLength: PIN_LENGTH,
                 style: {
-                  textAlign: "center",
-                  padding: "14px 0",
-                  fontSize: "1.2rem",
-                  width: "40px",
-                  border: "2px solid #008080",
-                  borderRadius: "4px",
+                  textAlign: 'center',
+                  padding: '14px 0',
+                  fontSize: '1.2rem',
+                  width: '40px',
+                  border: '2px solid #008080',
+                  borderRadius: '4px',
                 },
               }}
               autoComplete="off"

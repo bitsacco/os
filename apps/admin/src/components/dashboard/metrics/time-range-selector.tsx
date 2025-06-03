@@ -14,11 +14,11 @@ interface TimeRangeSelectorProps {
  */
 export function TimeRangeSelector({
   value,
-  onChange
+  onChange,
 }: TimeRangeSelectorProps): React.JSX.Element {
   const handleChange = (
     event: React.MouseEvent<HTMLElement>,
-    newValue: string | null
+    newValue: string | null,
   ) => {
     if (newValue !== null) {
       onChange(newValue as '1h' | '24h' | '7d' | '30d' | '90d');

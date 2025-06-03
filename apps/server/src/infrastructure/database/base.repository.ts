@@ -7,7 +7,7 @@ import {
   ClientSession,
 } from 'mongoose';
 import { Logger } from '@nestjs/common';
-import { AbstractDocument } from '@bitsacco/common/database';
+import { AbstractDocument } from '../../shared/database/abstract.schema';
 
 export abstract class BaseRepository<TDocument extends AbstractDocument> {
   protected readonly logger = new Logger(this.constructor.name);

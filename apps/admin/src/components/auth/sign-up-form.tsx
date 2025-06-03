@@ -1,28 +1,28 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import RouterLink from "next/link";
-import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
-import Checkbox from "@mui/material/Checkbox";
-import FormControl from "@mui/material/FormControl";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import FormHelperText from "@mui/material/FormHelperText";
-import InputLabel from "@mui/material/InputLabel";
-import Link from "@mui/material/Link";
-import OutlinedInput from "@mui/material/OutlinedInput";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
-import { Controller, useForm } from "react-hook-form";
-import { z as zod } from "zod";
+import * as React from 'react';
+import RouterLink from 'next/link';
+import { useRouter } from 'next/navigation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormHelperText from '@mui/material/FormHelperText';
+import InputLabel from '@mui/material/InputLabel';
+import Link from '@mui/material/Link';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import { Controller, useForm } from 'react-hook-form';
+import { z as zod } from 'zod';
 
-import { paths } from "@/paths";
-import { authClient } from "@/lib/auth/client";
-import { useUser } from "@/hooks/use-user";
-import { PhoneInput } from "./PhoneInput";
-import { PinInput } from "./PinInput";
+import { paths } from '@/paths';
+import { authClient } from '@/lib/auth/client';
+import { useUser } from '@/hooks/use-user';
+import { PhoneInput } from './PhoneInput';
+import { PinInput } from './PinInput';
 
 const schema = zod
   .object({
@@ -30,23 +30,23 @@ const schema = zod
     npub: zod.string().optional(),
     pin: zod
       .string()
-      .min(6, { message: "PIN should be exactly 6 digits" })
-      .max(6, { message: "PIN should be exactly 6 digits" }),
+      .min(6, { message: 'PIN should be exactly 6 digits' })
+      .max(6, { message: 'PIN should be exactly 6 digits' }),
     terms: zod
       .boolean()
-      .refine((value) => value, "You must accept the terms and conditions"),
+      .refine((value) => value, 'You must accept the terms and conditions'),
   })
   .refine((data) => data.phone || data.npub, {
-    message: "Either phone number or Nostr public key is required",
-    path: ["phone"],
+    message: 'Either phone number or Nostr public key is required',
+    path: ['phone'],
   });
 
 type Values = zod.infer<typeof schema>;
 
 const defaultValues = {
-  phone: "+254",
-  npub: "",
-  pin: "",
+  phone: '+254',
+  npub: '',
+  pin: '',
   terms: false,
 } satisfies Values;
 
@@ -75,7 +75,7 @@ export function SignUpForm(): React.JSX.Element {
       });
 
       if (error) {
-        setError("root", { type: "server", message: error });
+        setError('root', { type: 'server', message: error });
         setIsPending(false);
         return;
       }
@@ -95,7 +95,7 @@ export function SignUpForm(): React.JSX.Element {
       <Stack spacing={1}>
         <Typography variant="h4">Sign up</Typography>
         <Typography color="text.secondary" variant="body2">
-          Already have an account?{" "}
+          Already have an account?{' '}
           <Link
             component={RouterLink}
             href={paths.auth.signIn}
@@ -113,7 +113,7 @@ export function SignUpForm(): React.JSX.Element {
             name="phone"
             render={({ field: { value, onChange, ...restField } }) => (
               <PhoneInput
-                value={value || ""}
+                value={value || ''}
                 onChange={onChange}
                 error={errors.phone?.message}
                 label="Phone number (required if no npub)"
@@ -143,7 +143,7 @@ export function SignUpForm(): React.JSX.Element {
             name="pin"
             render={({ field: { value, onChange, ...restField } }) => (
               <PinInput
-                value={value || ""}
+                value={value || ''}
                 onChange={onChange}
                 error={errors.pin?.message}
                 label="PIN (6 digits)"

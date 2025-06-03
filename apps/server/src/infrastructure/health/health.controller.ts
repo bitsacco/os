@@ -10,7 +10,6 @@ import {
 import { InjectConnection } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
 import { MetricsService } from '../monitoring/metrics.service';
-import { SwapServiceClient } from '../../api/grpc/clients/swap-service.client';
 
 @ApiTags('Health')
 @Controller('health')
@@ -19,7 +18,6 @@ export class HealthController {
     private readonly healthCheckService: HealthCheckService,
     private readonly mongooseHealthIndicator: MongooseHealthIndicator,
     private readonly metricsService: MetricsService,
-    private readonly swapServiceClient: SwapServiceClient,
     @InjectConnection() private readonly mongoConnection: mongoose.Connection,
   ) {}
 
@@ -35,9 +33,6 @@ export class HealthController {
         this.mongooseHealthIndicator.pingCheck('database', {
           connection: this.mongoConnection,
         }),
-
-      // Swap service health check
-      () => this.checkSwapService(),
 
       // Redis health check (if available)
       () => this.checkRedis(),
@@ -86,7 +81,6 @@ export class HealthController {
       this.mongooseHealthIndicator.pingCheck('database', {
         connection: this.mongoConnection,
       }),
-      this.checkSwapService(),
     ]);
 
     const failed = checks.filter((check) => check.status === 'rejected');
@@ -96,7 +90,7 @@ export class HealthController {
         status: 'error',
         message: 'Service not ready',
         checks: checks.map((check, index) => ({
-          name: ['database', 'swap-service'][index],
+          name: ['database'][index],
           status: check.status,
           error: check.status === 'rejected' ? check.reason : null,
         })),
@@ -121,30 +115,6 @@ export class HealthController {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
     };
-  }
-
-  private async checkSwapService(): Promise<HealthIndicatorResult> {
-    try {
-      const isHealthy = await this.swapServiceClient.healthCheck();
-
-      if (isHealthy) {
-        return {
-          'swap-service': {
-            status: 'up',
-            message: 'Swap service is reachable',
-          },
-        };
-      } else {
-        throw new Error('Swap service health check failed');
-      }
-    } catch (error) {
-      return {
-        'swap-service': {
-          status: 'down',
-          message: error.message,
-        },
-      };
-    }
   }
 
   private async checkRedis(): Promise<HealthIndicatorResult> {

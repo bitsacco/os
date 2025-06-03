@@ -1,8 +1,8 @@
-import * as React from "react";
-import type { Metadata } from "next";
+import * as React from 'react';
+import type { Metadata } from 'next';
 import { MetricsDashboardClient } from '@/components/dashboard/metrics/client';
 
-import { config } from "@/config";
+import { config } from '@/config';
 
 export const metadata = {
   title: `Overview | Dashboard | ${config.site.name}`,

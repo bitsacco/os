@@ -8,14 +8,14 @@ module.exports = {
     require.resolve('@vercel/style-guide/eslint/react'),
     require.resolve('@vercel/style-guide/eslint/next'),
   ],
-  parser: "@typescript-eslint/parser",
+  parser: '@typescript-eslint/parser',
   parserOptions: {
-    project: "./tsconfig.json",
+    project: './tsconfig.json',
   },
   settings: {
     'import/resolver': {
       typescript: {
-        project: "./tsconfig.json",
+        project: './tsconfig.json',
       },
     },
   },

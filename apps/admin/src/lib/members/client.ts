@@ -321,12 +321,12 @@ class MembersClient {
       // Apply sorting client-side
       if (params.sortBy) {
         members.sort((a: any, b: any) => {
-          let valueA = a[params.sortBy!];
-          let valueB = b[params.sortBy!];
+          let valueA = a[params.sortBy];
+          let valueB = b[params.sortBy];
 
           // Handle nested properties like 'address.city'
-          if (params.sortBy!.includes('.')) {
-            const parts = params.sortBy!.split('.');
+          if (params.sortBy.includes('.')) {
+            const parts = params.sortBy.split('.');
             valueA = parts.reduce((obj, key) => obj?.[key], a);
             valueB = parts.reduce((obj, key) => obj?.[key], b);
           }

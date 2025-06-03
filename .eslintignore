@@ -1,0 +1,18 @@
+# Build outputs
+dist/
+build/
+.next/
+.turbo/
+node_modules/
+
+# Generated files
+coverage/
+*.log
+
+# Lock files
+package-lock.json
+yarn.lock
+bun.lock
+
+# Environment files
+.env*

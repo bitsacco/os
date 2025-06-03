@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BaseRepository } from '../../../infrastructure/database/base.repository';
-import { ApiKeyDocument } from '@bitsacco/common/database/apikey.schema';
+import { ApiKeyDocument } from '../../../shared/database/apikey.schema';
 
 @Injectable()
 export class ApiKeyRepository extends BaseRepository<ApiKeyDocument> {

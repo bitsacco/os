@@ -18,16 +18,11 @@ The ownership validation consists of:
 ### 1. Import Required Components
 
 ```typescript
-import { 
-  Controller, 
-  Get, 
-  Param, 
-  UseGuards 
-} from '@nestjs/common';
-import { 
-  JwtAuthGuard, 
-  ResourceOwnerGuard, 
-  CheckOwnership 
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import {
+  JwtAuthGuard,
+  ResourceOwnerGuard,
+  CheckOwnership,
 } from '@bitsacco/common';
 ```
 

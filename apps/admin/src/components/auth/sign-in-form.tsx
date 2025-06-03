@@ -1,35 +1,35 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import RouterLink from "next/link";
-import { useRouter } from "next/navigation";
-import { zodResolver } from "@hookform/resolvers/zod";
-import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
-import Link from "@mui/material/Link";
-import Stack from "@mui/material/Stack";
-import { Controller, useForm } from "react-hook-form";
-import { z as zod } from "zod";
+import * as React from 'react';
+import RouterLink from 'next/link';
+import { useRouter } from 'next/navigation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import Link from '@mui/material/Link';
+import Stack from '@mui/material/Stack';
+import { Controller, useForm } from 'react-hook-form';
+import { z as zod } from 'zod';
 
-import { paths } from "@/paths";
-import { authClient } from "@/lib/auth/client";
-import { useUser } from "@/hooks/use-user";
-import { PhoneInput } from "./PhoneInput";
-import { PinInput } from "./PinInput";
+import { paths } from '@/paths';
+import { authClient } from '@/lib/auth/client';
+import { useUser } from '@/hooks/use-user';
+import { PhoneInput } from './PhoneInput';
+import { PinInput } from './PinInput';
 
 const schema = zod.object({
-  phone: zod.string().min(1, { message: "Phone number is required" }),
+  phone: zod.string().min(1, { message: 'Phone number is required' }),
   pin: zod
     .string()
-    .min(6, { message: "PIN is required (6 digits)" })
-    .max(6, { message: "PIN must be 6 digits" }),
+    .min(6, { message: 'PIN is required (6 digits)' })
+    .max(6, { message: 'PIN must be 6 digits' }),
 });
 
 type Values = zod.infer<typeof schema>;
 
 const defaultValues = {
-  phone: "+254",
-  pin: "",
+  phone: '+254',
+  pin: '',
 } satisfies Values;
 
 export function SignInForm(): React.JSX.Element {
@@ -51,7 +51,7 @@ export function SignInForm(): React.JSX.Element {
       setIsPending(true);
 
       try {
-        console.log("Attempting login with:", { phone: values.phone });
+        console.log('Attempting login with:', { phone: values.phone });
         const { data, error } = await authClient.signIn({
           phone: values.phone,
           pin: values.pin,
@@ -59,16 +59,16 @@ export function SignInForm(): React.JSX.Element {
 
         if (error) {
           const errorMessage =
-            error.includes("not found") || error.includes("Invalid credentials")
-              ? "Invalid phone number or PIN. Please check your credentials and try again."
+            error.includes('not found') || error.includes('Invalid credentials')
+              ? 'Invalid phone number or PIN. Please check your credentials and try again.'
               : error;
 
-          setError("root", { type: "server", message: errorMessage });
+          setError('root', { type: 'server', message: errorMessage });
           setIsPending(false);
           return;
         }
 
-        console.log("Login successful, checking roles:", data?.roles);
+        console.log('Login successful, checking roles:', data?.roles);
 
         // Check if the user has admin or super admin role
         if (data?.roles && data.roles.length > 0) {
@@ -77,9 +77,9 @@ export function SignInForm(): React.JSX.Element {
           );
 
           if (!hasAdminRole) {
-            console.error("User does not have admin role");
-            setError("root", {
-              type: "server",
+            console.error('User does not have admin role');
+            setError('root', {
+              type: 'server',
               message:
                 "You don't have permission to access this dashboard. Only administrators can log in.",
             });
@@ -90,23 +90,23 @@ export function SignInForm(): React.JSX.Element {
             return;
           }
 
-          console.log("User has admin role, proceeding with authentication");
+          console.log('User has admin role, proceeding with authentication');
         } else {
-          console.error("User has no roles defined");
+          console.error('User has no roles defined');
         }
 
         // Refresh the auth state
-        console.log("Refreshing auth state...");
+        console.log('Refreshing auth state...');
         await checkSession?.();
-        console.log("Auth state refreshed, redirecting to dashboard");
+        console.log('Auth state refreshed, redirecting to dashboard');
 
         // Explicitly redirect to dashboard after successful authentication
         router.push(paths.dashboard.overview);
       } catch (err) {
-        console.error("Login error:", err);
-        setError("root", {
-          type: "server",
-          message: "An unexpected error occurred. Please try again.",
+        console.error('Login error:', err);
+        setError('root', {
+          type: 'server',
+          message: 'An unexpected error occurred. Please try again.',
         });
         setIsPending(false);
       }
@@ -137,7 +137,7 @@ export function SignInForm(): React.JSX.Element {
             name="phone"
             render={({ field: { value, onChange, ...restField } }) => (
               <PhoneInput
-                value={value || ""}
+                value={value || ''}
                 onChange={onChange}
                 label="PHONE NUMBER"
                 error={errors.phone?.message}
@@ -150,7 +150,7 @@ export function SignInForm(): React.JSX.Element {
             name="pin"
             render={({ field: { value, onChange, ...restField } }) => (
               <PinInput
-                value={value || ""}
+                value={value || ''}
                 onChange={onChange}
                 error={errors.pin?.message}
                 label="PIN"

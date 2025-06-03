@@ -79,5 +79,6 @@ If you make any changes to the proto file, you will need to regenerate the grpc 
 # generate grpc code
 $ bun proto:gen
 ```
+
 Resulting typescript files are generated in the `/libs/common/src/types/proto` folder.
 You might need to manually update the index file in the types folder to include the new files.

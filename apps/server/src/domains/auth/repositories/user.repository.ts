@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BaseRepository } from '../../../infrastructure/database/base.repository';
-import { UsersDocument } from '@bitsacco/common/database/users.schema';
+import { UsersDocument } from '../../../shared/database/users.schema';
 
 @Injectable()
 export class UserRepository extends BaseRepository<UsersDocument> {

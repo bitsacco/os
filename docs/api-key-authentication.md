@@ -5,6 +5,7 @@ This document explains how API key authentication works in Bitsacco and how to u
 ## Overview
 
 Bitsacco uses a dual authentication approach:
+
 - **JWT tokens** for user authentication
 - **API keys** for service-to-service and machine-to-machine authentication
 
@@ -16,16 +17,16 @@ For development, we use a simplified approach with a single global API key that 
 
 Bitsacco provides several npm scripts to manage API keys:
 
-| Script | Description |
-|--------|-------------|
-| `bun apikey:generate` | Generate a global development API key |
-| `bun apikey:test` | Test API key authentication with the API gateway |
-| `bun apikey:test:grpc` | Test API key authentication for gRPC service-to-service calls |
-| `bun apikey:test:combined` | Test both JWT and API key authentication |
-| `bun apikey:list` | List all API keys in the database |
-| `bun apikey:create` | Create a new API key with custom scopes |
-| `bun apikey:revoke` | Revoke an existing API key |
-| `bun apikey:rotate` | Rotate an existing service API key |
+| Script                     | Description                                                   |
+| -------------------------- | ------------------------------------------------------------- |
+| `bun apikey:generate`      | Generate a global development API key                         |
+| `bun apikey:test`          | Test API key authentication with the API gateway              |
+| `bun apikey:test:grpc`     | Test API key authentication for gRPC service-to-service calls |
+| `bun apikey:test:combined` | Test both JWT and API key authentication                      |
+| `bun apikey:list`          | List all API keys in the database                             |
+| `bun apikey:create`        | Create a new API key with custom scopes                       |
+| `bun apikey:revoke`        | Revoke an existing API key                                    |
+| `bun apikey:rotate`        | Rotate an existing service API key                            |
 
 ### Generate a Global Development API Key
 
@@ -35,6 +36,7 @@ bun apikey:generate
 ```
 
 This script:
+
 1. Generates a secure API key with the prefix `bsk_dev_global_`
 2. Stores it in the MongoDB database with all necessary scopes
 3. Updates all service `.dev.env` files with the key
@@ -73,7 +75,12 @@ Use the ApiKeyGuard to require API key authentication:
 
 ```typescript
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { RequireApiKey, ApiKeyScopes, ApiKeyScope, ApiKeyGuard } from '@bitsacco/common';
+import {
+  RequireApiKey,
+  ApiKeyScopes,
+  ApiKeyScope,
+  ApiKeyGuard,
+} from '@bitsacco/common';
 
 @Controller('your-endpoint')
 export class YourController {
@@ -109,6 +116,7 @@ export class YourController {
 ```
 
 The CombinedAuthGuard works by:
+
 1. Checking if the request includes an API key header or query parameter
 2. If not, it falls back to JWT token authentication
 3. If neither credential is provided, it returns an authentication error
@@ -158,20 +166,20 @@ export class YourModule {}
 
 Scopes are used to restrict what an API key can access:
 
-| Scope | Description |
-|-------|-------------|
-| `service:auth` | Access Auth service API |
-| `service:sms` | Access SMS service API |
-| `service:nostr` | Access Nostr service API |
-| `service:shares` | Access Shares service API |
-| `service:solowallet` | Access Solo Wallet service API |
-| `service:chama` | Access Chama service API |
+| Scope                  | Description                     |
+| ---------------------- | ------------------------------- |
+| `service:auth`         | Access Auth service API         |
+| `service:sms`          | Access SMS service API          |
+| `service:nostr`        | Access Nostr service API        |
+| `service:shares`       | Access Shares service API       |
+| `service:solowallet`   | Access Solo Wallet service API  |
+| `service:chama`        | Access Chama service API        |
 | `service:notification` | Access Notification service API |
-| `service:swap` | Access Swap service API |
-| `user:read` | Read user data |
-| `user:write` | Modify user data |
-| `transaction:read` | Read transaction data |
-| `transaction:write` | Create transactions |
+| `service:swap`         | Access Swap service API         |
+| `user:read`            | Read user data                  |
+| `user:write`           | Modify user data                |
+| `transaction:read`     | Read transaction data           |
+| `transaction:write`    | Create transactions             |
 
 ## Production Considerations
 
@@ -192,6 +200,7 @@ bun apikey:create
 ```
 
 Follow the interactive prompts to specify:
+
 - A descriptive name (e.g., "Production Auth Service")
 - Owner ID (typically "system" for service keys)
 - Select only the required scopes for the service
@@ -208,6 +217,7 @@ bun apikey:rotate
 ```
 
 The rotation process:
+
 1. Creates a new API key for the selected service
 2. Revokes the old API key
 3. Updates the service's environment file with the new key
@@ -231,11 +241,13 @@ For production, implement a regular rotation schedule:
 ### Common Issues
 
 1. **"API key required" error**
+
    - Make sure you're including the API key in the `x-api-key` header
    - Check if the endpoint requires an API key
    - For gRPC calls, confirm the GrpcApiKeyInterceptor is correctly configured
 
 2. **"Insufficient API key permissions" error**
+
    - Your API key doesn't have the required scopes
    - In development, this is logged as a warning but allowed
    - In production, this is a hard error
@@ -246,13 +258,15 @@ For production, implement a regular rotation schedule:
      ```
 
 3. **"Invalid API key" error**
+
    - The API key doesn't exist in the database
    - The API key has been revoked
    - The API key has expired
-   - The API key format is invalid (must start with 'bsk_')
+   - The API key format is invalid (must start with 'bsk\_')
    - The hash salt might be different from what was used when creating the key
 
 4. **Service-to-service communication failures**
+
    - Check that the API key is correctly added to gRPC metadata
    - Verify the service has the proper service scope (e.g., 'service:auth')
    - Run `bun apikey:test:grpc` to test gRPC communication
@@ -294,10 +308,12 @@ bun dev | grep -i "api.key"
 ### API Documentation Access
 
 By default, the Swagger documentation (`/docs`) is:
+
 - **Enabled** in development and test environments
 - **Disabled** in production for security reasons
 
 To enable documentation in production, set the environment variable:
+
 ```
 ENABLE_SWAGGER_DOCS=true
 ```

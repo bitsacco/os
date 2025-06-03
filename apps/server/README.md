@@ -5,6 +5,7 @@ A consolidated monolithic server that combines multiple microservices into a sin
 ## Architecture Overview
 
 This monolith consolidates the following services:
+
 - **Authentication Service** - User registration, login, JWT/API key management
 - **Chama Service** - Group savings circles management
 - **Wallet Service** - Individual Lightning wallet operations
@@ -13,6 +14,7 @@ This monolith consolidates the following services:
 - **Communication Service** - SMS and Nostr messaging
 
 **External Dependencies:**
+
 - **Swap Service** - Remains as independent microservice (gRPC integration)
 - **MongoDB** - Unified database with shared connection pool
 - **Redis** - Caching and event bus
@@ -21,23 +23,27 @@ This monolith consolidates the following services:
 ## Features
 
 ### 🏗️ **Domain-Driven Architecture**
+
 - Clear domain boundaries with event-driven communication
 - Shared infrastructure for monitoring, database, and security
 - Extensible API gateway supporting REST, WebSocket, and gRPC
 
 ### 📊 **Comprehensive Monitoring**
+
 - OpenTelemetry distributed tracing
 - Prometheus metrics with business KPIs
 - Real-time health checks and system metrics
 - Grafana dashboards for visualization
 
 ### 🔒 **Enterprise Security**
+
 - JWT and API key authentication
 - Rate limiting and CSRF protection
 - Security headers and input validation
 - Role-based access control
 
 ### 🚀 **High Performance**
+
 - Single process deployment
 - Shared database connection pooling
 - Event-driven internal communication
@@ -46,6 +52,7 @@ This monolith consolidates the following services:
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 18+
 - Docker & Docker Compose
 - MongoDB
@@ -54,23 +61,27 @@ This monolith consolidates the following services:
 ### Development Setup
 
 1. **Clone and install dependencies:**
+
 ```bash
 cd apps/server
 npm install
 ```
 
 2. **Environment configuration:**
+
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
 3. **Start with Docker Compose:**
+
 ```bash
 docker-compose up -d
 ```
 
 4. **Start in development mode:**
+
 ```bash
 npm run start:dev
 ```
@@ -90,6 +101,7 @@ npm run start:prod
 ### Base URL: `http://localhost:4000/api/v1`
 
 ### Authentication
+
 - `POST /auth/register` - User registration
 - `POST /auth/login` - User login
 - `POST /auth/refresh` - Refresh access token
@@ -97,6 +109,7 @@ npm run start:prod
 - `GET /auth/profile` - Get user profile
 
 ### Chamas
+
 - `GET /chamas` - List user's chamas
 - `POST /chamas` - Create new chama
 - `GET /chamas/:id` - Get chama details
@@ -104,18 +117,21 @@ npm run start:prod
 - `POST /chamas/:id/join` - Join chama
 
 ### Wallets
+
 - `GET /wallets` - Get user wallets
 - `POST /wallets/send` - Send transaction
 - `POST /wallets/receive` - Create receive invoice
 - `GET /wallets/transactions` - Transaction history
 
 ### Shares
+
 - `GET /shares/offers` - List share offers
 - `POST /shares/buy` - Purchase shares
 - `POST /shares/sell` - Sell shares
 - `GET /shares/portfolio` - Get portfolio
 
 ### Notifications
+
 - `GET /notifications` - Get notifications
 - `PUT /notifications/:id/read` - Mark as read
 - `PUT /notifications/preferences` - Update preferences
@@ -125,6 +141,7 @@ npm run start:prod
 Connect to: `ws://localhost:4001/events`
 
 ### Event Types
+
 - `user.*` - User-related events
 - `chama.*` - Chama events
 - `wallet.*` - Transaction events
@@ -132,6 +149,7 @@ Connect to: `ws://localhost:4001/events`
 - `shares.*` - Shares marketplace events
 
 ### Example Usage
+
 ```javascript
 const socket = io('http://localhost:4001/events');
 
@@ -153,14 +171,17 @@ socket.on('domain_event', (event) => {
 ## Monitoring
 
 ### Metrics Endpoint
+
 - `GET /metrics` - Prometheus metrics
 
 ### Grafana Dashboards
+
 - **Business Metrics**: User registrations, transactions, chama activity
 - **Technical Metrics**: Response times, error rates, database performance
 - **System Metrics**: Memory, CPU, connection pools
 
 ### Key Metrics
+
 - `bitsacco_http_requests_total` - HTTP request counter
 - `bitsacco_db_operations_total` - Database operation counter
 - `bitsacco_transactions_total` - Business transaction counter
@@ -224,6 +245,7 @@ src/
 ## Development
 
 ### Running Tests
+
 ```bash
 npm test                 # Run all tests
 npm run test:watch      # Watch mode
@@ -232,12 +254,14 @@ npm run test:e2e        # End-to-end tests
 ```
 
 ### Code Quality
+
 ```bash
 npm run lint            # ESLint
 npm run format          # Prettier
 ```
 
 ### Database Operations
+
 ```bash
 # Access MongoDB shell
 docker-compose exec mongodb mongosh bitsacco

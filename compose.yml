@@ -4,17 +4,17 @@ services:
     build:
       context: .
       dockerfile: ./apps/admin/Dockerfile
-      target: development
-    command: sh -c "cd /app/apps/admin && bun run dev"
+      target: ${ADMIN_TARGET:-development}
+    command: ${ADMIN_COMMAND:-sh -c "cd /app/apps/admin && bun run dev"}
     restart: always
     depends_on:
       - server
     env_file:
-      - ./apps/admin/.dev.env
+      - ./apps/admin/.env.local
     ports:
       - '3000:3000'
     volumes:
-      - .:/app
+      - ${ADMIN_VOLUMES:-.:/app}
 
   server:
     container_name: server
@@ -28,35 +28,12 @@ services:
       - mongodb
       - redis
     env_file:
-      - ./apps/server/.dev.env
+      - ./apps/server/.env.local
     ports:
       - '4000:4000'
     volumes:
       - .:/usr/src/app
 
-  swap:
-    container_name: swap
-    build:
-      context: .
-      dockerfile: ./apps/swap/Dockerfile
-      target: development
-    command: [
-        "sh",
-        "-c",
-        "bun dev swap"
-      ]
-    restart: always
-    depends_on:
-      - clientd
-      - mongodb
-      - redis
-    env_file:
-      - ./apps/swap/.dev.env
-    ports:
-      - '4040:4040'
-      - '4042:4042'
-    volumes:
-      - .:/usr/src/app
 
   mongodb:
     image: mongo:7.0-jammy

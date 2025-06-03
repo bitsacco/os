@@ -1,20 +1,20 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { zodResolver } from "@hookform/resolvers/zod";
-import Alert from "@mui/material/Alert";
-import Button from "@mui/material/Button";
-import FormControl from "@mui/material/FormControl";
-import FormHelperText from "@mui/material/FormHelperText";
-import InputLabel from "@mui/material/InputLabel";
-import OutlinedInput from "@mui/material/OutlinedInput";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
-import { Controller, useForm } from "react-hook-form";
-import { z as zod } from "zod";
+import * as React from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
+import FormControl from '@mui/material/FormControl';
+import FormHelperText from '@mui/material/FormHelperText';
+import InputLabel from '@mui/material/InputLabel';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
+import { Controller, useForm } from 'react-hook-form';
+import { z as zod } from 'zod';
 
-import { authClient } from "@/lib/auth/client";
-import { PhoneInput } from "./PhoneInput";
+import { authClient } from '@/lib/auth/client';
+import { PhoneInput } from './PhoneInput';
 
 const schema = zod
   .object({
@@ -22,13 +22,13 @@ const schema = zod
     npub: zod.string().optional(),
   })
   .refine((data) => data.phone || data.npub, {
-    message: "Either phone number or Nostr public key is required",
-    path: ["phone"],
+    message: 'Either phone number or Nostr public key is required',
+    path: ['phone'],
   });
 
 type Values = zod.infer<typeof schema>;
 
-const defaultValues = { phone: "", npub: "" } satisfies Values;
+const defaultValues = { phone: '', npub: '' } satisfies Values;
 
 export function ResetPasswordForm(): React.JSX.Element {
   const [isPending, setIsPending] = React.useState<boolean>(false);
@@ -51,7 +51,7 @@ export function ResetPasswordForm(): React.JSX.Element {
       });
 
       if (error) {
-        setError("root", { type: "server", message: error });
+        setError('root', { type: 'server', message: error });
         setIsPending(false);
         return;
       }
@@ -84,7 +84,7 @@ export function ResetPasswordForm(): React.JSX.Element {
             name="phone"
             render={({ field: { value, onChange, ...restField } }) => (
               <PhoneInput
-                value={value || ""}
+                value={value || ''}
                 onChange={onChange}
                 error={errors.phone?.message}
                 label="Phone number (required if no npub)"

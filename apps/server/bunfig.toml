@@ -18,5 +18,3 @@ NODE_ENV = "test"
 # Path mapping to match TypeScript paths
 [test.module]
 "@/*" = "./src/*"
-"@bitsacco/common/*" = "../../libs/common/src/*"
-"@bitsacco/testing/*" = "../../libs/testing/src/*"

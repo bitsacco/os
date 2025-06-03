@@ -3,8 +3,8 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import { GlobalExceptionFilter } from '@bitsacco/common/exceptions';
-import { HttpLoggingInterceptor } from '@bitsacco/common/logger';
+import { GlobalExceptionFilter } from './shared/exceptions/http-exception.filter';
+import { HttpLoggingInterceptor } from './shared/logger/http-logging.interceptor';
 
 async function bootstrap() {
   const logger = new Logger('BitsaccoServer');

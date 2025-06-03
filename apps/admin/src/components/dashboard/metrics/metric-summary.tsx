@@ -21,9 +21,14 @@ interface MetricSummaryProps {
 /**
  * Format number based on format type
  */
-const formatNumber = (value: number, format?: 'number' | 'currency' | 'percent', prefix?: string, suffix?: string): string => {
+const formatNumber = (
+  value: number,
+  format?: 'number' | 'currency' | 'percent',
+  prefix?: string,
+  suffix?: string,
+): string => {
   let formattedValue = '';
-  
+
   switch (format) {
     case 'currency':
       formattedValue = new Intl.NumberFormat('en-KE', {
@@ -33,32 +38,32 @@ const formatNumber = (value: number, format?: 'number' | 'currency' | 'percent',
         maximumFractionDigits: 0,
       }).format(value);
       break;
-      
+
     case 'percent':
       formattedValue = `${value.toFixed(1)}%`;
       break;
-      
+
     default:
       // For large numbers, use compact notation
       if (value >= 1000) {
-        formattedValue = new Intl.NumberFormat('en', { 
+        formattedValue = new Intl.NumberFormat('en', {
           notation: 'compact',
-          maximumFractionDigits: 1 
+          maximumFractionDigits: 1,
         }).format(value);
       } else {
         formattedValue = value.toLocaleString();
       }
   }
-  
+
   // Add prefix and suffix if provided
   if (prefix) {
     formattedValue = `${prefix}${formattedValue}`;
   }
-  
+
   if (suffix && format !== 'currency') {
     formattedValue = `${formattedValue}${suffix}`;
   }
-  
+
   return formattedValue;
 };
 
@@ -75,13 +80,17 @@ export function MetricSummary({
   format = 'number',
 }: MetricSummaryProps): React.JSX.Element {
   const formattedValue = formatNumber(value, format, prefix, suffix);
-  const trendColor = trend === 'up' ? 'success.main' : trend === 'down' ? 'error.main' : 'text.secondary';
-  
+  const trendColor =
+    trend === 'up'
+      ? 'success.main'
+      : trend === 'down'
+        ? 'error.main'
+        : 'text.secondary';
+
   // Format the change value with a + or - sign
-  const formattedChange = change === 0 
-    ? '0' 
-    : `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
-  
+  const formattedChange =
+    change === 0 ? '0' : `${change > 0 ? '+' : ''}${change.toFixed(1)}%`;
+
   return (
     <Card>
       <CardContent>
@@ -92,38 +101,26 @@ export function MetricSummary({
           spacing={3}
         >
           <Stack spacing={1}>
-            <Typography
-              color="text.secondary"
-              variant="overline"
-            >
+            <Typography color="text.secondary" variant="overline">
               {title}
             </Typography>
-            <Typography variant="h4">
-              {formattedValue}
-            </Typography>
+            <Typography variant="h4">{formattedValue}</Typography>
           </Stack>
           <Box sx={{ alignSelf: 'center' }}>
-            {trend === 'up' && <ArrowUp size={24} color="var(--mui-palette-success-main)" />}
-            {trend === 'down' && <ArrowDown size={24} color="var(--mui-palette-error-main)" />}
+            {trend === 'up' && (
+              <ArrowUp size={24} color="var(--mui-palette-success-main)" />
+            )}
+            {trend === 'down' && (
+              <ArrowDown size={24} color="var(--mui-palette-error-main)" />
+            )}
           </Box>
         </Stack>
         {change !== 0 && (
-          <Stack
-            alignItems="center"
-            direction="row"
-            spacing={1}
-            sx={{ mt: 2 }}
-          >
-            <Typography
-              color={trendColor}
-              variant="body2"
-            >
+          <Stack alignItems="center" direction="row" spacing={1} sx={{ mt: 2 }}>
+            <Typography color={trendColor} variant="body2">
               {formattedChange}
             </Typography>
-            <Typography
-              color="text.secondary"
-              variant="caption"
-            >
+            <Typography color="text.secondary" variant="caption">
               since last period
             </Typography>
           </Stack>

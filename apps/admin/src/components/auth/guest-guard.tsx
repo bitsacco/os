@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useRouter } from "next/navigation";
-import Alert from "@mui/material/Alert";
+import * as React from 'react';
+import { useRouter } from 'next/navigation';
+import Alert from '@mui/material/Alert';
 
-import { paths } from "@/paths";
-import { logger } from "@/lib/default-logger";
-import { useUser } from "@/hooks/use-user";
-import { Role } from "@/types/user";
-import { authClient } from "@/lib/auth/client";
+import { paths } from '@/paths';
+import { logger } from '@/lib/default-logger';
+import { useUser } from '@/hooks/use-user';
+import { Role } from '@/types/user';
+import { authClient } from '@/lib/auth/client';
 
 export interface GuestGuardProps {
   children: React.ReactNode;
@@ -41,7 +41,7 @@ export function GuestGuard({
 
       if (!hasAdminRole) {
         logger.debug(
-          "[GuestGuard]: User does not have admin privileges, signing out",
+          '[GuestGuard]: User does not have admin privileges, signing out',
         );
 
         setAuthError("You don't have permission to access this dashboard");
@@ -49,7 +49,7 @@ export function GuestGuard({
         // Sign out the user since they don't have permission
         const { error: signOutError } = await authClient.signOut();
         if (signOutError) {
-          logger.error("[GuestGuard]: Error signing out user:", signOutError);
+          logger.error('[GuestGuard]: Error signing out user:', signOutError);
         }
 
         setIsChecking(false);
@@ -57,7 +57,7 @@ export function GuestGuard({
       }
 
       logger.debug(
-        "[GuestGuard]: Admin user is logged in, redirecting to dashboard",
+        '[GuestGuard]: Admin user is logged in, redirecting to dashboard',
       );
       router.replace(paths.dashboard.overview);
       return;

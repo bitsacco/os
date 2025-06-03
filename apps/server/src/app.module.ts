@@ -14,7 +14,6 @@ import { MessagingModule } from './infrastructure/messaging/messaging.module';
 // API modules
 import { RestApiModule } from './api/rest/rest-api.module';
 import { WebSocketModule } from './api/websocket/websocket.module';
-import { GrpcModule } from './api/grpc/grpc.module';
 
 // Domain modules
 import { AuthDomainModule } from './domains/auth/auth-domain.module';
@@ -81,7 +80,6 @@ import { HealthController } from './infrastructure/health/health.controller';
     // API layers
     RestApiModule,
     WebSocketModule,
-    GrpcModule,
 
     // Domain modules
     AuthDomainModule,
