@@ -8,11 +8,15 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import {
   UsersDocument,
   UsersSchema,
+} from '@bitsacco/common/database/users.schema';
+import {
   TokenDocument,
   TokenSchema,
+} from '@bitsacco/common/database/token.schema';
+import {
   ApiKeyDocument,
   ApiKeySchema,
-} from '@bitsacco/common';
+} from '@bitsacco/common/database/apikey.schema';
 
 // Services
 import { AuthService } from './services/auth.service';
@@ -53,7 +57,6 @@ import { CombinedAuthGuard } from './guards/combined-auth.guard';
       }),
       inject: [ConfigService],
     }),
-    // SMS service will be mocked in tests
   ],
   providers: [
     // Services
@@ -76,8 +79,6 @@ import { CombinedAuthGuard } from './guards/combined-auth.guard';
     JwtAuthGuard,
     ApiKeyGuard,
     CombinedAuthGuard,
-
-    // Common services will be provided at app level
   ],
   exports: [
     AuthService,

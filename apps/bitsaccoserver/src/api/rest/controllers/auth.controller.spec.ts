@@ -33,10 +33,10 @@ describe('AuthController (Integration)', () => {
 
   beforeEach(async () => {
     authService = {
-      registerUser: mock(),
-      loginUser: mock(),
+      register: mock(),
+      login: mock(),
       refreshToken: mock(),
-      revokeToken: mock(),
+      logout: mock(),
       validateUser: mock(),
     };
 
@@ -85,7 +85,7 @@ describe('AuthController (Integration)', () => {
     };
 
     it('should register a new user successfully', async () => {
-      authService.registerUser?.mockResolvedValue(mockAuthResult);
+      authService.register?.mockResolvedValue(mockAuthResult);
 
       const response = await request(app.getHttpServer())
         .post('/auth/register')
@@ -94,7 +94,7 @@ describe('AuthController (Integration)', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toEqual(mockAuthResult);
-      expect(authService.registerUser).toHaveBeenCalledWith(validRegisterData);
+      expect(authService.register).toHaveBeenCalledWith(validRegisterData);
     });
 
     it('should return 400 for invalid phone number', async () => {
@@ -108,7 +108,7 @@ describe('AuthController (Integration)', () => {
         .send(invalidData)
         .expect(400);
 
-      expect(authService.registerUser).not.toHaveBeenCalled();
+      expect(authService.register).not.toHaveBeenCalled();
     });
 
     it('should return 400 for missing required fields', async () => {
@@ -122,11 +122,11 @@ describe('AuthController (Integration)', () => {
         .send(incompleteData)
         .expect(400);
 
-      expect(authService.registerUser).not.toHaveBeenCalled();
+      expect(authService.register).not.toHaveBeenCalled();
     });
 
     it('should handle service errors', async () => {
-      authService.registerUser?.mockRejectedValue(
+      authService.register?.mockRejectedValue(
         new Error('User already exists'),
       );
 
@@ -135,7 +135,7 @@ describe('AuthController (Integration)', () => {
         .send(validRegisterData)
         .expect(500);
 
-      expect(authService.registerUser).toHaveBeenCalled();
+      expect(authService.register).toHaveBeenCalled();
     });
 
     it('should include Nostr public key if provided', async () => {
@@ -144,14 +144,14 @@ describe('AuthController (Integration)', () => {
         npub: 'npub1test1234567890abcdef',
       };
 
-      authService.registerUser?.mockResolvedValue(mockAuthResult);
+      authService.register?.mockResolvedValue(mockAuthResult);
 
       await request(app.getHttpServer())
         .post('/auth/register')
         .send(dataWithNostr)
         .expect(201);
 
-      expect(authService.registerUser).toHaveBeenCalledWith(dataWithNostr);
+      expect(authService.register).toHaveBeenCalledWith(dataWithNostr);
     });
   });
 
@@ -162,7 +162,7 @@ describe('AuthController (Integration)', () => {
     };
 
     it('should login user successfully', async () => {
-      authService.loginUser?.mockResolvedValue(mockAuthResult);
+      authService.login?.mockResolvedValue(mockAuthResult);
 
       const response = await request(app.getHttpServer())
         .post('/auth/login')
@@ -171,11 +171,11 @@ describe('AuthController (Integration)', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toEqual(mockAuthResult);
-      expect(authService.loginUser).toHaveBeenCalledWith(validLoginData);
+      expect(authService.login).toHaveBeenCalledWith(validLoginData);
     });
 
     it('should return 401 for invalid credentials', async () => {
-      authService.loginUser?.mockRejectedValue(
+      authService.login?.mockRejectedValue(
         new (await import('@nestjs/common')).UnauthorizedException(
           'Invalid credentials',
         ),
@@ -186,7 +186,7 @@ describe('AuthController (Integration)', () => {
         .send(validLoginData)
         .expect(401);
 
-      expect(authService.loginUser).toHaveBeenCalled();
+      expect(authService.login).toHaveBeenCalled();
     });
 
     it('should accept login with password instead of OTP', async () => {
@@ -195,14 +195,14 @@ describe('AuthController (Integration)', () => {
         password: 'password123',
       };
 
-      authService.loginUser?.mockResolvedValue(mockAuthResult);
+      authService.login?.mockResolvedValue(mockAuthResult);
 
       await request(app.getHttpServer())
         .post('/auth/login')
         .send(passwordLoginData)
         .expect(200);
 
-      expect(authService.loginUser).toHaveBeenCalledWith(passwordLoginData);
+      expect(authService.login).toHaveBeenCalledWith(passwordLoginData);
     });
   });
 
@@ -260,7 +260,7 @@ describe('AuthController (Integration)', () => {
     };
 
     it('should logout user successfully', async () => {
-      authService.revokeToken?.mockResolvedValue(undefined);
+      authService.logout?.mockResolvedValue(undefined);
 
       await request(app.getHttpServer())
         .post('/auth/logout')
@@ -268,7 +268,7 @@ describe('AuthController (Integration)', () => {
         .send(validLogoutData)
         .expect(204);
 
-      expect(authService.revokeToken).toHaveBeenCalledWith(
+      expect(authService.logout).toHaveBeenCalledWith(
         validLogoutData.refreshToken,
       );
     });
@@ -389,7 +389,7 @@ describe('AuthController (Integration)', () => {
 
   describe('Response format', () => {
     it('should return consistent response format for successful requests', async () => {
-      authService.registerUser?.mockResolvedValue(mockAuthResult);
+      authService.register?.mockResolvedValue(mockAuthResult);
 
       const response = await request(app.getHttpServer())
         .post('/auth/register')
@@ -410,7 +410,7 @@ describe('AuthController (Integration)', () => {
     });
 
     it('should include request ID in response headers', async () => {
-      authService.registerUser?.mockResolvedValue(mockAuthResult);
+      authService.register?.mockResolvedValue(mockAuthResult);
 
       const response = await request(app.getHttpServer())
         .post('/auth/register')
@@ -429,7 +429,7 @@ describe('AuthController (Integration)', () => {
 
   describe('Rate limiting', () => {
     it('should apply rate limiting to registration endpoint', async () => {
-      authService.registerUser?.mockResolvedValue(mockAuthResult);
+      authService.register?.mockResolvedValue(mockAuthResult);
 
       const registerData = {
         phone: '+254700000000',

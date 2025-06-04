@@ -24,47 +24,14 @@ export class TokenRepository extends BaseRepository<TokenDocument> {
     });
   }
 
-  async findByTokenId(tokenId: string): Promise<TokenDocument | null> {
-    return this.findOne({ tokenId });
-  }
-
-  async findByFamily(tokenFamily: string): Promise<TokenDocument[]> {
-    return this.find({ tokenFamily });
-  }
-
-  async revokeToken(tokenId: string): Promise<boolean> {
-    const result = await this.updateOne(
-      { tokenId },
-      { revoked: true, updatedAt: new Date() },
-    );
-    return result.matchedCount > 0;
-  }
-
-  async revokeFamily(tokenFamily: string): Promise<boolean> {
-    const result = await this.updateMany(
-      { tokenFamily },
-      { revoked: true, updatedAt: new Date() },
-    );
-    return result.matchedCount > 0;
-  }
-
-  async getTokenFamily(tokenId: string): Promise<string | null> {
-    const token = await this.findOne({ tokenId });
-    return token?.tokenFamily || null;
-  }
-
-  async revokeAllUserTokens(userId: string): Promise<boolean> {
-    const result = await this.updateMany(
-      { userId },
-      { revoked: true, updatedAt: new Date() },
-    );
-    return result.matchedCount > 0;
+  async revokeAllUserTokens(userId: string): Promise<number> {
+    return this.deleteMany({ userId });
   }
 
   async cleanupExpiredTokens(): Promise<number> {
     const now = new Date();
     return this.deleteMany({
-      expires: { $lt: now },
+      expiresAt: { $lt: now },
     });
   }
 }

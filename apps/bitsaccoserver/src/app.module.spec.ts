@@ -1,21 +1,31 @@
-import { describe, it, expect } from 'bun:test';
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppModule } from './app.module';
 
-// Simple module structure test without database dependencies
 describe('AppModule', () => {
-  it('should be defined', () => {
-    // Test that the module structure is valid
-    expect(true).toBe(true);
+  let app: TestingModule;
+
+  beforeAll(async () => {
+    app = await Test.createTestingModule({
+      imports: [AppModule],
+    })
+      .overrideProvider('SWAP_SERVICE')
+      .useValue({
+        getService: () => ({
+          createSwap: jest.fn(),
+          getSwap: jest.fn(),
+          listSwaps: jest.fn(),
+          getExchangeRate: jest.fn(),
+          cancelSwap: jest.fn(),
+        }),
+      })
+      .compile();
   });
 
-  it('should have valid module configuration', () => {
-    // Test module configuration without instantiating
-    const config = {
-      imports: ['ConfigModule', 'DatabaseModule', 'AuthDomainModule'],
-      controllers: ['HealthController'],
-      providers: ['AppService'],
-    };
+  it('should be defined', () => {
+    expect(app).toBeDefined();
+  });
 
-    expect(config.imports).toContain('AuthDomainModule');
-    expect(config.controllers).toContain('HealthController');
+  afterAll(async () => {
+    await app.close();
   });
 });
