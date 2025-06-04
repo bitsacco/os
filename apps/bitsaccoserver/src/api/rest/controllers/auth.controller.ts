@@ -16,67 +16,25 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import {
-  IsString,
-  IsEmail,
-  IsOptional,
-  IsPhoneNumber,
-  MinLength,
-} from 'class-validator';
 import { AuthService } from '../../../domains/auth/services/auth.service';
 import { JwtAuthGuard } from '../../../domains/auth/guards/jwt-auth.guard';
 
 // DTOs
 export class RegisterDto {
-  @IsPhoneNumber()
   phone: string;
-
-  @IsString()
-  @MinLength(1)
   name: string;
-
-  @IsOptional()
-  @IsEmail()
   email?: string;
-
-  @IsOptional()
-  @IsString()
   npub?: string;
 }
 
 export class LoginDto {
-  @IsPhoneNumber()
   phone: string;
-
-  @IsOptional()
-  @IsString()
-  @MinLength(6)
   otp?: string;
-
-  @IsOptional()
-  @IsString()
-  @MinLength(6)
   password?: string;
 }
 
 export class RefreshTokenDto {
-  @IsString()
-  @MinLength(1)
   refreshToken: string;
-}
-
-export class SendOtpDto {
-  @IsPhoneNumber()
-  phone: string;
-}
-
-export class VerifyOtpDto {
-  @IsPhoneNumber()
-  phone: string;
-
-  @IsString()
-  @MinLength(6)
-  otp: string;
 }
 
 @ApiTags('Authentication')
@@ -208,7 +166,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'OTP sent successfully' })
   @ApiResponse({ status: 400, description: 'Invalid phone number' })
   @ApiResponse({ status: 429, description: 'Too many requests' })
-  async sendOtp(@Body() sendOtpDto: SendOtpDto, @Res() res: any) {
+  async sendOtp(@Body() body: { phone: string }, @Res() res: any) {
     // TODO: Implement OTP sending via SMS service
     const requestId = 'req_' + Date.now();
 
@@ -232,7 +190,10 @@ export class AuthController {
   @ApiOperation({ summary: 'Verify OTP' })
   @ApiResponse({ status: 200, description: 'OTP verified successfully' })
   @ApiResponse({ status: 400, description: 'Invalid OTP' })
-  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto, @Res() res: any) {
+  async verifyOtp(
+    @Body() body: { phone: string; otp: string },
+    @Res() res: any,
+  ) {
     // TODO: Implement OTP verification
     const requestId = 'req_' + Date.now();
 

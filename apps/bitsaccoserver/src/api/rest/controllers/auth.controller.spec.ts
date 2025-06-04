@@ -1,16 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  INestApplication,
-  ValidationPipe,
-  CanActivate,
-  ExecutionContext,
-} from '@nestjs/common';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AuthController } from './auth.controller';
 import { AuthService } from '../../../domains/auth/services/auth.service';
-import { JwtAuthGuard } from '../../../domains/auth/guards/jwt-auth.guard';
 import { TestModuleBuilder } from '../../../../test/utils/test-module';
 import {
   MockBusinessMetricsService,
@@ -23,15 +16,6 @@ describe('AuthController (Integration)', () => {
   let app: INestApplication;
   let authService: Partial<AuthService>;
 
-  // Mock JWT Guard
-  class MockJwtAuthGuard implements CanActivate {
-    canActivate(context: ExecutionContext): boolean {
-      const request = context.switchToHttp().getRequest();
-      request.user = { userId: 'test-user-id' };
-      return true;
-    }
-  }
-
   const mockUser = {
     _id: 'test-user-id',
     phone: '+254700000000',
@@ -42,13 +26,9 @@ describe('AuthController (Integration)', () => {
   };
 
   const mockAuthResult = {
-    success: true,
-    message: 'User registered successfully',
-    data: {
-      user: mockUser,
-      accessToken: 'test-access-token',
-      refreshToken: 'test-refresh-token',
-    },
+    user: mockUser,
+    accessToken: 'test-access-token',
+    refreshToken: 'test-refresh-token',
   };
 
   beforeEach(async () => {
@@ -60,23 +40,10 @@ describe('AuthController (Integration)', () => {
       validateUser: mock(),
     };
 
-    const moduleRef = await Test.createTestingModule({
-      imports: [
-        ThrottlerModule.forRoot([
-          {
-            name: 'short',
-            ttl: 60000,
-            limit: 10,
-          },
-          {
-            name: 'medium',
-            ttl: 60000,
-            limit: 20,
-          },
-        ]),
-      ],
-      controllers: [AuthController],
-      providers: [
+    const moduleRef = await TestModuleBuilder.create()
+      .withConfig()
+      .withControllers([AuthController])
+      .withProviders([
         {
           provide: AuthService,
           useValue: authService,
@@ -89,17 +56,14 @@ describe('AuthController (Integration)', () => {
           provide: TelemetryService,
           useClass: MockTelemetryService,
         },
-      ],
-    })
-      .overrideGuard(JwtAuthGuard)
-      .useClass(MockJwtAuthGuard)
-      .compile();
+      ])
+      .compileAndInit();
 
     app = moduleRef.createNestApplication();
 
     // Apply global validation pipe
     app.useGlobalPipes(
-      new ValidationPipe({
+      new (await import('@nestjs/common')).ValidationPipe({
         whitelist: true,
         forbidNonWhitelisted: true,
         transform: true,
@@ -162,11 +126,16 @@ describe('AuthController (Integration)', () => {
     });
 
     it('should handle service errors', async () => {
-      // Test that we can mock service rejection - exception testing is complex with Bun
-      expect(authService.registerUser).toBeDefined();
-      expect(typeof authService.registerUser?.mockRejectedValue).toBe(
-        'function',
+      authService.registerUser?.mockRejectedValue(
+        new Error('User already exists'),
       );
+
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(validRegisterData)
+        .expect(500);
+
+      expect(authService.registerUser).toHaveBeenCalled();
     });
 
     it('should include Nostr public key if provided', async () => {
@@ -206,9 +175,18 @@ describe('AuthController (Integration)', () => {
     });
 
     it('should return 401 for invalid credentials', async () => {
-      // Test that we can mock service rejection - exception testing is complex with Bun
-      expect(authService.loginUser).toBeDefined();
-      expect(typeof authService.loginUser?.mockRejectedValue).toBe('function');
+      authService.loginUser?.mockRejectedValue(
+        new (await import('@nestjs/common')).UnauthorizedException(
+          'Invalid credentials',
+        ),
+      );
+
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send(validLoginData)
+        .expect(401);
+
+      expect(authService.loginUser).toHaveBeenCalled();
     });
 
     it('should accept login with password instead of OTP', async () => {
@@ -235,11 +213,8 @@ describe('AuthController (Integration)', () => {
 
     it('should refresh tokens successfully', async () => {
       const newTokens = {
-        success: true,
-        data: {
-          accessToken: 'new-access-token',
-          refreshToken: 'new-refresh-token',
-        },
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
       };
 
       authService.refreshToken?.mockResolvedValue(newTokens);
@@ -257,11 +232,16 @@ describe('AuthController (Integration)', () => {
     });
 
     it('should return 401 for invalid refresh token', async () => {
-      // Test that we can mock service rejection - exception testing is complex with Bun
-      expect(authService.refreshToken).toBeDefined();
-      expect(typeof authService.refreshToken?.mockRejectedValue).toBe(
-        'function',
+      authService.refreshToken?.mockRejectedValue(
+        new (await import('@nestjs/common')).UnauthorizedException(
+          'Invalid refresh token',
+        ),
       );
+
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .send(validRefreshData)
+        .expect(401);
     });
 
     it('should return 400 for missing refresh token', async () => {
@@ -294,17 +274,10 @@ describe('AuthController (Integration)', () => {
     });
 
     it('should return 401 for missing authorization', async () => {
-      // Temporarily disable the global guard for this test
-      const mockFailGuard = {
-        canActivate: () => false,
-      };
-
-      // This test expects 401, but our global guard always passes
-      // We'll adjust the expectation
       await request(app.getHttpServer())
         .post('/auth/logout')
         .send(validLogoutData)
-        .expect(204); // Changed from 401 to 204 since global guard passes
+        .expect(401);
     });
   });
 
@@ -322,17 +295,20 @@ describe('AuthController (Integration)', () => {
     });
 
     it('should return 401 for missing authorization', async () => {
-      // With global guard, this will pass, so we expect 200
-      authService.validateUser?.mockResolvedValue(mockUser);
-      await request(app.getHttpServer()).get('/auth/profile').expect(200);
+      await request(app.getHttpServer()).get('/auth/profile').expect(401);
     });
 
     it('should return 401 for invalid token', async () => {
-      // Test that we can mock service rejection - exception testing is complex with Bun
-      expect(authService.validateUser).toBeDefined();
-      expect(typeof authService.validateUser?.mockRejectedValue).toBe(
-        'function',
+      authService.validateUser?.mockRejectedValue(
+        new (await import('@nestjs/common')).UnauthorizedException(
+          'Invalid token',
+        ),
       );
+
+      await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', 'Bearer invalid-token')
+        .expect(401);
     });
   });
 
@@ -461,16 +437,19 @@ describe('AuthController (Integration)', () => {
         email: 'test@example.com',
       };
 
-      // In test environment, rate limiting might not be fully functional
-      // We'll just verify the endpoint works - true rate limiting is tested in integration
+      // Make requests up to the limit
+      for (let i = 0; i < 3; i++) {
+        await request(app.getHttpServer())
+          .post('/auth/register')
+          .send({ ...registerData, phone: `+25470000000${i}` })
+          .expect(201);
+      }
+
+      // Next request should be rate limited
       await request(app.getHttpServer())
         .post('/auth/register')
-        .send(registerData)
-        .expect(201);
-
-      // Verify throttle decorator is applied (metadata test)
-      const controller = app.get(AuthController);
-      expect(controller).toBeDefined();
+        .send({ ...registerData, phone: '+254700000003' })
+        .expect(429);
     });
   });
 });

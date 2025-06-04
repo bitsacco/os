@@ -10,10 +10,9 @@ import { TokenService } from '../../../src/domains/auth/services/token.service';
 import { ApiKeyService } from '../../../src/domains/auth/services/apikey.service';
 import { UserService } from '../../../src/domains/auth/services/user.service';
 import { BusinessMetricsService } from '../../../src/infrastructure/monitoring/business-metrics.service';
-import { TelemetryService } from '../../../src/infrastructure/monitoring/telemetry.service';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 
-describe.skip('Auth Domain Migration E2E Tests', () => {
+describe('Auth Domain Migration E2E Tests', () => {
   let app: INestApplication;
   let authService: AuthService;
   let tokenService: TokenService;
@@ -34,24 +33,6 @@ describe.skip('Auth Domain Migration E2E Tests', () => {
   };
 
   beforeAll(async () => {
-    // Mock metrics and telemetry services
-    const mockBusinessMetricsService = {
-      recordUserRegistration: () => Promise.resolve(),
-      recordUserLogin: () => Promise.resolve(),
-      recordTokenOperation: () => Promise.resolve(),
-      recordDomainError: () => Promise.resolve(),
-      recordOperationDuration: () => Promise.resolve(),
-      recordCommunicationMetric: () => Promise.resolve(),
-      recordApiCall: () => Promise.resolve(),
-      recordAuthEvent: () => Promise.resolve(),
-      recordVerifyMetric: () => Promise.resolve(),
-    };
-
-    const mockTelemetryService = {
-      executeWithSpan: async (name: string, fn: Function) => fn(),
-      recordEvent: () => {},
-    };
-
     const moduleFixture: TestingModule =
       await createTestingModuleWithValidation({
         imports: [
@@ -64,16 +45,6 @@ describe.skip('Auth Domain Migration E2E Tests', () => {
           ),
           EventEmitterModule.forRoot(),
           AuthDomainModule,
-        ],
-        providers: [
-          {
-            provide: BusinessMetricsService,
-            useValue: mockBusinessMetricsService,
-          },
-          {
-            provide: TelemetryService,
-            useValue: mockTelemetryService,
-          },
         ],
       });
 
@@ -102,8 +73,9 @@ describe.skip('Auth Domain Migration E2E Tests', () => {
 
       const duration = Date.now() - startTime;
       expect(duration).toBeLessThan(2000); // < 2s requirement
-      expect(result).toHaveProperty('data');
-      expect(result.data).toHaveProperty('user');
+      expect(result).toHaveProperty('user');
+      expect(result).toHaveProperty('accessToken');
+      expect(result).toHaveProperty('refreshToken');
     });
 
     it('should meet response time requirements for login', async () => {
