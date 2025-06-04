@@ -26,36 +26,40 @@ The architecture emphasizes:
 - **Observability**: Comprehensive logging and monitoring
 - **Resilience**: Fault tolerance and graceful degradation
 
-## Core Applications
+## Microservices
 
-The Bitsacco OS platform consists of the following core applications:
+The Bitsacco OS platform consists of the following microservices:
 
-| Application | Description | Primary Responsibilities |
-|-------------|-------------|--------------------------|
-| **Admin** | Admin Dashboard | Frontend interface for platform administration |
-| **Server** | Core Backend | Authentication, user management, business logic |
+| Service | Description | Primary Responsibilities |
+|---------|-------------|--------------------------|
+| **API** | API Gateway | Routes requests, authentication, metrics federation |
+| **Auth** | Authentication | User authentication, token management, registration |
 | **Swap** | Currency Exchange | BTC/KES conversion, FX rates, payment processing |
+| **Nostr** | Nostr Protocol | Nostr key management, event signing, relay interaction |
+| **SMS** | SMS Communication | OTP delivery, notifications, verifications |
+| **Shares** | Share Management | Share issuance, transfers, subscriptions |
+| **SoloWallet** | Personal Wallet | Individual Bitcoin wallet management |
+| **Chama** | Group Savings | Group savings management, contributions, distributions |
 
-### Application Details
+### Service Details
 
-#### Admin Dashboard
+#### API Gateway
 
-The Admin Dashboard provides a web interface for platform administration:
+The API Gateway serves as the entry point for external clients, handling:
 
-- User management and monitoring
-- System metrics and dashboards
-- Configuration management
-- Support and operations tools
+- Request routing to appropriate microservices
+- Authentication and authorization
+- Response format standardization
+- Metrics federation
 
-#### Server Application
+#### Auth Service
 
-The Server application consolidates core backend functionality:
+Manages user authentication and authorization:
 
-- User authentication and authorization
-- API routing and request handling
-- Business logic for all domains (auth, chamas, notifications, shares, etc.)
-- Metrics federation and monitoring
-- WebSocket and gRPC communication
+- User registration and profile management
+- Multiple authentication methods (phone, npub)
+- JWT token issuance and validation
+- OTP verification via SMS or Nostr
 
 #### Swap Service
 
@@ -65,6 +69,51 @@ Handles currency exchange between Bitcoin and Kenyan Shillings (KES):
 - Offramp (BTC → KES) transactions
 - FX rate management
 - Third-party payment processor integration (IntaSend)
+
+#### Nostr Service
+
+Manages Nostr protocol interactions:
+
+- Nostr key management
+- Event signing and verification
+- Relay communication
+- NIP-07 and NIP-26 implementation
+
+#### SMS Service
+
+Handles SMS communication:
+
+- OTP delivery
+- Transaction notifications
+- Marketing communications
+- Provider abstraction (Africa's Talking)
+
+#### Shares Service
+
+Manages digital share operations:
+
+- Share issuance and subscriptions
+- Share transfers and ownership
+- Dividend distribution
+- Share offers and listings
+
+#### SoloWallet Service
+
+Manages individual Bitcoin wallets:
+
+- Wallet creation and management
+- Transaction history
+- Lightning Network withdrawals via LNURL
+- Balance tracking
+
+#### Chama Service
+
+Manages group savings groups (Chamas):
+
+- Chama creation and membership
+- Contribution tracking
+- Fund distribution
+- Group wallet management
 
 ## Communication Patterns
 

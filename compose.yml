@@ -8,7 +8,7 @@ services:
     command: sh -c "cd /app/apps/admin && bun run dev"
     restart: always
     depends_on:
-      - server
+      - api
     env_file:
       - ./apps/admin/.dev.env
     ports:
@@ -16,24 +16,42 @@ services:
     volumes:
       - .:/app
 
-  server:
-    container_name: server
+  api:
+    container_name: api
     build:
       context: .
-      dockerfile: ./apps/server/Dockerfile
+      dockerfile: ./apps/api/Dockerfile
       target: development
-    command: bun dev server
+    command: bun dev api
     restart: always
     depends_on:
       - mongodb
       - redis
     env_file:
-      - ./apps/server/.dev.env
+      - ./apps/api/.dev.env
     ports:
       - '4000:4000'
     volumes:
       - .:/usr/src/app
-
+  auth:
+    container_name: auth
+    build:
+      context: .
+      dockerfile: ./apps/auth/Dockerfile
+      target: development
+    command: bun dev auth
+    restart: always
+    depends_on:
+      - mongodb
+      - sms
+      - redis
+    env_file:
+      - ./apps/auth/.dev.env
+    ports:
+      - '4010:4010'
+      - '4012:4012'
+    volumes:
+      - .:/usr/src/app
   swap:
     container_name: swap
     build:
@@ -55,6 +73,149 @@ services:
     ports:
       - '4040:4040'
       - '4042:4042'
+    volumes:
+      - .:/usr/src/app
+
+  nostr:
+    container_name: nostr
+    build:
+      context: .
+      dockerfile: ./apps/nostr/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev nostr"
+      ]
+    restart: always
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - ./apps/nostr/.dev.env
+    ports:
+      - '4050:4050'
+      - '4052:4052'
+    volumes:
+      - .:/usr/src/app
+
+  sms:
+    container_name: sms
+    build:
+      context: .
+      dockerfile: ./apps/sms/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev sms"
+      ]
+    restart: always
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - ./apps/sms/.dev.env
+    ports:
+      - '4060:4060'
+      - '4062:4062'
+    volumes:
+      - .:/usr/src/app
+
+  shares:
+    container_name: shares
+    build:
+      context: .
+      dockerfile: ./apps/shares/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev shares"
+      ]
+    restart: always
+    depends_on:
+      - mongodb
+      - redis
+    env_file:
+      - ./apps/shares/.dev.env
+    ports:
+      - '4070:4070'
+      - '4072:4072'
+    volumes:
+      - .:/usr/src/app
+
+  solowallet:
+    container_name: solowallet
+    build:
+      context: .
+      dockerfile: ./apps/solowallet/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev solowallet"
+      ]
+    restart: always
+    depends_on:
+      - swap
+      - mongodb
+      - redis
+    env_file:
+      - ./apps/solowallet/.dev.env
+    ports:
+      - '4080:4080'
+      - '4082:4082'
+    volumes:
+      - .:/usr/src/app
+
+  chama:
+    container_name: chama
+    build:
+      context: .
+      dockerfile: ./apps/chama/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev chama"
+      ]
+    restart: always
+    depends_on:
+      - swap
+      - mongodb
+      - redis
+      - sms
+    env_file:
+      - ./apps/chama/.dev.env
+    ports:
+      - '4090:4090'
+      - '4092:4092'
+    volumes:
+      - .:/usr/src/app
+      
+  notification:
+    container_name: notification
+    build:
+      context: .
+      dockerfile: ./apps/notification/Dockerfile
+      target: development
+    command: [
+        "sh",
+        "-c",
+        "bun dev notification"
+      ]
+    restart: always
+    depends_on:
+      - mongodb
+      - redis
+      - sms
+      - nostr
+    env_file:
+      - ./apps/notification/.dev.env
+    ports:
+      - '5000:5000'
+      - '5002:5002'
     volumes:
       - .:/usr/src/app
 
