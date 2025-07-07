@@ -166,8 +166,7 @@ export class ChamasController {
   }
 
   @Post(':chamaId/join')
-  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
-  @CheckChamaMembership({ chamaIdField: 'chamaId' })
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Join existing Chama' })
@@ -316,8 +315,7 @@ export class ChamasController {
   }
 
   @Get(':chamaId/transactions/:txId')
-  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
-  @CheckChamaMembership({ chamaIdField: 'chamaId' })
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Find Chama transaction by ID' })
