@@ -5,7 +5,8 @@ import { APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { ClientsModule, Transport, GrpcOptions } from '@nestjs/microservices';
+import { ChannelOptions } from '@grpc/grpc-js';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
@@ -65,6 +66,58 @@ import { HealthController } from './health/health.controller';
 // Import the metrics module
 import { MetricsModule } from './metrics/metrics.module';
 
+// Helper function to create gRPC options with HTTP/2 stability fixes
+function createGrpcOptions(
+  packageName: string,
+  protoPath: string,
+  url: string,
+): GrpcOptions['options'] {
+  const channelOptions: ChannelOptions = {
+    // Keepalive settings to prevent connection issues
+    'grpc.keepalive_time_ms': 120000, // 2 minutes
+    'grpc.keepalive_timeout_ms': 20000, // 20 seconds
+    'grpc.keepalive_permit_without_calls': 1,
+
+    // HTTP/2 settings to prevent stack overflow
+    'grpc.http2.max_pings_without_data': 0,
+    'grpc.http2.min_time_between_pings_ms': 120000,
+    'grpc.http2.max_ping_strikes': 0,
+
+    // Message size limits
+    'grpc.max_receive_message_length': -1, // unlimited
+    'grpc.max_send_message_length': -1, // unlimited
+
+    // Connection management
+    'grpc.initial_reconnect_backoff_ms': 1000,
+    'grpc.max_reconnect_backoff_ms': 10000,
+    'grpc.enable_retries': 1,
+
+    // Disable aggressive HTTP/2 optimizations that might cause issues
+    'grpc.use_local_subchannel_pool': 0,
+
+    // Channel args to improve stability
+    'grpc.client_idle_timeout_ms': 300000, // 5 minutes
+    'grpc.max_connection_idle_ms': 300000, // 5 minutes
+    'grpc.max_connection_age_ms': 600000, // 10 minutes
+    'grpc.max_connection_age_grace_ms': 10000, // 10 seconds grace period
+  };
+
+  return {
+    package: packageName,
+    protoPath,
+    url,
+    channelOptions,
+    // Loader options for better compatibility
+    loader: {
+      keepCase: true,
+      longs: String,
+      enums: String,
+      defaults: true,
+      oneofs: true,
+    },
+  };
+}
+
 @Module({
   imports: [
     JwtModule,
@@ -114,11 +167,11 @@ import { MetricsModule } from './metrics/metrics.module';
         name: AUTH_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
-          options: {
-            package: 'auth',
-            protoPath: join(__dirname, '../../../proto/auth.proto'),
-            url: configService.getOrThrow<string>('AUTH_GRPC_URL'),
-          },
+          options: createGrpcOptions(
+            'auth',
+            join(__dirname, '../../../proto/auth.proto'),
+            configService.getOrThrow<string>('AUTH_GRPC_URL'),
+          ),
         }),
         inject: [ConfigService],
       },
@@ -126,11 +179,11 @@ import { MetricsModule } from './metrics/metrics.module';
         name: SWAP_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
-          options: {
-            package: 'swap',
-            protoPath: join(__dirname, '../../../proto/swap.proto'),
-            url: configService.getOrThrow<string>('SWAP_GRPC_URL'),
-          },
+          options: createGrpcOptions(
+            'swap',
+            join(__dirname, '../../../proto/swap.proto'),
+            configService.getOrThrow<string>('SWAP_GRPC_URL'),
+          ),
         }),
         inject: [ConfigService],
       },
@@ -138,11 +191,11 @@ import { MetricsModule } from './metrics/metrics.module';
         name: NOSTR_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
-          options: {
-            package: 'nostr',
-            protoPath: join(__dirname, '../../../proto/nostr.proto'),
-            url: configService.getOrThrow<string>('NOSTR_GRPC_URL'),
-          },
+          options: createGrpcOptions(
+            'nostr',
+            join(__dirname, '../../../proto/nostr.proto'),
+            configService.getOrThrow<string>('NOSTR_GRPC_URL'),
+          ),
         }),
         inject: [ConfigService],
       },
@@ -150,11 +203,11 @@ import { MetricsModule } from './metrics/metrics.module';
         name: SMS_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
-          options: {
-            package: 'sms',
-            protoPath: join(__dirname, '../../../proto/sms.proto'),
-            url: configService.getOrThrow<string>('SMS_GRPC_URL'),
-          },
+          options: createGrpcOptions(
+            'sms',
+            join(__dirname, '../../../proto/sms.proto'),
+            configService.getOrThrow<string>('SMS_GRPC_URL'),
+          ),
         }),
         inject: [ConfigService],
       },
@@ -162,11 +215,11 @@ import { MetricsModule } from './metrics/metrics.module';
         name: SHARES_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
-          options: {
-            package: 'shares',
-            protoPath: join(__dirname, '../../../proto/shares.proto'),
-            url: configService.getOrThrow<string>('SHARES_GRPC_URL'),
-          },
+          options: createGrpcOptions(
+            'shares',
+            join(__dirname, '../../../proto/shares.proto'),
+            configService.getOrThrow<string>('SHARES_GRPC_URL'),
+          ),
         }),
         inject: [ConfigService],
       },
@@ -174,11 +227,11 @@ import { MetricsModule } from './metrics/metrics.module';
         name: SOLOWALLET_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
-          options: {
-            package: 'solowallet',
-            protoPath: join(__dirname, '../../../proto/solowallet.proto'),
-            url: configService.getOrThrow<string>('SOLOWALLET_GRPC_URL'),
-          },
+          options: createGrpcOptions(
+            'solowallet',
+            join(__dirname, '../../../proto/solowallet.proto'),
+            configService.getOrThrow<string>('SOLOWALLET_GRPC_URL'),
+          ),
         }),
         inject: [ConfigService],
       },
@@ -186,35 +239,40 @@ import { MetricsModule } from './metrics/metrics.module';
         name: CHAMAS_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
-          options: {
-            package: 'chama',
-            protoPath: join(__dirname, '../../../proto/chama.proto'),
-            url: configService.getOrThrow<string>('CHAMA_GRPC_URL'),
-          },
+          options: createGrpcOptions(
+            'chama',
+            join(__dirname, '../../../proto/chama.proto'),
+            configService.getOrThrow<string>('CHAMA_GRPC_URL'),
+          ),
         }),
         inject: [ConfigService],
       },
       {
         name: CHAMA_WALLET_SERVICE_NAME,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.GRPC,
-          options: {
-            package: 'chamawallet',
-            protoPath: [join(__dirname, '../../../proto/chamawallet.proto')],
-            url: configService.getOrThrow<string>('CHAMA_GRPC_URL'),
-          },
-        }),
+        useFactory: (configService: ConfigService) => {
+          const options = createGrpcOptions(
+            'chamawallet',
+            join(__dirname, '../../../proto/chamawallet.proto'),
+            configService.getOrThrow<string>('CHAMA_GRPC_URL'),
+          );
+          // Handle array protoPath case
+          options.protoPath = [options.protoPath as string];
+          return {
+            transport: Transport.GRPC,
+            options,
+          };
+        },
         inject: [ConfigService],
       },
       {
         name: NOTIFICATION_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.GRPC,
-          options: {
-            package: 'notification',
-            protoPath: join(__dirname, '../../../proto/notification.proto'),
-            url: configService.getOrThrow<string>('NOTIFICATION_GRPC_URL'),
-          },
+          options: createGrpcOptions(
+            'notification',
+            join(__dirname, '../../../proto/notification.proto'),
+            configService.getOrThrow<string>('NOTIFICATION_GRPC_URL'),
+          ),
         }),
         inject: [ConfigService],
       },
