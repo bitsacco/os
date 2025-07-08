@@ -7,6 +7,7 @@ import {
   ChamaUpdatesDto,
   JwtAuthGuard,
   BulkChamaTxMetaRequestDto,
+  CircuitBreakerService,
 } from '@bitsacco/common';
 import { ChamasController } from './chamas.controller';
 import { ChamaMemberGuard } from './chama-member.guard';
@@ -60,6 +61,13 @@ describe('ChamasController', () => {
       decode: jest.fn().mockReturnValue({ user: { id: 'test-user-id' } }),
     };
 
+    // Create a mock for the CircuitBreakerService
+    const mockCircuitBreaker = {
+      execute: jest.fn().mockImplementation((serviceKey, observable) => {
+        return observable;
+      }),
+    };
+
     const module = await Test.createTestingModule({
       providers: [
         ChamasController,
@@ -90,6 +98,10 @@ describe('ChamasController', () => {
         {
           provide: JwtAuthGuard,
           useClass: MockGuard,
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: mockCircuitBreaker,
         },
       ],
     }).compile();

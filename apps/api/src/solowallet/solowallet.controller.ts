@@ -8,6 +8,8 @@ import {
   UpdateTxDto,
   UserTxsRequestDto,
   WithdrawFundsRequestDto,
+  CircuitBreakerService,
+  HandleServiceErrors,
 } from '@bitsacco/common';
 
 // Import for production use - tests will mock these as needed
@@ -44,6 +46,7 @@ export class SolowalletController {
   constructor(
     @Inject(SOLOWALLET_SERVICE_NAME)
     private readonly grpc: ClientGrpc,
+    private readonly circuitBreaker: CircuitBreakerService,
   ) {
     this.walletService = this.grpc.getService<SolowalletServiceClient>(
       SOLOWALLET_SERVICE_NAME,
@@ -61,8 +64,17 @@ export class SolowalletController {
   @ApiBody({
     type: DepositFundsRequestDto,
   })
+  @HandleServiceErrors()
   depositFunds(@Body() req: DepositFundsRequestDto) {
-    return this.walletService.depositFunds(req);
+    return this.circuitBreaker.execute(
+      'solowallet-service-deposit',
+      this.walletService.depositFunds(req),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
   }
 
   @Post('deposit/continue')
@@ -75,8 +87,17 @@ export class SolowalletController {
   @ApiBody({
     type: ContinueDepositFundsRequestDto,
   })
+  @HandleServiceErrors()
   continueDepositTransaction(@Body() req: ContinueDepositFundsRequestDto) {
-    return this.walletService.continueDepositFunds(req);
+    return this.circuitBreaker.execute(
+      'solowallet-service-continue-deposit',
+      this.walletService.continueDepositFunds(req),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
   }
 
   @Post('withdraw')
@@ -89,8 +110,17 @@ export class SolowalletController {
   @ApiBody({
     type: WithdrawFundsRequestDto,
   })
+  @HandleServiceErrors()
   withdrawFunds(@Body() req: WithdrawFundsRequestDto) {
-    return this.walletService.withdrawFunds(req);
+    return this.circuitBreaker.execute(
+      'solowallet-service-withdraw',
+      this.walletService.withdrawFunds(req),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
   }
 
   @Post('withdraw/continue')
@@ -103,8 +133,17 @@ export class SolowalletController {
   @ApiBody({
     type: ContinueWithdrawFundsRequestDto,
   })
+  @HandleServiceErrors()
   continueWithdrawTransaction(@Body() req: ContinueWithdrawFundsRequestDto) {
-    return this.walletService.continueWithdrawFunds(req);
+    return this.circuitBreaker.execute(
+      'solowallet-service-continue-withdraw',
+      this.walletService.continueWithdrawFunds(req),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
   }
 
   @Post('transactions')
@@ -117,8 +156,20 @@ export class SolowalletController {
   @ApiBody({
     type: UserTxsRequestDto,
   })
+  @HandleServiceErrors()
   userTransactions(@Body() req: UserTxsRequestDto) {
-    return this.walletService.userTransactions(req);
+    return this.circuitBreaker.execute(
+      'solowallet-service-user-transactions',
+      this.walletService.userTransactions(req),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: {
+          userId: '',
+          ledger: { transactions: [], page: 0, size: 0, pages: 0 },
+        },
+      },
+    );
   }
 
   @Post('update')
@@ -129,8 +180,17 @@ export class SolowalletController {
   @ApiBody({
     type: UpdateTxDto,
   })
+  @HandleServiceErrors()
   updateShares(@Body() req: UpdateTxDto) {
-    return this.walletService.updateTransaction(req);
+    return this.circuitBreaker.execute(
+      'solowallet-service-update',
+      this.walletService.updateTransaction(req),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
   }
 
   @Get('/find/id/:id')
@@ -140,15 +200,32 @@ export class SolowalletController {
   @ApiSecurity('resource-owner')
   @ApiOperation({ summary: 'Get transaction by ID (with ownership check)' })
   @ApiParam({ name: 'id', description: 'Transaction ID' })
+  @HandleServiceErrors()
   async findTransaction(@Param('id') id: string, @Req() req: any) {
     // Check if the request has user data
     if (req.user) {
       // Extract user ID from the user object
       const userRecord = req.user as any;
       const userId = userRecord.id;
-      return this.walletService.findTransaction({ txId: id, userId });
+      return this.circuitBreaker.execute(
+        'solowallet-service-find-user-transaction',
+        this.walletService.findTransaction({ txId: id, userId }),
+        {
+          failureThreshold: 3,
+          resetTimeout: 10000,
+          fallbackResponse: null,
+        },
+      );
     }
-    return this.walletService.findTransaction({ txId: id });
+    return this.circuitBreaker.execute(
+      'solowallet-service-find-transaction',
+      this.walletService.findTransaction({ txId: id }),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
   }
 
   @Get('/lnurl')
@@ -233,15 +310,26 @@ export class SolowalletController {
     try {
       // Process the LNURL withdrawal using the gRPC service
       const response = await firstValueFrom(
-        this.walletService.processLnUrlWithdraw({
-          k1,
-          tag,
-          callback,
-          maxWithdrawable,
-          minWithdrawable,
-          defaultDescription,
-          pr,
-        }),
+        this.circuitBreaker.execute(
+          'solowallet-service-lnurl-withdraw',
+          this.walletService.processLnUrlWithdraw({
+            k1,
+            tag,
+            callback,
+            maxWithdrawable,
+            minWithdrawable,
+            defaultDescription,
+            pr,
+          }),
+          {
+            failureThreshold: 3,
+            resetTimeout: 10000,
+            fallbackResponse: {
+              status: 'ERROR',
+              reason: 'Service temporarily unavailable',
+            },
+          },
+        ),
       );
 
       this.logger.log(`LNURL withdrawal response: ${JSON.stringify(response)}`);

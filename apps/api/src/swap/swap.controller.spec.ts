@@ -74,6 +74,11 @@ describe('SwapController', () => {
     circuitBreakerService = module.get<CircuitBreakerService>(
       CircuitBreakerService,
     );
+
+    // Manually inject the circuit breaker into the controller if needed
+    if (!(swapController as any).circuitBreaker) {
+      (swapController as any).circuitBreaker = circuitBreakerService;
+    }
   });
 
   it('should be defined', () => {
@@ -83,6 +88,7 @@ describe('SwapController', () => {
   describe('getOnrampQuote', () => {
     it('should call swapService.getOnrampQuote', () => {
       swapController.getOnrampQuote(SupportedCurrencies.KES);
+      expect(circuitBreakerService.execute).toHaveBeenCalled();
       expect(swapServiceClient.getQuote).toHaveBeenCalled();
     });
 

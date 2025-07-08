@@ -3,22 +3,22 @@ import { AbstractDocument } from './abstract.schema';
 
 @Schema({ versionKey: false, collection: 'tokens' })
 export class TokenDocument extends AbstractDocument {
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   userId: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ type: String, required: true, unique: true })
   tokenId: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   tokenFamily: string;
 
-  @Prop()
+  @Prop({ type: String })
   previousTokenId: string;
 
-  @Prop({ required: true })
+  @Prop({ type: Date, required: true })
   expires: Date;
 
-  @Prop({ default: false })
+  @Prop({ type: Boolean, default: false })
   revoked: boolean;
 }
 

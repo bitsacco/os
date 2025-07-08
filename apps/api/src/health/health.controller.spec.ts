@@ -11,7 +11,7 @@ describe('HealthController', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [HealthController],
+      controllers: [],
       providers: [
         {
           provide: ConfigService,
@@ -44,6 +44,13 @@ describe('HealthController', () => {
           useValue: {
             get: jest.fn().mockReturnValue(false),
           },
+        },
+        {
+          provide: HealthController,
+          useFactory: (configService: ConfigService) => {
+            return new HealthController(configService);
+          },
+          inject: [ConfigService],
         },
       ],
     }).compile();

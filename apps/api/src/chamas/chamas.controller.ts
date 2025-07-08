@@ -40,6 +40,8 @@ import {
   MemberInvitesDto,
   ChamaTxMetaRequestDto,
   BulkChamaTxMetaRequestDto,
+  CircuitBreakerService,
+  HandleServiceErrors,
 } from '@bitsacco/common';
 import { ChamaMemberGuard, CheckChamaMembership } from './chama-member.guard';
 import { ChamaBulkAccessGuard } from './chama-bulk-access.guard';
@@ -54,6 +56,7 @@ export class ChamasController {
   constructor(
     @Inject(CHAMAS_SERVICE_NAME) private readonly chamasGrpc: ClientGrpc,
     @Inject(CHAMA_WALLET_SERVICE_NAME) private readonly walletGrpc: ClientGrpc,
+    private readonly circuitBreaker: CircuitBreakerService,
   ) {
     this.logger.debug('ChamasController initialized');
     this.chamas =

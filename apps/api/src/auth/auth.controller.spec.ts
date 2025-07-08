@@ -12,6 +12,7 @@ import {
   User,
   VerifyUserRequestDto,
   getAccessToken,
+  CircuitBreakerService,
 } from '@bitsacco/common';
 import { AuthController } from './auth.controller';
 
@@ -84,7 +85,10 @@ describe('AuthController', () => {
 
     // Mock JWT service to decode tokens
     const mockJwtService = {
-      decode: jest.fn().mockImplementation(() => mockTokenPayload),
+      decode: jest.fn().mockImplementation(() => ({
+        ...mockTokenPayload,
+        exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now in seconds
+      })),
       options: {},
       logger: {},
       sign: jest.fn(),
@@ -98,6 +102,13 @@ describe('AuthController', () => {
       getService: jest.fn().mockReturnValue(authService),
     };
 
+    // Create a mock for the CircuitBreakerService
+    const mockCircuitBreaker = {
+      execute: jest.fn().mockImplementation((serviceKey, observable) => {
+        return observable;
+      }),
+    };
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [AuthController],
       providers: [
@@ -109,10 +120,24 @@ describe('AuthController', () => {
           provide: AUTH_SERVICE_NAME,
           useValue: mockGrpcClient,
         },
+        {
+          provide: CircuitBreakerService,
+          useValue: mockCircuitBreaker,
+        },
       ],
     });
 
     controller = module.get<AuthController>(AuthController);
+
+    // Manually inject the circuit breaker into the controller if needed
+    if (!(controller as any).circuitBreaker) {
+      (controller as any).circuitBreaker = mockCircuitBreaker;
+    }
+
+    // Manually inject the jwtService into the controller if needed
+    if (!(controller as any).jwtService) {
+      (controller as any).jwtService = mockJwtService;
+    }
   });
 
   it('should be defined', () => {

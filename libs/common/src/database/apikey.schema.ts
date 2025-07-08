@@ -34,28 +34,28 @@ export enum ApiKeyScope {
 
 @Schema()
 export class ApiKeyDocument extends AbstractDocument {
-  @Prop({ required: true, unique: true, index: true })
+  @Prop({ type: String, required: true, unique: true, index: true })
   keyHash: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   name: string;
 
-  @Prop({ required: true, index: true })
+  @Prop({ type: String, required: true, index: true })
   ownerId: string;
 
   @Prop({ type: [String], default: [] })
   scopes: ApiKeyScope[];
 
-  @Prop({ required: true })
+  @Prop({ type: Date, required: true })
   expiresAt: Date;
 
-  @Prop({ default: false })
+  @Prop({ type: Boolean, default: false })
   revoked: boolean;
 
   @Prop({ type: Date, required: false })
   lastUsed?: Date;
 
-  @Prop({ default: false })
+  @Prop({ type: Boolean, default: false })
   isPermanent: boolean;
 
   @Prop({ type: Object, default: {} })

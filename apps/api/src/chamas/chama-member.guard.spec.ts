@@ -32,6 +32,9 @@ describe('ChamaMemberGuard', () => {
 
     guard = module.get<ChamaMemberGuard>(ChamaMemberGuard);
     reflector = module.get<Reflector>(Reflector);
+
+    // Ensure the guard has the reflector injected
+    (guard as any).reflector = reflector;
   });
 
   it('should be defined', () => {

@@ -18,6 +18,8 @@ import {
   SendSmsDto,
   SMS_SERVICE_NAME,
   SmsServiceClient,
+  CircuitBreakerService,
+  HandleServiceErrors,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 
@@ -27,7 +29,10 @@ export class SmsController {
   private smsService: SmsServiceClient;
   private readonly logger = new Logger(SmsController.name);
 
-  constructor(@Inject(SMS_SERVICE_NAME) private readonly grpc: ClientGrpc) {
+  constructor(
+    @Inject(SMS_SERVICE_NAME) private readonly grpc: ClientGrpc,
+    private readonly circuitBreaker: CircuitBreakerService,
+  ) {
     this.smsService = this.grpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
     this.logger.log('SmsController initialized');
   }
@@ -39,8 +44,17 @@ export class SmsController {
   @ApiBody({
     type: SendSmsDto,
   })
+  @HandleServiceErrors()
   configureSmsRelays(@Body() req: SendSmsDto) {
-    return this.smsService.sendSms(req);
+    return this.circuitBreaker.execute(
+      'sms-service-send',
+      this.smsService.sendSms(req),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
   }
 
   @Post('send-bulk-message')
@@ -50,7 +64,16 @@ export class SmsController {
   @ApiBody({
     type: SendBulkSmsDto,
   })
+  @HandleServiceErrors()
   send(@Body() req: SendBulkSmsDto) {
-    return this.smsService.sendBulkSms(req);
+    return this.circuitBreaker.execute(
+      'sms-service-bulk-send',
+      this.smsService.sendBulkSms(req),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
   }
 }

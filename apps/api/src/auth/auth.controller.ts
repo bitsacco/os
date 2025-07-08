@@ -26,6 +26,8 @@ import {
   RevokeTokenResponseDto,
   TokensResponseDto,
   VerifyUserRequestDto,
+  CircuitBreakerService,
+  HandleServiceErrors,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 
@@ -38,6 +40,7 @@ export class AuthController {
     @Inject(AUTH_SERVICE_NAME)
     private readonly grpc: ClientGrpc,
     private readonly jwtService: JwtService,
+    private readonly circuitBreaker: CircuitBreakerService,
   ) {
     this.authService =
       this.grpc.getService<AuthServiceClient>(AUTH_SERVICE_NAME);
@@ -49,12 +52,21 @@ export class AuthController {
   @ApiBody({
     type: LoginUserRequestDto,
   })
+  @HandleServiceErrors()
   async login(
     @Req() req: Request,
     @Body() body: LoginUserRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = this.authService.loginUser(body);
+    const auth = this.circuitBreaker.execute(
+      'auth-service-login',
+      this.authService.loginUser(body),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
     return this.setAuthCookies(auth, req, res);
   }
 
@@ -63,8 +75,17 @@ export class AuthController {
   @ApiBody({
     type: RegisterUserRequestDto,
   })
+  @HandleServiceErrors()
   register(@Req() req: Request, @Body() body: RegisterUserRequestDto) {
-    return this.authService.registerUser(body);
+    return this.circuitBreaker.execute(
+      'auth-service-register',
+      this.authService.registerUser(body),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
   }
 
   @Post('verify')
@@ -72,17 +93,27 @@ export class AuthController {
   @ApiBody({
     type: VerifyUserRequestDto,
   })
+  @HandleServiceErrors()
   async verify(
     @Req() req: Request,
     @Body() body: VerifyUserRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = this.authService.verifyUser(body);
+    const auth = this.circuitBreaker.execute(
+      'auth-service-verify',
+      this.authService.verifyUser(body),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
     return this.setAuthCookies(auth, req, res);
   }
 
   @Post('authenticate')
   @ApiOperation({ summary: 'Authenticate user' })
+  @HandleServiceErrors()
   async authenticate(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -93,7 +124,15 @@ export class AuthController {
     if (!accessToken) {
       throw new UnauthorizedException('Authentication tokens not found');
     }
-    const auth = this.authService.authenticate({ accessToken });
+    const auth = this.circuitBreaker.execute(
+      'auth-service-authenticate',
+      this.authService.authenticate({ accessToken }),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
     return this.setAuthCookies(auth, req, res);
   }
 
@@ -102,12 +141,21 @@ export class AuthController {
   @ApiBody({
     type: RecoverUserRequestDto,
   })
+  @HandleServiceErrors()
   async recover(
     @Req() req: Request,
     @Body() body: RecoverUserRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = this.authService.recoverUser(body);
+    const auth = this.circuitBreaker.execute(
+      'auth-service-recover',
+      this.authService.recoverUser(body),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
     return this.setAuthCookies(auth, req, res);
   }
 
@@ -129,7 +177,15 @@ export class AuthController {
     }
 
     const refreshRequest: RefreshTokenRequestDto = { refreshToken };
-    const tokensResponse = this.authService.refreshToken(refreshRequest);
+    const tokensResponse = this.circuitBreaker.execute(
+      'auth-service-refresh',
+      this.authService.refreshToken(refreshRequest),
+      {
+        failureThreshold: 3,
+        resetTimeout: 10000,
+        fallbackResponse: null,
+      },
+    );
 
     return firstValueFrom(tokensResponse).then(
       ({ accessToken, refreshToken }) => {
@@ -176,7 +232,15 @@ export class AuthController {
       // Attempt to revoke the token
       const revokeRequest: RevokeTokenRequestDto = { refreshToken };
       const response = await firstValueFrom(
-        this.authService.revokeToken(revokeRequest),
+        this.circuitBreaker.execute(
+          'auth-service-revoke',
+          this.authService.revokeToken(revokeRequest),
+          {
+            failureThreshold: 3,
+            resetTimeout: 10000,
+            fallbackResponse: { success: false },
+          },
+        ),
       );
       success = response.success;
     }

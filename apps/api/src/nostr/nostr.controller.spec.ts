@@ -6,7 +6,11 @@ import {
 
 import { NostrController } from './nostr.controller';
 import { type ClientGrpc } from '@nestjs/microservices';
-import { NOSTR_SERVICE_NAME, NostrServiceClient } from '@bitsacco/common';
+import {
+  NOSTR_SERVICE_NAME,
+  NostrServiceClient,
+  CircuitBreakerService,
+} from '@bitsacco/common';
 
 describe('NostrController', () => {
   let serviceGenerator: ClientGrpc;
@@ -14,6 +18,8 @@ describe('NostrController', () => {
   let nostrServiceClient: Partial<NostrServiceClient>;
 
   beforeEach(async () => {
+    nostrServiceClient = {};
+
     serviceGenerator = {
       getService: jest.fn().mockReturnValue(nostrServiceClient),
       getClientByServiceName: jest.fn().mockReturnValue(nostrServiceClient),
@@ -21,12 +27,23 @@ describe('NostrController', () => {
 
     const jwtAuthMocks = provideJwtAuthStrategyMocks();
 
+    // Create a mock for the CircuitBreakerService
+    const mockCircuitBreaker = {
+      execute: jest.fn().mockImplementation((serviceKey, observable) => {
+        return observable;
+      }),
+    };
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [NostrController],
       providers: [
         {
           provide: NOSTR_SERVICE_NAME,
           useValue: serviceGenerator,
+        },
+        {
+          provide: CircuitBreakerService,
+          useValue: mockCircuitBreaker,
         },
         ...jwtAuthMocks,
       ],
