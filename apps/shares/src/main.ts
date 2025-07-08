@@ -20,12 +20,11 @@ async function bootstrap() {
   const app = await NestFactory.create(SharesModule);
   const configService = app.get(ConfigService);
 
-  const shares_url = configService.getOrThrow<string>('SHARES_GRPC_URL');
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
       package: 'shares',
-      url: shares_url,
+      url: `0.0.0.0:${port}`,
       protoPath: join(__dirname, '../../../proto/shares.proto'),
       onLoadPackageDefinition: (pkg, server) => {
         new ReflectionService(pkg).addToServer(server);

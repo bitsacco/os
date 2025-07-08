@@ -1,7 +1,6 @@
 import { join } from 'path';
 import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
 import { ReflectionService } from '@grpc/reflection';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { bootstrapTelemetry } from '@bitsacco/common';
@@ -18,14 +17,12 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(AuthModule);
-  const configService = app.get(ConfigService);
 
-  const auth_url = configService.getOrThrow<string>('AUTH_GRPC_URL');
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
       package: 'auth',
-      url: auth_url,
+      url: `0.0.0.0:${port}`,
       protoPath: join(__dirname, '../../../proto/auth.proto'),
       onLoadPackageDefinition: (pkg, server) => {
         new ReflectionService(pkg).addToServer(server);
@@ -41,7 +38,7 @@ async function bootstrap() {
 
   await app.startAllMicroservices();
   console.log(
-    `🔍 Telemetry enabled - Metrics available at 0.0.0.0:${metricsPort}/metrics`,
+    ` Telemetry enabled - Metrics available at 0.0.0.0:${metricsPort}/metrics`,
   );
 }
 

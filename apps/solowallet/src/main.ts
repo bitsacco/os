@@ -20,14 +20,11 @@ async function bootstrap() {
   const app = await NestFactory.create(SolowalletModule);
   const configService = app.get(ConfigService);
 
-  const solowallet_url = configService.getOrThrow<string>(
-    'SOLOWALLET_GRPC_URL',
-  );
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
       package: 'solowallet',
-      url: solowallet_url,
+      url: `0.0.0.0:${port}`,
       protoPath: join(__dirname, '../../../proto/solowallet.proto'),
       onLoadPackageDefinition: (pkg, server) => {
         new ReflectionService(pkg).addToServer(server);

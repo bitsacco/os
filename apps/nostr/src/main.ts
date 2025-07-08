@@ -1,7 +1,6 @@
 import { join } from 'path';
 import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ReflectionService } from '@grpc/reflection';
 import { bootstrapTelemetry } from '@bitsacco/common';
@@ -18,14 +17,12 @@ async function bootstrap() {
   }
 
   const app = await NestFactory.create(NostrModule);
-  const configService = app.get(ConfigService);
 
-  const nostr_url = configService.getOrThrow<string>('NOSTR_GRPC_URL');
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
       package: 'nostr',
-      url: nostr_url,
+      url: `0.0.0.0:${port}`,
       protoPath: join(__dirname, '../../../proto/nostr.proto'),
       onLoadPackageDefinition: (pkg, server) => {
         new ReflectionService(pkg).addToServer(server);
