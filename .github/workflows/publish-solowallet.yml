@@ -62,6 +62,7 @@ jobs:
       - name: Update the Docker Hub description
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         uses: peter-evans/dockerhub-description@v3
+        continue-on-error: true
         with:
           username: okjodom
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
