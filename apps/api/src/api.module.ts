@@ -24,7 +24,6 @@ import {
   UsersRepository,
   UsersSchema,
   UsersService,
-  NOTIFICATION_SERVICE_NAME,
   ApiKeyDocument,
   ApiKeySchema,
   ApiKeyRepository,
@@ -54,12 +53,11 @@ import { SolowalletController } from './solowallet/solowallet.controller';
 import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
 import { ChamasController } from './chamas/chamas.controller';
-import { NotificationGateway } from './notifications/notification.gateway';
-import { NotificationController } from './notifications/notification.controller';
 import { HealthController } from './health/health.controller';
 import { SmsModule } from './sms/sms.module';
 import { SharesModule } from './shares/shares.module';
 import { NostrModule } from './nostr/nostr.module';
+import { NotificationModule } from './notifications/notification.module';
 
 // Import the metrics module
 import { MetricsModule } from './metrics/metrics.module';
@@ -73,6 +71,7 @@ import { createGrpcOptions } from './config/grpc-options';
     SmsModule,
     SharesModule,
     NostrModule,
+    NotificationModule,
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -83,7 +82,6 @@ import { createGrpcOptions } from './config/grpc-options';
         SWAP_GRPC_URL: Joi.string().required(),
         SOLOWALLET_GRPC_URL: Joi.string().required(),
         CHAMA_GRPC_URL: Joi.string().required(),
-        NOTIFICATION_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
         REDIS_PASSWORD: Joi.string().required(),
@@ -180,18 +178,6 @@ import { createGrpcOptions } from './config/grpc-options';
         inject: [ConfigService],
       },
       {
-        name: NOTIFICATION_SERVICE_NAME,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.GRPC,
-          options: createGrpcOptions(
-            'notification',
-            join(__dirname, '../../../proto/notification.proto'),
-            configService.getOrThrow<string>('NOTIFICATION_GRPC_URL'),
-          ),
-        }),
-        inject: [ConfigService],
-      },
-      {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
           transport: Transport.REDIS,
@@ -212,7 +198,6 @@ import { createGrpcOptions } from './config/grpc-options';
     SwapController,
     SolowalletController,
     ChamasController,
-    NotificationController,
     HealthController,
   ],
   providers: [
@@ -242,7 +227,6 @@ import { createGrpcOptions } from './config/grpc-options';
     PhoneAuthStategy,
     NpubAuthStategy,
     JwtAuthStrategy,
-    NotificationGateway,
     ApiKeyRepository,
     ApiKeyService,
     ApiKeyGuard,

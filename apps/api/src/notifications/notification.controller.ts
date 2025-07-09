@@ -1,4 +1,3 @@
-import { firstValueFrom } from 'rxjs';
 import {
   Body,
   Controller,
@@ -7,12 +6,10 @@ import {
   Put,
   Query,
   UseGuards,
-  Inject,
   Logger,
   BadRequestException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { type ClientGrpc } from '@nestjs/microservices';
 import {
   ApiTags,
   ApiOperation,
@@ -23,13 +20,10 @@ import {
 import {
   CurrentUser,
   JwtAuthGuard,
-  NotificationServiceClient,
-  NOTIFICATION_SERVICE_NAME,
   NotificationTopic,
   UsersDocument,
   ResourceOwnerGuard,
   CheckOwnership,
-  GrpcServiceWrapper,
 } from '@bitsacco/common';
 import {
   GetNotificationsResponseDto,
@@ -38,27 +32,16 @@ import {
   UpdatePreferencesDto,
   UpdatePreferencesResponseDto,
 } from './dto/notification.dto';
+import { NotificationService } from './notification.service';
 
 @ApiTags('notifications')
 @Controller('notifications')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class NotificationController {
-  private notificationService: NotificationServiceClient;
   private readonly logger = new Logger(NotificationController.name);
 
-  constructor(
-    @Inject(NOTIFICATION_SERVICE_NAME)
-    private readonly grpc: ClientGrpc,
-    private readonly grpcWrapper: GrpcServiceWrapper,
-  ) {
-    this.notificationService =
-      this.grpcWrapper.createServiceProxy<NotificationServiceClient>(
-        this.grpc,
-        'NOTIFICATION_SERVICE',
-        NOTIFICATION_SERVICE_NAME,
-      );
-  }
+  constructor(private readonly notificationService: NotificationService) {}
 
   @Get()
   @UseGuards(ResourceOwnerGuard)
@@ -103,13 +86,11 @@ export class NotificationController {
           : [Number(topics)]
         : [];
 
-      const response = await firstValueFrom(
-        this.notificationService.getNotifications({
-          userId: user._id,
-          unreadOnly: unreadOnly === 'true',
-          pagination,
-          topics: topicsArray,
-        }),
+      const response = await this.notificationService.getNotifications(
+        user._id,
+        unreadOnly === 'true',
+        pagination,
+        topicsArray,
       );
 
       return {
@@ -140,11 +121,9 @@ export class NotificationController {
     @Body() body: MarkAsReadDto,
   ): Promise<MarkAsReadResponseDto> {
     try {
-      await firstValueFrom(
-        this.notificationService.markAsRead({
-          userId: user._id,
-          notificationIds: body.notificationIds || [],
-        }),
+      await this.notificationService.markAsRead(
+        user._id,
+        body.notificationIds || [],
       );
 
       return { success: true };
@@ -169,11 +148,7 @@ export class NotificationController {
   })
   async getPreferences(@CurrentUser() user: UsersDocument) {
     try {
-      const response = await firstValueFrom(
-        this.notificationService.getPreferences({
-          userId: user._id,
-        }),
-      );
+      const response = await this.notificationService.getPreferences(user._id);
 
       return response;
     } catch (error) {
@@ -202,12 +177,10 @@ export class NotificationController {
     @Body() body: UpdatePreferencesDto,
   ): Promise<UpdatePreferencesResponseDto> {
     try {
-      await firstValueFrom(
-        this.notificationService.updatePreferences({
-          userId: user._id,
-          channels: body.channels || [],
-          topics: body.topics || [],
-        }),
+      await this.notificationService.updatePreferences(
+        user._id,
+        body.channels || [],
+        body.topics || [],
       );
 
       return { success: true };

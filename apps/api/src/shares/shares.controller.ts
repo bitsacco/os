@@ -40,10 +40,10 @@ import { SharesService } from './shares.service';
 export class SharesController {
   private readonly logger = new Logger(SharesController.name);
 
-  constructor(
-    private readonly sharesService: SharesService,
-  ) {
-    this.logger.log('SharesController initialized with direct service injection');
+  constructor(private readonly sharesService: SharesService) {
+    this.logger.log(
+      'SharesController initialized with direct service injection',
+    );
   }
 
   @Post('offer')
@@ -79,7 +79,9 @@ export class SharesController {
     type: SubscribeSharesDto,
   })
   @HandleServiceErrors()
-  async subscribeShares(@Body() req: SubscribeSharesDto): Promise<UserShareTxsResponse> {
+  async subscribeShares(
+    @Body() req: SubscribeSharesDto,
+  ): Promise<UserShareTxsResponse> {
     return await this.sharesService.subscribeShares(req);
   }
 
@@ -93,7 +95,9 @@ export class SharesController {
     type: TransferSharesDto,
   })
   @HandleServiceErrors()
-  async transferShares(@Body() req: TransferSharesDto): Promise<UserShareTxsResponse> {
+  async transferShares(
+    @Body() req: TransferSharesDto,
+  ): Promise<UserShareTxsResponse> {
     return await this.sharesService.transferShares(req);
   }
 
@@ -105,7 +109,9 @@ export class SharesController {
     type: UpdateSharesDto,
   })
   @HandleServiceErrors()
-  async updateShares(@Body() req: UpdateSharesDto): Promise<UserShareTxsResponse> {
+  async updateShares(
+    @Body() req: UpdateSharesDto,
+  ): Promise<UserShareTxsResponse> {
     return await this.sharesService.updateShares(req);
   }
 
@@ -166,7 +172,9 @@ export class SharesController {
     description: 'Share Transaction ID',
   })
   @HandleServiceErrors()
-  async findSharesTransaction(@Param('sharesId') sharesId: string): Promise<SharesTx> {
+  async findSharesTransaction(
+    @Param('sharesId') sharesId: string,
+  ): Promise<SharesTx> {
     return await this.sharesService.findSharesTransaction({
       sharesId,
     });

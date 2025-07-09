@@ -4,13 +4,7 @@ import {
   ApiBearerAuth,
   ApiCookieAuth,
 } from '@nestjs/swagger';
-import {
-  Body,
-  Controller,
-  Logger,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Logger, Post, UseGuards } from '@nestjs/common';
 import {
   ConfigureNostrRelaysDto,
   JwtAuthGuard,
@@ -24,10 +18,10 @@ import { NostrService } from './nostr.service';
 export class NostrController {
   private readonly logger = new Logger(NostrController.name);
 
-  constructor(
-    private readonly nostrService: NostrService,
-  ) {
-    this.logger.log('NostrController initialized with direct service injection');
+  constructor(private readonly nostrService: NostrService) {
+    this.logger.log(
+      'NostrController initialized with direct service injection',
+    );
   }
 
   @Post('relays')
@@ -38,7 +32,9 @@ export class NostrController {
     type: ConfigureNostrRelaysDto,
   })
   @HandleServiceErrors()
-  async configureNostrRelays(@Body() req: ConfigureNostrRelaysDto): Promise<void> {
+  async configureNostrRelays(
+    @Body() req: ConfigureNostrRelaysDto,
+  ): Promise<void> {
     return await this.nostrService.configureNostrRelays(req);
   }
 

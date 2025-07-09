@@ -32,29 +32,49 @@ describe('SharesController', () => {
         userId: 'test-user',
         shareHoldings: 0,
         shares: { transactions: [], page: 0, size: 0, pages: 0 },
-        offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
+        offers: {
+          offers: [],
+          totalOfferQuantity: 0,
+          totalSubscribedQuantity: 0,
+        },
       }),
       transferShares: jest.fn().mockResolvedValue({
         userId: 'test-user',
         shareHoldings: 0,
         shares: { transactions: [], page: 0, size: 0, pages: 0 },
-        offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
+        offers: {
+          offers: [],
+          totalOfferQuantity: 0,
+          totalSubscribedQuantity: 0,
+        },
       }),
       updateShares: jest.fn().mockResolvedValue({
         userId: 'test-user',
         shareHoldings: 0,
         shares: { transactions: [], page: 0, size: 0, pages: 0 },
-        offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
+        offers: {
+          offers: [],
+          totalOfferQuantity: 0,
+          totalSubscribedQuantity: 0,
+        },
       }),
       allSharesTransactions: jest.fn().mockResolvedValue({
         shares: { transactions: [], page: 0, size: 0, pages: 0 },
-        offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
+        offers: {
+          offers: [],
+          totalOfferQuantity: 0,
+          totalSubscribedQuantity: 0,
+        },
       }),
       userSharesTransactions: jest.fn().mockResolvedValue({
         userId: 'test-user',
         shareHoldings: 0,
         shares: { transactions: [], page: 0, size: 0, pages: 0 },
-        offers: { offers: [], totalOfferQuantity: 0, totalSubscribedQuantity: 0 },
+        offers: {
+          offers: [],
+          totalOfferQuantity: 0,
+          totalSubscribedQuantity: 0,
+        },
       }),
       findSharesTransaction: jest.fn().mockResolvedValue({
         id: 'test-id',

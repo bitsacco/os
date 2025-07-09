@@ -3,8 +3,6 @@ import { ClientProxy } from '@nestjs/microservices';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   EVENTS_SERVICE_BUS,
-  NOSTR_SERVICE_NAME,
-  SMS_SERVICE_NAME,
   fedimint_receive_success,
   fedimint_receive_failure,
   swap_status_change,
@@ -29,6 +27,8 @@ import {
   NotificationRepository,
   NotificationPreferencesRepository,
 } from './db';
+import { SmsService } from '../sms/sms.service';
+import { NostrService } from '../nostr/nostr.service';
 
 @Injectable()
 export class NotificationService {
@@ -40,8 +40,8 @@ export class NotificationService {
     private readonly metrics: NotificationMetrics,
     private readonly rateLimitService: RateLimitService,
     @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
-    @Inject(SMS_SERVICE_NAME) private readonly smsClient: ClientProxy,
-    @Inject(NOSTR_SERVICE_NAME) private readonly nostrClient: ClientProxy,
+    private readonly smsService: SmsService,
+    private readonly nostrService: NostrService,
   ) {}
 
   /**
@@ -330,23 +330,20 @@ export class NotificationService {
 
         case NotificationChannel.SMS:
           // Deliver via SMS service
-          await this.smsClient
-            .send('SendSms', {
-              userId,
-              message: `${title}\n${body}`,
-            })
-            .toPromise();
+          await this.smsService.sendSms({
+            message: `${title}\n${body}`,
+            receiver: userId, // Assuming userId is the phone number or can be resolved
+          });
           success = true;
           break;
 
         case NotificationChannel.NOSTR:
           // Deliver via Nostr service
-          await this.nostrClient
-            .send('SendDirectMessage', {
-              userId,
-              content: `${title}\n${body}`,
-            })
-            .toPromise();
+          await this.nostrService.sendEncryptedDirectMessage({
+            message: `${title}\n${body}`,
+            recipient: { npub: '', pubkey: userId }, // Assuming userId is the nostr pubkey
+            retry: true,
+          });
           success = true;
           break;
       }

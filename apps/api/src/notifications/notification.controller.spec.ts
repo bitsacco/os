@@ -1,44 +1,34 @@
-import { of } from 'rxjs';
 import { JwtModule } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
   NotificationChannel,
   NotificationTopic,
-  NOTIFICATION_SERVICE_NAME,
   JwtAuthGuard,
   UsersDocument,
 } from '@bitsacco/common';
 import { NotificationController } from './notification.controller';
-import { provideGrpcMocks } from '../test-utils/grpc-mocks';
+import { NotificationService } from './notification.service';
 
 const mockNotificationService = {
-  getPreferences: jest.fn().mockReturnValue(
-    of({
-      userId: 'user123',
-      channels: [{ channel: NotificationChannel.IN_APP, enabled: true }],
-      topics: [
-        {
-          topic: NotificationTopic.TRANSACTION,
-          enabled: true,
-          channels: [NotificationChannel.IN_APP],
-        },
-      ],
-    }),
-  ),
-  updatePreferences: jest.fn().mockReturnValue(of({})),
-  getNotifications: jest.fn().mockReturnValue(
-    of({
-      notifications: [],
-      total: 0,
-      page: 0,
-      size: 10,
-    }),
-  ),
-  markAsRead: jest.fn().mockReturnValue(of({})),
-};
-
-const mockGrpcClient = {
-  getService: jest.fn().mockReturnValue(mockNotificationService),
+  getPreferences: jest.fn().mockResolvedValue({
+    userId: 'user123',
+    channels: [{ channel: NotificationChannel.IN_APP, enabled: true }],
+    topics: [
+      {
+        topic: NotificationTopic.TRANSACTION,
+        enabled: true,
+        channels: [NotificationChannel.IN_APP],
+      },
+    ],
+  }),
+  updatePreferences: jest.fn().mockResolvedValue(undefined),
+  getNotifications: jest.fn().mockResolvedValue({
+    notifications: [],
+    total: 0,
+    page: 0,
+    size: 10,
+  }),
+  markAsRead: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockUser: UsersDocument = {
@@ -60,8 +50,6 @@ describe('NotificationController', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    const grpcMocks = provideGrpcMocks(mockNotificationService);
-
     // Create a mock JwtAuthGuard
     const mockJwtAuthGuard = {
       canActivate: jest.fn().mockReturnValue(true),
@@ -77,10 +65,9 @@ describe('NotificationController', () => {
       controllers: [NotificationController],
       providers: [
         {
-          provide: NOTIFICATION_SERVICE_NAME,
-          useValue: mockGrpcClient,
+          provide: NotificationService,
+          useValue: mockNotificationService,
         },
-        ...grpcMocks,
       ],
     })
       .overrideGuard(JwtAuthGuard)
@@ -104,12 +91,12 @@ describe('NotificationController', () => {
         [NotificationTopic.TRANSACTION],
       );
 
-      expect(mockNotificationService.getNotifications).toHaveBeenCalledWith({
-        userId: 'user123',
-        unreadOnly: true,
-        pagination: { page: 0, size: 10 },
-        topics: [NotificationTopic.TRANSACTION],
-      });
+      expect(mockNotificationService.getNotifications).toHaveBeenCalledWith(
+        'user123',
+        true,
+        { page: 0, size: 10 },
+        [NotificationTopic.TRANSACTION],
+      );
 
       expect(result).toEqual({
         success: true,
@@ -125,12 +112,12 @@ describe('NotificationController', () => {
     it('should handle default parameters correctly', async () => {
       const result = await controller.getNotifications(mockUser);
 
-      expect(mockNotificationService.getNotifications).toHaveBeenCalledWith({
-        userId: 'user123',
-        unreadOnly: false,
-        pagination: { page: 0, size: 10 },
-        topics: [],
-      });
+      expect(mockNotificationService.getNotifications).toHaveBeenCalledWith(
+        'user123',
+        false,
+        { page: 0, size: 10 },
+        [],
+      );
 
       expect(result).toEqual({
         success: true,
@@ -150,10 +137,10 @@ describe('NotificationController', () => {
         notificationIds: ['notification1', 'notification2'],
       });
 
-      expect(mockNotificationService.markAsRead).toHaveBeenCalledWith({
-        userId: 'user123',
-        notificationIds: ['notification1', 'notification2'],
-      });
+      expect(mockNotificationService.markAsRead).toHaveBeenCalledWith(
+        'user123',
+        ['notification1', 'notification2'],
+      );
 
       expect(result).toEqual({ success: true });
     });
@@ -163,10 +150,10 @@ describe('NotificationController', () => {
         notificationIds: [],
       });
 
-      expect(mockNotificationService.markAsRead).toHaveBeenCalledWith({
-        userId: 'user123',
-        notificationIds: [],
-      });
+      expect(mockNotificationService.markAsRead).toHaveBeenCalledWith(
+        'user123',
+        [],
+      );
 
       expect(result).toEqual({ success: true });
     });
@@ -176,9 +163,9 @@ describe('NotificationController', () => {
     it('should call service.getPreferences with correct userId', async () => {
       const result = await controller.getPreferences(mockUser);
 
-      expect(mockNotificationService.getPreferences).toHaveBeenCalledWith({
-        userId: 'user123',
-      });
+      expect(mockNotificationService.getPreferences).toHaveBeenCalledWith(
+        'user123',
+      );
 
       expect(result).toEqual({
         userId: 'user123',
@@ -215,11 +202,11 @@ describe('NotificationController', () => {
         preferenceData,
       );
 
-      expect(mockNotificationService.updatePreferences).toHaveBeenCalledWith({
-        userId: 'user123',
-        channels: preferenceData.channels,
-        topics: preferenceData.topics,
-      });
+      expect(mockNotificationService.updatePreferences).toHaveBeenCalledWith(
+        'user123',
+        preferenceData.channels,
+        preferenceData.topics,
+      );
 
       expect(result).toEqual({ success: true });
     });
@@ -227,11 +214,11 @@ describe('NotificationController', () => {
     it('should handle empty arrays correctly', async () => {
       const result = await controller.updatePreferences(mockUser, {});
 
-      expect(mockNotificationService.updatePreferences).toHaveBeenCalledWith({
-        userId: 'user123',
-        channels: [],
-        topics: [],
-      });
+      expect(mockNotificationService.updatePreferences).toHaveBeenCalledWith(
+        'user123',
+        [],
+        [],
+      );
 
       expect(result).toEqual({ success: true });
     });

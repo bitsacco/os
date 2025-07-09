@@ -3,8 +3,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import {
   EVENTS_SERVICE_BUS,
-  NOSTR_SERVICE_NAME,
-  SMS_SERVICE_NAME,
   NotificationCreatedEvent,
   NotificationChannel,
   NotificationImportance,
@@ -20,6 +18,8 @@ import { NotificationMetrics } from './notification.metrics';
 import { NotificationRepository } from './db/notification.repository';
 import { NotificationPreferencesRepository } from './db/preferences.repository';
 import { RateLimitService } from './ratelimit';
+import { SmsService } from '../sms/sms.service';
+import { NostrService } from '../nostr/nostr.service';
 
 const mockNotificationRepository = {
   create: jest.fn(),
@@ -47,12 +47,12 @@ const mockEventsClient = {
   emit: jest.fn(),
 };
 
-const mockSmsClient = {
-  send: jest.fn(),
+const mockSmsService = {
+  sendSms: jest.fn(),
 };
 
-const mockNostrClient = {
-  send: jest.fn(),
+const mockNostrService = {
+  sendEncryptedDirectMessage: jest.fn(),
 };
 
 const mockRateLimitService = {
@@ -83,13 +83,13 @@ describe('NotificationService', () => {
       mockMetrics,
       mockRateLimitService,
       mockEventsClient,
-      mockSmsClient,
-      mockNostrClient,
+      mockSmsService,
+      mockNostrService,
     );
 
     // Setup default mocks
-    mockSmsClient.send.mockReturnValue(of({}));
-    mockNostrClient.send.mockReturnValue(of({}));
+    mockSmsService.sendSms.mockResolvedValue(undefined);
+    mockNostrService.sendEncryptedDirectMessage.mockResolvedValue(undefined);
     mockNotificationRepository.create.mockResolvedValue({
       _id: 'notification123',
     });
@@ -233,9 +233,9 @@ describe('NotificationService', () => {
       );
 
       // Should call SMS service
-      expect(mockSmsClient.send).toHaveBeenCalledWith('SendSms', {
-        userId,
+      expect(mockSmsService.sendSms).toHaveBeenCalledWith({
         message: `${title}\n${body}`,
+        receiver: userId,
       });
 
       // Result should include notification ID and delivered channels
@@ -310,8 +310,10 @@ describe('NotificationService', () => {
       expect(mockRateLimitService.checkRateLimit).toHaveBeenCalledTimes(3);
 
       // Should NOT call SMS or NOSTR services due to rate limiting
-      expect(mockSmsClient.send).not.toHaveBeenCalled();
-      expect(mockNostrClient.send).not.toHaveBeenCalled();
+      expect(mockSmsService.sendSms).not.toHaveBeenCalled();
+      expect(
+        mockNostrService.sendEncryptedDirectMessage,
+      ).not.toHaveBeenCalled();
 
       // Result should include only IN_APP in deliveredTo (since others were rate limited)
       expect(result.deliveredTo).toEqual([NotificationChannel.IN_APP]);
@@ -349,8 +351,10 @@ describe('NotificationService', () => {
       const result = await service.sendNotification(userId, title, body, topic);
 
       // Should not call SMS or Nostr since they're not enabled
-      expect(mockSmsClient.send).not.toHaveBeenCalled();
-      expect(mockNostrClient.send).not.toHaveBeenCalled();
+      expect(mockSmsService.sendSms).not.toHaveBeenCalled();
+      expect(
+        mockNostrService.sendEncryptedDirectMessage,
+      ).not.toHaveBeenCalled();
 
       // Result should include only IN_APP channel
       expect(result.deliveredTo).toEqual([NotificationChannel.IN_APP]);

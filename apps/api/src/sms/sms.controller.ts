@@ -26,9 +26,7 @@ import { SmsService } from './sms.service';
 export class SmsController {
   private readonly logger = new Logger(SmsController.name);
 
-  constructor(
-    private readonly smsService: SmsService,
-  ) {
+  constructor(private readonly smsService: SmsService) {
     this.logger.log('SmsController initialized');
   }
 
