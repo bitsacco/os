@@ -4,22 +4,21 @@ import {
   JwtAuthGuard,
   OfferSharesDto,
   PaginatedRequestDto,
-  SHARES_SERVICE_NAME,
-  SharesServiceClient,
   SubscribeSharesDto,
   TransferSharesDto,
   UpdateSharesDto,
   ResourceOwnerGuard,
   CheckOwnership,
-  CircuitBreakerService,
   HandleServiceErrors,
-  GrpcServiceWrapper,
+  AllSharesOffers,
+  AllSharesTxsResponse,
+  UserShareTxsResponse,
+  SharesTx,
 } from '@bitsacco/common';
 import {
   Body,
   Controller,
   Get,
-  Inject,
   Logger,
   Param,
   Post,
@@ -34,26 +33,17 @@ import {
   ApiBearerAuth,
   ApiCookieAuth,
 } from '@nestjs/swagger';
-import { type ClientGrpc } from '@nestjs/microservices';
+import { SharesService } from './shares.service';
 
 @Controller('shares')
 @UseGuards(JwtAuthGuard)
 export class SharesController {
-  private sharesService: SharesServiceClient;
   private readonly logger = new Logger(SharesController.name);
 
   constructor(
-    @Inject(SHARES_SERVICE_NAME) private readonly grpc: ClientGrpc,
-    private readonly circuitBreaker: CircuitBreakerService,
-    private readonly grpcWrapper: GrpcServiceWrapper,
+    private readonly sharesService: SharesService,
   ) {
-    this.sharesService =
-      this.grpcWrapper.createServiceProxy<SharesServiceClient>(
-        this.grpc,
-        'SHARES_SERVICE',
-        SHARES_SERVICE_NAME,
-      );
-    this.logger.log('SharesController initialized');
+    this.logger.log('SharesController initialized with direct service injection');
   }
 
   @Post('offer')
@@ -66,16 +56,8 @@ export class SharesController {
     type: OfferSharesDto,
   })
   @HandleServiceErrors()
-  offerShares(@Body() req: OfferSharesDto) {
-    return this.circuitBreaker.execute(
-      'shares-service-offer',
-      this.sharesService.offerShares(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async offerShares(@Body() req: OfferSharesDto): Promise<AllSharesOffers> {
+    return await this.sharesService.offerShares(req);
   }
 
   @Get('offers')
@@ -83,20 +65,8 @@ export class SharesController {
   @ApiCookieAuth()
   @ApiOperation({ summary: 'List all share offers' })
   @HandleServiceErrors()
-  getShareOffers() {
-    return this.circuitBreaker.execute(
-      'shares-service-offers',
-      this.sharesService.getSharesOffers({}),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: {
-          offers: [],
-          totalOfferQuantity: 0,
-          totalSubscribedQuantity: 0,
-        },
-      },
-    );
+  async getShareOffers(): Promise<AllSharesOffers> {
+    return await this.sharesService.getSharesOffers();
   }
 
   @Post('subscribe')
@@ -109,16 +79,8 @@ export class SharesController {
     type: SubscribeSharesDto,
   })
   @HandleServiceErrors()
-  subscribeShares(@Body() req: SubscribeSharesDto) {
-    return this.circuitBreaker.execute(
-      'shares-service-subscribe',
-      this.sharesService.subscribeShares(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async subscribeShares(@Body() req: SubscribeSharesDto): Promise<UserShareTxsResponse> {
+    return await this.sharesService.subscribeShares(req);
   }
 
   @Post('transfer')
@@ -131,16 +93,8 @@ export class SharesController {
     type: TransferSharesDto,
   })
   @HandleServiceErrors()
-  transferShares(@Body() req: TransferSharesDto) {
-    return this.circuitBreaker.execute(
-      'shares-service-transfer',
-      this.sharesService.transferShares(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async transferShares(@Body() req: TransferSharesDto): Promise<UserShareTxsResponse> {
+    return await this.sharesService.transferShares(req);
   }
 
   @Post('update')
@@ -151,16 +105,8 @@ export class SharesController {
     type: UpdateSharesDto,
   })
   @HandleServiceErrors()
-  updateShares(@Body() req: UpdateSharesDto) {
-    return this.circuitBreaker.execute(
-      'shares-service-update',
-      this.sharesService.updateShares(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async updateShares(@Body() req: UpdateSharesDto): Promise<UserShareTxsResponse> {
+    return await this.sharesService.updateShares(req);
   }
 
   @Get('transactions')
@@ -168,23 +114,8 @@ export class SharesController {
   @ApiCookieAuth()
   @ApiOperation({ summary: 'List all Bitsacco share transactions' })
   @HandleServiceErrors()
-  allSharesTransactions() {
-    return this.circuitBreaker.execute(
-      'shares-service-all-transactions',
-      this.sharesService.allSharesTransactions({}),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: {
-          shares: { transactions: [], page: 0, size: 0, pages: 0 },
-          offers: {
-            offers: [],
-            totalOfferQuantity: 0,
-            totalSubscribedQuantity: 0,
-          },
-        },
-      },
-    );
+  async allSharesTransactions(): Promise<AllSharesTxsResponse> {
+    return await this.sharesService.allSharesTransactions();
   }
 
   @Get('transactions/:userId')
@@ -209,35 +140,18 @@ export class SharesController {
     required: false,
   })
   @HandleServiceErrors()
-  userSharesTransactions(
+  async userSharesTransactions(
     @Param('userId') userId: string,
     @Query('page') page: number = default_page,
     @Query('size') size: number = default_page_size,
-  ) {
-    return this.circuitBreaker.execute(
-      'shares-service-user-transactions',
-      this.sharesService.userSharesTransactions({
-        userId,
-        pagination: {
-          page,
-          size,
-        },
-      }),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: {
-          userId: '',
-          shareHoldings: 0,
-          shares: { transactions: [], page, size, pages: 0 },
-          offers: {
-            offers: [],
-            totalOfferQuantity: 0,
-            totalSubscribedQuantity: 0,
-          },
-        },
+  ): Promise<UserShareTxsResponse> {
+    return await this.sharesService.userSharesTransactions({
+      userId,
+      pagination: {
+        page,
+        size,
       },
-    );
+    });
   }
 
   @Get('transactions/find/:sharesId')
@@ -252,17 +166,9 @@ export class SharesController {
     description: 'Share Transaction ID',
   })
   @HandleServiceErrors()
-  findSharesTransaction(@Param('sharesId') sharesId: string) {
-    return this.circuitBreaker.execute(
-      'shares-service-find-transaction',
-      this.sharesService.findSharesTransaction({
-        sharesId,
-      }),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async findSharesTransaction(@Param('sharesId') sharesId: string): Promise<SharesTx> {
+    return await this.sharesService.findSharesTransaction({
+      sharesId,
+    });
   }
 }
