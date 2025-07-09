@@ -1,9 +1,7 @@
-import { firstValueFrom } from 'rxjs';
 import {
   Body,
   Controller,
   Get,
-  Inject,
   Logger,
   Param,
   Patch,
@@ -11,7 +9,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { type ClientGrpc } from '@nestjs/microservices';
 import {
   ApiBody,
   ApiBearerAuth,
@@ -22,10 +19,6 @@ import {
 } from '@nestjs/swagger';
 import {
   CreateChamaDto,
-  ChamasServiceClient,
-  CHAMAS_SERVICE_NAME,
-  ChamaWalletServiceClient,
-  CHAMA_WALLET_SERVICE_NAME,
   UpdateChamaTransactionDto,
   ChamaContinueWithdrawDto,
   ChamaContinueDepositDto,
@@ -40,10 +33,11 @@ import {
   MemberInvitesDto,
   ChamaTxMetaRequestDto,
   BulkChamaTxMetaRequestDto,
-  CircuitBreakerService,
-  HandleServiceErrors,
-  GrpcServiceWrapper,
+  ChamaTxStatus,
 } from '@bitsacco/common';
+import { ConfigService } from '@nestjs/config';
+import { ChamasService } from './chamas.service';
+import { ChamaWalletService } from '../chamawallet/wallet.service';
 import { ChamaMemberGuard, CheckChamaMembership } from './chama-member.guard';
 import { ChamaBulkAccessGuard } from './chama-bulk-access.guard';
 import { ChamaFilterGuard } from './chama-filter.guard';
@@ -51,27 +45,13 @@ import { ChamaFilterGuard } from './chama-filter.guard';
 @Controller('chamas')
 export class ChamasController {
   private readonly logger = new Logger(ChamasController.name);
-  private chamas: ChamasServiceClient;
-  private wallet: ChamaWalletServiceClient;
 
   constructor(
-    @Inject(CHAMAS_SERVICE_NAME) private readonly chamasGrpc: ClientGrpc,
-    @Inject(CHAMA_WALLET_SERVICE_NAME) private readonly walletGrpc: ClientGrpc,
-    private readonly circuitBreaker: CircuitBreakerService,
-    private readonly grpcWrapper: GrpcServiceWrapper,
+    private readonly chamasService: ChamasService,
+    private readonly chamaWalletService: ChamaWalletService,
+    private readonly configService: ConfigService,
   ) {
     this.logger.debug('ChamasController initialized');
-    this.chamas = this.grpcWrapper.createServiceProxy<ChamasServiceClient>(
-      this.chamasGrpc,
-      'CHAMAS_SERVICE',
-      CHAMAS_SERVICE_NAME,
-    );
-    this.wallet = this.grpcWrapper.createServiceProxy<ChamaWalletServiceClient>(
-      this.walletGrpc,
-      'CHAMA_WALLET_SERVICE',
-      CHAMA_WALLET_SERVICE_NAME,
-    );
-    this.logger.debug('ChamasController created');
   }
 
   @Post()
@@ -83,7 +63,7 @@ export class ChamasController {
     type: CreateChamaDto,
   })
   async createChama(@Body() details: CreateChamaDto) {
-    return this.chamas.createChama(details);
+    return await this.chamasService.createChama(details);
   }
 
   @Get()
@@ -130,7 +110,7 @@ export class ChamasController {
     try {
       // Make sure we're actually calling filterChamas and not findChama
       this.logger.debug('Calling chama service filterChamas method');
-      const result = await this.chamas.filterChamas({
+      const result = await this.chamasService.filterChamas({
         memberId,
         createdBy,
         pagination: {
@@ -172,7 +152,7 @@ export class ChamasController {
     @Param('chamaId') chamaId: string,
     @Body() updates: ChamaUpdatesDto,
   ) {
-    return this.chamas.updateChama({ chamaId, updates });
+    return this.chamasService.updateChama({ chamaId, updates });
   }
 
   @Post(':chamaId/join')
@@ -188,7 +168,7 @@ export class ChamasController {
     @Param('chamaId') chamaId: string,
     @Body() memberInfo: ChamaMemberDto,
   ) {
-    return this.chamas.joinChama({ chamaId, memberInfo });
+    return this.chamasService.joinChama({ chamaId, memberInfo });
   }
 
   @Post(':chamaId/invite')
@@ -205,7 +185,7 @@ export class ChamasController {
     @Param('chamaId') chamaId: string,
     @Body() invites: MemberInvitesDto,
   ) {
-    return this.chamas.inviteMembers({ chamaId, ...invites });
+    return this.chamasService.inviteMembers({ chamaId, ...invites });
   }
 
   @Get(':chamaId')
@@ -216,7 +196,7 @@ export class ChamasController {
   @ApiOperation({ summary: 'Get Chama by ID' })
   @ApiParam({ name: 'chamaId', description: 'Chama ID' })
   async getChama(@Param('chamaId') chamaId: string) {
-    return this.chamas.findChama({ chamaId });
+    return this.chamasService.findChama({ chamaId });
   }
 
   @Get(':chamaId/members')
@@ -229,7 +209,7 @@ export class ChamasController {
   async getMemberProfiles(@Param('chamaId') chamaId: string) {
     try {
       this.logger.debug(`Getting member profiles for chama ${chamaId}`);
-      return this.chamas.getMemberProfiles({ chamaId });
+      return this.chamasService.getMemberProfiles({ chamaId });
     } catch (error) {
       this.logger.error(
         `Error getting member profiles for chama ${chamaId}: ${error.message}`,
@@ -252,7 +232,7 @@ export class ChamasController {
     @Param('chamaId') chamaId: string,
     @Body() req: ChamaDepositDto,
   ) {
-    return this.wallet.deposit({ ...req, chamaId });
+    return this.chamaWalletService.deposit({ ...req, chamaId });
   }
 
   @Post(':chamaId/transactions/deposit/continue')
@@ -268,7 +248,7 @@ export class ChamasController {
     @Param('chamaId') chamaId: string,
     @Body() req: ChamaContinueDepositDto,
   ) {
-    return this.wallet.continueDeposit({ ...req, chamaId });
+    return this.chamaWalletService.continueDeposit({ ...req, chamaId });
   }
 
   @Post(':chamaId/transactions/withdraw')
@@ -285,7 +265,7 @@ export class ChamasController {
     @Param('chamaId') chamaId: string,
     @Body() req: ChamaWithdrawDto,
   ) {
-    return this.wallet.requestWithdraw({ ...req, chamaId });
+    return this.chamaWalletService.requestWithdraw({ ...req, chamaId });
   }
 
   @Post(':chamaId/transactions/withdraw/continue')
@@ -302,7 +282,7 @@ export class ChamasController {
     @Param('chamaId') chamaId: string,
     @Body() req: ChamaContinueWithdrawDto,
   ) {
-    return this.wallet.continueWithdraw({ ...req, chamaId });
+    return this.chamaWalletService.continueWithdraw({ ...req, chamaId });
   }
 
   @Patch(':chamaId/transactions/:txId')
@@ -321,7 +301,7 @@ export class ChamasController {
     @Param('txId') txId: string,
     @Body() req: UpdateChamaTransactionDto,
   ) {
-    return this.wallet.updateTransaction({ ...req, chamaId, txId });
+    return this.chamaWalletService.updateTransaction({ ...req, chamaId, txId });
   }
 
   @Get(':chamaId/transactions/:txId')
@@ -335,7 +315,7 @@ export class ChamasController {
     @Param('chamaId') _: string,
     @Param('txId') txId: string,
   ) {
-    return this.wallet.findTransaction({ txId });
+    return this.chamaWalletService.findTransaction({ txId });
   }
 
   @Get(':chamaId/transactions')
@@ -370,7 +350,7 @@ export class ChamasController {
     @Query('page') page: number = default_page,
     @Query('size') size: number = default_page_size,
   ) {
-    return this.wallet.filterTransactions({
+    return this.chamaWalletService.filterTransactions({
       memberId,
       chamaId,
       pagination: {
@@ -394,7 +374,7 @@ export class ChamasController {
     @Param('chamaId') chamaId: string,
     @Body() req: ChamaTxMetaRequestDto,
   ) {
-    return this.wallet.aggregateWalletMeta({ ...req, chamaId });
+    return this.chamaWalletService.aggregateWalletMeta({ ...req, chamaId });
   }
 
   @Post('transactions/bulk-aggregate')
@@ -415,7 +395,7 @@ export class ChamasController {
     // this.logger.debug(
     //   `Bulk wallet meta aggregation requested for ${req.chamaIds.length} chamas`,
     // );
-    return this.wallet.aggregateBulkWalletMeta(req);
+    return this.chamaWalletService.aggregateBulkWalletMeta(req);
   }
 
   @Get('lnurl')
@@ -498,22 +478,87 @@ export class ChamasController {
     }
 
     try {
-      // Process the LNURL withdrawal using the gRPC service
-      const response = await firstValueFrom(
-        this.wallet.processLnUrlWithdraw({
-          k1,
-          tag,
-          callback,
-          maxWithdrawable,
-          minWithdrawable,
-          defaultDescription,
-          pr,
-        }),
+      // 1. First, find any transaction that's already using this k1 value
+      const approvedTx =
+        await this.chamaWalletService.findApprovedLnurlWithdrawal(k1);
+
+      // 2. If no pending transaction is found, this is an error
+      if (!approvedTx) {
+        this.logger.warn(`No pending withdrawal found for k1: ${k1}`);
+        return {
+          status: 'ERROR',
+          reason: 'Withdrawal request not found or expired',
+        };
+      }
+
+      this.logger.log(
+        `Found existing withdrawal transaction: ${approvedTx.id} in status: ${approvedTx.status}`,
       );
 
-      this.logger.log(`LNURL withdrawal response: ${JSON.stringify(response)}`);
+      // 3. If transaction is not in pending state, return error
+      if (approvedTx.status !== ChamaTxStatus.APPROVED) {
+        return {
+          status: 'ERROR',
+          reason: `LNURL withdrawal is now invalid or expired`,
+        };
+      }
 
-      return response;
+      // 4. Handle first step of handshake (tag=withdrawRequest && !pr - wallet querying parameters)
+      if (tag === 'withdrawRequest' && !pr) {
+        this.logger.log('Processing first step of LNURL withdraw handshake');
+
+        // Verify maxWithdrawable matches our expected value (if provided in request)
+        if (maxWithdrawable) {
+          const expectedMsats = approvedTx.amountMsats;
+          if (parseInt(maxWithdrawable) > expectedMsats) {
+            this.logger.error(
+              `Mismatched maxWithdrawable: expected ${expectedMsats}, got ${maxWithdrawable}`,
+            );
+            return {
+              status: 'ERROR',
+              reason: 'maxWithdrawable exceeds expected amount',
+            };
+          }
+        }
+
+        // Verify callback
+        if (callback !== this.configService.getOrThrow('LNURL_CALLBACK')) {
+          return {
+            status: 'ERROR',
+            reason: `LNURL withdrawal has invalid callback`,
+          };
+        }
+
+        // Return success response for first step
+        return {
+          tag,
+          callback,
+          k1,
+          defaultDescription,
+          minWithdrawable,
+          maxWithdrawable,
+        };
+      }
+
+      // 5. Handle second step of handshake (with invoice)
+      if (!pr) {
+        this.logger.error(`Invalid Bolt11 invoice: ${pr}`);
+        return {
+          status: 'ERROR',
+          reason: `Invalid Bolt11 invoice: ${pr}`,
+        };
+      }
+
+      // Process the payment using the existing transaction
+      const result = await this.chamaWalletService.processLnUrlWithdrawCallback(
+        k1,
+        pr,
+      );
+
+      return {
+        status: result.success ? 'OK' : 'ERROR',
+        reason: result.success ? undefined : result.message,
+      };
     } catch (error) {
       this.logger.error(
         `Error processing LNURL withdrawal: ${error.message}`,

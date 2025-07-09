@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChamaMemberGuard } from './chama-member.guard';
 import { Reflector } from '@nestjs/core';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { Role, CHAMAS_SERVICE_NAME } from '@bitsacco/common';
-import { of } from 'rxjs';
+import { Role } from '@bitsacco/common';
+import { ChamasService } from './chamas.service';
 
 describe('ChamaMemberGuard', () => {
   let guard: ChamaMemberGuard;
@@ -15,17 +15,12 @@ describe('ChamaMemberGuard', () => {
       findChama: jest.fn(),
     };
 
-    const mockClientGrpc = {
-      getService: jest.fn().mockReturnValue(mockChamaService),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ChamaMemberGuard,
-        Reflector,
         {
-          provide: CHAMAS_SERVICE_NAME,
-          useValue: mockClientGrpc,
+          provide: ChamasService,
+          useValue: mockChamaService,
         },
       ],
     }).compile();
@@ -140,13 +135,11 @@ describe('ChamaMemberGuard', () => {
     });
 
     it('should allow access if user is a member of the chama', async () => {
-      mockChamaService.findChama.mockReturnValue(
-        of({
-          id: 'chama-id',
-          name: 'Test Chama',
-          members: [{ userId: 'user-id', roles: [1] }],
-        }),
-      );
+      mockChamaService.findChama.mockResolvedValue({
+        id: 'chama-id',
+        name: 'Test Chama',
+        members: [{ userId: 'user-id', roles: [1] }],
+      });
 
       const result = await guard.canActivate(
         mockExecutionContext as ExecutionContext,
@@ -159,13 +152,11 @@ describe('ChamaMemberGuard', () => {
     });
 
     it('should deny access if user is not a member of the chama', async () => {
-      mockChamaService.findChama.mockReturnValue(
-        of({
-          id: 'chama-id',
-          name: 'Test Chama',
-          members: [{ userId: 'other-user-id', roles: [1] }],
-        }),
-      );
+      mockChamaService.findChama.mockResolvedValue({
+        id: 'chama-id',
+        name: 'Test Chama',
+        members: [{ userId: 'other-user-id', roles: [1] }],
+      });
 
       const result = await guard.canActivate(
         mockExecutionContext as ExecutionContext,

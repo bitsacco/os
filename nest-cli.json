@@ -43,15 +43,6 @@
         "webpack": false,
         "tsConfigPath": "apps/admin/tsconfig.json"
       }
-    },
-    "chama": {
-      "type": "application",
-      "root": "apps/chama",
-      "entryFile": "main",
-      "sourceRoot": "apps/chama/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/chama/tsconfig.app.json"
-      }
     }
   },
   "monorepo": true,

@@ -1,19 +1,13 @@
-import { firstValueFrom } from 'rxjs';
 import {
   CanActivate,
   ExecutionContext,
-  Inject,
   Injectable,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { type ClientGrpc } from '@nestjs/microservices';
-import {
-  ChamasServiceClient,
-  CHAMAS_SERVICE_NAME,
-  Role,
-} from '@bitsacco/common';
+import { Role } from '@bitsacco/common';
+import { ChamasService } from './chamas.service';
 
 /**
  * A guard that validates user access to multiple chamas in a bulk operation:
@@ -24,15 +18,11 @@ import {
 @Injectable()
 export class ChamaBulkAccessGuard implements CanActivate {
   private readonly logger = new Logger(ChamaBulkAccessGuard.name);
-  private chamas: ChamasServiceClient;
 
   constructor(
     private reflector: Reflector,
-    @Inject(CHAMAS_SERVICE_NAME) private readonly chamasGrpc: ClientGrpc,
-  ) {
-    this.chamas =
-      this.chamasGrpc.getService<ChamasServiceClient>(CHAMAS_SERVICE_NAME);
-  }
+    private readonly chamas: ChamasService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -59,15 +49,13 @@ export class ChamaBulkAccessGuard implements CanActivate {
     try {
       // For non-admin users can only access chamas they belong in.
       const knownMembership = (
-        await firstValueFrom(
-          this.chamas.filterChamas({
-            memberId: user.id,
-            pagination: {
-              page: 0,
-              size: 0, // flag to get all chama data in a single page
-            },
-          }),
-        )
+        await this.chamas.filterChamas({
+          memberId: user.id,
+          pagination: {
+            page: 0,
+            size: 0, // flag to get all chama data in a single page
+          },
+        })
       ).chamas.map((chama) => chama.id);
       let requestedChamaIds: string[] = request.body.chamaIds || [];
 

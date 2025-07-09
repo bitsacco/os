@@ -1,21 +1,20 @@
 import { of } from 'rxjs';
 import { Test } from '@nestjs/testing';
+import { ChamasService } from './chamas.service';
+import { ChamaWalletService } from '../chamawallet/wallet.service';
 import { JwtService } from '@nestjs/jwt';
 import {
-  CHAMA_WALLET_SERVICE_NAME,
-  CHAMAS_SERVICE_NAME,
   ChamaUpdatesDto,
   JwtAuthGuard,
   BulkChamaTxMetaRequestDto,
   CircuitBreakerService,
-  GrpcServiceWrapper,
-  GrpcConnectionManager,
+  ChamaTxStatus,
 } from '@bitsacco/common';
 import { ChamasController } from './chamas.controller';
 import { ChamaMemberGuard } from './chama-member.guard';
 import { ChamaFilterGuard } from './chama-filter.guard';
 import { ChamaBulkAccessGuard } from './chama-bulk-access.guard';
-import { provideGrpcMocks } from '../test-utils/grpc-mocks';
+import { ConfigService } from '@nestjs/config';
 
 // Mock classes
 class MockGuard {
@@ -26,97 +25,56 @@ class MockGuard {
 
 describe('ChamasController', () => {
   let chamaController: ChamasController;
+  let module: any;
 
   // Mock service methods
   const chamasServiceMock = {
-    createChama: jest.fn().mockReturnValue(of({})),
-    updateChama: jest.fn().mockReturnValue(of({})),
-    joinChama: jest.fn().mockReturnValue(of({})),
-    inviteMembers: jest.fn().mockReturnValue(of({})),
-    findChama: jest.fn().mockReturnValue(of({})),
-    filterChamas: jest.fn().mockReturnValue(of({})),
-    getMemberProfiles: jest.fn().mockReturnValue(of({})),
+    createChama: jest.fn().mockResolvedValue({}),
+    updateChama: jest.fn().mockResolvedValue({}),
+    joinChama: jest.fn().mockResolvedValue({}),
+    inviteMembers: jest.fn().mockResolvedValue({}),
+    findChama: jest.fn().mockResolvedValue({}),
+    filterChamas: jest.fn().mockResolvedValue({ chamas: [] }),
+    getMemberProfiles: jest.fn().mockResolvedValue({ members: [] }),
   };
 
   const chamaWalletServiceMock = {
-    deposit: jest.fn().mockReturnValue(of({})),
-    continueDeposit: jest.fn().mockReturnValue(of({})),
-    requestWithdraw: jest.fn().mockReturnValue(of({})),
-    continueWithdraw: jest.fn().mockReturnValue(of({})),
-    updateTransaction: jest.fn().mockReturnValue(of({})),
-    findTransaction: jest.fn().mockReturnValue(of({})),
-    filterTransactions: jest.fn().mockReturnValue(of({})),
-    aggregateWalletMeta: jest.fn().mockReturnValue(of({})),
-    aggregateBulkWalletMeta: jest.fn().mockReturnValue(of({})),
-    processLnUrlWithdraw: jest.fn().mockReturnValue(of({})),
+    deposit: jest.fn().mockResolvedValue({}),
+    continueDeposit: jest.fn().mockResolvedValue({}),
+    requestWithdraw: jest.fn().mockResolvedValue({}),
+    continueWithdraw: jest.fn().mockResolvedValue({}),
+    updateTransaction: jest.fn().mockResolvedValue({}),
+    findTransaction: jest.fn().mockResolvedValue({}),
+    filterTransactions: jest.fn().mockResolvedValue({}),
+    aggregateWalletMeta: jest.fn().mockResolvedValue({}),
+    aggregateBulkWalletMeta: jest.fn().mockResolvedValue({}),
+    processLnUrlWithdrawCallback: jest.fn().mockResolvedValue({}),
+    findApprovedLnurlWithdrawal: jest.fn().mockResolvedValue({}),
+  };
+
+  const mockJwtService = {
+    decode: jest.fn().mockReturnValue({ user: { id: 'test-user-id' } }),
+  };
+
+  const mockCircuitBreaker = {
+    execute: jest.fn().mockImplementation((serviceKey, observable) => {
+      return observable;
+    }),
   };
 
   beforeEach(async () => {
-    const mockChamasGrpc = {
-      getService: jest.fn().mockReturnValue(chamasServiceMock),
-    };
+    jest.clearAllMocks();
 
-    const mockWalletGrpc = {
-      getService: jest.fn().mockReturnValue(chamaWalletServiceMock),
-    };
-
-    const mockJwtService = {
-      decode: jest.fn().mockReturnValue({ user: { id: 'test-user-id' } }),
-    };
-
-    // Create a mock for the CircuitBreakerService
-    const mockCircuitBreaker = {
-      execute: jest.fn().mockImplementation((serviceKey, observable) => {
-        return observable;
-      }),
-    };
-
-    // Create custom grpcMocks that handle both services
-    const grpcMocks = [
-      {
-        provide: GrpcServiceWrapper,
-        useValue: {
-          createServiceProxy: jest
-            .fn()
-            .mockImplementation((client, serviceName, protoServiceName) => {
-              if (protoServiceName === CHAMAS_SERVICE_NAME) {
-                return chamasServiceMock;
-              } else if (protoServiceName === CHAMA_WALLET_SERVICE_NAME) {
-                return chamaWalletServiceMock;
-              }
-              return {};
-            }),
-          call: jest.fn().mockImplementation((serviceName, serviceCall) => {
-            try {
-              return serviceCall();
-            } catch (error) {
-              throw error;
-            }
-          }),
-        },
-      },
-      {
-        provide: GrpcConnectionManager,
-        useValue: {
-          registerConnection: jest.fn(),
-          recordError: jest.fn(),
-          recordSuccess: jest.fn(),
-          getConnectionHealth: jest.fn().mockReturnValue(new Map()),
-          isServiceHealthy: jest.fn().mockReturnValue(true),
-        },
-      },
-    ];
-
-    const module = await Test.createTestingModule({
+    module = await Test.createTestingModule({
+      controllers: [ChamasController],
       providers: [
-        ChamasController,
         {
-          provide: CHAMAS_SERVICE_NAME,
-          useValue: mockChamasGrpc,
+          provide: ChamasService,
+          useValue: chamasServiceMock,
         },
         {
-          provide: CHAMA_WALLET_SERVICE_NAME,
-          useValue: mockWalletGrpc,
+          provide: ChamaWalletService,
+          useValue: chamaWalletServiceMock,
         },
         {
           provide: JwtService,
@@ -142,7 +100,13 @@ describe('ChamasController', () => {
           provide: CircuitBreakerService,
           useValue: mockCircuitBreaker,
         },
-        ...grpcMocks,
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn(),
+            getOrThrow: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -245,35 +209,7 @@ describe('ChamasController', () => {
         skipMemberMeta: false,
       };
 
-      const mockResponse = {
-        meta: [
-          {
-            chamaId: 'chama-1',
-            groupMeta: {
-              groupDeposits: 100,
-              groupWithdrawals: 50,
-              groupBalance: 50,
-            },
-            memberMeta: [],
-          },
-          {
-            chamaId: 'chama-2',
-            groupMeta: {
-              groupDeposits: 200,
-              groupWithdrawals: 75,
-              groupBalance: 125,
-            },
-            memberMeta: [],
-          },
-        ],
-      };
-
-      // The controller returns the Observable directly, not the resolved value
-      chamaWalletServiceMock.aggregateBulkWalletMeta.mockReturnValue(
-        of(mockResponse),
-      );
-
-      const result = chamaController.aggregateBulkWalletMeta(bulkRequest);
+      await chamaController.aggregateBulkWalletMeta(bulkRequest);
 
       expect(
         chamaWalletServiceMock.aggregateBulkWalletMeta,
@@ -283,14 +219,10 @@ describe('ChamasController', () => {
     it('should handle empty chamaIds array', async () => {
       const bulkRequest: BulkChamaTxMetaRequestDto = {
         chamaIds: [],
+        selectMemberIds: [],
       };
 
-      const mockResponse = { meta: [] };
-      chamaWalletServiceMock.aggregateBulkWalletMeta.mockReturnValue(
-        of(mockResponse),
-      );
-
-      const result = chamaController.aggregateBulkWalletMeta(bulkRequest);
+      await chamaController.aggregateBulkWalletMeta(bulkRequest);
 
       expect(
         chamaWalletServiceMock.aggregateBulkWalletMeta,
@@ -308,48 +240,67 @@ describe('ChamasController', () => {
       const defaultDescription = 'Test withdrawal';
       const pr = 'lnbc10n1p...';
 
-      chamaWalletServiceMock.processLnUrlWithdraw.mockReturnValue(
-        of({
-          status: 'OK',
-        }),
-      );
-
-      const result = await chamaController.lnurl(
-        k1,
-        tag,
-        callback,
-        maxWithdrawable,
-        minWithdrawable,
-        defaultDescription,
-        pr,
-      );
-
-      expect(chamaWalletServiceMock.processLnUrlWithdraw).toHaveBeenCalledWith({
-        k1,
-        tag,
-        callback,
-        maxWithdrawable,
-        minWithdrawable,
-        defaultDescription,
-        pr,
+      // Mock findApprovedLnurlWithdrawal to return an approved transaction
+      chamaWalletServiceMock.findApprovedLnurlWithdrawal.mockResolvedValue({
+        id: 'test-tx-id',
+        status: ChamaTxStatus.APPROVED,
+        amountMsats: 1000,
       });
 
-      expect(result).toEqual({ status: 'OK' });
+      // Mock processLnUrlWithdrawCallback to return success
+      chamaWalletServiceMock.processLnUrlWithdrawCallback.mockResolvedValue({
+        success: true,
+      });
+
+      // Mock ConfigService to return the expected callback URL
+      const configService = module.get<ConfigService>(ConfigService);
+      configService.getOrThrow = jest.fn().mockReturnValue(callback);
+
+      await chamaController.lnurl(
+        k1,
+        tag,
+        callback,
+        maxWithdrawable,
+        minWithdrawable,
+        defaultDescription,
+        pr,
+      );
+
+      expect(
+        chamaWalletServiceMock.processLnUrlWithdrawCallback,
+      ).toHaveBeenCalledWith(k1, pr);
     });
 
     it('should handle service errors gracefully', async () => {
-      chamaWalletServiceMock.processLnUrlWithdraw.mockImplementation(() => {
-        throw new Error('not found');
+      const k1 = 'valid-k1-token-long-enough';
+      const callback = 'https://example.com/callback';
+
+      // Mock findApprovedLnurlWithdrawal to return an approved transaction
+      chamaWalletServiceMock.findApprovedLnurlWithdrawal.mockResolvedValue({
+        id: 'test-tx-id',
+        status: ChamaTxStatus.APPROVED,
+        amountMsats: 1000,
       });
 
+      // Mock processLnUrlWithdrawCallback to throw an error
+      chamaWalletServiceMock.processLnUrlWithdrawCallback.mockImplementation(
+        () => {
+          throw new Error('not found');
+        },
+      );
+
+      // Mock ConfigService to return the expected callback URL
+      const configService = module.get<ConfigService>(ConfigService);
+      configService.getOrThrow = jest.fn().mockReturnValue(callback);
+
       const result = await chamaController.lnurl(
-        'valid-k1-token-long-enough',
+        k1,
         'withdrawRequest',
-        'callback',
-        '',
-        '',
-        '',
-        '',
+        callback,
+        '1000',
+        '100',
+        'Test withdrawal',
+        'lnbc10n1p...', // Adding pr parameter to trigger the second step flow
       );
 
       expect(result).toEqual({
@@ -362,30 +313,6 @@ describe('ChamasController', () => {
   describe('getMemberProfiles', () => {
     it('should call chamasService.getMemberProfiles with correct parameters', async () => {
       const chamaId = 'test-chama-id';
-      const mockMemberProfiles = {
-        members: [
-          {
-            userId: 'user-1',
-            roles: [0, 1],
-            name: 'John Doe',
-            avatarUrl: 'https://example.com/avatar.jpg',
-            phoneNumber: '+1234567890',
-            nostrNpub: 'npub123456789',
-          },
-          {
-            userId: 'user-2',
-            roles: [0],
-            name: 'Jane Smith',
-            phoneNumber: '+0987654321',
-          },
-        ],
-      };
-
-      chamasServiceMock.getMemberProfiles.mockReturnValue(
-        of(mockMemberProfiles),
-      );
-
-      // Just test that the right service is called with the right parameters
       await chamaController.getMemberProfiles(chamaId);
       expect(chamasServiceMock.getMemberProfiles).toHaveBeenCalledWith({
         chamaId,

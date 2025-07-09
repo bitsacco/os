@@ -1,20 +1,14 @@
-import { firstValueFrom } from 'rxjs';
 import {
   CanActivate,
   ExecutionContext,
-  Inject,
   Injectable,
   Logger,
   SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { type ClientGrpc } from '@nestjs/microservices';
-import {
-  ChamasServiceClient,
-  CHAMAS_SERVICE_NAME,
-  Role,
-} from '@bitsacco/common';
+import { Role } from '@bitsacco/common';
+import { ChamasService } from './chamas.service';
 
 /**
  * Configuration for Chama membership validation
@@ -38,15 +32,11 @@ export const CheckChamaMembership = (config: ChamaMembershipConfig) =>
 @Injectable()
 export class ChamaMemberGuard implements CanActivate {
   private readonly logger = new Logger(ChamaMemberGuard.name);
-  private chamas: ChamasServiceClient;
 
   constructor(
     private reflector: Reflector,
-    @Inject(CHAMAS_SERVICE_NAME) private readonly chamasGrpc: ClientGrpc,
-  ) {
-    this.chamas =
-      this.chamasGrpc.getService<ChamasServiceClient>(CHAMAS_SERVICE_NAME);
-  }
+    private readonly chamas: ChamasService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Get the request to check if this is the filter endpoint
@@ -63,7 +53,9 @@ export class ChamaMemberGuard implements CanActivate {
     }
 
     this.logger.debug(
-      `Chama membership check metadata found: ${JSON.stringify(chamaMembershipConfig)}`,
+      `Chama membership check metadata found: ${JSON.stringify(
+        chamaMembershipConfig,
+      )}`,
     );
     const user = request.user;
 
@@ -100,7 +92,7 @@ export class ChamaMemberGuard implements CanActivate {
 
     try {
       // Get the chama to validate membership
-      const chama = await firstValueFrom(this.chamas.findChama({ chamaId }));
+      const chama = await this.chamas.findChama({ chamaId });
 
       // Check if user is a member of the chama
       const isMember = chama.members.some(

@@ -55,10 +55,10 @@ import { NostrModule } from './nostr/nostr.module';
 import { NotificationModule } from './notifications/notification.module';
 import { AuthModule } from './auth/auth.module';
 import { SwapModule } from './swap/swap.module';
+import { ChamaModule } from './chamas/chama.module';
 
 // Import the metrics module
 import { MetricsModule } from './metrics/metrics.module';
-import { createGrpcOptions } from './config/grpc-options';
 
 @Module({
   imports: [
@@ -72,6 +72,7 @@ import { createGrpcOptions } from './config/grpc-options';
     AuthModule,
     SwapModule,
     SolowalletModule,
+    ChamaModule,
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -92,10 +93,6 @@ import { createGrpcOptions } from './config/grpc-options';
         IP_RATE_LIMIT_WINDOW: Joi.number().default(60),
         IP_RATE_LIMIT_BURST: Joi.number().default(10),
         IP_RATE_LIMIT_TRUSTED: Joi.string().default(''),
-        SMS_AT_API_KEY: Joi.string().required(),
-        SMS_AT_USERNAME: Joi.string().required(),
-        SMS_AT_FROM: Joi.string().required(),
-        SMS_AT_KEYWORD: Joi.string().required(),
         CSP_REPORT_URI: Joi.string().optional(),
         DOCS_API_KEY: Joi.when('NODE_ENV', {
           is: 'production',
@@ -109,35 +106,6 @@ import { createGrpcOptions } from './config/grpc-options';
       useClass: ThrottlerConfigService,
     }),
     ClientsModule.registerAsync([
-      {
-        name: CHAMAS_SERVICE_NAME,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.GRPC,
-          options: createGrpcOptions(
-            'chama',
-            join(__dirname, '../../../proto/chama.proto'),
-            configService.getOrThrow<string>('CHAMA_GRPC_URL'),
-          ),
-        }),
-        inject: [ConfigService],
-      },
-      {
-        name: CHAMA_WALLET_SERVICE_NAME,
-        useFactory: (configService: ConfigService) => {
-          const options = createGrpcOptions(
-            'chamawallet',
-            join(__dirname, '../../../proto/chamawallet.proto'),
-            configService.getOrThrow<string>('CHAMA_GRPC_URL'),
-          );
-          // Handle array protoPath case
-          options.protoPath = [options.protoPath as string];
-          return {
-            transport: Transport.GRPC,
-            options,
-          };
-        },
-        inject: [ConfigService],
-      },
       {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({

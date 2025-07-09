@@ -1,5 +1,5 @@
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
+import { ClientProxy } from '@nestjs/microservices';
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   ChamaContinueDepositDto,
@@ -17,13 +17,9 @@ import {
   FedimintService,
   FilterChamaTransactionsDto,
   FindTxRequestDto,
-  getQuote,
-  initiateOnrampSwap,
   PaginatedChamaTxsResponse,
   FedimintContext,
   Review,
-  SWAP_SERVICE_NAME,
-  SwapServiceClient,
   TransactionStatus,
   TransactionType,
   UpdateChamaTransactionDto,
@@ -35,7 +31,6 @@ import {
   type FedimintReceiveFailureEvent,
   type FedimintReceiveSuccessEvent,
   type SwapStatusChangeEvent,
-  initiateOfframpSwap,
   FmLightning,
   ChamaWalletTx,
   parseTransactionStatus,
@@ -44,6 +39,7 @@ import {
   ChamaDepositRequest,
   ChamaTxMetaRequest,
   ChamaMeta,
+  fiatToBtc,
 } from '@bitsacco/common';
 import {
   ChamaMemberContact,
@@ -51,6 +47,7 @@ import {
 } from '../chamas/chamas.messaging';
 import { ChamasService } from '../chamas/chamas.service';
 import { ChamaMetricsService } from '../chamas/chama.metrics';
+import { SwapService } from '../swap/swap.service';
 import {
   ChamaWalletDocument,
   ChamaWalletRepository,
@@ -60,7 +57,6 @@ import {
 @Injectable()
 export class ChamaWalletService {
   private readonly logger = new Logger(ChamaWalletService.name);
-  private readonly swapService: SwapServiceClient;
 
   constructor(
     private readonly wallet: ChamaWalletRepository,
@@ -68,15 +64,12 @@ export class ChamaWalletService {
     private readonly eventEmitter: EventEmitter2,
     private readonly lnurlMetricsService: LnurlMetricsService,
     private readonly chamaMetricsService: ChamaMetricsService,
-    @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
+    private readonly swapService: SwapService,
     @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
     private readonly chamas: ChamasService,
     private readonly users: UsersService,
     private readonly messenger: ChamaMessageService,
   ) {
-    this.swapService =
-      this.swapGrpc.getService<SwapServiceClient>(SWAP_SERVICE_NAME);
-
     this.eventEmitter.on(
       fedimint_receive_success,
       this.handleSuccessfulReceive.bind(this),
@@ -99,39 +92,43 @@ export class ChamaWalletService {
   }: ChamaDepositRequest) {
     // TODO: Validate member and chama exist
 
-    const { quote, amountMsats } = await getQuote(
-      {
-        from: onramp?.currency || Currency.KES,
-        to: Currency.BTC,
-        amount: amountFiat.toString(),
-      },
-      this.swapService,
-      this.logger,
-    );
+    // Get quote for conversion
+    const quoteResponse = await this.swapService.getQuote({
+      from: onramp?.currency || Currency.KES,
+      to: Currency.BTC,
+      amount: amountFiat.toString(),
+    });
+
+    const { amountMsats } = fiatToBtc({
+      amountFiat: Number(amountFiat),
+      btcToFiatRate: Number(quoteResponse.rate),
+    });
+
+    const quote = {
+      id: quoteResponse.id,
+      refreshIfExpired: true,
+    };
 
     const lightning = await this.fedimintService.invoice(
       amountMsats,
       reference,
     );
 
-    const { status } = onramp
-      ? await initiateOnrampSwap<ChamaTxStatus>(
-          {
-            quote,
-            amountFiat: amountFiat.toString(),
-            reference,
-            source: onramp,
-            target: {
-              payout: lightning,
-            },
+    const swap = onramp
+      ? await this.swapService.createOnrampSwap({
+          quote,
+          amountFiat: amountFiat.toString(),
+          reference,
+          source: onramp,
+          target: {
+            payout: lightning,
           },
-          this.swapService,
-          this.logger,
-        )
+        })
       : {
           status: ChamaTxStatus.PENDING,
         };
 
+    const status = swap.status as ChamaTxStatus;
     this.logger.log(`Status: ${status}`);
     const deposit = await this.wallet.create({
       memberId,
@@ -189,39 +186,43 @@ export class ChamaWalletService {
       throw new Error('Transaction is processing or complete');
     }
 
-    const { quote, amountMsats } = await getQuote(
-      {
-        from: onramp?.currency || Currency.KES,
-        to: Currency.BTC,
-        amount: amountFiat.toString(),
-      },
-      this.swapService,
-      this.logger,
-    );
+    // Get quote for conversion
+    const quoteResponse = await this.swapService.getQuote({
+      from: onramp?.currency || Currency.KES,
+      to: Currency.BTC,
+      amount: amountFiat.toString(),
+    });
+
+    const { amountMsats } = fiatToBtc({
+      amountFiat: Number(amountFiat),
+      btcToFiatRate: Number(quoteResponse.rate),
+    });
+
+    const quote = {
+      id: quoteResponse.id,
+      refreshIfExpired: true,
+    };
 
     const lightning = await this.fedimintService.invoice(
       amountMsats,
       txd.reference,
     );
 
-    const { status } = onramp
-      ? await initiateOnrampSwap(
-          {
-            quote,
-            amountFiat: amountFiat.toString(),
-            reference,
-            source: onramp,
-            target: {
-              payout: lightning,
-            },
+    const swap = onramp
+      ? await this.swapService.createOnrampSwap({
+          quote,
+          amountFiat: amountFiat.toString(),
+          reference,
+          source: onramp,
+          target: {
+            payout: lightning,
           },
-          this.swapService,
-          this.logger,
-        )
+        })
       : {
           status: TransactionStatus.PENDING,
         };
 
+    const status = swap.status;
     this.logger.log(`Status: ${status}`);
     const deposit = await this.wallet.findOneAndUpdate(
       {
@@ -312,15 +313,17 @@ export class ChamaWalletService {
         )
       : ChamaTxStatus.PENDING;
 
-    const { amountMsats } = await getQuote(
-      {
-        from: Currency.KES,
-        to: Currency.BTC,
-        amount: amountFiat.toString(),
-      },
-      this.swapService,
-      this.logger,
-    );
+    // Get quote for conversion
+    const quoteResponse = await this.swapService.getQuote({
+      from: Currency.KES,
+      to: Currency.BTC,
+      amount: amountFiat.toString(),
+    });
+
+    const { amountMsats } = fiatToBtc({
+      amountFiat: Number(amountFiat),
+      btcToFiatRate: Number(quoteResponse.rate),
+    });
 
     // Create a withdrawal record with calculated status
     const withdrawal = toChamaWalletTx(
@@ -567,20 +570,19 @@ export class ChamaWalletService {
 
       try {
         // Initiate offramp swap
-        const {
-          status,
-          amountMsats: offrampMsats,
-          invoice,
-          swapTracker,
-        } = await initiateOfframpSwap<ChamaTxStatus>(
-          {
-            amountFiat: txd.amountFiat.toString(),
-            reference: txd.reference,
-            target: offramp,
-          },
-          this.swapService,
-          this.logger,
-        );
+        const swap = await this.swapService.createOfframpSwap({
+          amountFiat: txd.amountFiat.toString(),
+          reference: txd.reference,
+          target: offramp,
+        });
+
+        const status = swap.status as unknown as ChamaTxStatus;
+        const invoice = swap.lightning;
+        const swapTracker = swap.id;
+
+        // Decode invoice to get amount
+        const invoiceData = await this.fedimintService.decode(invoice);
+        const offrampMsats = parseInt(invoiceData.amountMsats);
 
         // Pay the invoice for the swap
         const { operationId, fee } = await this.fedimintService.pay(invoice);

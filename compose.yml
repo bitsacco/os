@@ -34,30 +34,6 @@ services:
     volumes:
       - .:/usr/src/app
 
-  chama:
-    container_name: chama
-    build:
-      context: .
-      dockerfile: ./apps/chama/Dockerfile
-      target: development
-    command: [
-        "sh",
-        "-c",
-        "bun dev chama"
-      ]
-    restart: always
-    depends_on:
-      - mongodb
-      - redis
-      - sms
-    env_file:
-      - ./apps/chama/.dev.env
-    ports:
-      - '4090:4090'
-      - '4092:4092'
-    volumes:
-      - .:/usr/src/app
-
   mongodb:
     image: mongo:7.0-jammy
     container_name: mongodb

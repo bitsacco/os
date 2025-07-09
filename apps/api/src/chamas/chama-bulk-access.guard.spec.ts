@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChamaBulkAccessGuard } from './chama-bulk-access.guard';
 import { Reflector } from '@nestjs/core';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { Role, CHAMAS_SERVICE_NAME } from '@bitsacco/common';
-import { of } from 'rxjs';
+import { Role } from '@bitsacco/common';
+import { ChamasService } from './chamas.service';
 
 describe('ChamaBulkAccessGuard', () => {
   let guard: ChamaBulkAccessGuard;
@@ -16,17 +16,12 @@ describe('ChamaBulkAccessGuard', () => {
       filterChamas: jest.fn(),
     };
 
-    const mockClientGrpc = {
-      getService: jest.fn().mockReturnValue(mockChamaService),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ChamaBulkAccessGuard,
-        Reflector,
         {
-          provide: CHAMAS_SERVICE_NAME,
-          useValue: mockClientGrpc,
+          provide: ChamasService,
+          useValue: mockChamaService,
         },
       ],
     }).compile();
@@ -92,26 +87,24 @@ describe('ChamaBulkAccessGuard', () => {
       mockRequest.body.chamaIds = [];
 
       // Setup mock to return user's chama memberships
-      mockChamaService.filterChamas.mockReturnValue(
-        of({
-          chamas: [
-            {
-              id: 'chama-3',
-              name: 'Test Chama 3',
-              members: [{ userId: 'user-id' }],
-            },
-            {
-              id: 'chama-4',
-              name: 'Test Chama 4',
-              members: [{ userId: 'user-id' }],
-            },
-          ],
-          page: 0,
-          size: 0,
-          pages: 1,
-          total: 2,
-        }),
-      );
+      mockChamaService.filterChamas.mockResolvedValue({
+        chamas: [
+          {
+            id: 'chama-3',
+            name: 'Test Chama 3',
+            members: [{ userId: 'user-id' }],
+          },
+          {
+            id: 'chama-4',
+            name: 'Test Chama 4',
+            members: [{ userId: 'user-id' }],
+          },
+        ],
+        page: 0,
+        size: 0,
+        pages: 1,
+        total: 2,
+      });
 
       const result = await guard.canActivate(
         mockExecutionContext as ExecutionContext,
@@ -132,26 +125,24 @@ describe('ChamaBulkAccessGuard', () => {
       mockRequest.body = {};
 
       // Setup mock to return user's chama memberships
-      mockChamaService.filterChamas.mockReturnValue(
-        of({
-          chamas: [
-            {
-              id: 'chama-3',
-              name: 'Test Chama 3',
-              members: [{ userId: 'user-id' }],
-            },
-            {
-              id: 'chama-4',
-              name: 'Test Chama 4',
-              members: [{ userId: 'user-id' }],
-            },
-          ],
-          page: 0,
-          size: 0,
-          pages: 1,
-          total: 2,
-        }),
-      );
+      mockChamaService.filterChamas.mockResolvedValue({
+        chamas: [
+          {
+            id: 'chama-3',
+            name: 'Test Chama 3',
+            members: [{ userId: 'user-id' }],
+          },
+          {
+            id: 'chama-4',
+            name: 'Test Chama 4',
+            members: [{ userId: 'user-id' }],
+          },
+        ],
+        page: 0,
+        size: 0,
+        pages: 1,
+        total: 2,
+      });
 
       const result = await guard.canActivate(
         mockExecutionContext as ExecutionContext,
@@ -170,31 +161,29 @@ describe('ChamaBulkAccessGuard', () => {
 
     it('should allow access if user is a member of all requested chamas', async () => {
       // Setup mock to return user's chama memberships
-      mockChamaService.filterChamas.mockReturnValue(
-        of({
-          chamas: [
-            {
-              id: 'chama-1',
-              name: 'Test Chama 1',
-              members: [{ userId: 'user-id' }],
-            },
-            {
-              id: 'chama-2',
-              name: 'Test Chama 2',
-              members: [{ userId: 'user-id' }],
-            },
-            {
-              id: 'chama-3',
-              name: 'Test Chama 3',
-              members: [{ userId: 'user-id' }],
-            },
-          ],
-          page: 0,
-          size: 0,
-          pages: 1,
-          total: 3,
-        }),
-      );
+      mockChamaService.filterChamas.mockResolvedValue({
+        chamas: [
+          {
+            id: 'chama-1',
+            name: 'Test Chama 1',
+            members: [{ userId: 'user-id' }],
+          },
+          {
+            id: 'chama-2',
+            name: 'Test Chama 2',
+            members: [{ userId: 'user-id' }],
+          },
+          {
+            id: 'chama-3',
+            name: 'Test Chama 3',
+            members: [{ userId: 'user-id' }],
+          },
+        ],
+        page: 0,
+        size: 0,
+        pages: 1,
+        total: 3,
+      });
 
       const result = await guard.canActivate(
         mockExecutionContext as ExecutionContext,
@@ -214,26 +203,24 @@ describe('ChamaBulkAccessGuard', () => {
 
     it('should deny access if user is not a member of all requested chamas', async () => {
       // Setup mock to return user's chama memberships (missing chama-2)
-      mockChamaService.filterChamas.mockReturnValue(
-        of({
-          chamas: [
-            {
-              id: 'chama-1',
-              name: 'Test Chama 1',
-              members: [{ userId: 'user-id' }],
-            },
-            {
-              id: 'chama-3',
-              name: 'Test Chama 3',
-              members: [{ userId: 'user-id' }],
-            },
-          ],
-          page: 0,
-          size: 0,
-          pages: 1,
-          total: 2,
-        }),
-      );
+      mockChamaService.filterChamas.mockResolvedValue({
+        chamas: [
+          {
+            id: 'chama-1',
+            name: 'Test Chama 1',
+            members: [{ userId: 'user-id' }],
+          },
+          {
+            id: 'chama-3',
+            name: 'Test Chama 3',
+            members: [{ userId: 'user-id' }],
+          },
+        ],
+        page: 0,
+        size: 0,
+        pages: 1,
+        total: 2,
+      });
 
       const result = await guard.canActivate(
         mockExecutionContext as ExecutionContext,
