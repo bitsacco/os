@@ -44,7 +44,8 @@
       "Bash(rm:*)",
       "Bash(sudo rm:*)",
       "Bash(tsc:*)",
-      "WebFetch(domain:developers.intasend.com)"
+      "WebFetch(domain:developers.intasend.com)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }

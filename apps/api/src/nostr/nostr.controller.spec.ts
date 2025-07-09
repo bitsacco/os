@@ -11,6 +11,7 @@ import {
   NostrServiceClient,
   CircuitBreakerService,
 } from '@bitsacco/common';
+import { provideGrpcMocks } from '../test-utils/grpc-mocks';
 
 describe('NostrController', () => {
   let serviceGenerator: ClientGrpc;
@@ -26,6 +27,7 @@ describe('NostrController', () => {
     };
 
     const jwtAuthMocks = provideJwtAuthStrategyMocks();
+    const grpcMocks = provideGrpcMocks(nostrServiceClient);
 
     // Create a mock for the CircuitBreakerService
     const mockCircuitBreaker = {
@@ -45,6 +47,7 @@ describe('NostrController', () => {
           provide: CircuitBreakerService,
           useValue: mockCircuitBreaker,
         },
+        ...grpcMocks,
         ...jwtAuthMocks,
       ],
     });

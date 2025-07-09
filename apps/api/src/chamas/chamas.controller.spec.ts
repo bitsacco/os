@@ -8,11 +8,14 @@ import {
   JwtAuthGuard,
   BulkChamaTxMetaRequestDto,
   CircuitBreakerService,
+  GrpcServiceWrapper,
+  GrpcConnectionManager,
 } from '@bitsacco/common';
 import { ChamasController } from './chamas.controller';
 import { ChamaMemberGuard } from './chama-member.guard';
 import { ChamaFilterGuard } from './chama-filter.guard';
 import { ChamaBulkAccessGuard } from './chama-bulk-access.guard';
+import { provideGrpcMocks } from '../test-utils/grpc-mocks';
 
 // Mock classes
 class MockGuard {
@@ -68,6 +71,42 @@ describe('ChamasController', () => {
       }),
     };
 
+    // Create custom grpcMocks that handle both services
+    const grpcMocks = [
+      {
+        provide: GrpcServiceWrapper,
+        useValue: {
+          createServiceProxy: jest
+            .fn()
+            .mockImplementation((client, serviceName, protoServiceName) => {
+              if (protoServiceName === CHAMAS_SERVICE_NAME) {
+                return chamasServiceMock;
+              } else if (protoServiceName === CHAMA_WALLET_SERVICE_NAME) {
+                return chamaWalletServiceMock;
+              }
+              return {};
+            }),
+          call: jest.fn().mockImplementation((serviceName, serviceCall) => {
+            try {
+              return serviceCall();
+            } catch (error) {
+              throw error;
+            }
+          }),
+        },
+      },
+      {
+        provide: GrpcConnectionManager,
+        useValue: {
+          registerConnection: jest.fn(),
+          recordError: jest.fn(),
+          recordSuccess: jest.fn(),
+          getConnectionHealth: jest.fn().mockReturnValue(new Map()),
+          isServiceHealthy: jest.fn().mockReturnValue(true),
+        },
+      },
+    ];
+
     const module = await Test.createTestingModule({
       providers: [
         ChamasController,
@@ -103,6 +142,7 @@ describe('ChamasController', () => {
           provide: CircuitBreakerService,
           useValue: mockCircuitBreaker,
         },
+        ...grpcMocks,
       ],
     }).compile();
 

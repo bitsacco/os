@@ -10,6 +10,7 @@ import {
   WithdrawFundsRequestDto,
   CircuitBreakerService,
   HandleServiceErrors,
+  GrpcServiceWrapper,
 } from '@bitsacco/common';
 
 // Import for production use - tests will mock these as needed
@@ -47,10 +48,14 @@ export class SolowalletController {
     @Inject(SOLOWALLET_SERVICE_NAME)
     private readonly grpc: ClientGrpc,
     private readonly circuitBreaker: CircuitBreakerService,
+    private readonly grpcWrapper: GrpcServiceWrapper,
   ) {
-    this.walletService = this.grpc.getService<SolowalletServiceClient>(
-      SOLOWALLET_SERVICE_NAME,
-    );
+    this.walletService =
+      this.grpcWrapper.createServiceProxy<SolowalletServiceClient>(
+        this.grpc,
+        'SOLOWALLET_SERVICE',
+        SOLOWALLET_SERVICE_NAME,
+      );
     this.logger.log('SolowalletController initialized');
   }
 

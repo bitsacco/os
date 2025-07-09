@@ -8,6 +8,7 @@ import {
   createTestingModuleWithValidation,
   provideJwtAuthStrategyMocks,
 } from '@bitsacco/testing';
+import { provideGrpcMocks } from '../test-utils/grpc-mocks';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { SharesController } from './shares.controller';
 
@@ -25,6 +26,7 @@ describe('SharesController', () => {
     };
 
     const jwtAuthMocks = provideJwtAuthStrategyMocks();
+    const grpcMocks = provideGrpcMocks(sharesServiceClient);
 
     // Create a mock for the CircuitBreakerService
     const mockCircuitBreaker = {
@@ -44,6 +46,7 @@ describe('SharesController', () => {
           provide: CircuitBreakerService,
           useValue: mockCircuitBreaker,
         },
+        ...grpcMocks,
         ...jwtAuthMocks,
       ],
     });

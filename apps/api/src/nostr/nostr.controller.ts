@@ -20,6 +20,7 @@ import {
   SendEncryptedNostrDmDto,
   CircuitBreakerService,
   HandleServiceErrors,
+  GrpcServiceWrapper,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 
@@ -32,9 +33,13 @@ export class NostrController {
   constructor(
     @Inject(NOSTR_SERVICE_NAME) private readonly grpc: ClientGrpc,
     private readonly circuitBreaker: CircuitBreakerService,
+    private readonly grpcWrapper: GrpcServiceWrapper,
   ) {
-    this.nostrService =
-      this.grpc.getService<NostrServiceClient>(NOSTR_SERVICE_NAME);
+    this.nostrService = this.grpcWrapper.createServiceProxy<NostrServiceClient>(
+      this.grpc,
+      'NOSTR_SERVICE',
+      NOSTR_SERVICE_NAME,
+    );
     this.logger.log('NostrController initialized');
   }
 

@@ -9,6 +9,7 @@ import {
   UsersDocument,
 } from '@bitsacco/common';
 import { NotificationController } from './notification.controller';
+import { provideGrpcMocks } from '../test-utils/grpc-mocks';
 
 const mockNotificationService = {
   getPreferences: jest.fn().mockReturnValue(
@@ -59,6 +60,8 @@ describe('NotificationController', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
+    const grpcMocks = provideGrpcMocks(mockNotificationService);
+
     // Create a mock JwtAuthGuard
     const mockJwtAuthGuard = {
       canActivate: jest.fn().mockReturnValue(true),
@@ -77,6 +80,7 @@ describe('NotificationController', () => {
           provide: NOTIFICATION_SERVICE_NAME,
           useValue: mockGrpcClient,
         },
+        ...grpcMocks,
       ],
     })
       .overrideGuard(JwtAuthGuard)

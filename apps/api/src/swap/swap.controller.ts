@@ -39,6 +39,7 @@ import {
   HandleServiceErrors,
   CircuitBreakerService,
   TransactionStatus,
+  GrpcServiceWrapper,
 } from '@bitsacco/common';
 
 @Controller('swap')
@@ -50,9 +51,13 @@ export class SwapController {
     @Inject(SWAP_SERVICE_NAME) private readonly grpc: ClientGrpc,
     @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
     private readonly circuitBreaker: CircuitBreakerService,
+    private readonly grpcWrapper: GrpcServiceWrapper,
   ) {
-    this.swapService =
-      this.grpc.getService<SwapServiceClient>(SWAP_SERVICE_NAME);
+    this.swapService = this.grpcWrapper.createServiceProxy<SwapServiceClient>(
+      this.grpc,
+      'SWAP_SERVICE',
+      SWAP_SERVICE_NAME,
+    );
     this.logger.log('SwapController initialized');
   }
 

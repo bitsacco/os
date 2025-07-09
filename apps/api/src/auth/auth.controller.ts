@@ -28,6 +28,7 @@ import {
   VerifyUserRequestDto,
   CircuitBreakerService,
   HandleServiceErrors,
+  GrpcServiceWrapper,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 
@@ -41,9 +42,13 @@ export class AuthController {
     private readonly grpc: ClientGrpc,
     private readonly jwtService: JwtService,
     private readonly circuitBreaker: CircuitBreakerService,
+    private readonly grpcWrapper: GrpcServiceWrapper,
   ) {
-    this.authService =
-      this.grpc.getService<AuthServiceClient>(AUTH_SERVICE_NAME);
+    this.authService = this.grpcWrapper.createServiceProxy<AuthServiceClient>(
+      this.grpc,
+      'AUTH_SERVICE',
+      AUTH_SERVICE_NAME,
+    );
     this.logger.debug('AuthController initialized');
   }
 

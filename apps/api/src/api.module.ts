@@ -1,12 +1,11 @@
 import * as Joi from 'joi';
 import { join } from 'path';
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { APP_GUARD, APP_FILTER } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ClientsModule, Transport, GrpcOptions } from '@nestjs/microservices';
-import { ChannelOptions } from '@grpc/grpc-js';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
@@ -28,7 +27,6 @@ import {
   UsersRepository,
   UsersSchema,
   UsersService,
-  createMeter,
   NOTIFICATION_SERVICE_NAME,
   ApiKeyDocument,
   ApiKeySchema,
@@ -45,6 +43,9 @@ import {
   CoreMetricsService,
   GlobalExceptionFilter,
   CircuitBreakerService,
+  GrpcSessionRetryInterceptor,
+  GrpcConnectionManager,
+  GrpcServiceWrapper,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
@@ -266,6 +267,11 @@ import { createGrpcOptions } from './config/grpc-options';
       },
       inject: [CoreMetricsService],
     },
+    // Global gRPC session retry interceptor
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: GrpcSessionRetryInterceptor,
+    },
     CircuitBreakerService,
     CoreMetricsService,
     RedisProvider,
@@ -285,6 +291,8 @@ import { createGrpcOptions } from './config/grpc-options';
     Reflector,
     DistributedRateLimitService,
     RoleValidationService,
+    GrpcConnectionManager,
+    GrpcServiceWrapper,
   ],
 })
 export class ApiModule implements NestModule {

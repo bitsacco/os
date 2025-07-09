@@ -10,6 +10,7 @@ import {
   SmsServiceClient,
   CircuitBreakerService,
 } from '@bitsacco/common';
+import { provideGrpcMocks } from '../test-utils/grpc-mocks';
 
 describe('SmsController', () => {
   let serviceGenerator: ClientGrpc;
@@ -25,6 +26,7 @@ describe('SmsController', () => {
     };
 
     const jwtAuthMocks = provideJwtAuthStrategyMocks();
+    const grpcMocks = provideGrpcMocks(smsServiceClient);
 
     // Create a mock for the CircuitBreakerService
     const mockCircuitBreaker = {
@@ -44,6 +46,7 @@ describe('SmsController', () => {
           provide: CircuitBreakerService,
           useValue: mockCircuitBreaker,
         },
+        ...grpcMocks,
         ...jwtAuthMocks,
       ],
     });

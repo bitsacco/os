@@ -11,6 +11,7 @@ import {
 } from '@bitsacco/testing';
 import { type ClientGrpc } from '@nestjs/microservices';
 import { of } from 'rxjs';
+import { provideGrpcMocks } from '../test-utils/grpc-mocks';
 
 describe('SolowalletController', () => {
   let controller: SolowalletController;
@@ -50,6 +51,7 @@ describe('SolowalletController', () => {
     };
 
     const jwtAuthMocks = provideJwtAuthStrategyMocks();
+    const grpcMocks = provideGrpcMocks(solowalletServiceClient);
 
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [SolowalletController],
@@ -62,6 +64,7 @@ describe('SolowalletController', () => {
           provide: CircuitBreakerService,
           useValue: mockCircuitBreaker,
         },
+        ...grpcMocks,
         ...jwtAuthMocks,
       ],
     });

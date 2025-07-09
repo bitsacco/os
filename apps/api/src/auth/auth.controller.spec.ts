@@ -14,6 +14,7 @@ import {
   getAccessToken,
   CircuitBreakerService,
 } from '@bitsacco/common';
+import { provideGrpcMocks } from '../test-utils/grpc-mocks';
 import { AuthController } from './auth.controller';
 
 describe('AuthController', () => {
@@ -34,7 +35,12 @@ describe('AuthController', () => {
 
   const mockTokenPayload: AuthTokenPayload = {
     user: mockUser,
-    expires: new Date(Date.now() + 3600 * 1000), // 1 hour from now
+    iat: Math.floor(Date.now() / 1000),
+    nbf: Math.floor(Date.now() / 1000),
+    iss: 'test-issuer',
+    aud: 'test-audience',
+    jti: 'test-jti',
+    exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
   };
 
   beforeEach(async () => {
@@ -109,6 +115,8 @@ describe('AuthController', () => {
       }),
     };
 
+    const grpcMocks = provideGrpcMocks(authService);
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [AuthController],
       providers: [
@@ -124,6 +132,7 @@ describe('AuthController', () => {
           provide: CircuitBreakerService,
           useValue: mockCircuitBreaker,
         },
+        ...grpcMocks,
       ],
     });
 

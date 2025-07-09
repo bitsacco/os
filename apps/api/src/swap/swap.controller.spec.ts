@@ -8,12 +8,14 @@ import {
   SWAP_SERVICE_NAME,
   SwapServiceClient,
   CircuitBreakerService,
+  GrpcServiceWrapper,
 } from '@bitsacco/common';
 import {
   createTestingModuleWithValidation,
   provideJwtAuthStrategyMocks,
 } from '@bitsacco/testing';
 import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
+import { provideGrpcMocks } from '../test-utils/grpc-mocks';
 
 import { SwapController } from './swap.controller';
 
@@ -48,6 +50,8 @@ describe('SwapController', () => {
       }),
     };
 
+    const grpcMocks = provideGrpcMocks(swapServiceClient);
+
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [SwapController],
       providers: [
@@ -65,6 +69,7 @@ describe('SwapController', () => {
           provide: CircuitBreakerService,
           useValue: mockCircuitBreaker,
         },
+        ...grpcMocks,
         ...jwtAuthMocks,
       ],
     });

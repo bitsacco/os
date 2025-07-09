@@ -20,6 +20,7 @@ import {
   SmsServiceClient,
   CircuitBreakerService,
   HandleServiceErrors,
+  GrpcServiceWrapper,
 } from '@bitsacco/common';
 import { type ClientGrpc } from '@nestjs/microservices';
 
@@ -32,8 +33,13 @@ export class SmsController {
   constructor(
     @Inject(SMS_SERVICE_NAME) private readonly grpc: ClientGrpc,
     private readonly circuitBreaker: CircuitBreakerService,
+    private readonly grpcWrapper: GrpcServiceWrapper,
   ) {
-    this.smsService = this.grpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
+    this.smsService = this.grpcWrapper.createServiceProxy<SmsServiceClient>(
+      this.grpc,
+      'SMS_SERVICE',
+      SMS_SERVICE_NAME,
+    );
     this.logger.log('SmsController initialized');
   }
 

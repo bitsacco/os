@@ -29,6 +29,7 @@ import {
   UsersDocument,
   ResourceOwnerGuard,
   CheckOwnership,
+  GrpcServiceWrapper,
 } from '@bitsacco/common';
 import {
   GetNotificationsResponseDto,
@@ -49,10 +50,14 @@ export class NotificationController {
   constructor(
     @Inject(NOTIFICATION_SERVICE_NAME)
     private readonly grpc: ClientGrpc,
+    private readonly grpcWrapper: GrpcServiceWrapper,
   ) {
-    this.notificationService = this.grpc.getService<NotificationServiceClient>(
-      NOTIFICATION_SERVICE_NAME,
-    );
+    this.notificationService =
+      this.grpcWrapper.createServiceProxy<NotificationServiceClient>(
+        this.grpc,
+        'NOTIFICATION_SERVICE',
+        NOTIFICATION_SERVICE_NAME,
+      );
   }
 
   @Get()

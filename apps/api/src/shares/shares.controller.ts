@@ -13,6 +13,7 @@ import {
   CheckOwnership,
   CircuitBreakerService,
   HandleServiceErrors,
+  GrpcServiceWrapper,
 } from '@bitsacco/common';
 import {
   Body,
@@ -44,9 +45,14 @@ export class SharesController {
   constructor(
     @Inject(SHARES_SERVICE_NAME) private readonly grpc: ClientGrpc,
     private readonly circuitBreaker: CircuitBreakerService,
+    private readonly grpcWrapper: GrpcServiceWrapper,
   ) {
     this.sharesService =
-      this.grpc.getService<SharesServiceClient>(SHARES_SERVICE_NAME);
+      this.grpcWrapper.createServiceProxy<SharesServiceClient>(
+        this.grpc,
+        'SHARES_SERVICE',
+        SHARES_SERVICE_NAME,
+      );
     this.logger.log('SharesController initialized');
   }
 

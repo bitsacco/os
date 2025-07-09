@@ -42,6 +42,7 @@ import {
   BulkChamaTxMetaRequestDto,
   CircuitBreakerService,
   HandleServiceErrors,
+  GrpcServiceWrapper,
 } from '@bitsacco/common';
 import { ChamaMemberGuard, CheckChamaMembership } from './chama-member.guard';
 import { ChamaBulkAccessGuard } from './chama-bulk-access.guard';
@@ -57,11 +58,17 @@ export class ChamasController {
     @Inject(CHAMAS_SERVICE_NAME) private readonly chamasGrpc: ClientGrpc,
     @Inject(CHAMA_WALLET_SERVICE_NAME) private readonly walletGrpc: ClientGrpc,
     private readonly circuitBreaker: CircuitBreakerService,
+    private readonly grpcWrapper: GrpcServiceWrapper,
   ) {
     this.logger.debug('ChamasController initialized');
-    this.chamas =
-      this.chamasGrpc.getService<ChamasServiceClient>(CHAMAS_SERVICE_NAME);
-    this.wallet = this.walletGrpc.getService<ChamaWalletServiceClient>(
+    this.chamas = this.grpcWrapper.createServiceProxy<ChamasServiceClient>(
+      this.chamasGrpc,
+      'CHAMAS_SERVICE',
+      CHAMAS_SERVICE_NAME,
+    );
+    this.wallet = this.grpcWrapper.createServiceProxy<ChamaWalletServiceClient>(
+      this.walletGrpc,
+      'CHAMA_WALLET_SERVICE',
       CHAMA_WALLET_SERVICE_NAME,
     );
     this.logger.debug('ChamasController created');

@@ -58,7 +58,6 @@ export function createGrpcOptions(
 
     // DNS resolution
     'grpc.dns_min_time_between_resolutions_ms': 30000, // 30 seconds
-    'grpc.initial_reconnect_backoff_ms': 1000,
   };
 
   return {
