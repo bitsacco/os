@@ -1047,6 +1047,11 @@ export class ChamaWalletService {
     context,
     operationId,
   }: FedimintReceiveSuccessEvent) {
+    // Only handle chamawallet context
+    if (context !== FedimintContext.CHAMAWALLET_RECEIVE) {
+      return;
+    }
+
     const transaction = await this.wallet.findOneAndUpdate(
       { paymentTracker: operationId },
       {
@@ -1090,6 +1095,11 @@ export class ChamaWalletService {
     context,
     operationId,
   }: FedimintReceiveFailureEvent) {
+    // Only handle chamawallet context
+    if (context !== FedimintContext.CHAMAWALLET_RECEIVE) {
+      return;
+    }
+
     this.logger.log(
       `Failed to receive lightning payment for ${context} : ${operationId}`,
     );

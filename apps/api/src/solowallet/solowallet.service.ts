@@ -938,6 +938,11 @@ export class SolowalletService {
     context,
     operationId,
   }: FedimintReceiveSuccessEvent) {
+    // Only handle solowallet context
+    if (context !== FedimintContext.SOLOWALLET_RECEIVE) {
+      return;
+    }
+
     await this.wallet.findOneAndUpdate(
       { paymentTracker: operationId },
       {
@@ -955,6 +960,11 @@ export class SolowalletService {
     context,
     operationId,
   }: FedimintReceiveFailureEvent) {
+    // Only handle solowallet context
+    if (context !== FedimintContext.SOLOWALLET_RECEIVE) {
+      return;
+    }
+
     this.logger.log(
       `Failed to receive lightning payment for ${context} : ${operationId}`,
     );

@@ -507,6 +507,11 @@ export class SwapService {
     context,
     operationId,
   }: FedimintReceiveSuccessEvent) {
+    // Only handle offramp context
+    if (context !== FedimintContext.OFFRAMP_RECEIVE) {
+      return;
+    }
+
     const swap = await this.offramp.findOne({ paymentTracker: operationId });
 
     const { amountFiat } = btcToFiat({
@@ -576,6 +581,11 @@ export class SwapService {
     context,
     operationId,
   }: FedimintReceiveFailureEvent) {
+    // Only handle offramp context
+    if (context !== FedimintContext.OFFRAMP_RECEIVE) {
+      return;
+    }
+
     this.logger.log(
       `Failed to receive lightning payment for ${context} : ${operationId}`,
     );
