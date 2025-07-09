@@ -66,6 +66,10 @@ export class SolowalletService {
       fedimint_receive_failure,
       this.handleFailedReceive.bind(this),
     );
+    this.eventEmitter.on(
+      swap_status_change,
+      this.handleSwapStatusChange.bind(this),
+    );
     this.logger.log('SolowalletService initialized');
   }
 
