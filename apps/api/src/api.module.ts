@@ -8,6 +8,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { HttpModule } from '@nestjs/axios';
 import {
   AUTH_SERVICE_NAME,
   CHAMA_WALLET_SERVICE_NAME,
@@ -20,7 +21,6 @@ import {
   NpubAuthStategy,
   PhoneAuthStategy,
   SHARES_SERVICE_NAME,
-  SMS_SERVICE_NAME,
   SOLOWALLET_SERVICE_NAME,
   SWAP_SERVICE_NAME,
   UsersDocument,
@@ -46,6 +46,7 @@ import {
   GrpcSessionRetryInterceptor,
   GrpcConnectionManager,
   GrpcServiceWrapper,
+  HttpServiceManager,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
@@ -54,7 +55,6 @@ import { ThrottlerConfigService } from './middleware/throttler.config';
 import { CombinedAuthGuard } from './auth/combined-auth.guard';
 import { SwapController } from './swap';
 import { NostrController } from './nostr';
-import { SmsController } from './sms/sms.controller';
 import { SharesController } from './shares/shares.controller';
 import { SolowalletController } from './solowallet/solowallet.controller';
 import { AuthController } from './auth/auth.controller';
@@ -63,6 +63,7 @@ import { ChamasController } from './chamas/chamas.controller';
 import { NotificationGateway } from './notifications/notification.gateway';
 import { NotificationController } from './notifications/notification.controller';
 import { HealthController } from './health/health.controller';
+import { SmsModule } from './sms/sms.module';
 
 // Import the metrics module
 import { MetricsModule } from './metrics/metrics.module';
@@ -73,6 +74,8 @@ import { createGrpcOptions } from './config/grpc-options';
     JwtModule,
     LoggerModule,
     MetricsModule,
+    HttpModule,
+    SmsModule,
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -82,7 +85,6 @@ import { createGrpcOptions } from './config/grpc-options';
         AUTH_GRPC_URL: Joi.string().required(),
         SWAP_GRPC_URL: Joi.string().required(),
         NOSTR_GRPC_URL: Joi.string().required(),
-        SMS_GRPC_URL: Joi.string().required(),
         SHARES_GRPC_URL: Joi.string().required(),
         SOLOWALLET_GRPC_URL: Joi.string().required(),
         CHAMA_GRPC_URL: Joi.string().required(),
@@ -100,6 +102,11 @@ import { createGrpcOptions } from './config/grpc-options';
         IP_RATE_LIMIT_WINDOW: Joi.number().default(60),
         IP_RATE_LIMIT_BURST: Joi.number().default(10),
         IP_RATE_LIMIT_TRUSTED: Joi.string().default(''),
+        SMS_HTTP_URL: Joi.string().default('http://sms:4060'),
+        SMS_AT_API_KEY: Joi.string().required(),
+        SMS_AT_USERNAME: Joi.string().required(),
+        SMS_AT_FROM: Joi.string().required(),
+        SMS_AT_KEYWORD: Joi.string().required(),
         CSP_REPORT_URI: Joi.string().optional(),
         DOCS_API_KEY: Joi.when('NODE_ENV', {
           is: 'production',
@@ -145,18 +152,6 @@ import { createGrpcOptions } from './config/grpc-options';
             'nostr',
             join(__dirname, '../../../proto/nostr.proto'),
             configService.getOrThrow<string>('NOSTR_GRPC_URL'),
-          ),
-        }),
-        inject: [ConfigService],
-      },
-      {
-        name: SMS_SERVICE_NAME,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.GRPC,
-          options: createGrpcOptions(
-            'sms',
-            join(__dirname, '../../../proto/sms.proto'),
-            configService.getOrThrow<string>('SMS_GRPC_URL'),
           ),
         }),
         inject: [ConfigService],
@@ -246,7 +241,6 @@ import { createGrpcOptions } from './config/grpc-options';
     UsersController,
     SwapController,
     NostrController,
-    SmsController,
     SharesController,
     SolowalletController,
     ChamasController,
@@ -293,9 +287,15 @@ import { createGrpcOptions } from './config/grpc-options';
     RoleValidationService,
     GrpcConnectionManager,
     GrpcServiceWrapper,
+    HttpServiceManager,
   ],
 })
 export class ApiModule implements NestModule {
+  constructor(private readonly httpServiceManager: HttpServiceManager) {
+    // Register HTTP services on module initialization
+    this.httpServiceManager.registerServicesFromEnv();
+  }
+
   configure(consumer: MiddlewareConsumer) {
     // Apply global middlewares in order:
     // 1. Security headers - sets secure headers for all responses
