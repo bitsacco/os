@@ -28,6 +28,7 @@ import {
   parseTransactionStatus,
   ContinueDepositFundsRequestDto,
   ContinueWithdrawFundsRequestDto,
+  fiatToBtc,
 } from '@bitsacco/common';
 import { SolowalletMetricsService } from './solowallet.metrics';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -183,47 +184,64 @@ export class SolowalletService {
         to: Currency.BTC,
         amount: amountFiat.toString(),
       });
-      const amountMsats = parseInt(quote.amount) * 1000;
+
+      const { amountMsats } = fiatToBtc({
+        amountFiat: Number(amountFiat),
+        btcToFiatRate: Number(quote.rate),
+      });
+
+      this.logger.log(
+        `Quote rate: ${quote.rate}, amountFiat: ${amountFiat}, calculated amountMsats: ${amountMsats}`,
+      );
 
       const lightning = await this.fedimintService.invoice(
         amountMsats,
         reference,
       );
 
-      const { status } = onramp
-        ? await this.swapService.createOnrampSwap({
-            quote: {
-              id: quote.id,
-              refreshIfExpired: false,
-            },
-            amountFiat: amountFiat.toString(),
-            reference,
-            source: onramp,
-            target: {
-              payout: lightning,
-            },
-          })
-        : {
-            status: TransactionStatus.PENDING,
-          };
+      let paymentTracker: string;
+      let status: TransactionStatus;
 
-      this.logger.log(`Status: ${status}`);
+      if (onramp) {
+        const swapResponse = await this.swapService.createOnrampSwap({
+          quote: {
+            id: quote.id,
+            refreshIfExpired: false,
+          },
+          amountFiat: amountFiat.toString(),
+          reference,
+          source: onramp,
+          target: {
+            payout: lightning,
+          },
+        });
+        status = swapResponse.status;
+        paymentTracker = swapResponse.id; // Use swap ID as payment tracker for onramp
+        this.logger.log(`Created onramp swap with id: ${swapResponse.id}`);
+      } else {
+        status = TransactionStatus.PENDING;
+        paymentTracker = lightning.operationId; // Use operation ID for direct lightning deposits
+      }
+
+      this.logger.log(`Status: ${status}, paymentTracker: ${paymentTracker}`);
       const deposit = await this.wallet.create({
         userId,
         amountMsats,
         amountFiat,
         lightning: JSON.stringify(lightning),
-        paymentTracker: lightning.operationId,
+        paymentTracker,
         type: TransactionType.DEPOSIT,
         status,
         reference,
       });
 
-      // listen for payment
-      this.fedimintService.receive(
-        FedimintContext.SOLOWALLET_RECEIVE,
-        lightning.operationId,
-      );
+      // listen for payment (only for direct lightning deposits, not onramp)
+      if (!onramp) {
+        this.fedimintService.receive(
+          FedimintContext.SOLOWALLET_RECEIVE,
+          lightning.operationId,
+        );
+      }
 
       const ledger = await this.getPaginatedUserTxLedger({
         userId,
@@ -303,7 +321,11 @@ export class SolowalletService {
       to: Currency.BTC,
       amount: amountFiat.toString(),
     });
-    const amountMsats = parseInt(quote.amount) * 1000;
+
+    const { amountMsats } = fiatToBtc({
+      amountFiat: Number(amountFiat),
+      btcToFiatRate: Number(quote.rate),
+    });
 
     const lightning = await this.fedimintService.invoice(
       amountMsats,
@@ -479,7 +501,10 @@ export class SolowalletService {
           to: Currency.BTC,
           amount: amountFiat.toString(),
         });
-        const amountMsats = parseInt(quote.amount) * 1000;
+        const { amountMsats } = fiatToBtc({
+          amountFiat: Number(amountFiat),
+          btcToFiatRate: Number(quote.rate),
+        });
         maxWithdrawableMsats = amountMsats;
       } else {
         // Otherwise use the current balance
@@ -546,7 +571,10 @@ export class SolowalletService {
         to: offramp.currency || Currency.KES,
         amount: amountFiat.toString(),
       });
-      const amountMsats = parseInt(quote.amount) * 1000;
+      const { amountMsats } = fiatToBtc({
+        amountFiat: Number(amountFiat),
+        btcToFiatRate: Number(quote.rate),
+      });
 
       // Check if user has enough balance
       if (amountMsats > currentBalance) {
@@ -718,7 +746,10 @@ export class SolowalletService {
           to: Currency.BTC,
           amount: amountFiat.toString(),
         });
-        const amountMsats = parseInt(quote.amount) * 1000;
+        const { amountMsats } = fiatToBtc({
+          amountFiat: Number(amountFiat),
+          btcToFiatRate: Number(quote.rate),
+        });
         maxWithdrawableMsats = amountMsats;
       } else {
         // Otherwise use the current balance
@@ -792,7 +823,10 @@ export class SolowalletService {
         to: offramp.currency || Currency.KES,
         amount: amountFiat.toString(),
       });
-      const amountMsats = parseInt(quote.amount) * 1000;
+      const { amountMsats } = fiatToBtc({
+        amountFiat: Number(amountFiat),
+        btcToFiatRate: Number(quote.rate),
+      });
 
       // Check if user has enough balance
       if (amountMsats > currentBalance) {

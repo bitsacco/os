@@ -397,6 +397,21 @@ export class SwapService {
 
     await this.onramp.findOneAndUpdate({ _id: swap._id }, updates);
 
+    // Emit swap status change event for onramp swaps
+    const txStatus = mapSwapTxStateToTransactionStatus(updates.state);
+    const statusEvent: SwapStatusChangeEvent = {
+      context: SwapContext.ONRAMP,
+      payload: {
+        swapTracker: swap._id,
+        swapStatus: txStatus,
+      },
+    };
+
+    this.logger.log(
+      `Emitting swap_status_change event for onramp: ${JSON.stringify(statusEvent)}`,
+    );
+    this.eventEmitter.emit(swap_status_change, statusEvent);
+
     this.logger.log('Swap Updated');
     return;
   }

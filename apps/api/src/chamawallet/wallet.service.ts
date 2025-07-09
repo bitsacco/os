@@ -105,7 +105,7 @@ export class ChamaWalletService {
   }: ChamaDepositRequest) {
     // TODO: Validate member and chama exist
 
-    // Get quote for conversion
+    // Get quote response for conversion
     const quoteResponse = await this.swapService.getQuote({
       from: onramp?.currency || Currency.KES,
       to: Currency.BTC,
@@ -127,29 +127,35 @@ export class ChamaWalletService {
       reference,
     );
 
-    const swap = onramp
-      ? await this.swapService.createOnrampSwap({
-          quote,
-          amountFiat: amountFiat.toString(),
-          reference,
-          source: onramp,
-          target: {
-            payout: lightning,
-          },
-        })
-      : {
-          status: ChamaTxStatus.PENDING,
-        };
+    let paymentTracker: string;
+    let status: ChamaTxStatus;
 
-    const status = swap.status as ChamaTxStatus;
-    this.logger.log(`Status: ${status}`);
+    if (onramp) {
+      const swapResponse = await this.swapService.createOnrampSwap({
+        quote,
+        amountFiat: amountFiat.toString(),
+        reference,
+        source: onramp,
+        target: {
+          payout: lightning,
+        },
+      });
+      status = swapResponse.status as unknown as ChamaTxStatus;
+      paymentTracker = swapResponse.id; // Use swap ID as payment tracker for onramp
+      this.logger.log(`Created onramp swap with id: ${swapResponse.id}`);
+    } else {
+      status = ChamaTxStatus.PENDING;
+      paymentTracker = lightning.operationId; // Use operation ID for direct lightning deposits
+    }
+
+    this.logger.log(`Status: ${status}, paymentTracker: ${paymentTracker}`);
     const deposit = await this.wallet.create({
       memberId,
       chamaId,
       amountMsats,
       amountFiat,
       lightning: JSON.stringify(lightning),
-      paymentTracker: lightning.operationId,
+      paymentTracker,
       type: TransactionType.DEPOSIT,
       status,
       reviews: [],
@@ -157,11 +163,13 @@ export class ChamaWalletService {
       context: context ? JSON.stringify(context) : undefined,
     });
 
-    // listen for payment
-    this.fedimintService.receive(
-      FedimintContext.CHAMAWALLET_RECEIVE,
-      lightning.operationId,
-    );
+    // listen for payment (only for direct lightning deposits, not onramp)
+    if (!onramp) {
+      this.fedimintService.receive(
+        FedimintContext.CHAMAWALLET_RECEIVE,
+        lightning.operationId,
+      );
+    }
 
     const ledger = await this.getPaginatedChamaTransactions({
       memberId,
