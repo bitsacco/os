@@ -28,7 +28,7 @@ export class FedimintService {
   private password: string;
   private federationId: string;
   private gatewayId: string;
-  private lnUrlCallback: string;
+  private lnUrlCallback: string | undefined;
 
   constructor(
     private readonly httpService: HttpService,
