@@ -8,17 +8,13 @@ This directory contains standardized monitoring and telemetry services for Bitsa
    - OpenTelemetry SDK initialization with consistent configuration
    - Supports metrics collection and future distributed tracing
 
-2. **Bootstrapping**
-   - Standardized bootstrapTelemetry function for uniform initialization
-   - Graceful shutdown handling for telemetry resources
-
-3. **Core Metrics Service**
+2. **Core Metrics Service**
    - Database operation metrics
    - API and gRPC request monitoring
    - Resource utilization tracking (CPU, memory, disk, network)
    - Error monitoring by type, endpoint, and service
 
-4. **Business Metrics**
+3. **Business Metrics**
    - Transaction metrics for cross-service transaction tracking
    - Financial metrics (volume, currencies, conversion rates)
    - User engagement metrics (DAU, MAU, session duration)
@@ -26,22 +22,6 @@ This directory contains standardized monitoring and telemetry services for Bitsa
    - User retention metrics
 
 ## Usage
-
-### Initializing Telemetry
-
-In your service's main.ts file:
-
-```typescript
-import { bootstrapTelemetry } from '@bitsacco/common';
-
-async function bootstrap() {
-  // Initialize telemetry with service name and optional metrics port
-  bootstrapTelemetry('service-name', 9464);
-  
-  // Rest of your bootstrap code
-  // ...
-}
-```
 
 ### Using Transaction Metrics
 
