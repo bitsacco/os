@@ -45,7 +45,10 @@
       "Bash(sudo rm:*)",
       "Bash(tsc:*)",
       "WebFetch(domain:developers.intasend.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(docker logs:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(docker compose:*)"
     ],
     "deny": []
   }

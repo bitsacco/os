@@ -7,7 +7,6 @@ import {
   ChamaUpdatesDto,
   JwtAuthGuard,
   BulkChamaTxMetaRequestDto,
-  CircuitBreakerService,
   ChamaTxStatus,
 } from '@bitsacco/common';
 import { ChamasController } from './chamas.controller';
@@ -95,10 +94,6 @@ describe('ChamasController', () => {
         {
           provide: JwtAuthGuard,
           useClass: MockGuard,
-        },
-        {
-          provide: CircuitBreakerService,
-          useValue: mockCircuitBreaker,
         },
         {
           provide: ConfigService,

@@ -4,7 +4,6 @@ import {
   TransactionStatus,
   CreateOnrampSwapDto,
   FindSwapDto,
-  CustomStore,
   PaginatedSwapResponse,
   SwapResponse,
   CreateOfframpSwapDto,
@@ -26,6 +25,7 @@ import {
 } from '@bitsacco/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
@@ -53,7 +53,7 @@ export class SwapService {
     private readonly intasendService: IntasendService,
     private readonly fedimintService: FedimintService,
     private readonly eventEmitter: EventEmitter2,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: CustomStore,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly offramp: MpesaOfframpSwapRepository,
     private readonly onramp: MpesaOnrampSwapRepository,
   ) {

@@ -19,6 +19,7 @@ import {
 import { SolowalletController } from './solowallet.controller';
 import { SolowalletService } from './solowallet.service';
 import { SwapModule } from '../swap/swap.module';
+import { JwtConfigModule } from '../shared/jwt-config.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { SwapModule } from '../swap/swap.module';
     LoggerModule,
     HttpModule,
     SwapModule,
+    JwtConfigModule.forRoot(),
     EventEmitterModule.forRoot({
       global: true,
       delimiter: '.',

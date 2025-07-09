@@ -19,6 +19,8 @@ import {
   SharesSchema,
 } from './db';
 import { SharesMetricsService } from './shares.metrics';
+import { JwtConfigModule } from '../shared/jwt-config.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { SharesMetricsService } from './shares.metrics';
       { name: SharesDocument.name, schema: SharesSchema },
     ]),
     LoggerModule,
+    JwtConfigModule.forRoot(),
+    AuthModule,
   ],
   controllers: [SharesController],
   providers: [

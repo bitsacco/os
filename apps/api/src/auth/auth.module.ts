@@ -1,6 +1,5 @@
 import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -20,7 +19,6 @@ import {
   ApiKeyService,
   ServiceRegistryService,
   SecretsService,
-  ApiKeyCircuitBreakerService,
   RoleValidationService,
 } from '@bitsacco/common';
 import { AuthController } from './auth.controller';
@@ -34,6 +32,7 @@ import { ApiKeyRotationController } from './apikeys/apikey-rotation.controller';
 import { ApiKeyMetricsService } from './apikeys/apikey.metrics';
 import { ApiKeyRotationService } from './apikeys/apikey-rotation.service';
 import { SmsModule } from '../sms/sms.module';
+import { JwtConfigModule } from '../shared/jwt-config.module';
 
 @Module({
   imports: [
@@ -60,14 +59,9 @@ import { SmsModule } from '../sms/sms.module';
       }),
     }),
     SmsModule,
-    JwtModule.registerAsync({
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.getOrThrow<string>('AUTH_JWT_SECRET'),
-        signOptions: {
-          expiresIn: `${configService.getOrThrow('AUTH_JWT_EXPIRATION')}s`,
-        },
-      }),
-      inject: [ConfigService],
+    JwtConfigModule.forRoot({
+      secretKey: 'AUTH_JWT_SECRET',
+      expirationKey: 'AUTH_JWT_EXPIRATION',
     }),
     DatabaseModule,
     DatabaseModule.forFeature([
@@ -95,7 +89,6 @@ import { SmsModule } from '../sms/sms.module';
     ApiKeyService,
     SecretsService,
     ServiceRegistryService,
-    ApiKeyCircuitBreakerService,
     ApiKeyRotationService,
     RoleValidationService,
   ],

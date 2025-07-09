@@ -1,46 +1,27 @@
 import { BitlyClient } from 'bitly';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { type ClientGrpc } from '@nestjs/microservices';
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
-import { firstValueFrom } from 'rxjs';
-import {
-  SmsServiceClient,
-  SMS_SERVICE_NAME,
-  type Chama,
-  type ChamaInvite,
-} from '@bitsacco/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { type Chama, type ChamaInvite } from '@bitsacco/common';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class ChamaMessageService {
   private readonly jwtSecret: string;
   private readonly bitlyClient: BitlyClient;
-  private readonly smsService: SmsServiceClient;
   private readonly logger = new Logger(ChamaMessageService.name);
 
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    @Inject(SMS_SERVICE_NAME) private readonly smsGrpc: ClientGrpc,
+    private readonly smsService: SmsService,
   ) {
     this.jwtSecret = this.configService.getOrThrow('JWT_SECRET');
 
     const bitlyToken = this.configService.getOrThrow('BITLY_TOKEN');
     this.bitlyClient = new BitlyClient(bitlyToken);
 
-    this.smsService =
-      this.smsGrpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
-
-    if (!this.smsService) {
-      this.logger.error('Failed to connect to SMS Service');
-    } else {
-      this.logger.debug('SMS Service Connected');
-    }
+    this.logger.debug('SMS Service injected');
 
     this.logger.debug('ChamaMessageService started');
   }
@@ -63,12 +44,10 @@ export class ChamaMessageService {
 
           if (member.phoneNumber) {
             try {
-              await firstValueFrom(
-                this.smsService.sendSms({
-                  message,
-                  receiver: member.phoneNumber,
-                }),
-              );
+              await this.smsService.sendSms({
+                message,
+                receiver: member.phoneNumber,
+              });
               this.logger.debug(`SMS sent to ${member.phoneNumber}`);
             } catch (smsError) {
               this.logger.error(
@@ -166,12 +145,10 @@ export class ChamaMessageService {
             try {
               if (admin.phoneNumber) {
                 try {
-                  await firstValueFrom(
-                    this.smsService.sendSms({
-                      message,
-                      receiver: admin.phoneNumber,
-                    }),
-                  );
+                  await this.smsService.sendSms({
+                    message,
+                    receiver: admin.phoneNumber,
+                  });
                   this.logger.debug(
                     `Withdrawal SMS sent to ${admin.phoneNumber}`,
                   );

@@ -2,11 +2,11 @@ import { AxiosError } from 'axios';
 import { firstValueFrom, catchError } from 'rxjs';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import {
   Currency,
-  CustomStore,
   mapToSupportedCurrency,
   SupportedCurrencyType,
 } from '@bitsacco/common';
@@ -31,7 +31,7 @@ export class FxService {
   constructor(
     private readonly configService: ConfigService,
     private readonly httpService: HttpService,
-    @Inject(CACHE_MANAGER) private cacheManager: CustomStore,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {
     this.logger.log('FxService initialized');
   }

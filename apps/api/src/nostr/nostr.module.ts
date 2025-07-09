@@ -7,6 +7,8 @@ import {
   // RedisProvider,
   RoleValidationService,
 } from '@bitsacco/common';
+import { AuthModule } from '../auth/auth.module';
+import { JwtConfigModule } from '../shared/jwt-config.module';
 import { NostrController } from './nostr.controller';
 import { NostrService } from './nostr.service';
 import { NostrMetricsService } from './nostr.metrics';
@@ -26,6 +28,8 @@ import { NostrMetricsService } from './nostr.metrics';
       delimiter: '.',
       verboseMemoryLeak: true,
     }),
+    JwtConfigModule.forRoot(),
+    AuthModule,
   ],
   controllers: [NostrController],
   providers: [

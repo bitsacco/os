@@ -151,12 +151,12 @@ describe('NotificationGateway', () => {
         size: 10,
       });
 
-      expect(mockNotificationService.getNotifications).toHaveBeenCalledWith({
-        userId: 'test-user-id',
-        unreadOnly: true,
-        pagination: { page: 0, size: 10 },
-        topics: [],
-      });
+      expect(mockNotificationService.getNotifications).toHaveBeenCalledWith(
+        'test-user-id',
+        true,
+        { page: 0, size: 10 },
+        [],
+      );
 
       expect(result).toEqual({
         event: 'getNotifications',

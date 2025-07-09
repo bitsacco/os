@@ -5,6 +5,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { LoggerModule, DatabaseModule } from '@bitsacco/common';
 import { SmsModule } from '../sms/sms.module';
 import { NostrModule } from '../nostr/nostr.module';
+import { JwtConfigModule } from '../shared/jwt-config.module';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { NotificationGateway } from './notification.gateway';
@@ -43,6 +44,7 @@ import {
     ]),
     SmsModule,
     NostrModule,
+    JwtConfigModule.forRoot(),
   ],
   controllers: [NotificationController],
   providers: [

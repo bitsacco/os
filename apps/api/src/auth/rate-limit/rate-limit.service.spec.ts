@@ -14,7 +14,8 @@ describe('RateLimitService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllTimers();
+    // Clear rate limits after each test
+    (service as any).rateLimits.clear();
   });
 
   it('should be defined', () => {

@@ -28,7 +28,6 @@ import {
   RoleValidationService,
   CoreMetricsService,
   GlobalExceptionFilter,
-  CircuitBreakerService,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
@@ -71,6 +70,7 @@ import { MetricsModule } from './metrics/metrics.module';
         NODE_ENV: Joi.string().required(),
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
+        JWT_EXPIRATION: Joi.string().required(),
         THROTTLE_TTL: Joi.number().default(60),
         THROTTLE_LIMIT: Joi.number().default(120),
         IP_RATE_LIMIT_ENABLED: Joi.boolean().default(true),
@@ -111,7 +111,6 @@ import { MetricsModule } from './metrics/metrics.module';
       },
       inject: [CoreMetricsService],
     },
-    CircuitBreakerService,
     CoreMetricsService,
     UsersRepository,
     UsersService,

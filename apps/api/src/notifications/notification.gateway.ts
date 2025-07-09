@@ -219,12 +219,12 @@ export class NotificationGateway
         topics = [],
       } = data || {};
 
-      const result = await this.notificationService.getNotifications({
+      const result = await this.notificationService.getNotifications(
         userId,
         unreadOnly,
-        pagination: { page, size },
+        { page, size },
         topics,
-      });
+      );
 
       return {
         event: 'getNotifications',
@@ -270,10 +270,7 @@ export class NotificationGateway
     try {
       const { notificationIds = [] } = data || {};
 
-      await this.notificationService.markAsRead({
-        userId,
-        notificationIds,
-      });
+      await this.notificationService.markAsRead(userId, notificationIds);
 
       return {
         event: 'markAsRead',
@@ -319,11 +316,11 @@ export class NotificationGateway
     try {
       const { channels = [], topics = [] } = data || {};
 
-      await this.notificationService.updatePreferences({
+      await this.notificationService.updatePreferences(
         userId,
         channels,
         topics,
-      });
+      );
 
       return {
         event: 'updatePreferences',

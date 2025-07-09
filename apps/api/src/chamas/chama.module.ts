@@ -25,7 +25,8 @@ import {
   ChamaWalletSchema,
 } from '../chamawallet/db';
 import { ChamaMessageService } from './chamas.messaging';
-import { JwtModule } from '@nestjs/jwt';
+import { SmsModule } from '../sms/sms.module';
+import { JwtConfigModule } from '../shared/jwt-config.module';
 
 @Module({
   imports: [
@@ -39,8 +40,6 @@ import { JwtModule } from '@nestjs/jwt';
         FEDIMINT_GATEWAY_ID: Joi.string().required(),
         CHAMA_EXPERIENCE_URL: Joi.string().required(),
         LNURL_CALLBACK: Joi.string().required(),
-        JWT_SECRET: Joi.string().required(),
-        JWT_EXPIRATION: Joi.string().required(),
         BITLY_TOKEN: Joi.string().required(),
       }),
     }),
@@ -52,21 +51,14 @@ import { JwtModule } from '@nestjs/jwt';
     ]),
     LoggerModule,
     SwapModule,
+    SmsModule,
     EventEmitterModule.forRoot({
       global: true,
       delimiter: '.',
       verboseMemoryLeak: true,
     }),
     HttpModule,
-    JwtModule.registerAsync({
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.getOrThrow<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: `${configService.getOrThrow('JWT_EXPIRATION')}s`,
-        },
-      }),
-      inject: [ConfigService],
-    }),
+    JwtConfigModule.forRoot(),
   ],
   providers: [
     ChamasService,

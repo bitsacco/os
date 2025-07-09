@@ -5,6 +5,7 @@ import { LoggerModule } from '@bitsacco/common';
 import { SmsController } from './sms.controller';
 import { SmsService } from './sms.service';
 import { SmsMetricsService } from './sms.metrics';
+import { JwtConfigModule } from '../shared/jwt-config.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { SmsMetricsService } from './sms.metrics';
       }),
     }),
     LoggerModule,
+    JwtConfigModule.forRoot(),
   ],
   controllers: [SmsController],
   providers: [SmsService, SmsMetricsService],

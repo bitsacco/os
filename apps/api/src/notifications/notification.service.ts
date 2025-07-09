@@ -183,7 +183,7 @@ export class NotificationService {
     this.metrics.notificationCreated(topic, importance);
 
     // Emit notification created event
-    this.eventEmitter.emit<NotificationCreatedEvent>(notification_created, {
+    this.eventEmitter.emit(notification_created, {
       notificationId,
       userId,
       title,
@@ -365,7 +365,7 @@ export class NotificationService {
     this.metrics.notificationDelivered(channel, topic, success);
 
     // Emit delivery event
-    this.eventEmitter.emit<NotificationDeliveredEvent>(notification_delivered, {
+    this.eventEmitter.emit(notification_delivered, {
       notificationId,
       userId,
       channel,

@@ -15,6 +15,7 @@ import { SwapService } from './swap.service';
 import { FxService } from './fx/fx.service';
 import { IntasendService } from './intasend/intasend.service';
 import { SwapMetricsService } from './metrics/swap.metrics';
+import { JwtConfigModule } from '../shared/jwt-config.module';
 import {
   MpesaOfframpSwapRepository,
   MpesaOfframpSwapDocument,
@@ -47,6 +48,7 @@ import {
     ]),
     LoggerModule,
     HttpModule,
+    JwtConfigModule.forRoot(),
     CacheModule.register({
       isGlobal: true,
       ttl: 60 * 60 * 5 * 1000, // 5 hours in milliseconds
