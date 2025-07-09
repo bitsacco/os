@@ -466,7 +466,7 @@ export class SwapService {
       },
     );
 
-    // Emit an event with the updated swap status for interested services
+    // Emit an event with the updated swap status for interested modules
     const txStatus = mapSwapTxStateToTransactionStatus(newState);
     const statusEvent: SwapStatusChangeEvent = {
       context: SwapContext.OFFRAMP,

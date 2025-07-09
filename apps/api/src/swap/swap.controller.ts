@@ -24,7 +24,6 @@ import {
   mapToCurrency,
   type SupportedCurrencyType,
   SupportedCurrencies,
-  process_swap_update,
   CreateOnrampSwapDto,
   ListSwapsDto,
   CreateOfframpSwapDto,
@@ -202,8 +201,13 @@ export class SwapController {
       'Post updates to an acive swap. Used as a webhook by 3rd parties to notify transaction progress',
   })
   @ApiBody({ type: object })
-  postSwapUpdate(@Body() updates: unknown) {
-    this.eventEmitter.emit(process_swap_update, updates);
+  async postSwapUpdate(@Body() updates: unknown) {
+    // Process the update asynchronously without waiting
+    this.swapService.processSwapUpdate(updates as any).catch((error) => {
+      this.logger.error('Error processing swap update:', error);
+    });
+
+    // Immediately return success to the webhook caller
     return { success: true };
   }
 }

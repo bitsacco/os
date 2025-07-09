@@ -2,7 +2,8 @@
 process.env.DATABASE_URL = 'mongodb://localhost:27017/test';
 process.env.JWT_SECRET = 'test-secret-key-that-is-at-least-32-characters-long';
 process.env.JWT_EXPIRATION = '3600';
-process.env.AUTH_JWT_SECRET = 'test-auth-secret-key-that-is-at-least-32-characters-long';
+process.env.AUTH_JWT_SECRET =
+  'test-auth-secret-key-that-is-at-least-32-characters-long';
 process.env.AUTH_JWT_EXPIRATION = '3600';
 process.env.AUTH_JWT_AUD = 'test-audience';
 process.env.AUTH_JWT_ISS = 'test-issuer';
@@ -24,7 +25,8 @@ process.env.SOLOWALLET_CLIENTD_BASE_URL = 'http://localhost:8080';
 process.env.SOLOWALLET_CLIENTD_PASSWORD = 'test-password';
 process.env.SOLOWALLET_FEDERATION_ID = 'test-federation';
 process.env.SOLOWALLET_GATEWAY_ID = 'test-gateway';
-process.env.SOLOWALLET_LNURL_CALLBACK = 'http://localhost:3000/solowallet/lnurl';
+process.env.SOLOWALLET_LNURL_CALLBACK =
+  'http://localhost:3000/solowallet/lnurl';
 
 // Chama Service
 process.env.CHAMA_CLIENTD_BASE_URL = 'http://localhost:8080';
