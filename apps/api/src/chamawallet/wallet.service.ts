@@ -13,6 +13,7 @@ import {
   default_page_size,
   fedimint_receive_failure,
   fedimint_receive_success,
+  swap_status_change,
   FedimintService,
   FilterChamaTransactionsDto,
   FindTxRequestDto,
@@ -1089,6 +1090,7 @@ export class ChamaWalletService {
     );
   }
 
+  @OnEvent(swap_status_change)
   async handleSwapStatusChange({
     context,
     payload,

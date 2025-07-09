@@ -6,6 +6,7 @@ import {
   WalletMeta,
   fedimint_receive_failure,
   fedimint_receive_success,
+  swap_status_change,
   FedimintService,
   LnurlMetricsService,
   UserTxsResponse,
@@ -928,6 +929,7 @@ export class SolowalletService {
     );
   }
 
+  @OnEvent(swap_status_change)
   async handleSwapStatusChange({
     context,
     payload,
