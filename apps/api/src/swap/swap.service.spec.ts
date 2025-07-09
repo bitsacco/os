@@ -11,6 +11,7 @@ import {
 import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
+import { ConfigService } from '@nestjs/config';
 import { FxService } from './fx/fx.service';
 import { SwapService } from './swap.service';
 import { IntasendService } from './intasend/intasend.service';
@@ -71,6 +72,7 @@ describe('SwapService', () => {
     } as unknown as IntasendService;
 
     mockFedimintService = {
+      initialize: jest.fn(),
       pay: jest.fn().mockImplementation(() => {
         return {
           state: SwapTransactionState.COMPLETE,
@@ -133,6 +135,25 @@ describe('SwapService', () => {
           provide: EVENTS_SERVICE_BUS,
           useValue: {
             emit: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              switch (key) {
+                case 'SWAP_CLIENTD_BASE_URL':
+                  return 'http://localhost:2121';
+                case 'SWAP_CLIENTD_PASSWORD':
+                  return 'password';
+                case 'SWAP_FEDERATION_ID':
+                  return 'federation123';
+                case 'SWAP_GATEWAY_ID':
+                  return 'gateway123';
+                default:
+                  return undefined;
+              }
+            }),
           },
         },
       ],

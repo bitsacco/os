@@ -28,27 +28,29 @@ export class FedimintService {
   private password: string;
   private federationId: string;
   private gatewayId: string;
+  private lnUrlCallback: string;
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly httpService: HttpService,
     private readonly eventEmitter: EventEmitter2,
   ) {
     this.logger.log('FedimintService created');
+  }
 
-    this.baseUrl = `${this.configService.getOrThrow<string>(
-      'FEDIMINT_CLIENTD_BASE_URL',
-    )}`;
-    this.password = this.configService.getOrThrow<string>(
-      'FEDIMINT_CLIENTD_PASSWORD',
-    );
-    this.federationId = this.configService.getOrThrow<string>(
-      'FEDIMINT_FEDERATION_ID',
-    );
-    this.gatewayId = this.configService.getOrThrow<string>(
-      'FEDIMINT_GATEWAY_ID',
-    );
-
+  initialize(
+    baseUrl: string,
+    federationId: string,
+    gatewayId: string,
+    password: string,
+    lnUrlCallback?: string,
+  ) {
+    this.baseUrl = baseUrl;
+    this.federationId = federationId;
+    this.gatewayId = gatewayId;
+    this.password = password;
+    if (lnUrlCallback) {
+      this.lnUrlCallback = lnUrlCallback;
+    }
     this.logger.log('FedimintService initialized');
   }
 
@@ -225,7 +227,11 @@ export class FedimintService {
     );
 
     try {
-      const callback = this.configService.getOrThrow('LNURL_CALLBACK');
+      if (!this.lnUrlCallback) {
+        throw new Error('LNURL callback URL not configured');
+      }
+
+      const callback = this.lnUrlCallback;
       const k1 = crypto.randomBytes(16).toString('hex');
       const currentTimeSeconds = Math.floor(new Date().getTime() / 1000);
       const expiresAt = expirySeconds

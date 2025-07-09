@@ -17,6 +17,7 @@ import { ChamaMetricsService } from '../chamas/chama.metrics';
 import { ChamaMessageService } from '../chamas/chamas.messaging';
 import { ChamaWalletService } from './wallet.service';
 import { ChamaWalletRepository } from './db';
+import { ConfigService } from '@nestjs/config';
 
 describe('ChamaWalletService', () => {
   let service: ChamaWalletService;
@@ -31,6 +32,7 @@ describe('ChamaWalletService', () => {
   };
 
   const mockFedimintService = {
+    initialize: jest.fn(),
     invoice: jest.fn(),
     receive: jest.fn(),
   };
@@ -117,6 +119,27 @@ describe('ChamaWalletService', () => {
             getQuote: jest.fn(),
             createOnrampSwap: jest.fn(),
             createOfframpSwap: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              switch (key) {
+                case 'CHAMA_CLIENTD_BASE_URL':
+                  return 'http://localhost:2121';
+                case 'CHAMA_CLIENTD_PASSWORD':
+                  return 'password';
+                case 'CHAMA_FEDERATION_ID':
+                  return 'federation123';
+                case 'CHAMA_GATEWAY_ID':
+                  return 'gateway123';
+                case 'CHAMA_LNURL_CALLBACK':
+                  return 'https://bitsacco.com/lnurl/callback';
+                default:
+                  return undefined;
+              }
+            }),
           },
         },
       ],
