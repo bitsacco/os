@@ -4,18 +4,11 @@ import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { ReflectionService } from '@grpc/reflection';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
-import { bootstrapTelemetry, getRedisConfig } from '@bitsacco/common';
+import { getRedisConfig } from '@bitsacco/common';
 import { SharesModule } from './shares.module';
 
 async function bootstrap() {
   const port = process.env.PORT ?? 4070;
-  const metricsPort = process.env.METRICS_PORT ?? 4072;
-  try {
-    // Initialize OpenTelemetry for metrics and tracing
-    bootstrapTelemetry('shares-service', Number(metricsPort));
-  } catch (e) {
-    console.error('Failed to bootstrap telemetry', e);
-  }
 
   const app = await NestFactory.create(SharesModule);
   const configService = app.get(ConfigService);
@@ -48,9 +41,6 @@ async function bootstrap() {
   app.useLogger(app.get(Logger));
 
   await app.startAllMicroservices();
-  console.log(
-    `🔍 Telemetry enabled - Prometheus metrics available at 0.0.0.0:${metricsPort}/metrics`,
-  );
 }
 
 bootstrap();

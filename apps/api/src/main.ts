@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { HttpLoggingInterceptor, bootstrapTelemetry } from '@bitsacco/common';
+import { HttpLoggingInterceptor } from '@bitsacco/common';
 import { ApiModule } from './api.module';
 import { setupDocs } from './docs.plugin';
 
@@ -11,15 +11,6 @@ const API_VERSION = 'v1';
 
 async function bootstrap() {
   const port = process.env.PORT ?? 4000;
-
-  try {
-    // Initialize OpenTelemetry for metrics and tracing
-    // Set up metrics endpoint for API gateway that will aggregate all metrics
-    bootstrapTelemetry('api-gateway-service');
-  } catch (e) {
-    console.error('Failed to bootstrap telemetry', e);
-  }
-
   const app = await NestFactory.create(ApiModule);
 
   // setup pino logging
@@ -70,9 +61,6 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   await app.listen(port);
-  console.log(
-    `🔍 Telemetry enabled - Aggregated metrics available at http://127.0.0.1:${port}/metrics`,
-  );
 }
 
 bootstrap();

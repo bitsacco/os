@@ -1,12 +1,5 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  ApiKeyScopes,
-  ApiKeyScope,
-  RequireApiKey,
-  Public,
-} from '@bitsacco/common';
-import { CombinedAuthGuard } from '../auth/combined-auth.guard';
 
 @Controller('health')
 export class HealthController {
@@ -21,9 +14,6 @@ export class HealthController {
   }
 
   @Get()
-  @UseGuards(CombinedAuthGuard)
-  @RequireApiKey()
-  @ApiKeyScopes(ApiKeyScope.ServiceAuth)
   getHealth() {
     const uptime = Math.floor((Date.now() - this.startupTime.getTime()) / 1000);
 
@@ -34,36 +24,6 @@ export class HealthController {
       version: this.version,
       timestamp: new Date().toISOString(),
       uptime: `${uptime} seconds`,
-    };
-  }
-
-  @Get('readiness')
-  @Public()
-  getReadiness() {
-    return {
-      status: 'ok',
-      message: 'API Gateway is ready to accept connections',
-    };
-  }
-
-  @Get('liveness')
-  @Public()
-  getLiveness() {
-    return {
-      status: 'ok',
-      message: 'API Gateway is alive',
-    };
-  }
-
-  @Get('public')
-  @Public()
-  getPublicHealth() {
-    return {
-      status: 'ok',
-      service: 'api-gateway',
-      environment: this.environment,
-      message:
-        'This is a public health endpoint that does not require authentication',
     };
   }
 }
