@@ -198,7 +198,7 @@ export class SwapController {
   @Post('webhook')
   @ApiOperation({
     summary:
-      'Post updates to an acive swap. Used as a webhook by 3rd parties to notify transaction progress',
+      'Post updates to an active swap. Used as a webhook by 3rd parties to notify transaction progress',
   })
   @ApiBody({ type: object })
   async postSwapUpdate(@Body() updates: unknown) {
