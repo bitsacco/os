@@ -28,6 +28,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   MpesaOnrampSwapDocument,
   MpesaOnrampSwapRepository,
@@ -53,11 +54,21 @@ export class SwapService {
     private readonly intasendService: IntasendService,
     private readonly fedimintService: FedimintService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly offramp: MpesaOfframpSwapRepository,
     private readonly onramp: MpesaOnrampSwapRepository,
   ) {
     this.logger.log('SwapService initialized');
+
+    // Initialize FedimintService
+    this.fedimintService.initialize(
+      this.configService.get<string>('SWAP_CLIENTD_BASE_URL'),
+      this.configService.get<string>('SWAP_FEDERATION_ID'),
+      this.configService.get<string>('SWAP_GATEWAY_ID'),
+      this.configService.get<string>('SWAP_CLIENTD_PASSWORD'),
+    );
+
     this.eventEmitter.on(
       fedimint_receive_success,
       this.handleSuccessfulReceive.bind(this),

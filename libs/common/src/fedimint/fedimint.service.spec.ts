@@ -16,57 +16,33 @@ describe('FedimintService', () => {
     } as any;
   });
 
-  it('init: throws error if FEDIMINT_CLIENTD_BASE_URL config is not set', async () => {
-    (mockCfg.getOrThrow as jest.Mock).mockImplementation((key: string) => {
-      throw new Error(`${key} not found`);
-    });
+  it('should initialize successfully with all required parameters', async () => {
+    const fedimintService = await createFedimintService(mockCfg);
 
-    await expect(createFedimintService(mockCfg)).rejects.toThrow();
+    // Initialize with all required parameters
+    expect(() => {
+      fedimintService.initialize(
+        'http://localhost:2121',
+        'federation123',
+        'gateway123',
+        'password',
+        'https://api.bitsacco.com/lnurl',
+      );
+    }).not.toThrow();
   });
 
-  it('init: throws error if FEDIMINT_CLIENTD_PASSWORD config is not set', async () => {
-    (mockCfg.getOrThrow as jest.Mock).mockImplementation((key: string) => {
-      switch (key) {
-        case 'FEDIMINT_CLIENTD_BASE_URL':
-          return 'http://localhost:2121';
-        default:
-          throw new Error(`${key} not found`);
-      }
-    });
+  it('should initialize successfully without optional lnUrlCallback', async () => {
+    const fedimintService = await createFedimintService(mockCfg);
 
-    await expect(createFedimintService(mockCfg)).rejects.toThrow();
-  });
-
-  it('init: throws error if FEDIMINT_FEDERATION_ID config is not set', async () => {
-    (mockCfg.getOrThrow as jest.Mock).mockImplementation((key: string) => {
-      switch (key) {
-        case 'FEDIMINT_CLIENTD_BASE_URL':
-          return 'http://localhost:2121';
-        case 'FEDIMINT_CLIENTD_PASSWORD':
-          return 'password';
-        default:
-          throw new Error(`${key} not found`);
-      }
-    });
-
-    await expect(createFedimintService(mockCfg)).rejects.toThrow();
-  });
-
-  it('init: throws error if FEDIMINT_GATEWAY_ID config is not set', async () => {
-    (mockCfg.getOrThrow as jest.Mock).mockImplementation((key: string) => {
-      switch (key) {
-        case 'FEDIMINT_CLIENTD_BASE_URL':
-          return 'http://localhost:2121';
-        case 'FEDIMINT_CLIENTD_PASSWORD':
-          return 'password';
-        case 'FEDIMINT_FEDERATION_ID':
-          return 'fed11dwwewfewwgwrgrgrwgwrgw';
-        default:
-          throw new Error(`${key} not found`);
-      }
-    });
-
-    await expect(createFedimintService(mockCfg)).rejects.toThrow();
+    // Initialize without optional lnUrlCallback
+    expect(() => {
+      fedimintService.initialize(
+        'http://localhost:2121',
+        'federation123',
+        'gateway123',
+        'password',
+      );
+    }).not.toThrow();
   });
 
   describe('createLnUrlWithdrawPoint', () => {
@@ -124,6 +100,15 @@ describe('FedimintService', () => {
       });
 
       fedimintService = module.get<FedimintService>(FedimintService);
+
+      // Initialize the service with test values
+      fedimintService.initialize(
+        'http://localhost:2121',
+        'federation123',
+        'gateway123',
+        'password',
+        'https://api.bitsacco.com/solowallet/lnurl',
+      );
     });
 
     it('should create a valid LNURL withdraw point', async () => {
@@ -167,30 +152,43 @@ describe('FedimintService', () => {
     });
 
     it('should throw an error if LNURL_CALLBACK is not configured', async () => {
-      // Mock missing callback URL
-      (mockCfg.getOrThrow as jest.Mock).mockImplementation((key: string) => {
-        if (key === 'LNURL_CALLBACK') {
-          throw new Error('LNURL_CALLBACK not found');
-        }
-
-        switch (key) {
-          case 'FEDIMINT_CLIENTD_BASE_URL':
-            return 'http://localhost:2121';
-          case 'FEDIMINT_CLIENTD_PASSWORD':
-            return 'password';
-          case 'FEDIMINT_FEDERATION_ID':
-            return 'federation123';
-          case 'FEDIMINT_GATEWAY_ID':
-            return 'gateway123';
-          default:
-            throw new Error(`${key} not found`);
-        }
+      // Create a new service instance without initializing lnUrlCallback
+      const module: TestingModule = await createTestingModuleWithValidation({
+        imports: [ConfigModule],
+        providers: [
+          FedimintService,
+          {
+            provide: ConfigService,
+            useValue: mockCfg,
+          },
+          {
+            provide: HttpService,
+            useValue: mockHttpService,
+          },
+          {
+            provide: EventEmitter2,
+            useValue: mockEventEmitter,
+          },
+        ],
       });
 
-      // Expect error when creating withdraw point
+      const uninitializedService = module.get<FedimintService>(FedimintService);
+
+      // Initialize without lnUrlCallback
+      uninitializedService.initialize(
+        'http://localhost:2121',
+        'federation123',
+        'gateway123',
+        'password',
+        // No lnUrlCallback provided
+      );
+
+      // Expect error when creating withdraw point without lnUrlCallback
       await expect(
-        fedimintService.createLnUrlWithdrawPoint(1000000),
-      ).rejects.toThrow();
+        uninitializedService.createLnUrlWithdrawPoint(1000000),
+      ).rejects.toThrow(
+        'LNURL withdrawal creation failed: LNURL callback URL not configured',
+      );
     });
   });
 });

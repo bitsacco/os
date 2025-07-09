@@ -10,6 +10,7 @@ import {
 } from '@bitsacco/common';
 import { SolowalletMetricsService } from './solowallet.metrics';
 import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 import { SolowalletService } from './solowallet.service';
 import { SolowalletDocument, SolowalletRepository } from './db';
@@ -36,6 +37,7 @@ describe('SolowalletService', () => {
   // Set up mocks before running tests
   beforeAll(async () => {
     const mockFedimintService = {
+      initialize: jest.fn(),
       pay: jest
         .fn()
         .mockResolvedValue({ operationId: 'test-op-id', fee: 1000 }),
@@ -116,6 +118,27 @@ describe('SolowalletService', () => {
             recordDepositMetric: jest.fn(),
             recordWithdrawalMetric: jest.fn(),
             recordBalanceMetric: jest.fn(),
+          },
+        },
+        {
+          provide: ConfigService,
+          useValue: {
+            get: jest.fn((key: string) => {
+              switch (key) {
+                case 'SOLOWALLET_CLIENTD_BASE_URL':
+                  return 'http://localhost:2121';
+                case 'SOLOWALLET_CLIENTD_PASSWORD':
+                  return 'password';
+                case 'SOLOWALLET_FEDERATION_ID':
+                  return 'federation123';
+                case 'SOLOWALLET_GATEWAY_ID':
+                  return 'gateway123';
+                case 'SOLOWALLET_LNURL_CALLBACK':
+                  return 'https://bitsacco.com/lnurl/callback';
+                default:
+                  return undefined;
+              }
+            }),
           },
         },
         Logger,

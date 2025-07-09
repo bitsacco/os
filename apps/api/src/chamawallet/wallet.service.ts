@@ -1,5 +1,6 @@
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
@@ -66,7 +67,17 @@ export class ChamaWalletService {
     private readonly chamas: ChamasService,
     private readonly users: UsersService,
     private readonly messenger: ChamaMessageService,
+    private readonly configService: ConfigService,
   ) {
+    // Initialize FedimintService
+    this.fedimintService.initialize(
+      this.configService.get<string>('CHAMA_CLIENTD_BASE_URL'),
+      this.configService.get<string>('CHAMA_FEDERATION_ID'),
+      this.configService.get<string>('CHAMA_GATEWAY_ID'),
+      this.configService.get<string>('CHAMA_CLIENTD_PASSWORD'),
+      this.configService.get<string>('CHAMA_LNURL_CALLBACK'),
+    );
+
     this.eventEmitter.on(
       fedimint_receive_success,
       this.handleSuccessfulReceive.bind(this),
