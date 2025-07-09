@@ -1,8 +1,7 @@
 import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
-import { IoAdapter } from '@nestjs/platform-socket.io';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { HttpLoggingInterceptor } from '@bitsacco/common';
 import { ApiModule } from './api.module';
 import { setupDocs } from './docs.plugin';
@@ -48,9 +47,6 @@ async function bootstrap() {
 
   // Set up CORS
   setupCORS(app);
-
-  // Configure WebSocket adapter to use the same HTTP server
-  app.useWebSocketAdapter(new IoAdapter(app));
 
   // Add WebSocket documentation to Swagger UI (includes REST docs)
   setupDocs(app, 'docs');

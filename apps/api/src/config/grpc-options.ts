@@ -28,16 +28,22 @@ export function createGrpcOptions(
     'grpc.enable_retries': 1,
     'grpc.service_config': JSON.stringify({
       loadBalancingPolicy: 'round_robin',
-      methodConfig: [{
-        name: [{}],
-        retryPolicy: {
-          maxAttempts: 5,
-          initialBackoff: '0.5s',
-          maxBackoff: '5s',
-          backoffMultiplier: 2,
-          retryableStatusCodes: ['UNAVAILABLE', 'DEADLINE_EXCEEDED', 'RESOURCE_EXHAUSTED'],
+      methodConfig: [
+        {
+          name: [{}],
+          retryPolicy: {
+            maxAttempts: 5,
+            initialBackoff: '0.5s',
+            maxBackoff: '5s',
+            backoffMultiplier: 2,
+            retryableStatusCodes: [
+              'UNAVAILABLE',
+              'DEADLINE_EXCEEDED',
+              'RESOURCE_EXHAUSTED',
+            ],
+          },
         },
-      }],
+      ],
     }),
 
     // Connection pooling

@@ -4,9 +4,7 @@ import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
- * A custom plugin that enhances Swagger documentation with WebSocket endpoint details.
- * This plugin adds a custom section to the Swagger UI that displays WebSocket events.
- *
+ * A custom plugin that enhances Swagger documentation.
  * In production, the documentation is secured with API key authentication.
  */
 export function setupDocs(app: INestApplication, path: string) {
@@ -61,52 +59,6 @@ export function setupDocs(app: INestApplication, path: string) {
   if (!document.paths) {
     document.paths = {};
   }
-
-  // Create a connection section in the Swagger document
-  document.paths['/notifications/websocket'] = {
-    get: {
-      tags: ['Notifications WebSocket'],
-      summary: 'WebSocket Connection Endpoint',
-      description: `
-## WebSocket Connection
-
-Connect to the WebSocket server at \`ws://your-api-server-host/v1/notifications/websocket\` with your JWT authentication token:
-
-\`\`\`javascript
-import { io } from 'socket.io-client';
-
-const socket = io('ws://your-api-server/notifications', {
-  auth: {
-    token: 'your-jwt-token-here'
-  }
-});
-
-// Listen for connection events
-socket.on('connect', () => {
-  console.log('Connected to notification service');
-});
-
-socket.on('disconnect', () => {
-  console.log('Disconnected from notification service');
-});
-\`\`\`
-
-## Server-Emitted Events
-
-The server will emit these events to connected clients:
-
-- \`connection:established\` - Emitted immediately after successful connection and authentication
-- \`notification:created\` - A new notification has been created for the user
-- \`notification:delivered\` - A notification has been delivered through a specific channel
-- \`preferences:updated\` - The user's notification preferences have been updated
-`,
-      responses: {
-        '101': {
-          description: 'WebSocket connection established',
-        },
-      },
-    },
-  };
 
   // Make the Swagger UI include our custom WebSocket documentation
   const customOptions = {
