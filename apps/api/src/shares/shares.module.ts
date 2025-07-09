@@ -31,8 +31,6 @@ import { SharesMetricsService } from './shares.metrics';
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
-        NODE_ENV: Joi.string().required(),
-        SHARES_GRPC_URL: Joi.string().required(),
         DATABASE_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),

@@ -5,34 +5,39 @@ import {
 } from '@bitsacco/testing';
 
 import { NostrController } from './nostr.controller';
-import { type ClientGrpc } from '@nestjs/microservices';
-import {
-  NOSTR_SERVICE_NAME,
-  NostrServiceClient,
-  CircuitBreakerService,
-} from '@bitsacco/common';
-import { provideGrpcMocks } from '../test-utils/grpc-mocks';
+import { NostrService } from './nostr.service';
+import { NostrMetricsService } from './nostr.metrics';
+import { ConfigService } from '@nestjs/config';
 
 describe('NostrController', () => {
-  let serviceGenerator: ClientGrpc;
   let nostrController: NostrController;
-  let nostrServiceClient: Partial<NostrServiceClient>;
+  let nostrService: NostrService;
 
   beforeEach(async () => {
-    nostrServiceClient = {};
+    const jwtAuthMocks = provideJwtAuthStrategyMocks();
 
-    serviceGenerator = {
-      getService: jest.fn().mockReturnValue(nostrServiceClient),
-      getClientByServiceName: jest.fn().mockReturnValue(nostrServiceClient),
+    // Create mocks for the services
+    const mockNostrService = {
+      configureNostrRelays: jest.fn().mockResolvedValue(undefined),
+      sendEncryptedDirectMessage: jest.fn().mockResolvedValue(undefined),
     };
 
-    const jwtAuthMocks = provideJwtAuthStrategyMocks();
-    const grpcMocks = provideGrpcMocks(nostrServiceClient);
+    const mockNostrMetricsService = {
+      recordRelayMetric: jest.fn(),
+      recordMessageMetric: jest.fn(),
+      updateConnectedRelaysCount: jest.fn(),
+    };
 
-    // Create a mock for the CircuitBreakerService
-    const mockCircuitBreaker = {
-      execute: jest.fn().mockImplementation((serviceKey, observable) => {
-        return observable;
+    const mockConfigService = {
+      getOrThrow: jest.fn().mockImplementation((key: string) => {
+        switch (key) {
+          case 'NOSTR_PRIVATE_KEY':
+            return 'test-private-key';
+          case 'NOSTR_PUBLIC_KEY':
+            return 'test-public-key';
+          default:
+            return 'test-value';
+        }
       }),
     };
 
@@ -40,19 +45,23 @@ describe('NostrController', () => {
       controllers: [NostrController],
       providers: [
         {
-          provide: NOSTR_SERVICE_NAME,
-          useValue: serviceGenerator,
+          provide: NostrService,
+          useValue: mockNostrService,
         },
         {
-          provide: CircuitBreakerService,
-          useValue: mockCircuitBreaker,
+          provide: NostrMetricsService,
+          useValue: mockNostrMetricsService,
         },
-        ...grpcMocks,
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
+        },
         ...jwtAuthMocks,
       ],
     });
 
     nostrController = module.get<NostrController>(NostrController);
+    nostrService = module.get<NostrService>(NostrService);
   });
 
   it('should be defined', () => {

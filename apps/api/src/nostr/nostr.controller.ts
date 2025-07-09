@@ -7,7 +7,6 @@ import {
 import {
   Body,
   Controller,
-  Inject,
   Logger,
   Post,
   UseGuards,
@@ -15,32 +14,20 @@ import {
 import {
   ConfigureNostrRelaysDto,
   JwtAuthGuard,
-  NOSTR_SERVICE_NAME,
-  NostrServiceClient,
   SendEncryptedNostrDmDto,
-  CircuitBreakerService,
   HandleServiceErrors,
-  GrpcServiceWrapper,
 } from '@bitsacco/common';
-import { type ClientGrpc } from '@nestjs/microservices';
+import { NostrService } from './nostr.service';
 
 @Controller('nostr')
 @UseGuards(JwtAuthGuard)
 export class NostrController {
-  private nostrService: NostrServiceClient;
   private readonly logger = new Logger(NostrController.name);
 
   constructor(
-    @Inject(NOSTR_SERVICE_NAME) private readonly grpc: ClientGrpc,
-    private readonly circuitBreaker: CircuitBreakerService,
-    private readonly grpcWrapper: GrpcServiceWrapper,
+    private readonly nostrService: NostrService,
   ) {
-    this.nostrService = this.grpcWrapper.createServiceProxy<NostrServiceClient>(
-      this.grpc,
-      'NOSTR_SERVICE',
-      NOSTR_SERVICE_NAME,
-    );
-    this.logger.log('NostrController initialized');
+    this.logger.log('NostrController initialized with direct service injection');
   }
 
   @Post('relays')
@@ -51,16 +38,8 @@ export class NostrController {
     type: ConfigureNostrRelaysDto,
   })
   @HandleServiceErrors()
-  configureNostrRelays(@Body() req: ConfigureNostrRelaysDto) {
-    return this.circuitBreaker.execute(
-      'nostr-service-configure',
-      this.nostrService.configureTrustedNostrRelays(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async configureNostrRelays(@Body() req: ConfigureNostrRelaysDto): Promise<void> {
+    return await this.nostrService.configureNostrRelays(req);
   }
 
   @Post('dm')
@@ -71,15 +50,7 @@ export class NostrController {
     type: SendEncryptedNostrDmDto,
   })
   @HandleServiceErrors()
-  send(@Body() req: SendEncryptedNostrDmDto) {
-    return this.circuitBreaker.execute(
-      'nostr-service-send-dm',
-      this.nostrService.sendEncryptedNostrDirectMessage(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async send(@Body() req: SendEncryptedNostrDmDto): Promise<void> {
+    return await this.nostrService.sendEncryptedDirectMessage(req);
   }
 }
