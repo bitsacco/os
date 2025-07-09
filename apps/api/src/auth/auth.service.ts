@@ -1,6 +1,4 @@
-import { firstValueFrom } from 'rxjs';
 import {
-  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -12,34 +10,28 @@ import {
   RegisterUserRequestDto,
   VerifyUserRequestDto,
   UsersService,
-  SmsServiceClient,
-  SMS_SERVICE_NAME,
   RecoverUserRequestDto,
   isPreUserAuth,
   TokenResponse,
   AuthRequestDto,
 } from '@bitsacco/common';
-import { type ClientGrpc } from '@nestjs/microservices';
 import { TokenService } from './tokens/token.service';
 import { AuthMetricsService } from './metrics/auth.metrics';
 import { RateLimitService } from './rate-limit/rate-limit.service';
+import { SmsService } from '../sms/sms.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly smsService: SmsServiceClient;
 
   constructor(
     private readonly userService: UsersService,
     private readonly tokenService: TokenService,
     private readonly metricsService: AuthMetricsService,
     private readonly rateLimitService: RateLimitService,
-    @Inject(SMS_SERVICE_NAME) private readonly smsGrpc: ClientGrpc,
+    private readonly smsService: SmsService,
   ) {
     this.logger.debug('AuthService initialized');
-    this.smsService =
-      this.smsGrpc.getService<SmsServiceClient>(SMS_SERVICE_NAME);
-    this.logger.debug('SMS Service Connected');
   }
 
   async loginUser(req: LoginUserRequestDto): Promise<AuthResponse> {
@@ -304,13 +296,11 @@ export class AuthService {
     if (phone) {
       try {
         this.logger.debug(`Initiating sms OTP send to ${phone}`);
-        const res = await firstValueFrom(
-          this.smsService.sendSms({
-            message,
-            receiver: phone,
-          }),
-        );
-        this.logger.debug(`SMS sent successfully: ${JSON.stringify(res)}`);
+        await this.smsService.sendSms({
+          message,
+          receiver: phone,
+        });
+        this.logger.debug(`SMS sent successfully`);
       } catch (e) {
         this.logger.error('SMS sending failed', e);
       }

@@ -9,7 +9,6 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
-  AUTH_SERVICE_NAME,
   CHAMA_WALLET_SERVICE_NAME,
   CHAMAS_SERVICE_NAME,
   DatabaseModule,
@@ -50,7 +49,6 @@ import { ThrottlerConfigService } from './middleware/throttler.config';
 import { CombinedAuthGuard } from './auth/combined-auth.guard';
 import { SwapController } from './swap';
 import { SolowalletController } from './solowallet/solowallet.controller';
-import { AuthController } from './auth/auth.controller';
 import { UsersController } from './users/users.controller';
 import { ChamasController } from './chamas/chamas.controller';
 import { HealthController } from './health/health.controller';
@@ -58,6 +56,7 @@ import { SmsModule } from './sms/sms.module';
 import { SharesModule } from './shares/shares.module';
 import { NostrModule } from './nostr/nostr.module';
 import { NotificationModule } from './notifications/notification.module';
+import { AuthModule } from './auth/auth.module';
 
 // Import the metrics module
 import { MetricsModule } from './metrics/metrics.module';
@@ -72,13 +71,13 @@ import { createGrpcOptions } from './config/grpc-options';
     SharesModule,
     NostrModule,
     NotificationModule,
+    AuthModule,
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
         PORT: Joi.string().required(),
         NODE_ENV: Joi.string().required(),
-        AUTH_GRPC_URL: Joi.string().required(),
         SWAP_GRPC_URL: Joi.string().required(),
         SOLOWALLET_GRPC_URL: Joi.string().required(),
         CHAMA_GRPC_URL: Joi.string().required(),
@@ -112,18 +111,6 @@ import { createGrpcOptions } from './config/grpc-options';
       useClass: ThrottlerConfigService,
     }),
     ClientsModule.registerAsync([
-      {
-        name: AUTH_SERVICE_NAME,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.GRPC,
-          options: createGrpcOptions(
-            'auth',
-            join(__dirname, '../../../proto/auth.proto'),
-            configService.getOrThrow<string>('AUTH_GRPC_URL'),
-          ),
-        }),
-        inject: [ConfigService],
-      },
       {
         name: SWAP_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
@@ -193,7 +180,6 @@ import { createGrpcOptions } from './config/grpc-options';
     ]),
   ],
   controllers: [
-    AuthController,
     UsersController,
     SwapController,
     SolowalletController,

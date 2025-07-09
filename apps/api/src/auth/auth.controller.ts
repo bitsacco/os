@@ -1,9 +1,7 @@
-import { firstValueFrom, Observable } from 'rxjs';
 import { type Request, type Response } from 'express';
 import {
   Body,
   Controller,
-  Inject,
   Logger,
   Post,
   Req,
@@ -13,9 +11,7 @@ import {
 import { ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import {
-  AUTH_SERVICE_NAME,
   AuthResponse,
-  AuthServiceClient,
   AuthTokenPayload,
   getAccessToken,
   LoginUserRequestDto,
@@ -26,29 +22,18 @@ import {
   RevokeTokenResponseDto,
   TokensResponseDto,
   VerifyUserRequestDto,
-  CircuitBreakerService,
   HandleServiceErrors,
-  GrpcServiceWrapper,
 } from '@bitsacco/common';
-import { type ClientGrpc } from '@nestjs/microservices';
+import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
-  private authService: AuthServiceClient;
   private readonly logger = new Logger(AuthController.name);
 
   constructor(
-    @Inject(AUTH_SERVICE_NAME)
-    private readonly grpc: ClientGrpc,
+    private readonly authService: AuthService,
     private readonly jwtService: JwtService,
-    private readonly circuitBreaker: CircuitBreakerService,
-    private readonly grpcWrapper: GrpcServiceWrapper,
   ) {
-    this.authService = this.grpcWrapper.createServiceProxy<AuthServiceClient>(
-      this.grpc,
-      'AUTH_SERVICE',
-      AUTH_SERVICE_NAME,
-    );
     this.logger.debug('AuthController initialized');
   }
 
@@ -63,15 +48,7 @@ export class AuthController {
     @Body() body: LoginUserRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = this.circuitBreaker.execute(
-      'auth-service-login',
-      this.authService.loginUser(body),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+    const auth = await this.authService.loginUser(body);
     return this.setAuthCookies(auth, req, res);
   }
 
@@ -81,16 +58,8 @@ export class AuthController {
     type: RegisterUserRequestDto,
   })
   @HandleServiceErrors()
-  register(@Req() req: Request, @Body() body: RegisterUserRequestDto) {
-    return this.circuitBreaker.execute(
-      'auth-service-register',
-      this.authService.registerUser(body),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async register(@Req() req: Request, @Body() body: RegisterUserRequestDto) {
+    return await this.authService.registerUser(body);
   }
 
   @Post('verify')
@@ -104,15 +73,7 @@ export class AuthController {
     @Body() body: VerifyUserRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = this.circuitBreaker.execute(
-      'auth-service-verify',
-      this.authService.verifyUser(body),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+    const auth = await this.authService.verifyUser(body);
     return this.setAuthCookies(auth, req, res);
   }
 
@@ -129,15 +90,7 @@ export class AuthController {
     if (!accessToken) {
       throw new UnauthorizedException('Authentication tokens not found');
     }
-    const auth = this.circuitBreaker.execute(
-      'auth-service-authenticate',
-      this.authService.authenticate({ accessToken }),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+    const auth = await this.authService.authenticate({ accessToken });
     return this.setAuthCookies(auth, req, res);
   }
 
@@ -152,15 +105,7 @@ export class AuthController {
     @Body() body: RecoverUserRequestDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const auth = this.circuitBreaker.execute(
-      'auth-service-recover',
-      this.authService.recoverUser(body),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+    const auth = await this.authService.recoverUser(body);
     return this.setAuthCookies(auth, req, res);
   }
 
@@ -181,45 +126,32 @@ export class AuthController {
       throw new UnauthorizedException('No refresh token provided');
     }
 
-    const refreshRequest: RefreshTokenRequestDto = { refreshToken };
-    const tokensResponse = this.circuitBreaker.execute(
-      'auth-service-refresh',
-      this.authService.refreshToken(refreshRequest),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+    const { accessToken, refreshToken: newRefreshToken } = await this.authService.refreshToken(refreshToken);
 
-    return firstValueFrom(tokensResponse).then(
-      ({ accessToken, refreshToken }) => {
-        // Set the new access token cookie
-        const accessTokenPayload = this.jwtService.decode<
-          AuthTokenPayload & { exp: number }
-        >(accessToken);
-        res.cookie('Authentication', accessToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          expires: new Date(accessTokenPayload.exp * 1000), // exp is in seconds since epoch
-        });
+    // Set the new access token cookie
+    const accessTokenPayload = this.jwtService.decode<
+      AuthTokenPayload & { exp: number }
+    >(accessToken);
+    res.cookie('Authentication', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      expires: new Date(accessTokenPayload.exp * 1000), // exp is in seconds since epoch
+    });
 
-        // Set the new refresh token cookie
-        res.cookie('RefreshToken', refreshToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          path: '/auth/refresh', // Only sent to refresh endpoint
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
+    // Set the new refresh token cookie
+    res.cookie('RefreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/auth/refresh', // Only sent to refresh endpoint
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
-        return {
-          success: true,
-          message: 'Tokens refreshed successfully',
-        };
-      },
-    );
+    return {
+      success: true,
+      message: 'Tokens refreshed successfully',
+    };
   }
 
   @Post('logout')
@@ -235,19 +167,7 @@ export class AuthController {
 
     if (refreshToken) {
       // Attempt to revoke the token
-      const revokeRequest: RevokeTokenRequestDto = { refreshToken };
-      const response = await firstValueFrom(
-        this.circuitBreaker.execute(
-          'auth-service-revoke',
-          this.authService.revokeToken(revokeRequest),
-          {
-            failureThreshold: 3,
-            resetTimeout: 10000,
-            fallbackResponse: { success: false },
-          },
-        ),
-      );
-      success = response.success;
+      success = await this.authService.revokeToken(refreshToken);
     }
 
     // Clear cookies regardless of token revocation success
@@ -261,54 +181,52 @@ export class AuthController {
   }
 
   private async setAuthCookies(
-    auth: Observable<AuthResponse>,
+    auth: AuthResponse,
     req: Request,
     res: Response,
   ) {
-    return firstValueFrom(auth).then(
-      ({ user, accessToken, refreshToken }: AuthResponse) => {
-        if (accessToken) {
-          const decodedToken = this.jwtService.decode<
-            AuthTokenPayload & { exp: number }
-          >(accessToken);
-          const { user: jwtUser, exp } = decodedToken;
+    const { user, accessToken, refreshToken } = auth;
+    
+    if (accessToken) {
+      const decodedToken = this.jwtService.decode<
+        AuthTokenPayload & { exp: number }
+      >(accessToken);
+      const { user: jwtUser, exp } = decodedToken;
 
-          if (user.id !== jwtUser.id) {
-            this.logger.error('Invalid auth response');
-          }
+      if (user.id !== jwtUser.id) {
+        this.logger.error('Invalid auth response');
+      }
 
-          // Always set cookies
-          res.cookie('Authentication', accessToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-            expires: new Date(exp * 1000), // exp is in seconds since epoch
-          });
+      // Always set cookies
+      res.cookie('Authentication', accessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none',
+        expires: new Date(exp * 1000), // exp is in seconds since epoch
+      });
 
-          if (refreshToken) {
-            res.cookie('RefreshToken', refreshToken, {
-              httpOnly: true,
-              secure: true,
-              sameSite: 'none',
-              path: '/auth/refresh',
-              maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-            });
-          }
+      if (refreshToken) {
+        res.cookie('RefreshToken', refreshToken, {
+          httpOnly: true,
+          secure: true,
+          sameSite: 'none',
+          path: '/auth/refresh',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        });
+      }
 
-          // Always return tokens in the response
-          return {
-            user,
-            authenticated: true,
-            accessToken,
-            refreshToken,
-          };
-        }
+      // Always return tokens in the response
+      return {
+        user,
+        authenticated: true,
+        accessToken,
+        refreshToken,
+      };
+    }
 
-        return {
-          user,
-          authenticated: false,
-        };
-      },
-    );
+    return {
+      user,
+      authenticated: false,
+    };
   }
 }

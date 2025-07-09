@@ -1,25 +1,21 @@
 import { JwtService } from '@nestjs/jwt';
-import { firstValueFrom, of } from 'rxjs';
 import { TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import {
-  AUTH_SERVICE_NAME,
-  AuthServiceClient,
   AuthTokenPayload,
   RecoverUserRequestDto,
   Role,
   User,
   VerifyUserRequestDto,
   getAccessToken,
-  CircuitBreakerService,
 } from '@bitsacco/common';
-import { provideGrpcMocks } from '../test-utils/grpc-mocks';
 import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
 
 describe('AuthController', () => {
   let controller: AuthController;
-  let authService: Partial<AuthServiceClient>;
+  let authService: Partial<AuthService>;
 
   const mockUser: User = {
     id: 'test-user-id',
@@ -50,43 +46,33 @@ describe('AuthController', () => {
     // Mock getAccessToken for test cases that need it
     jest.spyOn({ getAccessToken }, 'getAccessToken');
 
-    // Create mock for AuthServiceClient
+    // Create mock for AuthService
     authService = {
-      loginUser: jest.fn().mockReturnValue(
-        of({
-          user: mockUser,
-          accessToken: mockAccessToken,
-          refreshToken: mockRefreshToken,
-        }),
-      ),
-      registerUser: jest.fn().mockReturnValue(of({ user: mockUser })),
-      verifyUser: jest.fn().mockReturnValue(
-        of({
-          user: mockUser,
-          accessToken: mockAccessToken,
-          refreshToken: mockRefreshToken,
-        }),
-      ),
-      authenticate: jest.fn().mockReturnValue(
-        of({
-          user: mockUser,
-          accessToken: mockAccessToken,
-        }),
-      ),
-      recoverUser: jest.fn().mockReturnValue(
-        of({
-          user: mockUser,
-          accessToken: mockAccessToken,
-          refreshToken: mockRefreshToken,
-        }),
-      ),
-      refreshToken: jest.fn().mockReturnValue(
-        of({
-          accessToken: mockAccessToken,
-          refreshToken: mockRefreshToken,
-        }),
-      ),
-      revokeToken: jest.fn().mockReturnValue(of({ success: true })),
+      loginUser: jest.fn().mockResolvedValue({
+        user: mockUser,
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken,
+      }),
+      registerUser: jest.fn().mockResolvedValue({ user: mockUser }),
+      verifyUser: jest.fn().mockResolvedValue({
+        user: mockUser,
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken,
+      }),
+      authenticate: jest.fn().mockResolvedValue({
+        user: mockUser,
+        accessToken: mockAccessToken,
+      }),
+      recoverUser: jest.fn().mockResolvedValue({
+        user: mockUser,
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken,
+      }),
+      refreshToken: jest.fn().mockResolvedValue({
+        accessToken: mockAccessToken,
+        refreshToken: mockRefreshToken,
+      }),
+      revokeToken: jest.fn().mockResolvedValue(true),
     };
 
     // Mock JWT service to decode tokens
@@ -103,20 +89,6 @@ describe('AuthController', () => {
       verifyAsync: jest.fn(),
     } as unknown as JwtService;
 
-    // Mock gRPC client
-    const mockGrpcClient = {
-      getService: jest.fn().mockReturnValue(authService),
-    };
-
-    // Create a mock for the CircuitBreakerService
-    const mockCircuitBreaker = {
-      execute: jest.fn().mockImplementation((serviceKey, observable) => {
-        return observable;
-      }),
-    };
-
-    const grpcMocks = provideGrpcMocks(authService);
-
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [AuthController],
       providers: [
@@ -125,28 +97,13 @@ describe('AuthController', () => {
           useValue: mockJwtService,
         },
         {
-          provide: AUTH_SERVICE_NAME,
-          useValue: mockGrpcClient,
+          provide: AuthService,
+          useValue: authService,
         },
-        {
-          provide: CircuitBreakerService,
-          useValue: mockCircuitBreaker,
-        },
-        ...grpcMocks,
       ],
     });
 
     controller = module.get<AuthController>(AuthController);
-
-    // Manually inject the circuit breaker into the controller if needed
-    if (!(controller as any).circuitBreaker) {
-      (controller as any).circuitBreaker = mockCircuitBreaker;
-    }
-
-    // Manually inject the jwtService into the controller if needed
-    if (!(controller as any).jwtService) {
-      (controller as any).jwtService = mockJwtService;
-    }
   });
 
   it('should be defined', () => {
@@ -214,9 +171,7 @@ describe('AuthController', () => {
         roles: [Role.Member],
       };
 
-      const result = await firstValueFrom(
-        controller.register({} as any, registerRequest),
-      );
+      const result = await controller.register({} as any, registerRequest);
 
       expect(result).toEqual({
         user: mockUser,
@@ -388,9 +343,7 @@ describe('AuthController', () => {
         message: 'Tokens refreshed successfully',
       });
 
-      expect(authService.refreshToken).toHaveBeenCalledWith({
-        refreshToken: mockRefreshToken,
-      });
+      expect(authService.refreshToken).toHaveBeenCalledWith(mockRefreshToken);
 
       expect(mockResponse.cookie).toHaveBeenCalledTimes(2);
       expect(mockResponse.cookie).toHaveBeenCalledWith(
@@ -444,9 +397,7 @@ describe('AuthController', () => {
         message: 'Logged out successfully',
       });
 
-      expect(authService.revokeToken).toHaveBeenCalledWith({
-        refreshToken: mockRefreshToken,
-      });
+      expect(authService.revokeToken).toHaveBeenCalledWith(mockRefreshToken);
 
       expect(mockResponse.clearCookie).toHaveBeenCalledTimes(2);
       expect(mockResponse.clearCookie).toHaveBeenCalledWith('Authentication');
@@ -483,9 +434,9 @@ describe('AuthController', () => {
         cookie: jest.fn(),
       };
 
-      const authResponse = of({
+      const authResponse = {
         user: mockUser,
-      });
+      };
 
       // Use the private method via any type cast for testing
       const result = await (controller as any).setAuthCookies(
@@ -507,11 +458,11 @@ describe('AuthController', () => {
         cookie: jest.fn(),
       };
 
-      const authResponse = of({
+      const authResponse = {
         user: mockUser,
         accessToken: mockAccessToken,
         refreshToken: mockRefreshToken,
-      });
+      };
 
       const request = {
         headers: {},

@@ -1,5 +1,3 @@
-import { of, throwError } from 'rxjs';
-import { ClientGrpc } from '@nestjs/microservices';
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
@@ -8,8 +6,6 @@ import {
 } from '@nestjs/common';
 import {
   UsersService,
-  SmsServiceClient,
-  SMS_SERVICE_NAME,
   TokenResponse,
   User,
   Role,
@@ -19,12 +15,13 @@ import { AuthService } from './auth.service';
 import { TokenService } from './tokens/token.service';
 import { AuthMetricsService } from './metrics/auth.metrics';
 import { RateLimitService } from './rate-limit/rate-limit.service';
+import { SmsService } from '../sms/sms.service';
 
 describe('AuthService', () => {
   let authService: AuthService;
   let usersService: UsersService;
   let tokenService: TokenService;
-  let smsService: SmsServiceClient;
+  let smsService: SmsService;
   let metricsService: AuthMetricsService;
   let rateLimitService: RateLimitService;
 
@@ -46,18 +43,10 @@ describe('AuthService', () => {
   };
 
   beforeEach(async () => {
-    // Create mock for SmsServiceClient
-    smsService = {
-      sendSms: jest.fn().mockImplementation(() => {
-        return of({ success: true, messageId: 'msg-123' });
-      }),
-    } as unknown as SmsServiceClient;
-
-    // Create mock for gRPC client
-    const mockSmsGrpc: ClientGrpc = {
-      getService: jest.fn().mockReturnValue(smsService),
-      getClientByServiceName: jest.fn().mockReturnValue(smsService),
-    } as unknown as ClientGrpc;
+    // Create mock for SmsService
+    const mockSmsService = {
+      sendSms: jest.fn().mockResolvedValue(undefined),
+    };
 
     // Create mock for UsersService
     const mockUsersService = {
@@ -114,8 +103,8 @@ describe('AuthService', () => {
           useValue: mockRateLimitService,
         },
         {
-          provide: SMS_SERVICE_NAME,
-          useValue: mockSmsGrpc,
+          provide: SmsService,
+          useValue: mockSmsService,
         },
         {
           provide: EventEmitter2,
@@ -131,6 +120,7 @@ describe('AuthService', () => {
     tokenService = module.get<TokenService>(TokenService);
     metricsService = module.get<AuthMetricsService>(AuthMetricsService);
     rateLimitService = module.get<RateLimitService>(RateLimitService);
+    smsService = module.get<SmsService>(SmsService);
   });
 
   it('should be defined', () => {
@@ -292,9 +282,7 @@ describe('AuthService', () => {
       });
 
       // Mock SMS failure
-      (smsService.sendSms as jest.Mock).mockImplementation(() => {
-        return throwError(() => new Error('SMS sending failed'));
-      });
+      (smsService.sendSms as jest.Mock).mockRejectedValue(new Error('SMS sending failed'));
 
       const registerRequest: RegisterUserRequestDto = {
         phone: '+1234567890',
