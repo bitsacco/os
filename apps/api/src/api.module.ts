@@ -1,7 +1,6 @@
 import * as Joi from 'joi';
-import { join } from 'path';
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_GUARD, APP_FILTER } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -51,7 +50,15 @@ import { MetricsModule } from './metrics/metrics.module';
 
 @Module({
   imports: [
-    JwtModule,
+    JwtModule.registerAsync({
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: `${configService.getOrThrow('JWT_EXPIRATION')}s`,
+        },
+      }),
+      inject: [ConfigService],
+    }),
     LoggerModule,
     MetricsModule,
     SmsModule,
@@ -127,6 +134,7 @@ import { MetricsModule } from './metrics/metrics.module';
     Reflector,
     RoleValidationService,
   ],
+  exports: [JwtModule],
 })
 export class ApiModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

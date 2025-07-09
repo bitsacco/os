@@ -1,5 +1,5 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Observable, tap, map, catchError, of } from 'rxjs';
+import { Observable, tap, map, catchError } from 'rxjs';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -144,7 +144,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
   async validate({ user }: AuthTokenPayload) {
     try {
       return await this.usersService.findUser({ id: user.id });
-    } catch (_) {
+    } catch {
       throw new UnauthorizedException('Invalid user');
     }
   }
