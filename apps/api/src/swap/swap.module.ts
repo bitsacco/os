@@ -95,5 +95,6 @@ import {
     RedisProvider,
     RoleValidationService,
   ],
+  exports: [SwapService],
 })
 export class SwapModule {}

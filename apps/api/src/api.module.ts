@@ -17,7 +17,6 @@ import {
   LoggerModule,
   NpubAuthStategy,
   PhoneAuthStategy,
-  SOLOWALLET_SERVICE_NAME,
   UsersDocument,
   UsersRepository,
   UsersSchema,
@@ -46,7 +45,7 @@ import { SecurityHeadersMiddleware } from './middleware/security-headers.middlew
 import { IpRateLimitMiddleware } from './middleware/ip-rate-limit.middleware';
 import { ThrottlerConfigService } from './middleware/throttler.config';
 import { CombinedAuthGuard } from './auth/combined-auth.guard';
-import { SolowalletController } from './solowallet/solowallet.controller';
+import { SolowalletModule } from './solowallet/solowallet.module';
 import { UsersController } from './users/users.controller';
 import { ChamasController } from './chamas/chamas.controller';
 import { HealthController } from './health/health.controller';
@@ -72,13 +71,13 @@ import { createGrpcOptions } from './config/grpc-options';
     NotificationModule,
     AuthModule,
     SwapModule,
+    SolowalletModule,
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
         PORT: Joi.string().required(),
         NODE_ENV: Joi.string().required(),
-        SOLOWALLET_GRPC_URL: Joi.string().required(),
         CHAMA_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
@@ -110,18 +109,6 @@ import { createGrpcOptions } from './config/grpc-options';
       useClass: ThrottlerConfigService,
     }),
     ClientsModule.registerAsync([
-      {
-        name: SOLOWALLET_SERVICE_NAME,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.GRPC,
-          options: createGrpcOptions(
-            'solowallet',
-            join(__dirname, '../../../proto/solowallet.proto'),
-            configService.getOrThrow<string>('SOLOWALLET_GRPC_URL'),
-          ),
-        }),
-        inject: [ConfigService],
-      },
       {
         name: CHAMAS_SERVICE_NAME,
         useFactory: (configService: ConfigService) => ({
@@ -166,12 +153,7 @@ import { createGrpcOptions } from './config/grpc-options';
       { name: ApiKeyDocument.name, schema: ApiKeySchema },
     ]),
   ],
-  controllers: [
-    UsersController,
-    SolowalletController,
-    ChamasController,
-    HealthController,
-  ],
+  controllers: [UsersController, ChamasController, HealthController],
   providers: [
     // Global rate limiting guard
     {

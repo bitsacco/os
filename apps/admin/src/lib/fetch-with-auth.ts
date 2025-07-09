@@ -36,8 +36,7 @@ export async function fetchWithAuth(
   // Handle auth errors
   if (response.status === 401 && typeof window !== 'undefined') {
     // Redirect to login if unauthorized
-    window.location.href =
-      `/auth/sign-in?returnTo=${  encodeURIComponent(window.location.pathname)}`;
+    window.location.href = `/auth/sign-in?returnTo=${encodeURIComponent(window.location.pathname)}`;
     throw new Error('Unauthorized');
   }
 

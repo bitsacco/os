@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   Currency,
   DepositFundsRequestDto,
@@ -14,8 +14,6 @@ import {
   type FedimintReceiveFailureEvent,
   type FedimintReceiveSuccessEvent,
   type SwapStatusChangeEvent,
-  SWAP_SERVICE_NAME,
-  SwapServiceClient,
   TransactionStatus,
   TransactionType,
   WithdrawFundsRequestDto,
@@ -24,23 +22,19 @@ import {
   default_page_size,
   SolowalletTx,
   FindTxRequestDto,
-  getQuote,
-  initiateOfframpSwap,
-  initiateOnrampSwap,
   FmLightning,
   parseTransactionStatus,
   ContinueDepositFundsRequestDto,
   ContinueWithdrawFundsRequestDto,
 } from '@bitsacco/common';
 import { SolowalletMetricsService } from './solowallet.metrics';
-import { type ClientGrpc } from '@nestjs/microservices';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { SolowalletDocument, SolowalletRepository, toSolowalletTx } from './db';
+import { SwapService } from '../swap/swap.service';
 
 @Injectable()
 export class SolowalletService {
   private readonly logger = new Logger(SolowalletService.name);
-  private readonly swapService: SwapServiceClient;
 
   constructor(
     private readonly wallet: SolowalletRepository,
@@ -48,11 +42,9 @@ export class SolowalletService {
     private readonly eventEmitter: EventEmitter2,
     private readonly lnurlMetricsService: LnurlMetricsService,
     private readonly solowalletMetricsService: SolowalletMetricsService,
-    @Inject(SWAP_SERVICE_NAME) private readonly swapGrpc: ClientGrpc,
+    private readonly swapService: SwapService,
   ) {
     this.logger.log('SolowalletService created');
-    this.swapService =
-      this.swapGrpc.getService<SwapServiceClient>(SWAP_SERVICE_NAME);
 
     this.eventEmitter.on(
       fedimint_receive_success,
@@ -62,7 +54,7 @@ export class SolowalletService {
       fedimint_receive_failure,
       this.handleFailedReceive.bind(this),
     );
-    this.logger.log('SwapService initialized');
+    this.logger.log('SolowalletService initialized');
   }
 
   private async getPaginatedUserTxLedger({
@@ -170,15 +162,12 @@ export class SolowalletService {
     let errorType: string | undefined;
 
     try {
-      const { quote, amountMsats } = await getQuote(
-        {
-          from: onramp?.currency || Currency.KES,
-          to: Currency.BTC,
-          amount: amountFiat.toString(),
-        },
-        this.swapService,
-        this.logger,
-      );
+      const quote = await this.swapService.getQuote({
+        from: onramp?.currency || Currency.KES,
+        to: Currency.BTC,
+        amount: amountFiat.toString(),
+      });
+      const amountMsats = parseInt(quote.amount) * 1000;
 
       const lightning = await this.fedimintService.invoice(
         amountMsats,
@@ -186,19 +175,18 @@ export class SolowalletService {
       );
 
       const { status } = onramp
-        ? await initiateOnrampSwap<TransactionStatus>(
-            {
-              quote,
-              amountFiat: amountFiat.toString(),
-              reference,
-              source: onramp,
-              target: {
-                payout: lightning,
-              },
+        ? await this.swapService.createOnrampSwap({
+            quote: {
+              id: quote.id,
+              refreshIfExpired: false,
             },
-            this.swapService,
-            this.logger,
-          )
+            amountFiat: amountFiat.toString(),
+            reference,
+            source: onramp,
+            target: {
+              payout: lightning,
+            },
+          })
         : {
             status: TransactionStatus.PENDING,
           };
@@ -294,15 +282,12 @@ export class SolowalletService {
       throw new Error('Transaction is processing or complete');
     }
 
-    const { quote, amountMsats } = await getQuote(
-      {
-        from: onramp?.currency || Currency.KES,
-        to: Currency.BTC,
-        amount: amountFiat.toString(),
-      },
-      this.swapService,
-      this.logger,
-    );
+    const quote = await this.swapService.getQuote({
+      from: onramp?.currency || Currency.KES,
+      to: Currency.BTC,
+      amount: amountFiat.toString(),
+    });
+    const amountMsats = parseInt(quote.amount) * 1000;
 
     const lightning = await this.fedimintService.invoice(
       amountMsats,
@@ -310,19 +295,18 @@ export class SolowalletService {
     );
 
     const { status } = onramp
-      ? await initiateOnrampSwap(
-          {
-            quote,
-            amountFiat: amountFiat.toString(),
-            reference: tx.reference,
-            source: onramp,
-            target: {
-              payout: lightning,
-            },
+      ? await this.swapService.createOnrampSwap({
+          quote: {
+            id: quote.id,
+            refreshIfExpired: false,
           },
-          this.swapService,
-          this.logger,
-        )
+          amountFiat: amountFiat.toString(),
+          reference: tx.reference,
+          source: onramp,
+          target: {
+            payout: lightning,
+          },
+        })
       : {
           status: TransactionStatus.PENDING,
         };
@@ -474,15 +458,12 @@ export class SolowalletService {
 
       if (amountFiat) {
         // Get the bitcoin amount from fiat if specified
-        const { amountMsats } = await getQuote(
-          {
-            from: Currency.KES,
-            to: Currency.BTC,
-            amount: amountFiat.toString(),
-          },
-          this.swapService,
-          this.logger,
-        );
+        const quote = await this.swapService.getQuote({
+          from: Currency.KES,
+          to: Currency.BTC,
+          amount: amountFiat.toString(),
+        });
+        const amountMsats = parseInt(quote.amount) * 1000;
         maxWithdrawableMsats = amountMsats;
       } else {
         // Otherwise use the current balance
@@ -544,15 +525,12 @@ export class SolowalletService {
       this.logger.log('Processing offramp withdrawal');
 
       // Get quote for conversion
-      const { quote, amountMsats } = await getQuote(
-        {
-          from: Currency.BTC,
-          to: offramp.currency || Currency.KES,
-          amount: amountFiat.toString(),
-        },
-        this.swapService,
-        this.logger,
-      );
+      const quote = await this.swapService.getQuote({
+        from: Currency.BTC,
+        to: offramp.currency || Currency.KES,
+        amount: amountFiat.toString(),
+      });
+      const amountMsats = parseInt(quote.amount) * 1000;
 
       // Check if user has enough balance
       if (amountMsats > currentBalance) {
@@ -560,21 +538,21 @@ export class SolowalletService {
       }
 
       // Initiate offramp swap
-      const {
-        status,
-        amountMsats: offrampMsats,
-        invoice,
-        swapTracker,
-      } = await initiateOfframpSwap<TransactionStatus>(
-        {
-          quote,
-          amountFiat: amountFiat.toString(),
-          reference,
-          target: offramp,
+      const offrampSwap = await this.swapService.createOfframpSwap({
+        quote: {
+          id: quote.id,
+          refreshIfExpired: false,
         },
-        this.swapService,
-        this.logger,
-      );
+        amountFiat: amountFiat.toString(),
+        reference,
+        target: offramp,
+      });
+      const status = offrampSwap.status;
+      const invoice = offrampSwap.lightning;
+      // Decode the lightning invoice to get the amount
+      const invoiceData = await this.fedimintService.decode(invoice);
+      const offrampMsats = parseInt(invoiceData.amountMsats);
+      const swapTracker = offrampSwap.id;
 
       try {
         // Pay the invoice for the swap
@@ -719,15 +697,12 @@ export class SolowalletService {
 
       if (amountFiat) {
         // Get the bitcoin amount from fiat if specified
-        const { amountMsats } = await getQuote(
-          {
-            from: Currency.KES,
-            to: Currency.BTC,
-            amount: amountFiat.toString(),
-          },
-          this.swapService,
-          this.logger,
-        );
+        const quote = await this.swapService.getQuote({
+          from: Currency.KES,
+          to: Currency.BTC,
+          amount: amountFiat.toString(),
+        });
+        const amountMsats = parseInt(quote.amount) * 1000;
         maxWithdrawableMsats = amountMsats;
       } else {
         // Otherwise use the current balance
@@ -796,15 +771,12 @@ export class SolowalletService {
       this.logger.log('Processing offramp withdrawal');
 
       // Get quote for conversion
-      const { quote, amountMsats } = await getQuote(
-        {
-          from: Currency.BTC,
-          to: offramp.currency || Currency.KES,
-          amount: amountFiat.toString(),
-        },
-        this.swapService,
-        this.logger,
-      );
+      const quote = await this.swapService.getQuote({
+        from: Currency.BTC,
+        to: offramp.currency || Currency.KES,
+        amount: amountFiat.toString(),
+      });
+      const amountMsats = parseInt(quote.amount) * 1000;
 
       // Check if user has enough balance
       if (amountMsats > currentBalance) {
@@ -812,21 +784,21 @@ export class SolowalletService {
       }
 
       // Initiate offramp swap
-      const {
-        status,
-        amountMsats: offrampMsats,
-        invoice,
-        swapTracker,
-      } = await initiateOfframpSwap<TransactionStatus>(
-        {
-          quote,
-          amountFiat: amountFiat.toString(),
-          reference,
-          target: offramp,
+      const offrampSwap = await this.swapService.createOfframpSwap({
+        quote: {
+          id: quote.id,
+          refreshIfExpired: false,
         },
-        this.swapService,
-        this.logger,
-      );
+        amountFiat: amountFiat.toString(),
+        reference,
+        target: offramp,
+      });
+      const status = offrampSwap.status;
+      const invoice = offrampSwap.lightning;
+      // Decode the lightning invoice to get the amount
+      const invoiceData = await this.fedimintService.decode(invoice);
+      const offrampMsats = parseInt(invoiceData.amountMsats);
+      const swapTracker = offrampSwap.id;
 
       try {
         // Pay the invoice for the swap

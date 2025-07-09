@@ -7,13 +7,13 @@ import {
   TransactionType,
   FedimintService,
   LnurlMetricsService,
-  SWAP_SERVICE_NAME,
 } from '@bitsacco/common';
 import { SolowalletMetricsService } from './solowallet.metrics';
 import { Logger } from '@nestjs/common';
 
 import { SolowalletService } from './solowallet.service';
 import { SolowalletDocument, SolowalletRepository } from './db';
+import { SwapService } from '../swap/swap.service';
 
 describe('SolowalletService', () => {
   let app: TestingModule;
@@ -57,11 +57,23 @@ describe('SolowalletService', () => {
     };
 
     const mockSwapService = {
-      getService: jest.fn().mockReturnValue({
-        getQuote: jest.fn().mockResolvedValue({
-          amountMsats: 50000,
-          quote: { id: 'quote-id', exchangeRate: 1.0 },
-        }),
+      getQuote: jest.fn().mockResolvedValue({
+        id: 'quote-id',
+        amount: '50', // Amount in BTC (converted to sats then msats in service)
+        rate: '1.0',
+        from: 'KES',
+        to: 'BTC',
+        expiry: '1677777777',
+      }),
+      createOnrampSwap: jest.fn().mockResolvedValue({
+        id: 'swap-id',
+        status: TransactionStatus.PENDING,
+      }),
+      createOfframpSwap: jest.fn().mockResolvedValue({
+        id: 'swap-id',
+        status: TransactionStatus.PENDING,
+        amountSats: '50000',
+        lightning: 'test-invoice',
       }),
     };
 
@@ -87,7 +99,7 @@ describe('SolowalletService', () => {
           },
         },
         {
-          provide: SWAP_SERVICE_NAME,
+          provide: SwapService,
           useValue: mockSwapService,
         },
         {

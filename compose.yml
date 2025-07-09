@@ -33,48 +33,6 @@ services:
       - '4000:4000'
     volumes:
       - .:/usr/src/app
-  auth:
-    container_name: auth
-    build:
-      context: .
-      dockerfile: ./apps/auth/Dockerfile
-      target: development
-    command: bun dev auth
-    restart: always
-    depends_on:
-      - mongodb
-      - sms
-      - redis
-    env_file:
-      - ./apps/auth/.dev.env
-    ports:
-      - '4010:4010'
-      - '4012:4012'
-    volumes:
-      - .:/usr/src/app
-
-  solowallet:
-    container_name: solowallet
-    build:
-      context: .
-      dockerfile: ./apps/solowallet/Dockerfile
-      target: development
-    command: [
-        "sh",
-        "-c",
-        "bun dev solowallet"
-      ]
-    restart: always
-    depends_on:
-      - mongodb
-      - redis
-    env_file:
-      - ./apps/solowallet/.dev.env
-    ports:
-      - '4080:4080'
-      - '4082:4082'
-    volumes:
-      - .:/usr/src/app
 
   chama:
     container_name: chama

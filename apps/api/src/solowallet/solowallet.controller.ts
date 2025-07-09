@@ -1,25 +1,7 @@
 import {
-  ContinueDepositFundsRequestDto,
-  ContinueWithdrawFundsRequestDto,
-  DepositFundsRequestDto,
-  JwtAuthGuard,
-  SOLOWALLET_SERVICE_NAME,
-  SolowalletServiceClient,
-  UpdateTxDto,
-  UserTxsRequestDto,
-  WithdrawFundsRequestDto,
-  CircuitBreakerService,
-  HandleServiceErrors,
-  GrpcServiceWrapper,
-} from '@bitsacco/common';
-
-// Import for production use - tests will mock these as needed
-import { ResourceOwnerGuard, CheckOwnership } from '@bitsacco/common';
-import {
   Body,
   Controller,
   Get,
-  Inject,
   Logger,
   Param,
   Post,
@@ -36,26 +18,30 @@ import {
   ApiQuery,
   ApiSecurity,
 } from '@nestjs/swagger';
-import { type ClientGrpc } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import {
+  ContinueDepositFundsRequestDto,
+  ContinueWithdrawFundsRequestDto,
+  DepositFundsRequestDto,
+  JwtAuthGuard,
+  UpdateTxDto,
+  UserTxsRequestDto,
+  WithdrawFundsRequestDto,
+  HandleServiceErrors,
+  ResourceOwnerGuard,
+  CheckOwnership,
+  TransactionStatus,
+} from '@bitsacco/common';
+import { SolowalletService } from './solowallet.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('solowallet')
 export class SolowalletController {
-  private walletService: SolowalletServiceClient;
   private readonly logger = new Logger(SolowalletController.name);
 
   constructor(
-    @Inject(SOLOWALLET_SERVICE_NAME)
-    private readonly grpc: ClientGrpc,
-    private readonly circuitBreaker: CircuitBreakerService,
-    private readonly grpcWrapper: GrpcServiceWrapper,
+    private readonly solowalletService: SolowalletService,
+    private readonly configService: ConfigService,
   ) {
-    this.walletService =
-      this.grpcWrapper.createServiceProxy<SolowalletServiceClient>(
-        this.grpc,
-        'SOLOWALLET_SERVICE',
-        SOLOWALLET_SERVICE_NAME,
-      );
     this.logger.log('SolowalletController initialized');
   }
 
@@ -70,16 +56,8 @@ export class SolowalletController {
     type: DepositFundsRequestDto,
   })
   @HandleServiceErrors()
-  depositFunds(@Body() req: DepositFundsRequestDto) {
-    return this.circuitBreaker.execute(
-      'solowallet-service-deposit',
-      this.walletService.depositFunds(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async depositFunds(@Body() req: DepositFundsRequestDto) {
+    return await this.solowalletService.depositFunds(req);
   }
 
   @Post('deposit/continue')
@@ -93,16 +71,10 @@ export class SolowalletController {
     type: ContinueDepositFundsRequestDto,
   })
   @HandleServiceErrors()
-  continueDepositTransaction(@Body() req: ContinueDepositFundsRequestDto) {
-    return this.circuitBreaker.execute(
-      'solowallet-service-continue-deposit',
-      this.walletService.continueDepositFunds(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async continueDepositTransaction(
+    @Body() req: ContinueDepositFundsRequestDto,
+  ) {
+    return await this.solowalletService.continueDepositFunds(req);
   }
 
   @Post('withdraw')
@@ -116,16 +88,8 @@ export class SolowalletController {
     type: WithdrawFundsRequestDto,
   })
   @HandleServiceErrors()
-  withdrawFunds(@Body() req: WithdrawFundsRequestDto) {
-    return this.circuitBreaker.execute(
-      'solowallet-service-withdraw',
-      this.walletService.withdrawFunds(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async withdrawFunds(@Body() req: WithdrawFundsRequestDto) {
+    return await this.solowalletService.withdrawFunds(req);
   }
 
   @Post('withdraw/continue')
@@ -139,16 +103,10 @@ export class SolowalletController {
     type: ContinueWithdrawFundsRequestDto,
   })
   @HandleServiceErrors()
-  continueWithdrawTransaction(@Body() req: ContinueWithdrawFundsRequestDto) {
-    return this.circuitBreaker.execute(
-      'solowallet-service-continue-withdraw',
-      this.walletService.continueWithdrawFunds(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async continueWithdrawTransaction(
+    @Body() req: ContinueWithdrawFundsRequestDto,
+  ) {
+    return await this.solowalletService.continueWithdrawFunds(req);
   }
 
   @Post('transactions')
@@ -162,19 +120,8 @@ export class SolowalletController {
     type: UserTxsRequestDto,
   })
   @HandleServiceErrors()
-  userTransactions(@Body() req: UserTxsRequestDto) {
-    return this.circuitBreaker.execute(
-      'solowallet-service-user-transactions',
-      this.walletService.userTransactions(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: {
-          userId: '',
-          ledger: { transactions: [], page: 0, size: 0, pages: 0 },
-        },
-      },
-    );
+  async userTransactions(@Body() req: UserTxsRequestDto) {
+    return await this.solowalletService.userTransactions(req);
   }
 
   @Post('update')
@@ -186,16 +133,8 @@ export class SolowalletController {
     type: UpdateTxDto,
   })
   @HandleServiceErrors()
-  updateShares(@Body() req: UpdateTxDto) {
-    return this.circuitBreaker.execute(
-      'solowallet-service-update',
-      this.walletService.updateTransaction(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async updateTransaction(@Body() req: UpdateTxDto) {
+    return await this.solowalletService.updateTransaction(req);
   }
 
   @Get('/find/id/:id')
@@ -212,25 +151,9 @@ export class SolowalletController {
       // Extract user ID from the user object
       const userRecord = req.user as any;
       const userId = userRecord.id;
-      return this.circuitBreaker.execute(
-        'solowallet-service-find-user-transaction',
-        this.walletService.findTransaction({ txId: id, userId }),
-        {
-          failureThreshold: 3,
-          resetTimeout: 10000,
-          fallbackResponse: null,
-        },
-      );
+      return await this.solowalletService.findTransaction({ txId: id, userId });
     }
-    return this.circuitBreaker.execute(
-      'solowallet-service-find-transaction',
-      this.walletService.findTransaction({ txId: id }),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+    return await this.solowalletService.findTransaction({ txId: id });
   }
 
   @Get('/lnurl')
@@ -313,33 +236,96 @@ export class SolowalletController {
     }
 
     try {
-      // Process the LNURL withdrawal using the gRPC service
-      const response = await firstValueFrom(
-        this.circuitBreaker.execute(
-          'solowallet-service-lnurl-withdraw',
-          this.walletService.processLnUrlWithdraw({
-            k1,
-            tag,
-            callback,
-            maxWithdrawable,
-            minWithdrawable,
-            defaultDescription,
-            pr,
-          }),
-          {
-            failureThreshold: 3,
-            resetTimeout: 10000,
-            fallbackResponse: {
-              status: 'ERROR',
-              reason: 'Service temporarily unavailable',
-            },
-          },
-        ),
+      // Process the LNURL withdrawal using direct service call
+      if (!k1) {
+        this.logger.error(`Invalid k1: ${k1}`);
+        return {
+          status: 'ERROR',
+          reason: `Invalid k1: ${k1}`,
+        };
+      }
+
+      // 1. First, find any transaction that's already using this k1 value
+      const pendingTx =
+        await this.solowalletService.findPendingLnurlWithdrawal(k1);
+
+      // 2. If no pending transaction is found, this is an error
+      if (!pendingTx) {
+        this.logger.warn(`No pending withdrawal found for k1: ${k1}`);
+        return {
+          status: 'ERROR',
+          reason: 'Withdrawal request not found or expired',
+        };
+      }
+
+      this.logger.log(
+        `Found existing withdrawal transaction: ${pendingTx.id} in status: ${pendingTx.status}`,
       );
 
-      this.logger.log(`LNURL withdrawal response: ${JSON.stringify(response)}`);
+      // 3. If transaction is not in pending state, return error
+      if (pendingTx.status !== TransactionStatus.PENDING) {
+        return {
+          status: 'ERROR',
+          reason: `LNURL withdrawal is now invalid or expired`,
+        };
+      }
 
-      return response;
+      // 4. Handle first step of handshake (tag=withdrawRequest && !pr - wallet querying parameters)
+      if (tag === 'withdrawRequest' && !pr) {
+        this.logger.log('Processing first step of LNURL withdraw handshake');
+
+        // Verify maxWithdrawable matches our expected value (if provided in request)
+        if (maxWithdrawable) {
+          const expectedMsats = pendingTx.amountMsats;
+          if (parseInt(maxWithdrawable) !== expectedMsats) {
+            this.logger.error(
+              `Mismatched maxWithdrawable: expected ${expectedMsats}, got ${maxWithdrawable}`,
+            );
+            return {
+              status: 'ERROR',
+              reason: 'maxWithdrawable exceeds expected amount',
+            };
+          }
+        }
+
+        // Verify callback
+        if (callback !== this.configService.getOrThrow('LNURL_CALLBACK')) {
+          return {
+            status: 'ERROR',
+            reason: `LNURL withdrawal has invalid callback`,
+          };
+        }
+
+        // Return success response for first step
+        return {
+          tag,
+          callback,
+          k1,
+          defaultDescription,
+          minWithdrawable,
+          maxWithdrawable,
+        };
+      }
+
+      // 5. Handle second step of handshake (with invoice)
+      if (!pr) {
+        this.logger.error(`Invalid Bolt11 invoice: ${pr}`);
+        return {
+          status: 'ERROR',
+          reason: `Invalid Bolt11 invoice: ${pr}`,
+        };
+      }
+
+      // Process the payment using the existing transaction
+      const result = await this.solowalletService.processLnUrlWithdrawCallback(
+        k1,
+        pr,
+      );
+
+      return {
+        status: result.success ? 'OK' : 'ERROR',
+        reason: result.success ? undefined : result.message,
+      };
     } catch (error) {
       this.logger.error(
         `Error processing LNURL withdrawal: ${error.message}`,

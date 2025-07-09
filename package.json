@@ -17,7 +17,6 @@
     "build:nostr": "bun run build nostr",
     "build:sms": "bun run build sms",
     "build:shares": "bun run build shares",
-    "build:solowallet": "bun run build solowallet",
     "build:chama": "bun run build chama",
     "build:notification": "bun run build notification",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",

@@ -1,80 +1,58 @@
 import { TestingModule } from '@nestjs/testing';
 import { SolowalletController } from './solowallet.controller';
-import {
-  SOLOWALLET_SERVICE_NAME,
-  CircuitBreakerService,
-  SolowalletServiceClient,
-} from '@bitsacco/common';
+import { SolowalletService } from './solowallet.service';
 import {
   createTestingModuleWithValidation,
   provideJwtAuthStrategyMocks,
 } from '@bitsacco/testing';
-import { type ClientGrpc } from '@nestjs/microservices';
-import { of } from 'rxjs';
-import { provideGrpcMocks } from '../test-utils/grpc-mocks';
+import { ConfigService } from '@nestjs/config';
 
 describe('SolowalletController', () => {
   let controller: SolowalletController;
-  let serviceGenerator: ClientGrpc;
-  let solowalletServiceClient: Partial<SolowalletServiceClient>;
+  let mockSolowalletService: Partial<SolowalletService>;
 
   beforeEach(async () => {
-    // Create mock for processLnUrlWithdraw
-    const mockProcessLnUrlWithdraw = jest
-      .fn()
-      .mockReturnValue(of({ status: 'OK' }));
-
-    // Create mock for other methods
-    solowalletServiceClient = {
-      findTransaction: jest.fn().mockReturnValue(of({})),
-      depositFunds: jest.fn().mockReturnValue(of({})),
-      withdrawFunds: jest.fn().mockReturnValue(of({})),
-      userTransactions: jest.fn().mockReturnValue(of({})),
-      continueDepositFunds: jest.fn().mockReturnValue(of({})),
-      continueWithdrawFunds: jest.fn().mockReturnValue(of({})),
-      updateTransaction: jest.fn().mockReturnValue(of({})),
-      processLnUrlWithdraw: mockProcessLnUrlWithdraw,
-    };
-
-    serviceGenerator = {
-      getService: jest.fn().mockReturnValue(solowalletServiceClient),
-      getClientByServiceName: jest
+    // Create mock for SolowalletService
+    mockSolowalletService = {
+      findTransaction: jest.fn().mockResolvedValue({}),
+      depositFunds: jest.fn().mockResolvedValue({}),
+      withdrawFunds: jest.fn().mockResolvedValue({}),
+      userTransactions: jest.fn().mockResolvedValue({}),
+      continueDepositFunds: jest.fn().mockResolvedValue({}),
+      continueWithdrawFunds: jest.fn().mockResolvedValue({}),
+      updateTransaction: jest.fn().mockResolvedValue({}),
+      processLnUrlWithdrawCallback: jest
         .fn()
-        .mockReturnValue(solowalletServiceClient),
-    };
-
-    // Create a mock for the CircuitBreakerService
-    const mockCircuitBreaker = {
-      execute: jest.fn().mockImplementation((serviceKey, observable) => {
-        return observable;
+        .mockResolvedValue({ success: true }),
+      findPendingLnurlWithdrawal: jest.fn().mockResolvedValue({
+        id: 'test-id',
+        status: 'PENDING',
+        amountMsats: 50000,
       }),
     };
 
+    const mockConfigService = {
+      getOrThrow: jest.fn().mockReturnValue('https://test.com/lnurl/callback'),
+    };
+
     const jwtAuthMocks = provideJwtAuthStrategyMocks();
-    const grpcMocks = provideGrpcMocks(solowalletServiceClient);
 
     const module: TestingModule = await createTestingModuleWithValidation({
       controllers: [SolowalletController],
       providers: [
         {
-          provide: SOLOWALLET_SERVICE_NAME,
-          useValue: serviceGenerator,
+          provide: SolowalletService,
+          useValue: mockSolowalletService,
         },
         {
-          provide: CircuitBreakerService,
-          useValue: mockCircuitBreaker,
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
-        ...grpcMocks,
         ...jwtAuthMocks,
       ],
     });
 
     controller = module.get<SolowalletController>(SolowalletController);
-
-    // Manually inject the circuit breaker into the controller if needed
-    if (!(controller as any).circuitBreaker) {
-      (controller as any).circuitBreaker = mockCircuitBreaker;
-    }
   });
 
   it('should be defined', () => {

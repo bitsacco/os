@@ -1,5 +1,3 @@
- 
-
 // NOTE: A tracking system such as Sentry should replace the console
 
 export const LogLevel = {

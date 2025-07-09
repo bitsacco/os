@@ -1,5 +1,4 @@
 import * as Joi from 'joi';
-import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -13,7 +12,6 @@ import {
   LnurlMetricsService,
   LoggerModule,
   RedisProvider,
-  SWAP_SERVICE_NAME,
   RoleValidationService,
 } from '@bitsacco/common';
 import { SolowalletMetricsService } from './solowallet.metrics';
@@ -24,6 +22,7 @@ import {
 } from './db';
 import { SolowalletController } from './solowallet.controller';
 import { SolowalletService } from './solowallet.service';
+import { SwapModule } from '../swap/swap.module';
 
 @Module({
   imports: [
@@ -31,8 +30,6 @@ import { SolowalletService } from './solowallet.service';
       isGlobal: true,
       validationSchema: Joi.object({
         NODE_ENV: Joi.string().required(),
-        SOLOWALLET_GRPC_URL: Joi.string().required(),
-        SWAP_GRPC_URL: Joi.string().required(),
         DATABASE_URL: Joi.string().required(),
         FEDIMINT_CLIENTD_BASE_URL: Joi.string().required(),
         FEDIMINT_CLIENTD_PASSWORD: Joi.string().required(),
@@ -43,6 +40,10 @@ import { SolowalletService } from './solowallet.service';
         REDIS_PORT: Joi.number().required(),
         REDIS_PASSWORD: Joi.string().required(),
         REDIS_TLS: Joi.boolean().default(false),
+        MOCK_BTC_KES_RATE: Joi.number(),
+        CURRENCY_API_KEY: Joi.string(),
+        INTASEND_PUBLIC_KEY: Joi.string().required(),
+        INTASEND_PRIVATE_KEY: Joi.string().required(),
       }),
     }),
     DatabaseModule,
@@ -51,19 +52,8 @@ import { SolowalletService } from './solowallet.service';
     ]),
     LoggerModule,
     HttpModule,
+    SwapModule,
     ClientsModule.registerAsync([
-      {
-        name: SWAP_SERVICE_NAME,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.GRPC,
-          options: {
-            package: 'swap',
-            protoPath: join(__dirname, '../../../proto/swap.proto'),
-            url: configService.getOrThrow<string>('SWAP_GRPC_URL'),
-          },
-        }),
-        inject: [ConfigService],
-      },
       {
         name: EVENTS_SERVICE_BUS,
         useFactory: (configService: ConfigService) => ({
