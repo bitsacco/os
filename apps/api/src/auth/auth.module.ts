@@ -21,8 +21,6 @@ import {
   ServiceRegistryService,
   SecretsService,
   ApiKeyCircuitBreakerService,
-  DistributedRateLimitService,
-  RedisProvider,
   RoleValidationService,
 } from '@bitsacco/common';
 import { AuthController } from './auth.controller';
@@ -55,10 +53,6 @@ import { SmsModule } from '../sms/sms.module';
         AUTH_JWT_ISS: Joi.string().required(),
         REFRESH_TOKEN_EXPIRATION_DAYS: Joi.number().default(7),
         SALT_ROUNDS: Joi.number().required(),
-        REDIS_HOST: Joi.string().default('localhost'),
-        REDIS_PORT: Joi.number().default(6379),
-        REDIS_PASSWORD: Joi.string().required(),
-        REDIS_TLS: Joi.boolean().default(false),
         SMS_AT_API_KEY: Joi.string().required(),
         SMS_AT_USERNAME: Joi.string().required(),
         SMS_AT_FROM: Joi.string().required(),
@@ -103,8 +97,6 @@ import { SmsModule } from '../sms/sms.module';
     ServiceRegistryService,
     ApiKeyCircuitBreakerService,
     ApiKeyRotationService,
-    DistributedRateLimitService,
-    RedisProvider,
     RoleValidationService,
   ],
 })

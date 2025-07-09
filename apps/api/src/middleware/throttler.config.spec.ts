@@ -2,61 +2,9 @@ import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import {
   InMemoryThrottlerStorage,
-  RedisThrottlerStorage,
   ThrottlerConfigService,
 } from './throttler.config';
-import Redis from 'ioredis';
 import { Logger } from '@nestjs/common';
-
-// Mock Redis client
-class MockRedis {
-  private store = new Map<string, string>();
-
-  async get(key: string): Promise<string | null> {
-    return this.store.get(key) || null;
-  }
-
-  async set(key: string, value: string): Promise<'OK'> {
-    this.store.set(key, value);
-    return 'OK';
-  }
-
-  async incr(key: string): Promise<number> {
-    const val = parseInt(this.store.get(key) || '0', 10) + 1;
-    this.store.set(key, val.toString());
-    return val;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async pexpire(_key: string, _ttl: number): Promise<number> {
-    return 1;
-  }
-
-  multi(): any {
-    const commands: [string, any[]][] = [];
-    return {
-      incr: (key: string) => {
-        commands.push(['incr', [key]]);
-        return this;
-      },
-      pexpire: (key: string, ttl: number) => {
-        commands.push(['pexpire', [key, ttl]]);
-        return this;
-      },
-      exec: async () => {
-        const results: [null, number | string][] = [];
-        for (const [cmd, args] of commands) {
-          if (cmd === 'incr') {
-            results.push([null, await this.incr(args[0])]);
-          } else if (cmd === 'pexpire') {
-            results.push([null, await this.pexpire(args[0], args[1])]);
-          }
-        }
-        return results;
-      },
-    };
-  }
-}
 
 describe('ThrottlerConfig', () => {
   let configService: ConfigService;
@@ -120,70 +68,15 @@ describe('ThrottlerConfig', () => {
     });
   });
 
-  describe('RedisThrottlerStorage', () => {
-    let storage: RedisThrottlerStorage;
-    let redisMock: MockRedis;
-
-    beforeEach(() => {
-      // Silence logger warnings
-      jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {});
-      jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
-
-      redisMock = new MockRedis() as unknown as Redis;
-      storage = new RedisThrottlerStorage(redisMock);
-    });
-
-    it('should increment and get counts correctly', async () => {
-      // First request
-      const result1 = await storage.increment('redis-key', 1000, 10);
-      expect(result1.totalHits).toBe(1);
-      expect(result1.isBlocked).toBe(false);
-
-      // Verify count
-      const storedCount = await storage.get('redis-key');
-      expect(storedCount).toBe(1);
-
-      // Second request
-      const result2 = await storage.increment('redis-key', 1000, 10);
-      expect(result2.totalHits).toBe(2);
-      expect(result2.isBlocked).toBe(false);
-
-      // Verify updated count
-      const updatedCount = await storage.get('redis-key');
-      expect(updatedCount).toBe(2);
-    });
-
-    it('should fall back to in-memory storage when Redis is not available', async () => {
-      const fallbackStorage = new RedisThrottlerStorage(null);
-
-      // Should work with in-memory fallback
-      const result = await fallbackStorage.increment('fallback-key', 1000, 10);
-      expect(result.totalHits).toBe(1);
-      expect(result.isBlocked).toBe(false);
-
-      const storedCount = await fallbackStorage.get('fallback-key');
-      expect(storedCount).toBe(1);
-    });
-  });
-
   describe('ThrottlerConfigService', () => {
-    it('should create throttler options with Redis storage', () => {
-      const redisMock = new MockRedis() as unknown as Redis;
-      const service = new ThrottlerConfigService(redisMock, configService);
+    it('should create throttler options with in-memory storage', () => {
+      const service = new ThrottlerConfigService(configService);
 
       const options = service.createThrottlerOptions();
 
       expect(options.throttlers[0].ttl).toBe(60);
       expect(options.throttlers[0].limit).toBe(120);
-      expect(options.storage).toBeInstanceOf(RedisThrottlerStorage);
-    });
-
-    it('should create throttler options without Redis', () => {
-      const service = new ThrottlerConfigService(null, configService);
-
-      const options = service.createThrottlerOptions();
-
-      expect(options.storage).toBeInstanceOf(RedisThrottlerStorage);
+      expect(options.storage).toBeInstanceOf(InMemoryThrottlerStorage);
     });
   });
 });

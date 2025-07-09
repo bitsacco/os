@@ -3,7 +3,6 @@ import {
   Body,
   Controller,
   Get,
-  Inject,
   Logger,
   Param,
   Post,
@@ -11,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { object } from 'joi';
-import { ClientProxy } from '@nestjs/microservices';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
   ApiBearerAuth,
   ApiCookieAuth,
@@ -26,7 +25,6 @@ import {
   type SupportedCurrencyType,
   SupportedCurrencies,
   process_swap_update,
-  EVENTS_SERVICE_BUS,
   CreateOnrampSwapDto,
   ListSwapsDto,
   CreateOfframpSwapDto,
@@ -42,7 +40,7 @@ export class SwapController {
   private readonly logger = new Logger(SwapController.name);
 
   constructor(
-    @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
+    private readonly eventEmitter: EventEmitter2,
     private readonly swapService: SwapService,
   ) {
     this.logger.log('SwapController initialized');
@@ -205,7 +203,7 @@ export class SwapController {
   })
   @ApiBody({ type: object })
   postSwapUpdate(@Body() updates: unknown) {
-    this.eventsClient.emit(process_swap_update, updates);
+    this.eventEmitter.emit(process_swap_update, updates);
     return { success: true };
   }
 }

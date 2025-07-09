@@ -10,6 +10,3 @@ export * from './users';
 export * from './auth';
 export * from './monitoring';
 export * from './exceptions';
-export * from './interceptors/grpc-session-retry.interceptor';
-export * from './grpc/grpc-connection-manager';
-export * from './grpc/grpc-service-wrapper';

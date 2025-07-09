@@ -1,13 +1,9 @@
-import {
-  CreateOnrampSwapDto,
-  Currency,
-  EVENTS_SERVICE_BUS,
-  JwtAuthGuard,
-} from '@bitsacco/common';
+import { CreateOnrampSwapDto, Currency, JwtAuthGuard } from '@bitsacco/common';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
 import { TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SwapService } from './swap.service';
 import { SwapController } from './swap.controller';
 
@@ -29,7 +25,7 @@ describe('SwapController', () => {
           },
         },
         {
-          provide: EVENTS_SERVICE_BUS,
+          provide: EventEmitter2,
           useValue: {
             emit: jest.fn(),
           },

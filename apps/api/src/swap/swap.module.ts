@@ -3,16 +3,11 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
-  configRedisCacheStore,
   DatabaseModule,
-  EVENTS_SERVICE_BUS,
   FedimintService,
-  getRedisConfig,
   LoggerModule,
-  RedisProvider,
   RoleValidationService,
 } from '@bitsacco/common';
 import { SwapController } from './swap.controller';
@@ -34,10 +29,6 @@ import {
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
-        REDIS_HOST: Joi.string().required(),
-        REDIS_PORT: Joi.number().required(),
-        REDIS_PASSWORD: Joi.string().required(),
-        REDIS_TLS: Joi.boolean().default(false),
         MOCK_BTC_KES_RATE: Joi.number(),
         CURRENCY_API_KEY: Joi.string(),
         DATABASE_URL: Joi.string().required(),
@@ -56,24 +47,10 @@ import {
     ]),
     LoggerModule,
     HttpModule,
-    ClientsModule.registerAsync([
-      {
-        name: EVENTS_SERVICE_BUS,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.REDIS,
-          options: getRedisConfig(configService),
-        }),
-        inject: [ConfigService],
-      },
-    ]),
-    CacheModule.registerAsync({
+    CacheModule.register({
       isGlobal: true,
-      imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
-        const ttl = 60 * 60 * 5; // 5 hours
-        return configRedisCacheStore(configService, ttl);
-      },
-      inject: [ConfigService],
+      ttl: 60 * 60 * 5 * 1000, // 5 hours in milliseconds
+      max: 1000, // Maximum number of items in cache
     }),
     EventEmitterModule.forRoot({
       global: true,
@@ -91,8 +68,6 @@ import {
     FedimintService,
     MpesaOfframpSwapRepository,
     MpesaOnrampSwapRepository,
-    SwapMetricsService,
-    RedisProvider,
     RoleValidationService,
   ],
   exports: [SwapService],

@@ -1,21 +1,4 @@
 services:
-  admin:
-    container_name: admin
-    build:
-      context: .
-      dockerfile: ./apps/admin/Dockerfile
-      target: development
-    command: sh -c "cd /app/apps/admin && bun run dev"
-    restart: always
-    depends_on:
-      - api
-    env_file:
-      - ./apps/admin/.dev.env
-    ports:
-      - '3000:3000'
-    volumes:
-      - .:/app
-
   api:
     container_name: api
     build:
@@ -26,7 +9,6 @@ services:
     restart: always
     depends_on:
       - mongodb
-      - redis
     env_file:
       - ./apps/api/.dev.env
     ports:
@@ -45,24 +27,6 @@ services:
     volumes:
       - mongodb_datadir:/data/db
     restart: always
-
-  redis:
-    image: redis:7-alpine
-    container_name: redis
-    command: [
-      "sh", "-c", 
-      "redis-server --requirepass ${REDIS_PASSWORD:-securepassword} --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes"
-    ]
-    ports:
-      - '6379:6379'
-    volumes:
-      - redis_data:/data
-    restart: always
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-securepassword}", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
   clientd:
     image: okjodom/fedimint-clientd:v0.4.1
@@ -83,4 +47,3 @@ services:
 volumes:
   mongodb_datadir:
   clientd_datadir:
-  redis_data:

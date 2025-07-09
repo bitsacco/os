@@ -1,15 +1,10 @@
 import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import {
-  LoggerModule,
-  DatabaseModule,
-  EVENTS_SERVICE_BUS,
-  getRedisConfig,
-  RedisProvider,
-} from '@bitsacco/common';
+import { LoggerModule, DatabaseModule } from '@bitsacco/common';
+import { SmsModule } from '../sms/sms.module';
+import { NostrModule } from '../nostr/nostr.module';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { NotificationGateway } from './notification.gateway';
@@ -23,8 +18,6 @@ import {
   NotificationPreferencesDocument,
   NotificationPreferencesSchema,
 } from './db';
-import { SmsService } from '../sms/sms.service';
-import { NostrService } from '../nostr/nostr.service';
 
 @Module({
   imports: [
@@ -32,24 +25,14 @@ import { NostrService } from '../nostr/nostr.service';
       isGlobal: true,
       validationSchema: Joi.object({
         DATABASE_URL: Joi.string().required(),
-        REDIS_HOST: Joi.string().required(),
-        REDIS_PORT: Joi.number().required(),
-        REDIS_PASSWORD: Joi.string().required(),
-        REDIS_TLS: Joi.boolean().default(false),
       }),
     }),
     LoggerModule,
-    EventEmitterModule.forRoot(),
-    ClientsModule.registerAsync([
-      {
-        name: EVENTS_SERVICE_BUS,
-        useFactory: (configService) => ({
-          transport: Transport.REDIS,
-          options: getRedisConfig(configService),
-        }),
-        inject: [ConfigService],
-      },
-    ]),
+    EventEmitterModule.forRoot({
+      global: true,
+      delimiter: '.',
+      verboseMemoryLeak: true,
+    }),
     DatabaseModule,
     DatabaseModule.forFeature([
       { name: NotificationDocument.name, schema: NotificationSchema },
@@ -58,6 +41,8 @@ import { NostrService } from '../nostr/nostr.service';
         schema: NotificationPreferencesSchema,
       },
     ]),
+    SmsModule,
+    NostrModule,
   ],
   controllers: [NotificationController],
   providers: [
@@ -67,9 +52,6 @@ import { NostrService } from '../nostr/nostr.service';
     RateLimitService,
     NotificationRepository,
     NotificationPreferencesRepository,
-    RedisProvider,
-    SmsService,
-    NostrService,
   ],
   exports: [NotificationService, NotificationGateway],
 })

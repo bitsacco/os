@@ -1,5 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
-import { DistributedRateLimitService } from '@bitsacco/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { NotificationChannel, NotificationImportance } from '@bitsacco/common';
 
 export interface RateLimitConfig {
@@ -27,12 +26,20 @@ export interface RateLimitResult {
   retryAfterMs: number;
 }
 
+interface UserRateLimitData {
+  count: number;
+  resetAt: number;
+}
+
 /**
- * Rate limiting service for notifications using distributed Redis implementation
+ * Simple in-memory rate limiting service for notifications
  */
 @Injectable()
-export class RateLimitService implements OnModuleDestroy {
+export class RateLimitService {
   private readonly logger = new Logger(RateLimitService.name);
+
+  // In-memory storage for rate limit data
+  private rateLimits = new Map<string, UserRateLimitData>();
 
   // Default settings for rate limiting
   private defaultConfig: RateLimitConfig = {
@@ -46,9 +53,7 @@ export class RateLimitService implements OnModuleDestroy {
   private importanceConfigs: Map<NotificationImportance, RateLimitConfig> =
     new Map();
 
-  constructor(
-    private readonly distributedRateLimitService: DistributedRateLimitService,
-  ) {
+  constructor() {
     // Set default configurations for different channels
     this.channelConfigs.set(NotificationChannel.SMS, {
       limit: 10, // Stricter limit for SMS
@@ -108,26 +113,41 @@ export class RateLimitService implements OnModuleDestroy {
     // Get the appropriate config based on channel and importance
     const config = this.getEffectiveConfig(channel, importance);
 
-    // Create a channel-specific action name
-    const action = `notification:${NotificationChannel[channel]}`;
+    // Create a unique key for this user and channel
+    const key = `${userId}:${NotificationChannel[channel]}`;
 
-    // Check rate limit using the distributed service
-    const result = await this.distributedRateLimitService.checkRateLimit(
-      userId,
-      action,
-      {
-        prefix: 'notification',
-        limit: config.limit,
-        windowSeconds: config.windowSeconds,
-        burstLimit: config.burstLimit,
-      },
-    );
+    const now = Date.now();
+    const windowMs = config.windowSeconds * 1000;
+
+    // Get or create rate limit data
+    let rateLimitData = this.rateLimits.get(key);
+
+    // If no data exists or window has expired, reset
+    if (!rateLimitData || now >= rateLimitData.resetAt) {
+      rateLimitData = {
+        count: 0,
+        resetAt: now + windowMs,
+      };
+      this.rateLimits.set(key, rateLimitData);
+    }
+
+    // Check if limit exceeded
+    const totalLimit = config.limit + (config.burstLimit || 0);
+    const allowed = rateLimitData.count < totalLimit;
+
+    if (allowed) {
+      rateLimitData.count++;
+    }
+
+    const remaining = Math.max(0, totalLimit - rateLimitData.count);
+    const resetAtSeconds = Math.floor(rateLimitData.resetAt / 1000);
+    const retryAfterMs = allowed ? 0 : rateLimitData.resetAt - now;
 
     return {
-      allowed: result.allowed,
-      remaining: result.remaining,
-      resetAt: result.resetAt,
-      retryAfterMs: result.retryAfterMs,
+      allowed,
+      remaining,
+      resetAt: resetAtSeconds,
+      retryAfterMs,
     };
   }
 
@@ -214,20 +234,39 @@ export class RateLimitService implements OnModuleDestroy {
     if (!userId) return;
 
     // Reset rate limits for all notification channels
-    for (const channel of Object.values(NotificationChannel)) {
-      if (typeof channel === 'string') continue; // Skip reverse mapping
+    const keysToDelete: string[] = [];
 
-      const action = `notification:${NotificationChannel[channel]}`;
-      await this.distributedRateLimitService.resetRateLimit(userId, action);
+    for (const [key] of this.rateLimits.entries()) {
+      if (key.startsWith(`${userId}:`)) {
+        keysToDelete.push(key);
+      }
     }
+
+    keysToDelete.forEach((key) => this.rateLimits.delete(key));
 
     this.logger.log(`Reset rate limits for user ${userId}`);
   }
 
   /**
-   * Clean up resources when the module is destroyed
+   * Clean up expired rate limit entries periodically
+   * Call this method periodically (e.g., every hour) to prevent memory leaks
    */
-  onModuleDestroy(): void {
-    // No need to clean up intervals as they're handled by the distributed service
+  cleanupExpiredEntries(): void {
+    const now = Date.now();
+    const keysToDelete: string[] = [];
+
+    for (const [key, data] of this.rateLimits.entries()) {
+      if (now >= data.resetAt) {
+        keysToDelete.push(key);
+      }
+    }
+
+    keysToDelete.forEach((key) => this.rateLimits.delete(key));
+
+    if (keysToDelete.length > 0) {
+      this.logger.debug(
+        `Cleaned up ${keysToDelete.length} expired rate limit entries`,
+      );
+    }
   }
 }

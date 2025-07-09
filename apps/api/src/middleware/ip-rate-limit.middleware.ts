@@ -1,7 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
-import { DistributedRateLimitService } from '@bitsacco/common';
 import { ConfigService } from '@nestjs/config';
+
+interface RateLimitEntry {
+  count: number;
+  resetAt: number;
+}
 
 /**
  * Middleware to apply IP-based rate limiting for all requests,
@@ -14,11 +18,9 @@ export class IpRateLimitMiddleware implements NestMiddleware {
   private readonly limit: number;
   private readonly windowSeconds: number;
   private readonly burstLimit: number;
+  private readonly rateLimits = new Map<string, RateLimitEntry>();
 
-  constructor(
-    private readonly rateLimitService: DistributedRateLimitService,
-    private readonly configService: ConfigService,
-  ) {
+  constructor(private readonly configService: ConfigService) {
     this.enabled = this.configService.get<boolean>(
       'IP_RATE_LIMIT_ENABLED',
       true,
@@ -34,6 +36,11 @@ export class IpRateLimitMiddleware implements NestMiddleware {
       `IP rate limiting ${this.enabled ? 'enabled' : 'disabled'} ` +
         `(${this.limit}/${this.windowSeconds}s with ${this.burstLimit} burst)`,
     );
+
+    // Clean up expired entries every 5 minutes
+    if (this.enabled) {
+      setInterval(() => this.cleanupExpiredEntries(), 5 * 60 * 1000);
+    }
   }
 
   async use(req: Request, res: Response, next: NextFunction) {
@@ -50,27 +57,41 @@ export class IpRateLimitMiddleware implements NestMiddleware {
     }
 
     try {
-      // Check if request should be rate limited
-      const result = await this.rateLimitService.checkRateLimit(
-        ip,
-        'anonymous',
-        {
-          limit: this.limit,
-          windowSeconds: this.windowSeconds,
-          burstLimit: this.burstLimit,
-        },
-      );
+      // Check rate limit
+      const now = Date.now();
+      const windowMs = this.windowSeconds * 1000;
+
+      let entry = this.rateLimits.get(ip);
+
+      // If no entry or window expired, create new entry
+      if (!entry || now >= entry.resetAt) {
+        entry = {
+          count: 0,
+          resetAt: now + windowMs,
+        };
+        this.rateLimits.set(ip, entry);
+      }
+
+      const totalLimit = this.limit + this.burstLimit;
+      const allowed = entry.count < totalLimit;
+
+      if (allowed) {
+        entry.count++;
+      }
+
+      const remaining = Math.max(0, totalLimit - entry.count);
+      const resetAtSeconds = Math.floor(entry.resetAt / 1000);
 
       // Add rate limit headers to response
-      res.setHeader('X-RateLimit-Limit', this.limit + this.burstLimit);
-      res.setHeader('X-RateLimit-Remaining', Math.max(0, result.remaining));
-      res.setHeader('X-RateLimit-Reset', result.resetAt);
+      res.setHeader('X-RateLimit-Limit', totalLimit);
+      res.setHeader('X-RateLimit-Remaining', remaining);
+      res.setHeader('X-RateLimit-Reset', resetAtSeconds);
 
       // If rate limit exceeded, return 429 Too Many Requests
-      if (!result.allowed) {
+      if (!allowed) {
         this.logger.warn(`Rate limit exceeded for IP ${this.maskIp(ip)}`);
 
-        res.setHeader('Retry-After', Math.ceil(result.retryAfterMs / 1000));
+        res.setHeader('Retry-After', Math.ceil((entry.resetAt - now) / 1000));
         res.status(429).json({
           statusCode: 429,
           message: 'Too many requests, please try again later',
@@ -149,6 +170,25 @@ export class IpRateLimitMiddleware implements NestMiddleware {
     } else {
       // IPv4 - mask last octet
       return ip.replace(/\d+$/, '***');
+    }
+  }
+
+  /**
+   * Clean up expired rate limit entries
+   */
+  private cleanupExpiredEntries(): void {
+    const now = Date.now();
+    let cleaned = 0;
+
+    for (const [ip, entry] of this.rateLimits.entries()) {
+      if (now >= entry.resetAt) {
+        this.rateLimits.delete(ip);
+        cleaned++;
+      }
+    }
+
+    if (cleaned > 0) {
+      this.logger.debug(`Cleaned ${cleaned} expired IP rate limit entries`);
     }
   }
 }

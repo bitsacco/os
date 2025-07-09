@@ -9,17 +9,16 @@ import {
   type WsResponse,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Inject, Logger } from '@nestjs/common';
-import { ClientProxy, EventPattern } from '@nestjs/microservices';
+import { Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import {
-  EVENTS_SERVICE_BUS,
-  NOTIFICATION_SERVICE_NAME,
   notification_created,
   notification_delivered,
   notification_preferences_updated,
   type NotificationCreatedEvent,
 } from '@bitsacco/common';
+import { NotificationService } from './notification.service';
 import {
   GetNotificationsDto,
   GetNotificationsResponseDto,
@@ -50,17 +49,10 @@ export class NotificationGateway
   @WebSocketServer()
   server: Server;
 
-  constructor(
-    @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
-    @Inject(NOTIFICATION_SERVICE_NAME)
-    private readonly notificationClient: ClientProxy,
-  ) {}
+  constructor(private readonly notificationService: NotificationService) {}
 
   afterInit() {
     this.logger.log('Notification WebSocket Gateway initialized');
-
-    // Subscribe to notification events from Redis bus
-    this.eventsClient.emit(notification_created, {}); // Just to initialize pattern
 
     // Log connection info for debugging
     const port = process.env.PORT || 4000;
@@ -227,14 +219,12 @@ export class NotificationGateway
         topics = [],
       } = data || {};
 
-      const result = await this.notificationClient
-        .send('GetNotifications', {
-          userId,
-          unreadOnly,
-          pagination: { page, size },
-          topics,
-        })
-        .toPromise();
+      const result = await this.notificationService.getNotifications({
+        userId,
+        unreadOnly,
+        pagination: { page, size },
+        topics,
+      });
 
       return {
         event: 'getNotifications',
@@ -280,12 +270,10 @@ export class NotificationGateway
     try {
       const { notificationIds = [] } = data || {};
 
-      await this.notificationClient
-        .send('MarkAsRead', {
-          userId,
-          notificationIds,
-        })
-        .toPromise();
+      await this.notificationService.markAsRead({
+        userId,
+        notificationIds,
+      });
 
       return {
         event: 'markAsRead',
@@ -331,13 +319,11 @@ export class NotificationGateway
     try {
       const { channels = [], topics = [] } = data || {};
 
-      await this.notificationClient
-        .send('UpdatePreferences', {
-          userId,
-          channels,
-          topics,
-        })
-        .toPromise();
+      await this.notificationService.updatePreferences({
+        userId,
+        channels,
+        topics,
+      });
 
       return {
         event: 'updatePreferences',
@@ -360,7 +346,7 @@ export class NotificationGateway
    *
    * @ApiResponse Event response type: NotificationCreatedEventDto
    */
-  @EventPattern(notification_created)
+  @OnEvent(notification_created)
   @ApiResponse({
     description: 'Server emits when a new notification is created',
     type: NotificationCreatedEventDto,
@@ -401,7 +387,7 @@ export class NotificationGateway
    *
    * @ApiResponse Event response type: NotificationDeliveredEventDto
    */
-  @EventPattern(notification_delivered)
+  @OnEvent(notification_delivered)
   @ApiResponse({
     description:
       'Server emits when a notification is delivered through a channel',
@@ -424,7 +410,7 @@ export class NotificationGateway
    *
    * @ApiResponse Event response type: PreferencesUpdatedEventDto
    */
-  @EventPattern(notification_preferences_updated)
+  @OnEvent(notification_preferences_updated)
   @ApiResponse({
     description: 'Server emits when notification preferences are updated',
     type: PreferencesUpdatedEventDto,

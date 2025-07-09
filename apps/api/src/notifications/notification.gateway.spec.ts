@@ -2,14 +2,13 @@ import { of } from 'rxjs';
 import { Socket, Server } from 'socket.io';
 import { Test, TestingModule } from '@nestjs/testing';
 import {
-  EVENTS_SERVICE_BUS,
-  NOTIFICATION_SERVICE_NAME,
   NotificationCreatedEvent,
   NotificationTopic,
   NotificationImportance,
   NotificationChannel,
 } from '@bitsacco/common';
 import { NotificationGateway } from './notification.gateway';
+import { NotificationService } from './notification.service';
 
 // Create a mock Socket
 const mockSocket = {
@@ -37,14 +36,12 @@ const mockServer = {
   }),
 } as unknown as Server;
 
-// Mock Redis event bus client
-const mockEventsClient = {
-  emit: jest.fn(),
-};
-
-// Mock Notification service client
-const mockNotificationClient = {
-  send: jest.fn(),
+// Mock Notification service
+const mockNotificationService = {
+  getNotifications: jest.fn(),
+  markAsRead: jest.fn(),
+  updatePreferences: jest.fn(),
+  getPreferences: jest.fn(),
 };
 
 describe('NotificationGateway', () => {
@@ -57,12 +54,8 @@ describe('NotificationGateway', () => {
       providers: [
         NotificationGateway,
         {
-          provide: EVENTS_SERVICE_BUS,
-          useValue: mockEventsClient,
-        },
-        {
-          provide: NOTIFICATION_SERVICE_NAME,
-          useValue: mockNotificationClient,
+          provide: NotificationService,
+          useValue: mockNotificationService,
         },
       ],
     }).compile();
@@ -73,7 +66,7 @@ describe('NotificationGateway', () => {
     gateway.server = mockServer;
 
     // Set up default mock responses
-    mockNotificationClient.send.mockReturnValue(of({}));
+    mockNotificationService.getNotifications.mockReturnValue(of([]));
   });
 
   it('should be defined', () => {
@@ -148,7 +141,9 @@ describe('NotificationGateway', () => {
         size: 10,
       };
 
-      mockNotificationClient.send.mockReturnValueOnce(of(mockResponse));
+      mockNotificationService.getNotifications.mockResolvedValueOnce(
+        mockResponse,
+      );
 
       const result = await gateway.handleGetNotifications(mockSocket, {
         unreadOnly: true,
@@ -156,15 +151,12 @@ describe('NotificationGateway', () => {
         size: 10,
       });
 
-      expect(mockNotificationClient.send).toHaveBeenCalledWith(
-        'GetNotifications',
-        {
-          userId: 'test-user-id',
-          unreadOnly: true,
-          pagination: { page: 0, size: 10 },
-          topics: [],
-        },
-      );
+      expect(mockNotificationService.getNotifications).toHaveBeenCalledWith({
+        userId: 'test-user-id',
+        unreadOnly: true,
+        pagination: { page: 0, size: 10 },
+        topics: [],
+      });
 
       expect(result).toEqual({
         event: 'getNotifications',

@@ -1,8 +1,6 @@
-import { OnEvent } from '@nestjs/event-emitter';
-import { ClientProxy } from '@nestjs/microservices';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
+import { Injectable, Logger } from '@nestjs/common';
 import {
-  EVENTS_SERVICE_BUS,
   fedimint_receive_success,
   fedimint_receive_failure,
   swap_status_change,
@@ -39,7 +37,7 @@ export class NotificationService {
     private readonly preferences: NotificationPreferencesRepository,
     private readonly metrics: NotificationMetrics,
     private readonly rateLimitService: RateLimitService,
-    @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
+    private readonly eventEmitter: EventEmitter2,
     private readonly smsService: SmsService,
     private readonly nostrService: NostrService,
   ) {}
@@ -87,7 +85,7 @@ export class NotificationService {
     this.metrics.preferencesUpdated();
 
     // Emit event for other services
-    this.eventsClient.emit(notification_preferences_updated, { userId });
+    this.eventEmitter.emit(notification_preferences_updated, { userId });
 
     return {};
   }
@@ -185,7 +183,7 @@ export class NotificationService {
     this.metrics.notificationCreated(topic, importance);
 
     // Emit notification created event
-    this.eventsClient.emit<NotificationCreatedEvent>(notification_created, {
+    this.eventEmitter.emit<NotificationCreatedEvent>(notification_created, {
       notificationId,
       userId,
       title,
@@ -367,7 +365,7 @@ export class NotificationService {
     this.metrics.notificationDelivered(channel, topic, success);
 
     // Emit delivery event
-    this.eventsClient.emit<NotificationDeliveredEvent>(notification_delivered, {
+    this.eventEmitter.emit<NotificationDeliveredEvent>(notification_delivered, {
       notificationId,
       userId,
       channel,

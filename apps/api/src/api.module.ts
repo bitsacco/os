@@ -5,14 +5,10 @@ import { APP_GUARD, APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
-  CHAMA_WALLET_SERVICE_NAME,
-  CHAMAS_SERVICE_NAME,
   DatabaseModule,
-  EVENTS_SERVICE_BUS,
   JwtAuthStrategy,
   LoggerModule,
   NpubAuthStategy,
@@ -29,16 +25,10 @@ import {
   ServiceRegistryService,
   SecretsService,
   JwtAuthGuard,
-  DistributedRateLimitService,
-  RedisProvider,
-  getRedisConfig,
   RoleValidationService,
   CoreMetricsService,
   GlobalExceptionFilter,
   CircuitBreakerService,
-  GrpcSessionRetryInterceptor,
-  GrpcConnectionManager,
-  GrpcServiceWrapper,
 } from '@bitsacco/common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
@@ -79,11 +69,6 @@ import { MetricsModule } from './metrics/metrics.module';
       validationSchema: Joi.object({
         PORT: Joi.string().required(),
         NODE_ENV: Joi.string().required(),
-        CHAMA_GRPC_URL: Joi.string().required(),
-        REDIS_HOST: Joi.string().required(),
-        REDIS_PORT: Joi.number().required(),
-        REDIS_PASSWORD: Joi.string().required(),
-        REDIS_TLS: Joi.boolean().default(false),
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         THROTTLE_TTL: Joi.number().default(60),
@@ -105,16 +90,6 @@ import { MetricsModule } from './metrics/metrics.module';
       imports: [ConfigModule],
       useClass: ThrottlerConfigService,
     }),
-    ClientsModule.registerAsync([
-      {
-        name: EVENTS_SERVICE_BUS,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.REDIS,
-          options: getRedisConfig(configService),
-        }),
-        inject: [ConfigService],
-      },
-    ]),
     DatabaseModule,
     DatabaseModule.forFeature([
       { name: UsersDocument.name, schema: UsersSchema },
@@ -136,14 +111,8 @@ import { MetricsModule } from './metrics/metrics.module';
       },
       inject: [CoreMetricsService],
     },
-    // Global gRPC session retry interceptor
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: GrpcSessionRetryInterceptor,
-    },
     CircuitBreakerService,
     CoreMetricsService,
-    RedisProvider,
     UsersRepository,
     UsersService,
     PhoneAuthStategy,
@@ -157,10 +126,7 @@ import { MetricsModule } from './metrics/metrics.module';
     CombinedAuthGuard,
     JwtAuthGuard,
     Reflector,
-    DistributedRateLimitService,
     RoleValidationService,
-    GrpcConnectionManager,
-    GrpcServiceWrapper,
   ],
 })
 export class ApiModule implements NestModule {

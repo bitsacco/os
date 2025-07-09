@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SwapService } from '../swap/swap.service';
 import {
   collection_for_shares,
-  EVENTS_SERVICE_BUS,
   FedimintContext,
   type FedimintReceiveSuccessEvent,
   FedimintService,
@@ -22,7 +21,6 @@ import { ChamaWalletRepository } from './db';
 describe('ChamaWalletService', () => {
   let service: ChamaWalletService;
   let eventEmitter: EventEmitter2;
-  let eventsClient: any;
 
   const mockWalletRepository = {
     findOneAndUpdate: jest.fn(),
@@ -45,12 +43,6 @@ describe('ChamaWalletService', () => {
 
   const mockSwapGrpc = {
     getService: jest.fn().mockReturnValue({}),
-  };
-
-  const mockEventsClient = {
-    emit: jest.fn().mockReturnValue({
-      subscribe: jest.fn(),
-    }),
   };
 
   const mockChamasService = {
@@ -95,10 +87,6 @@ describe('ChamaWalletService', () => {
           useValue: mockSwapGrpc,
         },
         {
-          provide: EVENTS_SERVICE_BUS,
-          useValue: mockEventsClient,
-        },
-        {
           provide: ChamasService,
           useValue: mockChamasService,
         },
@@ -136,7 +124,6 @@ describe('ChamaWalletService', () => {
 
     service = module.get<ChamaWalletService>(ChamaWalletService);
     eventEmitter = module.get<EventEmitter2>(EventEmitter2);
-    eventsClient = module.get(EVENTS_SERVICE_BUS);
   });
 
   describe('handleSuccessfulReceive', () => {
@@ -184,7 +171,7 @@ describe('ChamaWalletService', () => {
         operationId,
       };
 
-      const eventsEmitSpy = jest.spyOn(eventsClient, 'emit');
+      const eventsEmitSpy = jest.spyOn(eventEmitter, 'emit');
 
       // Act
       await service.handleSuccessfulReceive(event);
@@ -220,7 +207,7 @@ describe('ChamaWalletService', () => {
         operationId,
       };
 
-      const eventsEmitSpy = jest.spyOn(eventsClient, 'emit');
+      const eventsEmitSpy = jest.spyOn(eventEmitter, 'emit');
 
       // Act - this should not throw an error
       await service.handleSuccessfulReceive(event);

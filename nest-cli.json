@@ -29,20 +29,6 @@
       "compilerOptions": {
         "tsConfigPath": "apps/api/tsconfig.app.json"
       }
-    },
-    "admin": {
-      "type": "application",
-      "root": "apps/admin",
-      "sourceRoot": "apps/admin/src",
-      "compilerOptions": {
-        "webpackConfigPath": "apps/admin/next.config.mjs",
-        "skipTypeCheck": true,
-        "typescript": {
-          "skipCheck": true
-        },
-        "webpack": false,
-        "tsConfigPath": "apps/admin/tsconfig.json"
-      }
     }
   },
   "monorepo": true,

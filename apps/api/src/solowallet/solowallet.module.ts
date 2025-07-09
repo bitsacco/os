@@ -1,17 +1,13 @@
 import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { HttpModule } from '@nestjs/axios';
 import {
   DatabaseModule,
-  EVENTS_SERVICE_BUS,
   FedimintService,
-  getRedisConfig,
   LnurlMetricsService,
   LoggerModule,
-  RedisProvider,
   RoleValidationService,
 } from '@bitsacco/common';
 import { SolowalletMetricsService } from './solowallet.metrics';
@@ -36,10 +32,6 @@ import { SwapModule } from '../swap/swap.module';
         FEDIMINT_FEDERATION_ID: Joi.string().required(),
         FEDIMINT_GATEWAY_ID: Joi.string().required(),
         LNURL_CALLBACK: Joi.string().required(),
-        REDIS_HOST: Joi.string().required(),
-        REDIS_PORT: Joi.number().required(),
-        REDIS_PASSWORD: Joi.string().required(),
-        REDIS_TLS: Joi.boolean().default(false),
         MOCK_BTC_KES_RATE: Joi.number(),
         CURRENCY_API_KEY: Joi.string(),
         INTASEND_PUBLIC_KEY: Joi.string().required(),
@@ -53,16 +45,6 @@ import { SwapModule } from '../swap/swap.module';
     LoggerModule,
     HttpModule,
     SwapModule,
-    ClientsModule.registerAsync([
-      {
-        name: EVENTS_SERVICE_BUS,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.REDIS,
-          options: getRedisConfig(configService),
-        }),
-        inject: [ConfigService],
-      },
-    ]),
     EventEmitterModule.forRoot({
       global: true,
       delimiter: '.',
@@ -77,7 +59,6 @@ import { SwapModule } from '../swap/swap.module';
     FedimintService,
     LnurlMetricsService,
     SolowalletMetricsService,
-    RedisProvider,
     RoleValidationService,
   ],
 })

@@ -4,7 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
   LoggerModule,
-  RedisProvider,
+  // RedisProvider,
   RoleValidationService,
 } from '@bitsacco/common';
 import { NostrController } from './nostr.controller';
@@ -32,8 +32,9 @@ import { NostrMetricsService } from './nostr.metrics';
     NostrService,
     ConfigService,
     NostrMetricsService,
-    RedisProvider,
+    // RedisProvider,
     RoleValidationService,
   ],
+  exports: [NostrService],
 })
 export class NostrModule {}

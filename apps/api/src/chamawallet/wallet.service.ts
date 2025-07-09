@@ -1,6 +1,5 @@
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
-import { ClientProxy } from '@nestjs/microservices';
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
@@ -11,7 +10,6 @@ import {
   Currency,
   default_page,
   default_page_size,
-  EVENTS_SERVICE_BUS,
   fedimint_receive_failure,
   fedimint_receive_success,
   FedimintService,
@@ -65,7 +63,6 @@ export class ChamaWalletService {
     private readonly lnurlMetricsService: LnurlMetricsService,
     private readonly chamaMetricsService: ChamaMetricsService,
     private readonly swapService: SwapService,
-    @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
     private readonly chamas: ChamasService,
     private readonly users: UsersService,
     private readonly messenger: ChamaMessageService,
@@ -1055,7 +1052,7 @@ export class ChamaWalletService {
         this.logger.log(
           `Emitting collection_for_shares event: ${JSON.stringify(collectionEvent)}`,
         );
-        this.eventsClient.emit(collection_for_shares, collectionEvent);
+        this.eventEmitter.emit(collection_for_shares, collectionEvent);
       }
     } catch (error) {
       this.logger.error(
