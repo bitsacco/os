@@ -14,7 +14,6 @@
     "build:auth": "bun run build auth",
     "build:api": "bun run build api",
     "build:admin": "cd apps/admin && bun run build",
-    "build:swap": "bun run build swap",
     "build:nostr": "bun run build nostr",
     "build:sms": "bun run build sms",
     "build:shares": "bun run build shares",

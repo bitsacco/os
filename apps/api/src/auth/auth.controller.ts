@@ -126,7 +126,8 @@ export class AuthController {
       throw new UnauthorizedException('No refresh token provided');
     }
 
-    const { accessToken, refreshToken: newRefreshToken } = await this.authService.refreshToken(refreshToken);
+    const { accessToken, refreshToken: newRefreshToken } =
+      await this.authService.refreshToken(refreshToken);
 
     // Set the new access token cookie
     const accessTokenPayload = this.jwtService.decode<
@@ -186,7 +187,7 @@ export class AuthController {
     res: Response,
   ) {
     const { user, accessToken, refreshToken } = auth;
-    
+
     if (accessToken) {
       const decodedToken = this.jwtService.decode<
         AuthTokenPayload & { exp: number }

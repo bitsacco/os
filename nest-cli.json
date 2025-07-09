@@ -44,42 +44,6 @@
         "tsConfigPath": "apps/admin/tsconfig.json"
       }
     },
-    "swap": {
-      "type": "application",
-      "root": "apps/swap",
-      "entryFile": "main",
-      "sourceRoot": "apps/swap/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/swap/tsconfig.app.json"
-      }
-    },
-    "nostr": {
-      "type": "application",
-      "root": "apps/nostr",
-      "entryFile": "main",
-      "sourceRoot": "apps/nostr/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/nostr/tsconfig.app.json"
-      }
-    },
-    "sms": {
-      "type": "application",
-      "root": "apps/sms",
-      "entryFile": "main",
-      "sourceRoot": "apps/sms/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/sms/tsconfig.app.json"
-      }
-    },
-    "shares": {
-      "type": "application",
-      "root": "apps/shares",
-      "entryFile": "main",
-      "sourceRoot": "apps/shares/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/shares/tsconfig.app.json"
-      }
-    },
     "solowallet": {
       "type": "application",
       "root": "apps/solowallet",
@@ -89,15 +53,6 @@
         "tsConfigPath": "apps/solowallet/tsconfig.app.json"
       }
     },
-    "auth": {
-      "type": "application",
-      "root": "apps/auth",
-      "entryFile": "main",
-      "sourceRoot": "apps/auth/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/auth/tsconfig.app.json"
-      }
-    },
     "chama": {
       "type": "application",
       "root": "apps/chama",
@@ -105,15 +60,6 @@
       "sourceRoot": "apps/chama/src",
       "compilerOptions": {
         "tsConfigPath": "apps/chama/tsconfig.app.json"
-      }
-    },
-    "notification": {
-      "type": "application",
-      "root": "apps/notification",
-      "entryFile": "main",
-      "sourceRoot": "apps/notification/src",
-      "compilerOptions": {
-        "tsConfigPath": "apps/notification/tsconfig.app.json"
       }
     }
   },

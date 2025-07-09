@@ -35,7 +35,7 @@ import {
   MpesaOnrampSwapRepository,
   MpesaOfframpSwapRepository,
   SwapTransactionState,
-} from '../db';
+} from './db';
 import { FxService } from './fx/fx.service';
 import { IntasendService } from './intasend/intasend.service';
 import { MpesaTransactionState } from './intasend/intasend.types';

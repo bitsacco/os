@@ -11,8 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { object } from 'joi';
-import { type ClientGrpc, ClientProxy } from '@nestjs/microservices';
-import { Observable } from 'rxjs';
+import { ClientProxy } from '@nestjs/microservices';
 import {
   ApiBearerAuth,
   ApiCookieAuth,
@@ -33,31 +32,19 @@ import {
   CreateOfframpSwapDto,
   default_page,
   default_page_size,
-  SwapServiceClient,
-  SWAP_SERVICE_NAME,
   JwtAuthGuard,
   HandleServiceErrors,
-  CircuitBreakerService,
-  TransactionStatus,
-  GrpcServiceWrapper,
 } from '@bitsacco/common';
+import { SwapService } from './swap.service';
 
 @Controller('swap')
 export class SwapController {
-  private swapService: SwapServiceClient;
   private readonly logger = new Logger(SwapController.name);
 
   constructor(
-    @Inject(SWAP_SERVICE_NAME) private readonly grpc: ClientGrpc,
     @Inject(EVENTS_SERVICE_BUS) private readonly eventsClient: ClientProxy,
-    private readonly circuitBreaker: CircuitBreakerService,
-    private readonly grpcWrapper: GrpcServiceWrapper,
+    private readonly swapService: SwapService,
   ) {
-    this.swapService = this.grpcWrapper.createServiceProxy<SwapServiceClient>(
-      this.grpc,
-      'SWAP_SERVICE',
-      SWAP_SERVICE_NAME,
-    );
     this.logger.log('SwapController initialized');
   }
 
@@ -66,10 +53,10 @@ export class SwapController {
   @ApiQuery({ name: 'currency', enum: SupportedCurrencies, required: true })
   @ApiQuery({ name: 'amount', type: Number, required: false })
   @HandleServiceErrors()
-  getOnrampQuote(
+  async getOnrampQuote(
     @Query('currency') currency: SupportedCurrencyType,
     @Query('amount') amount?: number,
-  ): Observable<any> {
+  ) {
     const from = mapToCurrency(currency);
     if (from !== Currency.KES) {
       const es = 'Invalid currency. Only KES is supported';
@@ -77,26 +64,11 @@ export class SwapController {
       throw new BadRequestException(es);
     }
 
-    return this.circuitBreaker.execute(
-      'swap-service-quote',
-      this.swapService.getQuote({
-        from,
-        to: Currency.BTC,
-        amount: amount?.toString(),
-      }),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: {
-          id: 'quote-fallback',
-          from: Currency.KES,
-          to: Currency.BTC,
-          rate: '0',
-          expiry: '0',
-          amount: '0',
-        },
-      },
-    );
+    return await this.swapService.getQuote({
+      from,
+      to: Currency.BTC,
+      amount: amount?.toString(),
+    });
   }
 
   @Post('onramp')
@@ -108,24 +80,8 @@ export class SwapController {
     type: CreateOnrampSwapDto,
   })
   @HandleServiceErrors()
-  postOnrampTransaction(@Body() req: CreateOnrampSwapDto): Observable<any> {
-    return this.circuitBreaker.execute(
-      'swap-service-onramp',
-      this.swapService.createOnrampSwap(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: {
-          id: 'error-fallback',
-          rate: '0',
-          lightning: '',
-          status: TransactionStatus.FAILED,
-          retryCount: 0,
-          createdAt: new Date().toISOString(),
-          message: 'Swap service temporarily unavailable',
-        },
-      },
-    );
+  async postOnrampTransaction(@Body() req: CreateOnrampSwapDto) {
+    return await this.swapService.createOnrampSwap(req);
   }
 
   @Get('onramp/find/:id')
@@ -135,16 +91,8 @@ export class SwapController {
   @ApiOperation({ summary: 'Find onramp transaction by ID' })
   @ApiParam({ name: 'id', type: String, description: 'Transaction ID' })
   @HandleServiceErrors()
-  findOnrampTransaction(@Param('id') id: string): Observable<any> {
-    return this.circuitBreaker.execute(
-      'swap-service-find',
-      this.swapService.findOnrampSwap({ id }),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: null,
-      },
-    );
+  async findOnrampTransaction(@Param('id') id: string) {
+    return await this.swapService.findOnrampSwap({ id });
   }
 
   @Get('onramp/all')
@@ -165,38 +113,25 @@ export class SwapController {
     required: false,
   })
   @HandleServiceErrors()
-  getOnrampTransactions(
+  async getOnrampTransactions(
     @Query('page') page: number = default_page,
     @Query('size') size: number = default_page_size,
-  ): Observable<any> {
-    return this.circuitBreaker.execute(
-      'swap-service-list',
-      this.swapService.listOnrampSwaps({
-        page,
-        size,
-      }),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: {
-          swaps: [],
-          pages: 0,
-          page,
-          size,
-        },
-      },
-    );
+  ) {
+    return await this.swapService.listOnrampSwaps({
+      page,
+      size,
+    });
   }
 
   @Get('offramp/quote')
-  @ApiOperation({ summary: 'Get onramp quote' })
+  @ApiOperation({ summary: 'Get offramp quote' })
   @ApiQuery({ name: 'currency', enum: SupportedCurrencies, required: true })
   @ApiQuery({ name: 'amount', type: Number, required: false })
   @HandleServiceErrors()
-  getOfframpQuote(
+  async getOfframpQuote(
     @Query('currency') currency: SupportedCurrencyType,
     @Query('amount') amount?: number,
-  ): Observable<any> {
+  ) {
     const to = mapToCurrency(currency);
     if (to !== Currency.KES) {
       const es = 'Invalid currency. Only KES is supported';
@@ -204,26 +139,11 @@ export class SwapController {
       throw new BadRequestException(es);
     }
 
-    return this.circuitBreaker.execute(
-      'swap-service-quote',
-      this.swapService.getQuote({
-        to,
-        from: Currency.BTC,
-        amount: amount?.toString(),
-      }),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: {
-          id: 'quote-fallback',
-          from: Currency.BTC,
-          to: Currency.KES,
-          rate: '0',
-          expiry: '0',
-          amount: '0',
-        },
-      },
-    );
+    return await this.swapService.getQuote({
+      to,
+      from: Currency.BTC,
+      amount: amount?.toString(),
+    });
   }
 
   @Post('offramp')
@@ -235,24 +155,8 @@ export class SwapController {
     type: CreateOfframpSwapDto,
   })
   @HandleServiceErrors()
-  postOfframpTransaction(@Body() req: CreateOfframpSwapDto): Observable<any> {
-    return this.circuitBreaker.execute(
-      'swap-service-offramp',
-      this.swapService.createOfframpSwap(req),
-      {
-        failureThreshold: 3,
-        resetTimeout: 10000,
-        fallbackResponse: {
-          id: 'error-fallback',
-          rate: '0',
-          lightning: '',
-          status: TransactionStatus.FAILED,
-          retryCount: 0,
-          createdAt: new Date().toISOString(),
-          message: 'Swap service temporarily unavailable',
-        },
-      },
-    );
+  async postOfframpTransaction(@Body() req: CreateOfframpSwapDto) {
+    return await this.swapService.createOfframpSwap(req);
   }
 
   @Get('offramp/find/:id')
@@ -261,8 +165,9 @@ export class SwapController {
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Find offramp transaction by ID' })
   @ApiParam({ name: 'id', type: 'string', description: 'Transaction ID' })
-  findOfframpTransaction(@Param('id') id: string) {
-    return this.swapService.findOfframpSwap({ id });
+  @HandleServiceErrors()
+  async findOfframpTransaction(@Param('id') id: string) {
+    return await this.swapService.findOfframpSwap({ id });
   }
 
   @Get('offramp/all')
@@ -282,11 +187,12 @@ export class SwapController {
     type: ListSwapsDto['size'],
     required: false,
   })
-  getOfframpTransactions(
+  @HandleServiceErrors()
+  async getOfframpTransactions(
     @Query('page') page: number = 0,
     @Query('size') size: number = 100,
   ) {
-    return this.swapService.listOfframpSwaps({
+    return await this.swapService.listOfframpSwaps({
       page,
       size,
     });

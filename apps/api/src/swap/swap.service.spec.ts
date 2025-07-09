@@ -6,6 +6,7 @@ import {
   fiatToBtc,
   FedimintService,
   TransactionStatus,
+  EVENTS_SERVICE_BUS,
 } from '@bitsacco/common';
 import { TestingModule } from '@nestjs/testing';
 import { createTestingModuleWithValidation } from '@bitsacco/testing';
@@ -14,16 +15,16 @@ import { FxService } from './fx/fx.service';
 import { SwapService } from './swap.service';
 import { IntasendService } from './intasend/intasend.service';
 import { MpesaTransactionState } from './intasend/intasend.types';
-import { MpesaCollectionUpdateDto } from './dto';
+import { MpesaCollectionUpdateDto } from './intasend/intasend.dto';
 import {
   MpesaOfframpSwapRepository,
   MpesaOnrampSwapRepository,
   SwapTransactionState,
-} from '../db';
+} from './db';
 
 const mock_rate = 8708520.117232416;
 
-describe.skip('SwapService', () => {
+describe('SwapService', () => {
   let swapService: SwapService;
   let mockIntasendService: IntasendService;
   let mockFedimintService: FedimintService;
@@ -112,15 +113,27 @@ describe.skip('SwapService', () => {
         },
         {
           provide: MpesaOfframpSwapRepository,
-          useValue: mockOnrampSwapRepository,
+          useValue: mockOfframpSwapRepository,
         },
         {
           provide: MpesaOnrampSwapRepository,
-          useValue: mockOfframpSwapRepository,
+          useValue: mockOnrampSwapRepository,
         },
         {
           provide: DatabaseModule,
           useValue: mockDatabaseModule,
+        },
+        {
+          provide: 'RedisEvents',
+          useValue: {
+            emit: jest.fn(),
+          },
+        },
+        {
+          provide: EVENTS_SERVICE_BUS,
+          useValue: {
+            emit: jest.fn(),
+          },
         },
       ],
     });
@@ -203,6 +216,16 @@ describe.skip('SwapService', () => {
         updatedAt: new Date(),
       }));
 
+      (
+        mockOnrampSwapRepository.findOneAndUpdate as jest.Mock
+      ).mockImplementation(() => ({
+        _id: 'dadad-bdjada-dadad',
+        rate: mock_rate.toString(),
+        state: SwapTransactionState.PENDING,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }));
+
       const req: CreateOnrampSwapDto = {
         quote: {
           id: 'dadad-bdjada-dadad',
@@ -246,6 +269,7 @@ describe.skip('SwapService', () => {
       (mockOnrampSwapRepository.find as jest.Mock).mockImplementation(() => {
         return [
           {
+            _id: 'dadad-bdjada-dadad',
             collectionTracker: 'dadad-bdjada-dadad',
             rate: mock_rate.toString(),
             amount: '100',
@@ -295,10 +319,10 @@ describe.skip('SwapService', () => {
       (mockOnrampSwapRepository.findOne as jest.Mock).mockResolvedValue(swap);
       (
         mockOnrampSwapRepository.findOneAndUpdate as jest.Mock
-      ).mockImplementation((u) => {
+      ).mockImplementation((where, updateData) => {
         return {
           ...swap,
-          state: u.data.state,
+          state: updateData.state,
         };
       });
 
@@ -310,14 +334,10 @@ describe.skip('SwapService', () => {
         mockIntasendService.getMpesaTrackerFromCollectionUpdate,
       ).toHaveBeenCalled();
       expect(mockOnrampSwapRepository.findOne).toHaveBeenCalled();
-      expect(mockOnrampSwapRepository.findOneAndUpdate).toHaveBeenCalledWith({
-        where: {
-          id: 'dadad-bdjada-dadad',
-        },
-        data: {
-          state: SwapTransactionState.PROCESSING,
-        },
-      });
+      expect(mockOnrampSwapRepository.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: 'dadad-bdjada-dadad' },
+        { state: SwapTransactionState.PROCESSING },
+      );
     });
 
     it('should update swap tx from PROCESSING to COMPLETE', async () => {
@@ -334,10 +354,10 @@ describe.skip('SwapService', () => {
       });
       (
         mockOnrampSwapRepository.findOneAndUpdate as jest.Mock
-      ).mockImplementation((u) => {
+      ).mockImplementation((where, updateData) => {
         return {
           ...swap,
-          state: u.data.state,
+          state: updateData.state,
         };
       });
 
@@ -351,14 +371,10 @@ describe.skip('SwapService', () => {
       expect(mockOnrampSwapRepository.findOne).toHaveBeenCalled();
       expect(mockFedimintService.pay).toHaveBeenCalled();
       expect(mockOnrampSwapRepository.findOneAndUpdate).toHaveBeenCalled();
-      expect(mockOnrampSwapRepository.findOneAndUpdate).toHaveBeenCalledWith({
-        where: {
-          id: 'dadad-bdjada-dadad',
-        },
-        data: {
-          state: SwapTransactionState.COMPLETE,
-        },
-      });
+      expect(mockOnrampSwapRepository.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: 'dadad-bdjada-dadad' },
+        { state: SwapTransactionState.COMPLETE },
+      );
     });
   });
 
@@ -415,6 +431,7 @@ describe.skip('SwapService', () => {
       (mockOfframpSwapRepository.find as jest.Mock).mockImplementation(() => {
         return [
           {
+            _id: 'dadad-bdjada-dadad',
             paymentTracker: 'dadad-bdjada-dadad',
             rate: mock_rate.toString(),
             amount: '100',

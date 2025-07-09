@@ -282,7 +282,9 @@ describe('AuthService', () => {
       });
 
       // Mock SMS failure
-      (smsService.sendSms as jest.Mock).mockRejectedValue(new Error('SMS sending failed'));
+      (smsService.sendSms as jest.Mock).mockRejectedValue(
+        new Error('SMS sending failed'),
+      );
 
       const registerRequest: RegisterUserRequestDto = {
         phone: '+1234567890',

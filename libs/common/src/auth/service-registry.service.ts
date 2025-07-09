@@ -41,7 +41,6 @@ export class ServiceRegistryService implements OnModuleInit {
       scopes: [ApiKeyScope.ServiceNotification],
       envKey: 'NOTIFICATION_API_KEY',
     },
-    { name: 'swap', scopes: [ApiKeyScope.ServiceSwap], envKey: 'SWAP_API_KEY' },
   ];
 
   constructor(

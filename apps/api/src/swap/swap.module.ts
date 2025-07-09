@@ -27,15 +27,13 @@ import {
   MpesaOnrampSwapRepository,
   MpesaOnrampSwapDocument,
   MpesaOnrampSwapSchema,
-} from '../db';
+} from './db';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       validationSchema: Joi.object({
-        NODE_ENV: Joi.string().required(),
-        SWAP_GRPC_URL: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().required(),
         REDIS_PASSWORD: Joi.string().required(),
