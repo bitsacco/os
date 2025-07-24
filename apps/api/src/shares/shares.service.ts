@@ -1,8 +1,10 @@
 import { performance } from 'perf_hooks';
 import { Injectable, Logger } from '@nestjs/common';
+import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
   AllSharesOffers,
   AllSharesTxsResponse,
+  collection_for_shares,
   default_page,
   default_page_size,
   FindSharesTxDto,
@@ -18,7 +20,7 @@ import {
   UpdateSharesDto,
   UserSharesDto,
   UserShareTxsResponse,
-  WalletTxEvent,
+  type WalletTxEvent,
 } from '@bitsacco/common';
 import { SharesOfferRepository, SharesRepository, toSharesTx } from './db';
 import { SharesMetricsService } from './shares.metrics';
@@ -31,8 +33,14 @@ export class SharesService {
     private readonly shareOffers: SharesOfferRepository,
     private readonly shares: SharesRepository,
     private readonly metrics: SharesMetricsService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     this.logger.log('SharesService created');
+
+    this.eventEmitter.on(
+      collection_for_shares,
+      this.handleWalletTxForShares.bind(this),
+    );
   }
 
   async offerShares({
@@ -452,7 +460,12 @@ export class SharesService {
     };
   }
 
-  async handleWalletTxForShares({ context, payload, error }: WalletTxEvent) {
+  @OnEvent(collection_for_shares)
+  private async handleWalletTxForShares({
+    context,
+    payload,
+    error,
+  }: WalletTxEvent) {
     const { paymentTracker, paymentStatus } = payload;
     this.logger.log(
       `Received swap status change - context: ${context} - sharesTransactionTracker : ${paymentTracker} - status : ${paymentStatus}`,

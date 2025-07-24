@@ -9,8 +9,6 @@ import {
   notification_delivered,
   notification_preferences_updated,
   type FedimintReceiveFailureEvent,
-  type NotificationCreatedEvent,
-  type NotificationDeliveredEvent,
   type FedimintReceiveSuccessEvent,
   type SwapStatusChangeEvent,
   type WalletTxEvent,

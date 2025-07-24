@@ -2,9 +2,11 @@ import {
   WalletTxContext,
   SharesTxStatus,
   TransactionStatus,
-  type WalletTxEvent,
+  WalletTxEvent,
+  collection_for_shares,
 } from '@bitsacco/common';
 import { Test } from '@nestjs/testing';
+import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 import { SharesService } from './shares.service';
 import { SharesOfferRepository, SharesRepository } from './db';
 import { SharesMetricsService } from './shares.metrics';
@@ -14,13 +16,15 @@ describe('SharesService', () => {
   let sharesRepository: SharesRepository;
   let sharesOfferRepository: SharesOfferRepository;
   let metricsService: SharesMetricsService;
+  let eventEmitter: EventEmitter2;
 
   // Mock data
   const mockSharesOffer = {
     _id: 'offer123',
+    id: 'offer123',
     quantity: 100,
     subscribedQuantity: 20,
-    availableFrom: new Date(),
+    availableFrom: new Date().toISOString(),
     availableTo: new Date(Date.now() + 86400000),
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -38,6 +42,7 @@ describe('SharesService', () => {
 
   const mockSharesTx = {
     _id: 'sharesTx123',
+    id: 'sharesTx123',
     userId: 'user123',
     offerId: 'offer123',
     quantity: 5,
@@ -48,6 +53,7 @@ describe('SharesService', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
+      imports: [EventEmitterModule.forRoot()],
       providers: [
         SharesService,
         {
@@ -87,6 +93,7 @@ describe('SharesService', () => {
       SharesOfferRepository,
     );
     metricsService = module.get<SharesMetricsService>(SharesMetricsService);
+    eventEmitter = module.get<EventEmitter2>(EventEmitter2);
 
     // Override logger to prevent console noise during tests
     jest.spyOn(service, 'logger', 'get').mockReturnValue({
@@ -515,7 +522,9 @@ describe('SharesService', () => {
         .mockResolvedValue(mockSharesOffer);
 
       // Act
-      await service.handleWalletTxForShares(walletTxEvent);
+      await eventEmitter.emit(collection_for_shares, walletTxEvent);
+      // Wait for event to be processed
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Assert
       expect(sharesRepository.findOne).toHaveBeenCalledWith({
@@ -552,7 +561,9 @@ describe('SharesService', () => {
       jest.spyOn(sharesRepository, 'findOne').mockResolvedValue(mockSharesTx);
 
       // Act
-      await service.handleWalletTxForShares(walletTxEvent);
+      await eventEmitter.emit(collection_for_shares, walletTxEvent);
+      // Wait for event to be processed
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Assert
       expect(sharesRepository.findOne).toHaveBeenCalledWith({
@@ -582,7 +593,9 @@ describe('SharesService', () => {
       jest.spyOn(sharesRepository, 'findOne').mockResolvedValue(mockSharesTx);
 
       // Act
-      await service.handleWalletTxForShares(walletTxEvent);
+      await eventEmitter.emit(collection_for_shares, walletTxEvent);
+      // Wait for event to be processed
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Assert
       expect(sharesRepository.findOne).toHaveBeenCalledWith({
@@ -613,7 +626,9 @@ describe('SharesService', () => {
       jest.spyOn(sharesRepository, 'findOne').mockResolvedValue(mockSharesTx);
 
       // Act
-      await service.handleWalletTxForShares(walletTxEvent);
+      await eventEmitter.emit(collection_for_shares, walletTxEvent);
+      // Wait for event to be processed
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Assert
       expect(sharesRepository.findOne).toHaveBeenCalledWith({
@@ -643,7 +658,9 @@ describe('SharesService', () => {
       jest.spyOn(sharesRepository, 'findOne').mockResolvedValue(null);
 
       // Act
-      await service.handleWalletTxForShares(walletTxEvent);
+      await eventEmitter.emit(collection_for_shares, walletTxEvent);
+      // Wait for event to be processed
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       // Assert
       expect(sharesRepository.findOne).toHaveBeenCalledWith({
