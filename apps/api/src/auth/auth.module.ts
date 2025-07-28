@@ -53,6 +53,12 @@ import { JwtConfigModule } from '../shared/jwt-config.module';
         SMS_AT_USERNAME: Joi.string().required(),
         SMS_AT_FROM: Joi.string().required(),
         SMS_AT_KEYWORD: Joi.string().required(),
+        API_KEY_SALT: Joi.string()
+          .min(16)
+          .default('bitsacco-api-salt')
+          .description(
+            'Salt for hashing API keys. Should be at least 16 characters',
+          ),
       }),
     }),
     SmsModule,

@@ -77,8 +77,9 @@ async function createApiKey() {
     const key = keyBuffer.toString('base64url');
     const fullKey = `bsk_${key}`;
     
-    // Hash the key
-    const keyHash = crypto.createHash('sha256').update(fullKey).digest('hex');
+    // Hash the key using HMAC with salt
+    const salt = process.env.API_KEY_SALT || 'bitsacco-api-salt';
+    const keyHash = crypto.createHmac('sha256', salt).update(fullKey).digest('hex');
     
     // Calculate expiration date
     const expiresAt = new Date();

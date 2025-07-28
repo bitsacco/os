@@ -1,4 +1,5 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { ApiKeyRepository } from '../database/apikey.repository';
 import { ApiKeyDocument, ApiKeyScope } from '../database/apikey.schema';
@@ -23,7 +24,10 @@ export class ApiKeyService {
   private readonly logger = new Logger(ApiKeyService.name);
   private readonly defaultExpirationDays = 90;
 
-  constructor(private readonly apiKeyRepository: ApiKeyRepository) {}
+  constructor(
+    private readonly apiKeyRepository: ApiKeyRepository,
+    private readonly configService: ConfigService,
+  ) {}
 
   async createApiKey(options: CreateApiKeyOptions): Promise<ApiKeyPair> {
     const key = crypto.randomBytes(32).toString('base64url');
@@ -166,6 +170,7 @@ export class ApiKeyService {
   }
 
   private hashApiKey(key: string): string {
-    return crypto.createHash('sha256').update(key).digest('hex');
+    const salt = this.configService.get('API_KEY_SALT', 'bitsacco-api-salt');
+    return crypto.createHmac('sha256', salt).update(key).digest('hex');
   }
 }
