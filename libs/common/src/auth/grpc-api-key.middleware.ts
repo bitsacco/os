@@ -36,7 +36,7 @@ export class GrpcApiKeyMiddleware {
       // Add API key info to context for handlers
       context.apiKey = {
         id: apiKeyDoc._id,
-        ownerId: apiKeyDoc.ownerId,
+        userId: apiKeyDoc.userId,
         name: apiKeyDoc.name,
         scopes: apiKeyDoc.scopes,
       };

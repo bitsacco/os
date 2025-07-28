@@ -4,7 +4,7 @@ import { MetricsService } from '@bitsacco/common';
 export interface ApiKeyMetric {
   success: boolean;
   operation: 'create' | 'validate' | 'revoke';
-  ownerId?: string;
+  userId?: string;
   duration: number;
   errorType?: string;
 }
