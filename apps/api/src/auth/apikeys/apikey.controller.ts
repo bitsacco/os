@@ -5,15 +5,10 @@ import {
   Get,
   Param,
   Post,
-  UnauthorizedException,
+  Req,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiKeyService,
-  JwtAuthGuard,
-  Role,
-  CurrentUser,
-} from '@bitsacco/common';
+import { ApiKeyService, JwtAuthGuard } from '@bitsacco/common';
 import { ApiKeyResponseDto, CreateApiKeyDto } from './apikey.dto';
 
 @Controller('api-keys')
@@ -24,34 +19,13 @@ export class ApiKeyController {
   @Post()
   async createApiKey(
     @Body() createApiKeyDto: CreateApiKeyDto,
-    @CurrentUser() user: any,
+    @Req() req,
   ): Promise<ApiKeyResponseDto> {
-    // Regular users can only create API keys for themselves
-    if (
-      createApiKeyDto.ownerId !== user.id &&
-      !user.roles.includes(Role.Admin)
-    ) {
-      throw new UnauthorizedException('Cannot create API keys for other users');
-    }
-
-    // Non-admin users cannot create admin-scoped API keys
-    if (
-      !user.roles.includes(Role.Admin) &&
-      createApiKeyDto.scopes.some((scope) => scope.startsWith('admin:'))
-    ) {
-      throw new UnauthorizedException('Cannot create admin-scoped API keys');
-    }
-
     const apiKey = await this.apiKeyService.createApiKey({
       name: createApiKeyDto.name,
-      ownerId: createApiKeyDto.ownerId || user.id,
+      userId: req.user.id,
       scopes: createApiKeyDto.scopes,
-      expiresInDays: createApiKeyDto.expiresInDays || 30,
-      metadata: {
-        createdBy: user.id,
-        userAgent: createApiKeyDto.userAgent,
-        description: createApiKeyDto.description,
-      },
+      expiresInDays: createApiKeyDto.expiresInDays,
     });
 
     return {
@@ -64,10 +38,8 @@ export class ApiKeyController {
   }
 
   @Get()
-  async listApiKeys(
-    @CurrentUser() user: any,
-  ): Promise<Omit<ApiKeyResponseDto, 'key'>[]> {
-    const keys = await this.apiKeyService.listUserKeys(user.id);
+  async listApiKeys(@Req() req): Promise<Omit<ApiKeyResponseDto, 'key'>[]> {
+    const keys = await this.apiKeyService.listUserKeys(req.user.id);
 
     return keys.map((key) => ({
       id: key._id,
@@ -77,20 +49,27 @@ export class ApiKeyController {
     }));
   }
 
+  @Get(':id')
+  async getApiKey(
+    @Param('id') id: string,
+    @Req() req,
+  ): Promise<Omit<ApiKeyResponseDto, 'key'>> {
+    const key = await this.apiKeyService.getApiKey(req.user.id, id);
+
+    return {
+      id: key._id,
+      name: key.name,
+      scopes: key.scopes,
+      expiresAt: key.expiresAt,
+    };
+  }
+
   @Delete(':id')
   async revokeApiKey(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @Req() req,
   ): Promise<{ success: boolean }> {
-    const key = await this.apiKeyService.getApiKey(id);
-
-    // Check if user owns the key or is an admin
-    if (key.ownerId !== user.id && !user.roles.includes(Role.Admin)) {
-      throw new UnauthorizedException("Cannot revoke other users' API keys");
-    }
-
-    const success = await this.apiKeyService.revokeKey(id);
-
+    const success = await this.apiKeyService.revokeKey(req.user.id, id);
     return { success };
   }
 }

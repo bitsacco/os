@@ -17,7 +17,6 @@ import {
   ApiKeySchema,
   ApiKeyRepository,
   ApiKeyService,
-  ServiceRegistryService,
   SecretsService,
   RoleValidationService,
 } from '@bitsacco/common';
@@ -28,9 +27,7 @@ import { AuthMetricsService } from './metrics/auth.metrics';
 import { TokenMetricsService } from './tokens/token.metrics';
 import { RateLimitService } from './rate-limit/rate-limit.service';
 import { ApiKeyController } from './apikeys/apikey.controller';
-import { ApiKeyRotationController } from './apikeys/apikey-rotation.controller';
 import { ApiKeyMetricsService } from './apikeys/apikey.metrics';
-import { ApiKeyRotationService } from './apikeys/apikey-rotation.service';
 import { SmsModule } from '../sms/sms.module';
 import { JwtConfigModule } from '../shared/jwt-config.module';
 
@@ -73,7 +70,7 @@ import { JwtConfigModule } from '../shared/jwt-config.module';
     EventEmitterModule.forRoot(),
     ScheduleModule.forRoot(),
   ],
-  controllers: [AuthController, ApiKeyController, ApiKeyRotationController],
+  controllers: [AuthController, ApiKeyController],
   providers: [
     AuthMetricsService,
     TokenMetricsService,
@@ -88,8 +85,6 @@ import { JwtConfigModule } from '../shared/jwt-config.module';
     ApiKeyRepository,
     ApiKeyService,
     SecretsService,
-    ServiceRegistryService,
-    ApiKeyRotationService,
     RoleValidationService,
   ],
 })

@@ -17,10 +17,6 @@ export class CreateApiKeyDto {
   @MaxLength(100)
   name: string;
 
-  @IsOptional()
-  @IsString()
-  ownerId?: string;
-
   @IsArray()
   @IsEnum(ApiKeyScope, { each: true })
   scopes: ApiKeyScope[];
@@ -30,14 +26,6 @@ export class CreateApiKeyDto {
   @Min(1)
   @Max(365)
   expiresInDays?: number;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsOptional()
-  @IsString()
-  userAgent?: string;
 }
 
 export class ApiKeyResponseDto {

@@ -27,7 +27,7 @@ async function listKeys() {
   keys.forEach((key, index) => {
     const status = key.revoked ? '🚫 REVOKED' : key.expiresAt < new Date() ? '⏱️ EXPIRED' : '✅ ACTIVE';
     console.log(`${index + 1}. ${key._id} - ${key.name} (${status})`);
-    console.log(`   Owner: ${key.ownerId}`);
+    console.log(`   User ID: ${key.userId}`);
     console.log(`   Expires: ${new Date(key.expiresAt).toLocaleString()}`);
     console.log(`   Scopes: ${(key.scopes || []).join(', ')}`);
     console.log('');
@@ -95,7 +95,7 @@ async function processRevocation(key: any) {
   console.log('\nAPI Key Details:');
   console.log(`ID: ${key._id}`);
   console.log(`Name: ${key.name}`);
-  console.log(`Owner ID: ${key.ownerId}`);
+  console.log(`User ID: ${key.userId}`);
   console.log(`Created: ${new Date(key.createdAt).toLocaleString()}`);
   console.log(`Expires: ${new Date(key.expiresAt).toLocaleString()}`);
   console.log(`Scopes: ${(key.scopes || []).join(', ')}`);

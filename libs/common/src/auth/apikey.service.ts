@@ -1,21 +1,18 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 import { ApiKeyRepository } from '../database/apikey.repository';
 import { ApiKeyDocument, ApiKeyScope } from '../database/apikey.schema';
 
 export interface CreateApiKeyOptions {
   name: string;
-  ownerId: string;
+  userId: string;
   scopes: ApiKeyScope[];
-  expiresInDays: number;
-  isPermanent?: boolean;
-  metadata?: Record<string, any>;
+  expiresInDays?: number;
 }
 
 export interface ApiKeyPair {
   id: string;
-  key: string; // Plain text key (only returned at creation time)
+  key: string;
   name: string;
   scopes: ApiKeyScope[];
   expiresAt: Date;
@@ -24,57 +21,37 @@ export interface ApiKeyPair {
 @Injectable()
 export class ApiKeyService {
   private readonly logger = new Logger(ApiKeyService.name);
+  private readonly defaultExpirationDays = 90;
 
-  constructor(
-    private readonly apiKeyRepository: ApiKeyRepository,
-    private readonly configService: ConfigService,
-  ) {}
+  constructor(private readonly apiKeyRepository: ApiKeyRepository) {}
 
   async createApiKey(options: CreateApiKeyOptions): Promise<ApiKeyPair> {
-    // Generate a secure random API key (32 bytes base64 = ~43 chars)
-    const keyBuffer = crypto.randomBytes(32);
-    const key = keyBuffer
-      .toString('base64')
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-
-    // Prefix with 'bsk_' to identify as Bitsacco key
+    const key = crypto.randomBytes(32).toString('base64url');
     const fullKey = `bsk_${key}`;
-
-    // Hash the key for storage - we use SHA-256 as this isn't a password
     const keyHash = this.hashApiKey(fullKey);
 
-    // Calculate expiration date
     const expiresAt = new Date();
-    if (options.isPermanent) {
-      // Far future date for "permanent" keys (10 years)
-      expiresAt.setFullYear(expiresAt.getFullYear() + 10);
-    } else {
-      expiresAt.setDate(expiresAt.getDate() + options.expiresInDays);
-    }
+    expiresAt.setDate(
+      expiresAt.getDate() +
+        (options.expiresInDays || this.defaultExpirationDays),
+    );
 
-    // Create the API key record
     const apiKey = await this.apiKeyRepository.create({
       keyHash,
       name: options.name,
-      ownerId: options.ownerId,
+      userId: options.userId,
       scopes: options.scopes,
       expiresAt,
       revoked: false,
-      isPermanent: options.isPermanent || false,
-      metadata: options.metadata || {},
     });
 
-    // Log key creation but not the actual key
     this.logger.log(
-      `API key created: ${apiKey._id} for owner ${options.ownerId}`,
+      `API key created: ${apiKey._id} for user ${options.userId}`,
     );
 
-    // Return the API key pair (only time the plain text key is available)
     return {
       id: apiKey._id,
-      key: fullKey, // Plain text key - only returned at creation time
+      key: fullKey,
       name: apiKey.name,
       scopes: apiKey.scopes,
       expiresAt: apiKey.expiresAt,
@@ -87,19 +64,23 @@ export class ApiKeyService {
     }
 
     try {
-      // Hash the provided key
       const keyHash = this.hashApiKey(apiKey);
-
-      // Find the key by hash
       const apiKeyDoc = await this.apiKeyRepository.findByHash(keyHash);
 
-      // Check if key is expired
+      if (!apiKeyDoc) {
+        throw new UnauthorizedException('Invalid API key');
+      }
+
+      if (apiKeyDoc.revoked) {
+        throw new UnauthorizedException('API key has been revoked');
+      }
+
       if (apiKeyDoc.expiresAt < new Date()) {
         this.logger.warn(`Expired API key used: ${apiKeyDoc._id}`);
         throw new UnauthorizedException('API key expired');
       }
 
-      // Update last used timestamp (don't await to not slow down the request)
+      // Update last used timestamp asynchronously
       this.apiKeyRepository.updateLastUsed(apiKeyDoc._id).catch((error) => {
         this.logger.error(
           `Failed to update API key last used: ${error.message}`,
@@ -116,26 +97,75 @@ export class ApiKeyService {
     }
   }
 
-  async revokeKey(id: string): Promise<boolean> {
+  async revokeKey(userId: string, keyId: string): Promise<boolean> {
     try {
-      await this.apiKeyRepository.revokeKey(id);
+      const apiKey = await this.apiKeyRepository.findOne({
+        _id: keyId,
+        userId,
+      });
+
+      if (!apiKey) {
+        throw new UnauthorizedException('API key not found or unauthorized');
+      }
+
+      await this.apiKeyRepository.revokeKey(keyId);
+      this.logger.log(`API key ${keyId} revoked by user ${userId}`);
       return true;
     } catch (error) {
-      this.logger.error(`Failed to revoke API key ${id}: ${error.message}`);
-      return false;
+      this.logger.error(`Failed to revoke API key ${keyId}: ${error.message}`);
+      throw error;
     }
   }
 
-  async getApiKey(id: string): Promise<ApiKeyDocument> {
-    return this.apiKeyRepository.getApiKey(id);
+  async getApiKey(userId: string, keyId: string): Promise<ApiKeyDocument> {
+    const apiKey = await this.apiKeyRepository.findOne({ _id: keyId, userId });
+
+    if (!apiKey) {
+      throw new UnauthorizedException('API key not found or unauthorized');
+    }
+
+    return apiKey;
   }
 
-  async listUserKeys(ownerId: string): Promise<ApiKeyDocument[]> {
-    return this.apiKeyRepository.listUserKeys(ownerId);
+  async listUserKeys(userId: string): Promise<ApiKeyDocument[]> {
+    return this.apiKeyRepository.find({
+      userId,
+      revoked: false,
+      expiresAt: { $gt: new Date() },
+    });
+  }
+
+  async checkKeyPermission(
+    apiKey: ApiKeyDocument,
+    requiredScope: ApiKeyScope,
+  ): Promise<boolean> {
+    if (apiKey.scopes.includes(ApiKeyScope.AdminAccess)) {
+      return true;
+    }
+
+    if (apiKey.scopes.includes(requiredScope)) {
+      return true;
+    }
+
+    // Check for general read/write permissions
+    if (
+      requiredScope.endsWith(':read') &&
+      apiKey.scopes.includes(ApiKeyScope.Read)
+    ) {
+      return true;
+    }
+
+    if (
+      requiredScope.endsWith(':write') &&
+      apiKey.scopes.includes(ApiKeyScope.Write)
+    ) {
+      return true;
+    }
+
+    return false;
   }
 
   private hashApiKey(key: string): string {
-    const salt = this.configService.get('API_KEY_SALT', 'bitsacco-api-salt');
-    return crypto.createHmac('sha256', salt).update(key).digest('hex');
+    return crypto.createHash('sha256').update(key).digest('hex');
   }
 }

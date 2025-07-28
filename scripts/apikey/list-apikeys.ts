@@ -42,14 +42,12 @@ async function listApiKeys() {
       
       // Format and display API keys
       for (const key of apiKeys) {
-        const isGlobalDev = key.metadata?.isGlobalDevKey ? '[GLOBAL DEV KEY]' : '';
-        const isServiceKey = key.metadata?.isServiceKey ? `[SERVICE: ${key.metadata.serviceName}]` : '';
         const status = key.revoked ? 'REVOKED' : (key.expiresAt < new Date() ? 'EXPIRED' : 'ACTIVE');
         const lastUsed = key.lastUsed ? new Date(key.lastUsed).toLocaleString() : 'Never';
         
         console.log(`ID: ${key._id}`);
-        console.log(`Name: ${key.name} ${isGlobalDev} ${isServiceKey}`);
-        console.log(`Owner ID: ${key.ownerId}`);
+        console.log(`Name: ${key.name}`);
+        console.log(`User ID: ${key.userId}`);
         console.log(`Status: ${status}`);
         console.log(`Created: ${new Date(key.createdAt).toLocaleString()}`);
         console.log(`Expires: ${new Date(key.expiresAt).toLocaleString()}`);
@@ -58,7 +56,16 @@ async function listApiKeys() {
         console.log('='.repeat(80));
       }
       
-      console.log('Listing complete!');
+      // Summary
+      const activeKeys = apiKeys.filter(k => !k.revoked && k.expiresAt > new Date()).length;
+      const expiredKeys = apiKeys.filter(k => !k.revoked && k.expiresAt < new Date()).length;
+      const revokedKeys = apiKeys.filter(k => k.revoked).length;
+      
+      console.log('Summary:');
+      console.log(`Total: ${apiKeys.length}`);
+      console.log(`Active: ${activeKeys}`);
+      console.log(`Expired: ${expiredKeys}`);
+      console.log(`Revoked: ${revokedKeys}`);
     });
   } catch (error) {
     console.error('Error listing API keys:', error.message);

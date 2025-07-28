@@ -9,7 +9,6 @@ import {
 import { Reflector } from '@nestjs/core';
 import { ApiKeyService } from './apikey.service';
 import { ApiKeyScope } from '../database/apikey.schema';
-import { ConfigService } from '@nestjs/config';
 
 export const RequireApiKey = () => SetMetadata('requireApiKey', true);
 export const ApiKeyScopes = (...scopes: ApiKeyScope[]) =>
@@ -18,27 +17,11 @@ export const ApiKeyScopes = (...scopes: ApiKeyScope[]) =>
 @Injectable()
 export class ApiKeyGuard implements CanActivate {
   private readonly logger = new Logger(ApiKeyGuard.name);
-  private readonly isDev: boolean;
-  private readonly isProduction: boolean;
 
   constructor(
     private readonly apiKeyService: ApiKeyService,
     private readonly reflector: Reflector,
-    private readonly configService: ConfigService,
-  ) {
-    this.isDev = this.configService.get('NODE_ENV') === 'development';
-    this.isProduction = this.configService.get('NODE_ENV') === 'production';
-
-    if (
-      this.isDev &&
-      !this.configService.get<boolean>('ENFORCE_DEV_SECURITY', true)
-    ) {
-      this.logger.warn(
-        'API key scope checking is relaxed in development mode. ' +
-          'Set ENFORCE_DEV_SECURITY=true for production-like security.',
-      );
-    }
-  }
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const requireApiKey = this.reflector.get<boolean>(
@@ -61,10 +44,6 @@ export class ApiKeyGuard implements CanActivate {
     try {
       const apiKeyDoc = await this.apiKeyService.validateApiKey(apiKey);
 
-      // Check if this is the global dev key
-      const isGlobalDevKey =
-        this.isDev && apiKeyDoc.metadata?.isGlobalDevKey === true;
-
       // Check required scopes
       const requiredScopes = this.reflector.get<ApiKeyScope[]>(
         'apiKeyScopes',
@@ -72,62 +51,53 @@ export class ApiKeyGuard implements CanActivate {
       );
 
       if (requiredScopes && requiredScopes.length > 0) {
-        // Check if we should enforce security even in development
-        const enforceDevSecurity = this.configService.get<boolean>(
-          'ENFORCE_DEV_SECURITY',
-          true,
+        const hasAllScopes = requiredScopes.every((scope) =>
+          this.apiKeyService.checkKeyPermission(apiKeyDoc, scope),
         );
 
-        // In development with global key, and not enforcing security
-        if (isGlobalDevKey && !this.isProduction && !enforceDevSecurity) {
+        if (!hasAllScopes) {
           const missingScopes = requiredScopes.filter(
-            (scope) => !apiKeyDoc.scopes.includes(scope),
+            (scope) => !this.apiKeyService.checkKeyPermission(apiKeyDoc, scope),
           );
 
-          if (missingScopes.length > 0) {
-            // Log a warning but still allow access
-            this.logger.warn(
-              `DEV MODE: Global API key missing required scopes: ${missingScopes.join(', ')}. ` +
-                'Set ENFORCE_DEV_SECURITY=true to strictly enforce scopes in development.',
-            );
-          }
-        } else {
-          // For all other cases (production or enforced dev), strictly check scopes
-          const hasAllScopes = requiredScopes.every((scope) =>
-            apiKeyDoc.scopes.includes(scope),
+          this.logger.warn(
+            `API key ${apiKeyDoc._id} missing required scopes: ${missingScopes.join(', ')}`,
           );
-
-          if (!hasAllScopes) {
-            const missingScopes = requiredScopes.filter(
-              (scope) => !apiKeyDoc.scopes.includes(scope),
-            );
-
-            this.logger.warn(
-              `API key ${apiKeyDoc._id} missing required scopes: ${missingScopes.join(', ')}`,
-            );
-            throw new UnauthorizedException('Insufficient API key permissions');
-          }
+          throw new UnauthorizedException('Insufficient API key permissions');
         }
       }
 
       // Attach API key info to request for controllers
       request.apiKey = {
         id: apiKeyDoc._id,
-        ownerId: apiKeyDoc.ownerId,
+        userId: apiKeyDoc.userId,
         name: apiKeyDoc.name,
         scopes: apiKeyDoc.scopes,
-        isGlobalDevKey,
       };
 
       return true;
     } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       this.logger.error(`API key validation failed: ${error.message}`);
       throw new UnauthorizedException('Invalid API key');
     }
   }
 
   private extractApiKey(request: any): string | undefined {
-    // Only accept API key from header
-    return request.headers['x-api-key'];
+    // Try header first (preferred method)
+    const headerKey = request.headers['x-api-key'];
+    if (headerKey) {
+      return headerKey;
+    }
+
+    // Try Authorization header with Bearer scheme
+    const authHeader = request.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer bsk_')) {
+      return authHeader.substring(7); // Remove "Bearer " prefix
+    }
+
+    return undefined;
   }
 }
