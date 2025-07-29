@@ -128,7 +128,7 @@ export class SolowalletService {
     let transactions: number = 0;
     try {
       const statusFilter = Array.isArray(status)
-        ? { $in: status.map(s => s.toString()) }
+        ? { $in: status.map((s) => s.toString()) }
         : status.toString();
 
       transactions = await this.wallet
@@ -151,7 +151,10 @@ export class SolowalletService {
           return result[0]?.totalMsats || 0;
         });
     } catch (e) {
-      this.logger.error(`Error aggregating ${Array.isArray(status) ? status.join(', ') : status} transactions`, e);
+      this.logger.error(
+        `Error aggregating ${Array.isArray(status) ? status.join(', ') : status} transactions`,
+        e,
+      );
     }
 
     return transactions;
@@ -161,14 +164,22 @@ export class SolowalletService {
     userId: string,
     type: TransactionType,
   ): Promise<number> {
-    return this.aggregateTransactionsByStatus(userId, type, TransactionStatus.COMPLETE);
+    return this.aggregateTransactionsByStatus(
+      userId,
+      type,
+      TransactionStatus.COMPLETE,
+    );
   }
 
   private async aggregateProcessingTransactions(
     userId: string,
     type: TransactionType,
   ): Promise<number> {
-    return this.aggregateTransactionsByStatus(userId, type, TransactionStatus.PROCESSING);
+    return this.aggregateTransactionsByStatus(
+      userId,
+      type,
+      TransactionStatus.PROCESSING,
+    );
   }
 
   private async getWalletMeta(userId: string): Promise<WalletMeta> {

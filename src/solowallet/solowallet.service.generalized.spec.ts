@@ -147,18 +147,32 @@ describe('SolowalletService - Generalized Aggregation', () => {
       const spy = jest.spyOn(service as any, 'aggregateTransactionsByStatus');
       walletRepository.aggregate.mockResolvedValueOnce([{ totalMsats: 10000 }]);
 
-      await (service as any).aggregateUserTransactions(userId, TransactionType.DEPOSIT);
+      await (service as any).aggregateUserTransactions(
+        userId,
+        TransactionType.DEPOSIT,
+      );
 
-      expect(spy).toHaveBeenCalledWith(userId, TransactionType.DEPOSIT, TransactionStatus.COMPLETE);
+      expect(spy).toHaveBeenCalledWith(
+        userId,
+        TransactionType.DEPOSIT,
+        TransactionStatus.COMPLETE,
+      );
     });
 
     it('aggregateProcessingTransactions should delegate to aggregateTransactionsByStatus with PROCESSING status', async () => {
       const spy = jest.spyOn(service as any, 'aggregateTransactionsByStatus');
       walletRepository.aggregate.mockResolvedValueOnce([{ totalMsats: 3000 }]);
 
-      await (service as any).aggregateProcessingTransactions(userId, TransactionType.WITHDRAW);
+      await (service as any).aggregateProcessingTransactions(
+        userId,
+        TransactionType.WITHDRAW,
+      );
 
-      expect(spy).toHaveBeenCalledWith(userId, TransactionType.WITHDRAW, TransactionStatus.PROCESSING);
+      expect(spy).toHaveBeenCalledWith(
+        userId,
+        TransactionType.WITHDRAW,
+        TransactionStatus.PROCESSING,
+      );
     });
   });
 });

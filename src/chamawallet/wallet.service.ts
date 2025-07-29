@@ -1058,7 +1058,7 @@ export class ChamaWalletService {
       type: string;
     } = {
       status: Array.isArray(status)
-        ? { $in: status.map(s => s.toString()) }
+        ? { $in: status.map((s) => s.toString()) }
         : status.toString(),
       type: type.toString(),
     };
@@ -1072,7 +1072,9 @@ export class ChamaWalletService {
     }
 
     const statusLabel = Array.isArray(status) ? status.join(', ') : status;
-    this.logger.log(`${statusLabel} AGGREGATION FILTER : ${JSON.stringify(filter)}`);
+    this.logger.log(
+      `${statusLabel} AGGREGATION FILTER : ${JSON.stringify(filter)}`,
+    );
 
     try {
       transactions = await this.wallet
@@ -1088,7 +1090,9 @@ export class ChamaWalletService {
           },
         ])
         .then((result) => {
-          this.logger.log(`${statusLabel} AGGREGATION RESULT: ${JSON.stringify(result)}`);
+          this.logger.log(
+            `${statusLabel} AGGREGATION RESULT: ${JSON.stringify(result)}`,
+          );
           return result[0]?.totalMsats || 0;
         });
     } catch (e) {
@@ -1105,7 +1109,12 @@ export class ChamaWalletService {
     chamaId?: string,
     memberId?: string,
   ): Promise<number> {
-    return this.aggregateTransactionsByStatus(type, ChamaTxStatus.COMPLETE, chamaId, memberId);
+    return this.aggregateTransactionsByStatus(
+      type,
+      ChamaTxStatus.COMPLETE,
+      chamaId,
+      memberId,
+    );
   }
 
   private async aggregateProcessingTransactions(
@@ -1113,7 +1122,12 @@ export class ChamaWalletService {
     chamaId?: string,
     memberId?: string,
   ): Promise<number> {
-    return this.aggregateTransactionsByStatus(type, ChamaTxStatus.PROCESSING, chamaId, memberId);
+    return this.aggregateTransactionsByStatus(
+      type,
+      ChamaTxStatus.PROCESSING,
+      chamaId,
+      memberId,
+    );
   }
 
   @OnEvent(fedimint_receive_success)

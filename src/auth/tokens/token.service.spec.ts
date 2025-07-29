@@ -187,6 +187,7 @@ describe('TokenService', () => {
         tokenFamily: expect.any(String),
         expires: expect.any(Date),
         revoked: false,
+        __v: 0,
       });
     });
   });

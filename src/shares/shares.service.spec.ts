@@ -142,6 +142,7 @@ describe('SharesService', () => {
         subscribedQuantity: 0,
         availableFrom: expect.any(Date),
         availableTo: expect.any(Date),
+        __v: 0,
       });
       expect(service.getSharesOffers).toHaveBeenCalled();
     });
@@ -222,6 +223,7 @@ describe('SharesService', () => {
         offerId: 'offer123',
         quantity: 10,
         status: SharesTxStatus.PROPOSED,
+        __v: 0,
       });
       expect(service.userSharesTransactions).toHaveBeenCalled();
     });
@@ -417,6 +419,7 @@ describe('SharesService', () => {
           toUserId: 'user456',
           quantity: 3,
         },
+        __v: 0,
       });
     });
 
