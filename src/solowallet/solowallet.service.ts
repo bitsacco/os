@@ -472,7 +472,36 @@ export class SolowalletService {
     lightning,
     lnurlRequest,
     pagination,
+    idempotencyKey,
   }: WithdrawFundsRequestDto): Promise<UserTxsResponse> {
+    // Check for existing transaction with same idempotency key
+    if (idempotencyKey) {
+      try {
+        const existing = await this.wallet.findOne({
+          userId,
+          type: TransactionType.WITHDRAW,
+          idempotencyKey,
+        });
+
+        if (existing) {
+          const ledger = await this.getPaginatedUserTxLedger({
+            userId,
+            pagination,
+            priority: existing._id,
+          });
+          const meta = await this.getWalletMeta(userId);
+          return {
+            txId: existing._id,
+            ledger,
+            meta,
+            userId,
+          };
+        }
+      } catch (e) {
+        // Document not found, continue with new withdrawal
+      }
+    }
+
     const { currentBalance } = await this.getWalletMeta(userId);
     let withdrawal: SolowalletDocument;
 
@@ -519,6 +548,7 @@ export class SolowalletService {
             reference ||
             inv.description ||
             `withdraw ${amountFiat} KES via Lightning`,
+          idempotencyKey,
         });
 
         this.logger.log(`Withdrawal record created with ID: ${withdrawal._id}`);
@@ -591,6 +621,7 @@ export class SolowalletService {
           type: TransactionType.WITHDRAW,
           status: TransactionStatus.PENDING, // Pending until someone scans and claims
           reference: reference || `withdraw ${amountFiat} KES via LNURL`,
+          idempotencyKey,
         });
 
         this.logger.log(
@@ -656,6 +687,7 @@ export class SolowalletService {
           type: TransactionType.WITHDRAW,
           status,
           reference: reference || `withdraw ${amountFiat} KES to mpesa`,
+          idempotencyKey,
         });
 
         this.logger.log(

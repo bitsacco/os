@@ -43,6 +43,9 @@ export class SolowalletDocument extends AbstractDocument {
 
   @Prop({ type: String, required: true })
   reference: string;
+
+  @Prop({ type: String, required: false })
+  idempotencyKey?: string;
 }
 
 export const SolowalletSchema =
@@ -50,6 +53,12 @@ export const SolowalletSchema =
 
 // Ensure uniqueness only when paymentTracker is not null
 SolowalletSchema.index({ paymentTracker: 1 }, { unique: true, sparse: true });
+
+// Ensure uniqueness for idempotency keys per user and transaction type
+SolowalletSchema.index(
+  { userId: 1, type: 1, idempotencyKey: 1 },
+  { unique: true, sparse: true }
+);
 
 export function toSolowalletTx(
   doc: SolowalletDocument,

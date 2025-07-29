@@ -53,10 +53,19 @@ export class ChamaWalletDocument extends AbstractDocument {
 
   @Prop({ type: String, required: false })
   context?: string;
+
+  @Prop({ type: String, required: false })
+  idempotencyKey?: string;
 }
 
 export const ChamaWalletSchema =
   SchemaFactory.createForClass(ChamaWalletDocument);
+
+// Ensure uniqueness for idempotency keys per member, chama and transaction type
+ChamaWalletSchema.index(
+  { memberId: 1, chamaId: 1, type: 1, idempotencyKey: 1 },
+  { unique: true, sparse: true }
+);
 
 // Ensure uniqueness only when paymentTracker is not null
 ChamaWalletSchema.index({ paymentTracker: 1 }, { unique: true, sparse: true });

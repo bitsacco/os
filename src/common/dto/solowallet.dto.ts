@@ -140,6 +140,15 @@ export class WithdrawFundsRequestDto implements WithdrawFundsRequest {
   @Type(() => PaginatedRequestDto)
   @ApiProperty({ type: PaginatedRequestDto })
   pagination?: PaginatedRequestDto;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({
+    description: 'Idempotency key to prevent duplicate withdrawals',
+    example: 'withdraw-2024-01-15-unique-id',
+    required: false,
+  })
+  idempotencyKey?: string;
 }
 
 export class ContinueWithdrawFundsRequestDto

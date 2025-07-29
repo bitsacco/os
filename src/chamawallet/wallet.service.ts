@@ -291,7 +291,41 @@ export class ChamaWalletService {
     amountFiat,
     reference,
     pagination,
+    idempotencyKey,
   }: ChamaWithdrawDto) {
+    // Check for existing transaction with same idempotency key
+    if (idempotencyKey) {
+      try {
+        const existing = await this.wallet.findOne({
+          memberId,
+          chamaId,
+          type: TransactionType.WITHDRAW,
+          idempotencyKey,
+        });
+
+        if (existing) {
+          const ledger = await this.getPaginatedChamaTransactions({
+            memberId,
+            chamaId,
+            pagination,
+            priority: existing._id,
+          });
+          const { groupMeta: gMeta, memberMeta: mMeta } = await this.getWalletMeta(
+            chamaId,
+            memberId,
+          );
+          return {
+            txId: existing._id,
+            ledger,
+            groupMeta: gMeta,
+            memberMeta: mMeta,
+          };
+        }
+      } catch (e) {
+        // Document not found, continue with new withdrawal
+      }
+    }
+
     const { memberMeta, groupMeta } = await this.getWalletMeta(
       chamaId,
       memberId,
@@ -359,6 +393,7 @@ export class ChamaWalletService {
         status: initialStatus, // Status calculated from the review utility
         reviews: initialReviews, // Include self-approval if admin
         reference: reference || 'Offramp withdrawal (pending approval)',
+        idempotencyKey,
       }),
       this.logger,
     );

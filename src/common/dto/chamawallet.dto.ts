@@ -87,6 +87,15 @@ class ChamaTransactionBaseDto extends ChamaBaseDto {
 
   @ReferenceDecorator()
   reference: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({
+    description: 'Idempotency key to prevent duplicate transactions',
+    example: 'chama-withdraw-2024-01-15-unique-id',
+    required: false,
+  })
+  idempotencyKey?: string;
 }
 
 class ChamaMemberBaseDto extends ChamaTransactionBaseDto {
