@@ -515,8 +515,9 @@ export class ChamaWalletService {
       this.logger.log(`Invoice amount: ${invoiceMsats} msats`);
 
       // Check if chama has enough total balance
+      // Note: groupBalance already accounts for pending withdrawals
       if (invoiceMsats > groupMeta.groupBalance) {
-        throw new Error('Invoice amount exceeds available chama balance');
+        throw new Error('Invoice amount exceeds available chama balance (including pending withdrawals)');
       }
 
       try {
@@ -620,8 +621,9 @@ export class ChamaWalletService {
       this.logger.log('Processing approved offramp withdrawal');
 
       // Double check if chama has enough total balance
+      // Note: groupBalance already accounts for pending withdrawals
       if (txd.amountMsats > groupMeta.groupBalance) {
-        throw new Error('Insufficient chama funds for offramp withdrawal');
+        throw new Error('Insufficient chama funds for offramp withdrawal (including pending withdrawals)');
       }
 
       try {

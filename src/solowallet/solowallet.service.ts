@@ -518,8 +518,9 @@ export class SolowalletService {
       this.logger.log(`Current balance: ${currentBalance} msats`);
 
       // Check if user has enough balance to pay the invoice
+      // Note: currentBalance already accounts for pending withdrawals
       if (invoiceMsats > currentBalance) {
-        throw new Error('Invoice amount exceeds available balance');
+        throw new Error('Invoice amount exceeds available balance (including pending withdrawals)');
       }
 
       try {
@@ -649,8 +650,9 @@ export class SolowalletService {
       });
 
       // Check if user has enough balance
+      // Note: currentBalance already accounts for pending withdrawals
       if (amountMsats > currentBalance) {
-        throw new Error('Insufficient funds for offramp withdrawal');
+        throw new Error('Insufficient funds for offramp withdrawal (including pending withdrawals)');
       }
 
       // Initiate offramp swap
@@ -761,8 +763,9 @@ export class SolowalletService {
       this.logger.log(`Current balance: ${currentBalance} msats`);
 
       // Check if user has enough balance to pay the invoice
+      // Note: currentBalance already accounts for pending withdrawals
       if (invoiceMsats > currentBalance) {
-        throw new Error('Invoice amount exceeds available balance');
+        throw new Error('Invoice amount exceeds available balance (including pending withdrawals)');
       }
 
       try {
@@ -902,8 +905,9 @@ export class SolowalletService {
       });
 
       // Check if user has enough balance
+      // Note: currentBalance already accounts for pending withdrawals
       if (amountMsats > currentBalance) {
-        throw new Error('Insufficient funds for offramp withdrawal');
+        throw new Error('Insufficient funds for offramp withdrawal (including pending withdrawals)');
       }
 
       // Initiate offramp swap
