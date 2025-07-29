@@ -2,13 +2,24 @@ import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
-import { HttpLoggingInterceptor } from './common';
+import {
+  HttpLoggingInterceptor,
+  initializeOpenTelemetry,
+  getGlobalTelemetryProvider,
+} from './common';
 import { ApiModule } from './api.module';
 import { setupDocs } from './docs.plugin';
 
 const API_VERSION = 'v1';
 
 async function bootstrap() {
+  // Initialize OpenTelemetry for the monolith
+  const prometheusPort = parseInt(process.env.PROMETHEUS_PORT || '9090', 10);
+  const otelSdk = initializeOpenTelemetry('bitsacco-os', prometheusPort);
+
+  // Set SDK in global telemetry provider
+  getGlobalTelemetryProvider().setSdk(otelSdk);
+
   const port = process.env.PORT ?? 4000;
   const app = await NestFactory.create(ApiModule);
 
@@ -56,7 +67,41 @@ async function bootstrap() {
   // Register shutdown hooks
   app.enableShutdownHooks();
 
+  // Graceful shutdown handler for both SIGTERM and SIGINT
+  let isShuttingDown = false;
+  const shutdownHandler = async (signal: string) => {
+    if (isShuttingDown) {
+      console.log('Shutdown already in progress...');
+      return;
+    }
+
+    isShuttingDown = true;
+    console.log(`Received ${signal}. Shutting down gracefully...`);
+
+    try {
+      await otelSdk.shutdown();
+      console.log('OpenTelemetry shutdown complete');
+
+      // Close the NestJS application
+      await app.close();
+      console.log('Application closed successfully');
+
+      process.exit(0);
+    } catch (error) {
+      console.error('Error during shutdown:', error);
+      process.exit(1);
+    }
+  };
+
+  // Handle both SIGTERM (production) and SIGINT (Ctrl+C in development)
+  process.on('SIGTERM', () => shutdownHandler('SIGTERM'));
+  process.on('SIGINT', () => shutdownHandler('SIGINT'));
+
   await app.listen(port);
+  console.log(`🚀 Application running on port ${port}`);
+  console.log(
+    `📊 Prometheus metrics available at http://localhost:${prometheusPort}/metrics`,
+  );
 }
 
 bootstrap();

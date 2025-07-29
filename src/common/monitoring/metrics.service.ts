@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, Optional } from '@nestjs/common';
 import {
   Attributes,
   Counter,
@@ -8,7 +8,8 @@ import {
   Observable,
   ObservableResult,
 } from '@opentelemetry/api';
-import { createMeter } from './opentelemetry';
+import { TelemetryProvider } from './telemetry.provider';
+import { metrics } from '@opentelemetry/api';
 
 /**
  * Standard interface for all metric types
@@ -43,9 +44,20 @@ export class MetricsService {
   protected histograms: Map<string, Histogram> = new Map();
   protected observables: Map<string, Observable<any>> = new Map();
 
-  constructor(protected serviceName: string) {
+  constructor(
+    protected serviceName: string,
+    @Optional()
+    @Inject(TelemetryProvider)
+    protected telemetryProvider?: TelemetryProvider,
+  ) {
     this.logger.log(`${this.constructor.name} initialized`);
-    this.meter = createMeter(serviceName);
+    // Use injected telemetry provider if available, otherwise create meter directly
+    if (this.telemetryProvider) {
+      this.meter = this.telemetryProvider.getMeter(serviceName);
+    } else {
+      // Fallback for tests or when TelemetryModule is not imported
+      this.meter = metrics.getMeter(serviceName);
+    }
   }
 
   /**

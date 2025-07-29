@@ -9,7 +9,6 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
   DatabaseModule,
   JwtAuthStrategy,
-  LoggerModule,
   NpubAuthStategy,
   PhoneAuthStategy,
   UsersDocument,
@@ -27,6 +26,7 @@ import {
   CoreMetricsService,
   GlobalExceptionFilter,
   SharedModule,
+  TelemetryModule,
 } from './common';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
@@ -129,6 +129,7 @@ import { MetricsModule } from './metrics/metrics.module';
       verboseMemoryLeak: true,
     }),
     SharedModule,
+    TelemetryModule,
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow<string>('JWT_SECRET'),

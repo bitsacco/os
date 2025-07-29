@@ -1,8 +1,15 @@
-import axios from 'axios';
-import { register } from 'prom-client';
-import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MetricsController } from './metrics.controller';
+import * as promClient from 'prom-client';
+
+// Mock Express Response
+const mockResponse = () => {
+  const res: any = {};
+  res.set = jest.fn().mockReturnValue(res);
+  res.send = jest.fn().mockReturnValue(res);
+  res.status = jest.fn().mockReturnValue(res);
+  return res;
+};
 
 describe('MetricsController', () => {
   let controller: MetricsController;
@@ -10,18 +17,12 @@ describe('MetricsController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MetricsController],
-      providers: [
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn(),
-          },
-        },
-      ],
     }).compile();
 
     controller = module.get<MetricsController>(MetricsController);
-    // Remove configService usage as it's never used
+
+    // Clear Prometheus registry between tests
+    promClient.register.clear();
   });
 
   it('should be defined', () => {
@@ -29,17 +30,36 @@ describe('MetricsController', () => {
   });
 
   describe('getMetrics', () => {
-    it('should return metrics when all services are available', async () => {
-      // Create a basic test that doesn't rely on mocking
-      jest.spyOn(register, 'metrics').mockResolvedValue('api_metrics');
-      jest
-        .spyOn(axios, 'get')
-        .mockResolvedValue({ status: 200, data: 'service_metrics' });
+    it('should return metrics with correct content type', async () => {
+      const res = mockResponse();
+      const mockMetrics = 'test_metric{label="value"} 1';
 
-      const result = await controller.getMetrics();
+      jest.spyOn(promClient.register, 'metrics').mockResolvedValue(mockMetrics);
 
-      expect(result).toBeDefined();
-      expect(typeof result).toBe('string');
+      await controller.getMetrics(res);
+
+      expect(res.set).toHaveBeenCalledWith(
+        'Content-Type',
+        promClient.register.contentType,
+      );
+      expect(res.send).toHaveBeenCalledWith(mockMetrics);
+    });
+
+    it('should handle errors gracefully', async () => {
+      const res = mockResponse();
+      const error = new Error('Metrics error');
+
+      jest.spyOn(promClient.register, 'metrics').mockRejectedValue(error);
+      jest.spyOn(console, 'error').mockImplementation();
+
+      await controller.getMetrics(res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.send).toHaveBeenCalledWith('Error fetching metrics');
+      expect(console.error).toHaveBeenCalledWith(
+        'Error fetching metrics:',
+        error,
+      );
     });
   });
 });
