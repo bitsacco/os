@@ -941,8 +941,13 @@ export class ChamaWalletService {
         TransactionType.WITHDRAW,
         chamaId,
       );
+      const pendingWithdrawals = await this.aggregatePendingTransactions(
+        TransactionType.WITHDRAW,
+        chamaId,
+      );
 
-      const groupBalance = groupDeposits - groupWithdrawals;
+      const groupBalance =
+        groupDeposits - groupWithdrawals - pendingWithdrawals;
 
       return {
         groupDeposits,
@@ -974,8 +979,14 @@ export class ChamaWalletService {
         chamaId,
         memberId,
       );
+      const pendingWithdrawals = await this.aggregatePendingTransactions(
+        TransactionType.WITHDRAW,
+        chamaId,
+        memberId,
+      );
 
-      const memberBalance = memberDeposits - memberWithdrawals;
+      const memberBalance =
+        memberDeposits - memberWithdrawals - pendingWithdrawals;
 
       return {
         memberDeposits,
@@ -1036,6 +1047,64 @@ export class ChamaWalletService {
     } catch (e) {
       this.logger.error(
         `Error aggregating transactions: type: ${type}, chamaId: ${chamaId}, memberId: ${memberId}, error: ${e}`,
+      );
+    }
+
+    return transactions;
+  }
+
+  private async aggregatePendingTransactions(
+    type: TransactionType,
+    chamaId?: string,
+    memberId?: string,
+  ): Promise<number> {
+    let transactions: number = 0;
+    const filter: ChamaTxFilter & {
+      status: any;
+      type: string;
+    } = {
+      status: {
+        $in: [
+          ChamaTxStatus.PENDING.toString(),
+          ChamaTxStatus.PROCESSING.toString(),
+          ChamaTxStatus.APPROVED.toString(),
+        ],
+      },
+      type: type.toString(),
+    };
+
+    if (memberId) {
+      filter.memberId = memberId;
+    }
+
+    if (chamaId) {
+      filter.chamaId = chamaId;
+    }
+
+    this.logger.log(`PENDING AGGREGATION FILTER : ${JSON.stringify(filter)}`);
+
+    try {
+      transactions = await this.wallet
+        .aggregate([
+          {
+            $match: filter,
+          },
+          {
+            $group: {
+              _id: null,
+              totalMsats: { $sum: '$amountMsats' },
+            },
+          },
+        ])
+        .then((result) => {
+          this.logger.log(
+            `PENDING AGGREGATION RESULT: ${JSON.stringify(result)}`,
+          );
+          return result[0]?.totalMsats || 0;
+        });
+    } catch (e) {
+      this.logger.error(
+        `Error aggregating pending transactions: type: ${type}, chamaId: ${chamaId}, memberId: ${memberId}, error: ${e}`,
       );
     }
 

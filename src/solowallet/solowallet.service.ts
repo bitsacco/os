@@ -141,10 +141,47 @@ export class SolowalletService {
           },
         ])
         .then((result) => {
-          return result[0].totalMsats || 0;
+          return result[0]?.totalMsats || 0;
         });
     } catch (e) {
       this.logger.error('Error aggregating transactions', e);
+    }
+
+    return transactions;
+  }
+
+  private async aggregatePendingTransactions(
+    userId: string,
+    type: TransactionType,
+  ): Promise<number> {
+    let transactions: number = 0;
+    try {
+      transactions = await this.wallet
+        .aggregate([
+          {
+            $match: {
+              userId: userId,
+              status: {
+                $in: [
+                  TransactionStatus.PENDING.toString(),
+                  TransactionStatus.PROCESSING.toString(),
+                ],
+              },
+              type: type.toString(),
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalMsats: { $sum: '$amountMsats' },
+            },
+          },
+        ])
+        .then((result) => {
+          return result[0]?.totalMsats || 0;
+        });
+    } catch (e) {
+      this.logger.error('Error aggregating pending transactions', e);
     }
 
     return transactions;
@@ -159,11 +196,15 @@ export class SolowalletService {
       userId,
       TransactionType.WITHDRAW,
     );
+    const pendingWithdrawals = await this.aggregatePendingTransactions(
+      userId,
+      TransactionType.WITHDRAW,
+    );
 
     return {
       totalDeposits,
       totalWithdrawals,
-      currentBalance: totalDeposits - totalWithdrawals,
+      currentBalance: totalDeposits - totalWithdrawals - pendingWithdrawals,
     };
   }
 
