@@ -29,7 +29,7 @@ export function loadDatabaseUrl(): string {
     // Check service env files first
     const services = ['api', 'auth', 'shares', 'swap', 'notification'];
     for (const service of services) {
-      const serviceEnvPath = path.join(__dirname, '../../apps', service, '.dev.env');
+      const serviceEnvPath = path.join(__dirname, '../../.dev.env');
       if (fs.existsSync(serviceEnvPath)) {
         const envContent = fs.readFileSync(serviceEnvPath, 'utf-8');
         let match = envContent.match(/DATABASE_URL=([^\s]+)/);
@@ -133,25 +133,25 @@ export async function registerSeederSchemas() {
 
     // Import User schema
     const { UsersSchema } = await import(
-      '../../libs/common/src/database/users.schema'
+      '../../src/common/database/users.schema'
     );
 
     // Import Shares schemas
     const { SharesOfferSchema, SharesSchema } = await import(
-      '../../apps/shares/src/db/shares.schema'
+      '../../src/shares/db/shares.schema'
     );
 
     // Import Chama schemas
     const { ChamasSchema } = await import(
-      '../../apps/chama/src/chamas/db/chamas.schema'
+      '../../src/chamas/db/chamas.schema'
     );
     const { ChamaWalletSchema } = await import(
-      '../../apps/chama/src/wallet/db/wallet.schema'
+      '../../src/chamawallet/db/wallet.schema'
     );
 
     // Import Solowallet schema
     const { SolowalletSchema } = await import(
-      '../../apps/solowallet/src/db/solowallet.schema'
+      '../../src/solowallet/db/solowallet.schema'
     );
 
     logger.log('Registering models...');

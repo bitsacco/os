@@ -3,14 +3,14 @@ services:
     container_name: api
     build:
       context: .
-      dockerfile: ./apps/api/Dockerfile
+      dockerfile: ./Dockerfile
       target: development
-    command: bun dev api
+    command: bun run dev
     restart: always
     depends_on:
       - mongodb
     env_file:
-      - ./apps/api/.dev.env
+      - ./.dev.env
     ports:
       - '4000:4000'
     volumes:

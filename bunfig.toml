@@ -1,0 +1,6 @@
+# Bun configuration file
+
+[test]
+# Test configuration
+coverage = true
+coverageReporter = ["text", "lcov"]

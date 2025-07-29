@@ -163,14 +163,14 @@ The `@bitsacco/common` package contains:
 
 The common library enforces standardization across the platform and reduces duplication.
 
-### Testing Library
+### Testing
 
-The `@bitsacco/testing` package provides:
+The application uses standard NestJS testing utilities:
 
-- Test utilities
-- Mock services
-- Testing fixtures
-- Validation testing helpers
+- `Test.createTestingModule` for creating test modules
+- Jest for test runner and assertions
+- Mock services and repositories for unit testing
+- Bun test runner for fast test execution
 
 ## Database
 

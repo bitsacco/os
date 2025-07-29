@@ -3,11 +3,11 @@ name: publish-api
 on:
   push:
     paths:
-      - apps/api/**
-      - libs/**
+      - src/**
       - package.json
-      - bun.lockb
+      - bun.lock
       - .github/workflows/publish-api.yml
+      - Dockerfile
   workflow_dispatch:
 
 jobs:
@@ -49,7 +49,7 @@ jobs:
       - name: Build and push api
         uses: docker/build-push-action@v4
         with:
-          file: apps/api/Dockerfile
+          file: Dockerfile
           push: ${{ github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -67,4 +67,4 @@ jobs:
           username: okjodom
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
           repository: bitsacco/api
-          readme-filepath: ./apps/api/README.md
+          readme-filepath: ./README.md

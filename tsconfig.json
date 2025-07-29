@@ -17,13 +17,7 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
-    "paths": {
-      "@bitsacco/common": [
-        "libs/common/src"
-      ],
-      "@bitsacco/testing": [
-        "libs/testing/src"
-      ]
-    }
-  }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
 }

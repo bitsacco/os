@@ -11,15 +11,14 @@
 - Run development: `bun dev`
 
 ## Publishing Commands
-- Package @bitsacco/common: `cd libs/common && ./package.sh`
-- Publish to npm: Create a tag with format `common-v*` (e.g. `common-v0.1.1`) or trigger the GitHub Actions workflow manually
+- This is now a single application, not a monorepo with published packages
 
 ## Code Style Guidelines
 - Use **NestJS** patterns with controllers, services, and modules
-- Imports: Absolute imports using paths in tsconfig.json (`@bitsacco/common`, `@bitsacco/testing`)
+- Imports: Use relative imports for internal modules
 - Formatting: Single quotes, trailing commas (enforced by Prettier)
 - Naming: PascalCase for classes/interfaces, camelCase for variables/functions/methods
 - Error handling: Use NestJS exceptions (`throw new BadRequestException()`)
-- Testing: Use `createTestingModuleWithValidation` from `@bitsacco/testing`
+- Testing: Use standard NestJS testing with `Test.createTestingModule`
 - Types: TypeScript with gRPC protocol buffers
 - Follow NestJS dependency injection pattern for services

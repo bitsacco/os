@@ -8,28 +8,18 @@
   "scripts": {
     "start": "docker compose -p os up",
     "stop": "docker compose -p os down",
-    "dev": "nest start --watch",
-    "debug": "nest start --debug --watch",
-    "build": "nest build",
-    "build:auth": "bun run build auth",
-    "build:api": "bun run build api",
-    "build:admin": "cd apps/admin && bun run build",
-    "build:nostr": "bun run build nostr",
-    "build:sms": "bun run build sms",
-    "build:shares": "bun run build shares",
-    "build:chama": "bun run build chama",
-    "build:notification": "bun run build notification",
-    "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
-    "lint": "bun run eslint \"{apps,libs,test}/**/*.ts\" --fix",
+    "dev": "bunx nest start --watch",
+    "debug": "bunx nest start --debug --watch",
+    "build": "bunx nest build",
+    "format": "bunx prettier --write \"src/**/*.ts\"",
+    "lint": "bunx eslint \"src/**/*.ts\" --fix",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:cov": "bun test --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "bun test apps/api/test/ --config ./apps/api/test/jest-e2e.json",
-    "proto:gen": "bunx protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./libs/common/src/types/proto --ts_proto_opt=nestJs=true --ts_proto_opt=exportCommonSymbols=false --ts_proto_opt=eslint_disable -I ./proto ./proto/*.proto",
-    "proto:clean": "rm ./libs/common/src/types/proto/*.ts",
-    "seed": "bun run scripts/seeder/cli.ts seed",
-    "seed:clean": "bun run scripts/seeder/cli.ts clean",
+    "proto:gen": "bunx protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/common/types/proto --ts_proto_opt=nestJs=true --ts_proto_opt=exportCommonSymbols=false --ts_proto_opt=eslint_disable -I ./proto ./proto/*.proto",
+    "proto:clean": "rm -f ./src/common/types/proto/*.ts",
+    "seed": "bun scripts/seeder/cli.ts seed",
+    "seed:clean": "bun scripts/seeder/cli.ts clean",
     "apikey:create": "bun scripts/apikey/create-apikey.ts",
     "apikey:list": "bun scripts/apikey/list-apikeys.ts",
     "apikey:revoke": "bun scripts/apikey/revoke-apikey.ts"
@@ -129,30 +119,5 @@
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": ".",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.(t|j)s"
-    ],
-    "coverageDirectory": "./coverage",
-    "testEnvironment": "node",
-    "roots": [
-      "<rootDir>/libs/",
-      "<rootDir>/apps/"
-    ],
-    "moduleNameMapper": {
-      "^@bitsacco/common(|/.*)$": "<rootDir>/libs/common/src/$1",
-      "^@bitsacco/testing(|/.*)$": "<rootDir>/libs/testing/src/$1"
-    }
   }
 }
