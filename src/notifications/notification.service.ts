@@ -489,6 +489,40 @@ export class NotificationService {
   }
 
   /**
+   * Handle Lightning Address payment received event
+   */
+  @OnEvent('payment.received')
+  private async handleLightningAddressPayment(event: {
+    userId: string;
+    amount: number;
+    address: string;
+  }) {
+    const { userId, amount, address } = event;
+
+    this.logger.log(
+      `Received Lightning Address payment event for user: ${userId}, amount: ${amount} msats, address: ${address}`,
+    );
+
+    const satoshis = Math.floor(amount / 1000);
+    const title = 'Payment Received';
+    const body = `You received ${satoshis} sats at ${address}`;
+
+    await this.sendNotification(
+      userId,
+      title,
+      body,
+      NotificationTopic.TRANSACTION,
+      {
+        type: 'lightning_address_payment',
+        amount,
+        satoshis,
+        address,
+      },
+      NotificationImportance.HIGH,
+    );
+  }
+
+  /**
    * Handle collection for shares event
    */
   @OnEvent(collection_for_shares)

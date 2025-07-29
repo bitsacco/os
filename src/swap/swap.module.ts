@@ -47,6 +47,6 @@ import {
     MpesaOnrampSwapRepository,
     RoleValidationService,
   ],
-  exports: [SwapService],
+  exports: [SwapService, FxService],
 })
 export class SwapModule {}

@@ -1,0 +1,247 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import {
+  encodeLnurl,
+  decodeLnurl,
+  isValidLnurl,
+  isLightningAddress,
+  parseLightningAddress,
+  generateK1,
+  generateQrCode,
+  validateUrl,
+  isDomainWhitelisted,
+  isDomainBlacklisted,
+} from '../utils';
+import { QrCodeOptions } from '../types';
+
+@Injectable()
+export class LnurlCommonService {
+  private readonly logger = new Logger(LnurlCommonService.name);
+  private readonly domain: string;
+
+  constructor(private readonly configService: ConfigService) {
+    this.domain = this.configService.get<string>(
+      'LNURL_DOMAIN',
+      'bitsacco.com',
+    );
+  }
+
+  /**
+   * Validate LNURL input
+   */
+  validateLnurl(input: string): boolean {
+    return isValidLnurl(input);
+  }
+
+  /**
+   * Decode LNURL to URL
+   */
+  decodeLnurl(encoded: string): string {
+    try {
+      return decodeLnurl(encoded);
+    } catch (error) {
+      this.logger.error(`Failed to decode LNURL: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Encode URL to LNURL
+   */
+  encodeLnurl(url: string): string {
+    try {
+      return encodeLnurl(url);
+    } catch (error) {
+      this.logger.error(`Failed to encode LNURL: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate QR code
+   */
+  async generateQrCode(data: string, options?: QrCodeOptions): Promise<string> {
+    try {
+      return await generateQrCode(data, options);
+    } catch (error) {
+      this.logger.error(`Failed to generate QR code: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Validate a domain
+   */
+  async validateDomain(domain: string): Promise<boolean> {
+    // Check blacklist
+    if (isDomainBlacklisted(domain)) {
+      this.logger.warn(`Domain ${domain} is blacklisted`);
+      return false;
+    }
+
+    // Whitelisted domains are automatically valid
+    if (isDomainWhitelisted(domain)) {
+      return true;
+    }
+
+    // For other domains, validate SSL
+    const url = `https://${domain}`;
+    const result = await validateUrl(url);
+
+    if (!result.valid) {
+      this.logger.warn(`Domain ${domain} validation failed: ${result.error}`);
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if input is a Lightning Address
+   */
+  isLightningAddress(input: string): boolean {
+    return isLightningAddress(input);
+  }
+
+  /**
+   * Parse Lightning Address
+   */
+  parseLightningAddress(address: string): { username: string; domain: string } {
+    return parseLightningAddress(address);
+  }
+
+  /**
+   * Generate a unique k1 value for LNURL operations
+   */
+  generateK1(): string {
+    return generateK1();
+  }
+
+  /**
+   * Get the callback URL for a given path
+   */
+  getCallbackUrl(path: string): string {
+    const baseUrl = this.configService.get<string>('LNURL_CALLBACK_BASE_URL');
+    if (!baseUrl) {
+      throw new Error('LNURL_CALLBACK_BASE_URL not configured');
+    }
+    return `${baseUrl}${path}`;
+  }
+
+  /**
+   * Format amount from fiat to millisatoshis
+   */
+  fiatToMsats(amountFiat: number, rate: number): number {
+    // Convert fiat to BTC then to millisatoshis
+    const btc = amountFiat / rate;
+    return Math.round(btc * 100000000 * 1000); // BTC to sats to msats
+  }
+
+  /**
+   * Format amount from millisatoshis to fiat
+   */
+  msatsToFiat(amountMsats: number, rate: number): number {
+    // Convert msats to BTC then to fiat
+    const btc = amountMsats / (100000000 * 1000);
+    return Math.round(btc * rate * 100) / 100; // Round to 2 decimal places
+  }
+
+  /**
+   * Validate amount is within acceptable range
+   */
+  validateAmount(
+    amountMsats: number,
+    minSendable: number,
+    maxSendable: number,
+  ): boolean {
+    return amountMsats >= minSendable && amountMsats <= maxSendable;
+  }
+
+  /**
+   * Generate LNURL metadata string (LUD-06)
+   */
+  generateMetadata(description: string, imageUrl?: string): string {
+    const metadata: Array<[string, string]> = [['text/plain', description]];
+
+    if (imageUrl) {
+      // Extract file extension for MIME type
+      const ext = imageUrl.split('.').pop()?.toLowerCase();
+      let mimeType = 'image/png'; // default
+
+      if (ext === 'jpg' || ext === 'jpeg') {
+        mimeType = 'image/jpeg';
+      } else if (ext === 'gif') {
+        mimeType = 'image/gif';
+      }
+
+      metadata.push([mimeType, imageUrl]);
+    }
+
+    return JSON.stringify(metadata);
+  }
+
+  /**
+   * Parse LNURL metadata string
+   */
+  parseMetadata(metadataStr: string): {
+    description?: string;
+    imageUrl?: string;
+  } {
+    try {
+      const metadata = JSON.parse(metadataStr) as Array<[string, string]>;
+      const result: { description?: string; imageUrl?: string } = {};
+
+      for (const [type, value] of metadata) {
+        if (type === 'text/plain') {
+          result.description = value;
+        } else if (type.startsWith('image/')) {
+          result.imageUrl = value;
+        }
+      }
+
+      return result;
+    } catch (error) {
+      this.logger.error(`Failed to parse metadata: ${error.message}`);
+      return {};
+    }
+  }
+
+  /**
+   * Check if domain is internal (ours)
+   */
+  isInternalDomain(domain: string): boolean {
+    return (
+      domain === this.domain ||
+      domain === `www.${this.domain}` ||
+      domain.endsWith(`.${this.domain}`)
+    );
+  }
+
+  /**
+   * Format success action response
+   */
+  formatSuccessAction(type: 'message' | 'url' | 'aes', data: any): any {
+    switch (type) {
+      case 'message':
+        return {
+          tag: 'message',
+          message: data,
+        };
+      case 'url':
+        return {
+          tag: 'url',
+          description: data.description,
+          url: data.url,
+        };
+      case 'aes':
+        return {
+          tag: 'aes',
+          description: data.description,
+          ciphertext: data.ciphertext,
+          iv: data.iv,
+        };
+      default:
+        return null;
+    }
+  }
+}

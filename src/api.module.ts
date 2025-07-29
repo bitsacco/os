@@ -45,6 +45,7 @@ import { NotificationModule } from './notifications/notification.module';
 import { AuthModule } from './auth/auth.module';
 import { SwapModule } from './swap/swap.module';
 import { ChamaModule } from './chamas/chama.module';
+import { LnurlModule } from './lnurl/lnurl.module';
 
 // Import the metrics module
 import { MetricsModule } from './metrics/metrics.module';
@@ -105,6 +106,9 @@ import { MetricsModule } from './metrics/metrics.module';
         SOLOWALLET_FEDERATION_ID: Joi.string().required(),
         SOLOWALLET_GATEWAY_ID: Joi.string().required(),
         SOLOWALLET_LNURL_CALLBACK: Joi.string().required(),
+        // LNURL module
+        LNURL_DOMAIN: Joi.string().default('bitsacco.com'),
+        LNURL_CALLBACK_BASE_URL: Joi.string().required(),
         // Swap module
         MOCK_BTC_KES_RATE: Joi.number(),
         CURRENCY_API_KEY: Joi.string(),
@@ -207,6 +211,7 @@ import { MetricsModule } from './metrics/metrics.module';
     SwapModule,
     SolowalletModule,
     ChamaModule,
+    LnurlModule,
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       useClass: ThrottlerConfigService,

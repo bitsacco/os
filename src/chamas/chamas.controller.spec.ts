@@ -7,7 +7,6 @@ import {
   ChamaUpdatesDto,
   JwtAuthGuard,
   BulkChamaTxMetaRequestDto,
-  ChamaTxStatus,
 } from '../common';
 import { ChamasController } from './chamas.controller';
 import { ChamaMemberGuard } from './chama-member.guard';
@@ -47,8 +46,6 @@ describe('ChamasController', () => {
     filterTransactions: jest.fn().mockResolvedValue({}),
     aggregateWalletMeta: jest.fn().mockResolvedValue({}),
     aggregateBulkWalletMeta: jest.fn().mockResolvedValue({}),
-    processLnUrlWithdrawCallback: jest.fn().mockResolvedValue({}),
-    findApprovedLnurlWithdrawal: jest.fn().mockResolvedValue({}),
   };
 
   const mockJwtService = {
@@ -222,86 +219,6 @@ describe('ChamasController', () => {
       expect(
         chamaWalletServiceMock.aggregateBulkWalletMeta,
       ).toHaveBeenCalledWith(bulkRequest);
-    });
-  });
-
-  describe('lnurl', () => {
-    it('should process valid LNURL withdrawal request', async () => {
-      const k1 = 'valid-k1-token';
-      const tag = 'withdrawRequest';
-      const callback = 'https://example.com/callback';
-      const maxWithdrawable = '1000';
-      const minWithdrawable = '100';
-      const defaultDescription = 'Test withdrawal';
-      const pr = 'lnbc10n1p...';
-
-      // Mock findApprovedLnurlWithdrawal to return an approved transaction
-      chamaWalletServiceMock.findApprovedLnurlWithdrawal.mockResolvedValue({
-        id: 'test-tx-id',
-        status: ChamaTxStatus.APPROVED,
-        amountMsats: 1000,
-      });
-
-      // Mock processLnUrlWithdrawCallback to return success
-      chamaWalletServiceMock.processLnUrlWithdrawCallback.mockResolvedValue({
-        success: true,
-      });
-
-      // Mock ConfigService to return the expected callback URL
-      const configService = module.get<ConfigService>(ConfigService);
-      configService.getOrThrow = jest.fn().mockReturnValue(callback);
-
-      await chamaController.lnurl(
-        k1,
-        tag,
-        callback,
-        maxWithdrawable,
-        minWithdrawable,
-        defaultDescription,
-        pr,
-      );
-
-      expect(
-        chamaWalletServiceMock.processLnUrlWithdrawCallback,
-      ).toHaveBeenCalledWith(k1, pr);
-    });
-
-    it('should handle service errors gracefully', async () => {
-      const k1 = 'valid-k1-token-long-enough';
-      const callback = 'https://example.com/callback';
-
-      // Mock findApprovedLnurlWithdrawal to return an approved transaction
-      chamaWalletServiceMock.findApprovedLnurlWithdrawal.mockResolvedValue({
-        id: 'test-tx-id',
-        status: ChamaTxStatus.APPROVED,
-        amountMsats: 1000,
-      });
-
-      // Mock processLnUrlWithdrawCallback to throw an error
-      chamaWalletServiceMock.processLnUrlWithdrawCallback.mockImplementation(
-        () => {
-          throw new Error('not found');
-        },
-      );
-
-      // Mock ConfigService to return the expected callback URL
-      const configService = module.get<ConfigService>(ConfigService);
-      configService.getOrThrow = jest.fn().mockReturnValue(callback);
-
-      const result = await chamaController.lnurl(
-        k1,
-        'withdrawRequest',
-        callback,
-        '1000',
-        '100',
-        'Test withdrawal',
-        'lnbc10n1p...', // Adding pr parameter to trigger the second step flow
-      );
-
-      expect(result).toEqual({
-        status: 'ERROR',
-        reason: 'Withdrawal request not found or expired',
-      });
     });
   });
 

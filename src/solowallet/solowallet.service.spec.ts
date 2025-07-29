@@ -5,7 +5,6 @@ import {
   TransactionStatus,
   TransactionType,
   FedimintService,
-  LnurlMetricsService,
   TimeoutConfigService,
 } from '../common';
 import { SolowalletMetricsService } from './solowallet.metrics';
@@ -103,14 +102,6 @@ describe('SolowalletService', () => {
         {
           provide: SwapService,
           useValue: mockSwapService,
-        },
-        {
-          provide: LnurlMetricsService,
-          useValue: {
-            recordWithdrawalMetric: jest.fn(),
-            getMetrics: jest.fn(),
-            resetMetrics: jest.fn(),
-          },
         },
         {
           provide: SolowalletMetricsService,
@@ -260,103 +251,6 @@ describe('SolowalletService', () => {
 
       // Verify that no withdrawal was created
       expect(repository.create).not.toHaveBeenCalled();
-    });
-
-    // Test for LNURL metrics implementation
-    it('LNURL metrics are properly implemented', async () => {
-      // Setup for LNURL metrics testing
-      const mockLnurlMetricsService =
-        app.get<LnurlMetricsService>(LnurlMetricsService);
-      const mockWallet = app.get<SolowalletRepository>(SolowalletRepository);
-
-      // Mock wallet.findOne to return a test document
-      jest.spyOn(mockWallet, 'findOne').mockResolvedValueOnce({
-        _id: 'lnurl-withdrawal-id',
-        userId: 'test-user',
-        amountMsats: 50000,
-        amountFiat: 100,
-        paymentTracker: 'test-k1',
-        status: TransactionStatus.PENDING,
-        type: TransactionType.WITHDRAW,
-        lightning: JSON.stringify({
-          lnurlWithdrawPoint: {
-            k1: 'test-k1',
-            callback: 'https://test.com/callback',
-            expiresAt: Date.now() / 1000 + 3600, // 1 hour from now
-          },
-        }),
-        reference: 'Test withdrawal',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        __v: 0,
-      } as SolowalletDocument);
-
-      // Mock the fedimintService.decode and pay methods
-      jest.spyOn(fedimintService, 'decode').mockResolvedValueOnce({
-        amountMsats: '40000',
-        description: 'Test invoice',
-        paymentHash: 'hash',
-        timestamp: Date.now(),
-      });
-
-      jest.spyOn(fedimintService, 'pay').mockResolvedValueOnce({
-        operationId: 'test-operation-id',
-        fee: 1000,
-      });
-
-      // Mock wallet.findOneAndUpdateWithVersion to return a processing document
-      jest
-        .spyOn(mockWallet, 'findOneAndUpdateWithVersion')
-        .mockResolvedValueOnce({
-          _id: 'lnurl-withdrawal-id',
-          userId: 'test-user',
-          amountMsats: 50000,
-          amountFiat: 100,
-          status: TransactionStatus.PROCESSING,
-          type: TransactionType.WITHDRAW,
-          reference: 'Test withdrawal',
-          __v: 1,
-        } as SolowalletDocument);
-
-      // Mock wallet.findOneAndUpdate to return an updated document
-      jest.spyOn(mockWallet, 'findOneAndUpdate').mockResolvedValueOnce({
-        _id: 'lnurl-withdrawal-id',
-        userId: 'test-user',
-        amountMsats: 41000, // 40000 + 1000 fee
-        amountFiat: 100,
-        status: TransactionStatus.COMPLETE,
-        type: TransactionType.WITHDRAW,
-        reference: 'Test withdrawal',
-      } as SolowalletDocument);
-
-      // Mock the aggregate calls for getWalletMeta
-      jest
-        .spyOn(mockWallet, 'aggregate')
-        .mockResolvedValueOnce([{ totalMsats: 1000000 }]) // deposits
-        .mockResolvedValueOnce([{ totalMsats: 41000 }]) // withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 0 }]); // pending
-
-      // Call the method we're testing
-      const result = await service.processLnUrlWithdrawCallback(
-        'test-k1',
-        'lnbc500n1p3zg5k2pp5...',
-      );
-
-      // Verify the result is correct
-      expect(result.success).toBe(true);
-      expect(result.txId).toBe('lnurl-withdrawal-id');
-
-      // Verify that metrics were recorded
-      expect(
-        mockLnurlMetricsService.recordWithdrawalMetric,
-      ).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          duration: expect.any(Number),
-          amountMsats: 41000,
-          amountFiat: 100,
-        }),
-      );
     });
   });
 });
