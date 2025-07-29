@@ -19,5 +19,5 @@
 - Naming: PascalCase for classes/interfaces, camelCase for variables/functions/methods
 - Error handling: Use NestJS exceptions (`throw new BadRequestException()`)
 - Testing: Use standard NestJS testing with `Test.createTestingModule`
-- Types: TypeScript with gRPC protocol buffers
+- Types: TypeScript
 - Follow NestJS dependency injection pattern for services

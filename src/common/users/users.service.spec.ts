@@ -1,6 +1,4 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { type ClientGrpc } from '@nestjs/microservices';
-import { SmsServiceClient } from '../types';
 import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
 import { RoleValidationService } from '../auth/role-validation.service';
@@ -9,8 +7,6 @@ describe('UsersService', () => {
   let usersService: UsersService;
   let mockUsersRepository: UsersRepository;
   let mockRoleValidationService: RoleValidationService;
-  let serviceGenerator: ClientGrpc;
-  let mockSmsServiceClient: Partial<SmsServiceClient>;
 
   beforeEach(async () => {
     mockUsersRepository = {
@@ -24,11 +20,6 @@ describe('UsersService', () => {
     mockRoleValidationService = {
       validateRoleUpdate: jest.fn(),
     } as unknown as RoleValidationService;
-
-    serviceGenerator = {
-      getService: jest.fn().mockReturnValue(mockSmsServiceClient),
-      getClientByServiceName: jest.fn().mockReturnValue(mockSmsServiceClient),
-    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

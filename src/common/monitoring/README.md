@@ -10,7 +10,7 @@ This directory contains standardized monitoring and telemetry services for Bitsa
 
 2. **Core Metrics Service**
    - Database operation metrics
-   - API and gRPC request monitoring
+   - API request monitoring
    - Resource utilization tracking (CPU, memory, disk, network)
    - Error monitoring by type, endpoint, and service
 

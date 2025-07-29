@@ -6,7 +6,6 @@ import { MetricsService } from './metrics.service';
 // Event constants for metrics
 export const CORE_DATABASE_METRIC = 'core:database';
 export const CORE_API_METRIC = 'core:api';
-export const CORE_GRPC_METRIC = 'core:grpc';
 export const CORE_RESOURCE_METRIC = 'core:resource';
 
 /**
@@ -27,17 +26,6 @@ export interface ApiMetric {
   method: string;
   path: string;
   statusCode: number;
-  success: boolean;
-  duration: number;
-  errorType?: string;
-}
-
-/**
- * Metrics for gRPC operations
- */
-export interface GrpcMetric {
-  service: string;
-  method: string;
   success: boolean;
   duration: number;
   errorType?: string;
@@ -71,11 +59,6 @@ export class CoreMetricsService extends MetricsService {
   private errorsByEndpoint!: Counter;
   private errorsByType!: Counter;
   private errorsByService!: Counter;
-
-  // gRPC metrics
-  private grpcRequestCounter!: Counter;
-  private grpcRequestDurationHistogram!: Histogram;
-  private grpcErrorCounter!: Counter;
 
   // Resource metrics
   private cpuUsageObservable!: Observable<Attributes>;
@@ -130,28 +113,6 @@ export class CoreMetricsService extends MetricsService {
         }
       >,
       byStatusCode: {} as Record<string, number>,
-    },
-    grpc: {
-      requests: 0,
-      successfulRequests: 0,
-      failedRequests: 0,
-      averageDuration: 0,
-      byService: {} as Record<
-        string,
-        {
-          total: number;
-          successful: number;
-          failed: number;
-        }
-      >,
-      byMethod: {} as Record<
-        string,
-        {
-          total: number;
-          successful: number;
-          failed: number;
-        }
-      >,
     },
     resources: {
       cpu: {
@@ -251,23 +212,6 @@ export class CoreMetricsService extends MetricsService {
 
     this.errorsByService = this.createCounter(`core.errors_by_service`, {
       description: 'Number of errors by downstream service',
-    });
-
-    // gRPC metrics
-    this.grpcRequestCounter = this.createCounter('core.grpc.requests', {
-      description: 'Number of gRPC requests',
-    });
-
-    this.grpcRequestDurationHistogram = this.createHistogram(
-      'core.grpc.duration',
-      {
-        description: 'Duration of gRPC requests',
-        unit: 'ms',
-      },
-    );
-
-    this.grpcErrorCounter = this.createCounter('core.grpc.errors', {
-      description: 'Number of gRPC errors',
     });
 
     // Resource metrics
@@ -490,83 +434,6 @@ export class CoreMetricsService extends MetricsService {
   }
 
   /**
-   * Record metrics for gRPC operations
-   */
-  recordGrpcMetric(metric: GrpcMetric): void {
-    // Update in-memory metrics
-    this.metrics.grpc.requests++;
-
-    // Update by service metrics
-    if (!this.metrics.grpc.byService[metric.service]) {
-      this.metrics.grpc.byService[metric.service] = {
-        total: 0,
-        successful: 0,
-        failed: 0,
-      };
-    }
-    this.metrics.grpc.byService[metric.service].total++;
-
-    // Update by method metrics
-    if (!this.metrics.grpc.byMethod[metric.method]) {
-      this.metrics.grpc.byMethod[metric.method] = {
-        total: 0,
-        successful: 0,
-        failed: 0,
-      };
-    }
-    this.metrics.grpc.byMethod[metric.method].total++;
-
-    // Track success/failure
-    if (metric.success) {
-      this.metrics.grpc.successfulRequests++;
-      this.metrics.grpc.byService[metric.service].successful++;
-      this.metrics.grpc.byMethod[metric.method].successful++;
-    } else {
-      this.metrics.grpc.failedRequests++;
-      this.metrics.grpc.byService[metric.service].failed++;
-      this.metrics.grpc.byMethod[metric.method].failed++;
-
-      if (metric.errorType) {
-        this.metrics.errors[metric.errorType] =
-          (this.metrics.errors[metric.errorType] || 0) + 1;
-      }
-    }
-
-    // Update average duration
-    this.metrics.grpc.averageDuration =
-      (this.metrics.grpc.averageDuration * (this.metrics.grpc.requests - 1) +
-        metric.duration) /
-      this.metrics.grpc.requests;
-
-    // Record to OpenTelemetry
-    this.grpcRequestCounter.add(1, {
-      service: metric.service,
-      method: metric.method,
-      success: String(metric.success),
-    });
-
-    this.grpcRequestDurationHistogram.record(metric.duration, {
-      service: metric.service,
-      method: metric.method,
-      success: String(metric.success),
-    });
-
-    if (!metric.success && metric.errorType) {
-      this.grpcErrorCounter.add(1, {
-        service: metric.service,
-        method: metric.method,
-        errorType: metric.errorType,
-      });
-    }
-
-    // Emit event for potential subscribers
-    this.eventEmitter.emit(CORE_GRPC_METRIC, {
-      ...metric,
-      timestamp: new Date().toISOString(),
-    });
-  }
-
-  /**
    * Record metrics for system resources
    */
   recordResourceMetric(metric: ResourceMetric): void {
@@ -660,18 +527,6 @@ export class CoreMetricsService extends MetricsService {
         byPath: this.metrics.api.byPath,
         byStatusCode: this.metrics.api.byStatusCode,
       },
-      grpc: {
-        requests: this.metrics.grpc.requests,
-        successful: this.metrics.grpc.successfulRequests,
-        failed: this.metrics.grpc.failedRequests,
-        successRate: this.calculateSuccessRate(
-          this.metrics.grpc.successfulRequests,
-          this.metrics.grpc.requests,
-        ),
-        averageDuration: this.metrics.grpc.averageDuration,
-        byService: this.metrics.grpc.byService,
-        byMethod: this.metrics.grpc.byMethod,
-      },
       resources: this.metrics.resources,
       errors: this.metrics.errors,
     };
@@ -728,14 +583,6 @@ export class CoreMetricsService extends MetricsService {
     this.metrics.api.byMethod = {};
     this.metrics.api.byPath = {};
     this.metrics.api.byStatusCode = {};
-
-    // Reset gRPC metrics
-    this.metrics.grpc.requests = 0;
-    this.metrics.grpc.successfulRequests = 0;
-    this.metrics.grpc.failedRequests = 0;
-    this.metrics.grpc.averageDuration = 0;
-    this.metrics.grpc.byService = {};
-    this.metrics.grpc.byMethod = {};
 
     // Reset resource metrics
     this.metrics.resources.cpu = {

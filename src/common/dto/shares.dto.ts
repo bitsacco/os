@@ -20,7 +20,7 @@ import {
   TransferSharesRequest,
   UpdateSharesRequest,
   UserSharesTxsRequest,
-} from '../types/proto/shares';
+} from '../types/shares';
 import { PaginatedRequestDto } from './lib.dto';
 import { ApiProperty } from '@nestjs/swagger';
 

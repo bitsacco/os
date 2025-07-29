@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChamaFilterGuard } from './chama-filter.guard';
 import { ExecutionContext } from '@nestjs/common';
-import { Role, CHAMAS_SERVICE_NAME } from '../common';
+import { Role } from '../common';
+import { ChamasService } from './chamas.service';
 
 describe('ChamaFilterGuard', () => {
   let guard: ChamaFilterGuard;
@@ -12,16 +13,12 @@ describe('ChamaFilterGuard', () => {
       findChama: jest.fn(),
     };
 
-    const mockClientGrpc = {
-      getService: jest.fn().mockReturnValue(mockChamaService),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ChamaFilterGuard,
         {
-          provide: CHAMAS_SERVICE_NAME,
-          useValue: mockClientGrpc,
+          provide: ChamasService,
+          useValue: mockChamaService,
         },
       ],
     }).compile();

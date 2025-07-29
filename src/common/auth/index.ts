@@ -4,8 +4,6 @@ export * from './phone.auth';
 export * from './csrf.middleware';
 export * from './apikey.service';
 export * from './apikey.guard';
-export * from './grpc-api-key.interceptor';
-export * from './grpc-api-key.middleware';
 export * from './combined.auth';
 export * from './resource-owner.guard';
 export * from './decorators';

@@ -16,7 +16,7 @@ This document describes the microservice architecture implemented in the Bitsacc
 
 ## Overview
 
-Bitsacco OS is built using a microservice architecture to provide a scalable, resilient, and maintainable platform for Bitcoin financial services. The system is designed around domain-specific services that communicate via gRPC and REST APIs, with MongoDB as the primary data store and Redis for caching.
+Bitsacco OS is built using a microservice architecture to provide a scalable, resilient, and maintainable platform for Bitcoin financial services. The system is designed around domain-specific services that communicate via REST APIs, with MongoDB as the primary data store and Redis for caching.
 
 The architecture emphasizes:
 
@@ -121,27 +121,20 @@ Bitsacco OS implements several communication patterns:
 
 ### Synchronous Communication
 
-- **gRPC**: Primary inter-service communication using Protocol Buffers
-- **REST APIs**: External client communication and some inter-service calls
+- **REST APIs**: External client communication and inter-service calls
 
 ### Asynchronous Communication
 
 - **Event-Driven**: Using event emitters for loosely coupled communication
 - **Message Queues**: For durable asynchronous processing (using Redis)
 
-### Protocol Buffers
+### Service Contracts
 
-Service contracts are defined using Protocol Buffers (.proto files) which:
+Service contracts are defined using TypeScript interfaces which:
 
 - Provide type safety
-- Enable efficient serialization
 - Support versioning
-- Generate client/server code
-
-Example service interfaces are defined in the `/proto` directory, with files like:
-- `auth.proto` - Authentication service
-- `swap.proto` - Currency exchange service
-- `shares.proto` - Shares management service
+- Enable code generation
 
 ## Code Sharing
 
@@ -215,7 +208,7 @@ Logging is implemented throughout the platform:
 - **Structured Logging**: JSON-formatted logs with standardized fields
 - **Log Levels**: ERROR, WARN, INFO, DEBUG, VERBOSE
 - **Context Enrichment**: Adding request IDs, user IDs, service names
-- **Log Interceptor**: Automatically logs HTTP and gRPC requests/responses
+- **Log Interceptor**: Automatically logs HTTP requests/responses
 
 ### Log Content
 

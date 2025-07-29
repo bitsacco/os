@@ -4,13 +4,7 @@ import { Reflector } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
 import { of, throwError } from 'rxjs';
 import { JwtAuthGuard, JwtAuthStrategy, Public } from './jwt.auth';
-import {
-  AUTH_SERVICE_NAME,
-  AuthServiceClient,
-  AuthTokenPayload,
-  Role,
-  User,
-} from '../types';
+import { AuthTokenPayload, Role, User } from '../types';
 import { UsersService } from '../users';
 import { UnauthorizedException } from '@nestjs/common';
 
@@ -18,7 +12,6 @@ describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard;
   let jwtService: JwtService;
   let reflector: Reflector;
-  let authService: Partial<AuthServiceClient>;
 
   const mockUser: User = {
     id: 'test-user-id',
@@ -42,21 +35,6 @@ describe('JwtAuthGuard', () => {
   const mockJwt = 'valid.jwt.token';
 
   beforeEach(async () => {
-    // Create mock AuthServiceClient
-    authService = {
-      authenticate: jest.fn().mockReturnValue(
-        of({
-          user: mockUser,
-          accessToken: mockJwt,
-        }),
-      ),
-    };
-
-    // Mock gRPC client
-    const mockGrpcClient = {
-      getService: jest.fn().mockReturnValue(authService),
-    };
-
     // Create module
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -72,10 +50,6 @@ describe('JwtAuthGuard', () => {
           useValue: {
             get: jest.fn(),
           },
-        },
-        {
-          provide: AUTH_SERVICE_NAME,
-          useValue: mockGrpcClient,
         },
       ],
     }).compile();
@@ -171,74 +145,10 @@ describe('JwtAuthGuard', () => {
       );
     });
 
-    it('should fallback to gRPC auth service when local verification fails', async () => {
+    it('should throw UnauthorizedException when token verification fails', () => {
       jest.spyOn(jwtService, 'verify').mockImplementation(() => {
         throw new Error('Invalid token');
       });
-
-      // Access the private methods directly for testing
-      const mockAuthService = {
-        authenticate: jest.fn().mockReturnValue(
-          of({
-            user: mockUser,
-            accessToken: mockJwt,
-          }),
-        ),
-      };
-
-      // Replace the private property directly for testing
-      (guard as any).grpc = {
-        getService: () => mockAuthService,
-      };
-
-      const mockRequest = {
-        cookies: { Authentication: mockJwt },
-        user: null,
-      };
-
-      const mockContext = {
-        switchToHttp: () => ({
-          getRequest: () => mockRequest,
-        }),
-        getHandler: () => ({}),
-      };
-
-      const result = guard.canActivate(mockContext as any) as any;
-
-      // Should return an Observable
-      expect(result.subscribe).toBeDefined();
-
-      // Extract value from observable
-      const value = await new Promise((resolve) => {
-        result.subscribe(resolve);
-      });
-
-      expect(value).toBe(true);
-      // Verify that authenticate was called with the token
-      expect(mockAuthService.authenticate).toHaveBeenCalledWith({
-        accessToken: mockJwt,
-      });
-      expect(mockRequest.user).toEqual(mockUser);
-    });
-
-    it('should throw UnauthorizedException when auth service fails', async () => {
-      jest.spyOn(jwtService, 'verify').mockImplementation(() => {
-        throw new Error('Invalid token');
-      });
-
-      // Setup mock auth service that fails
-      const mockAuthService = {
-        authenticate: jest
-          .fn()
-          .mockReturnValue(
-            throwError(() => new Error('Authentication failed')),
-          ),
-      };
-
-      // Replace the private property directly for testing
-      (guard as any).grpc = {
-        getService: () => mockAuthService,
-      };
 
       const mockContext = {
         switchToHttp: () => ({
@@ -249,13 +159,9 @@ describe('JwtAuthGuard', () => {
         getHandler: () => ({}),
       };
 
-      const result = guard.canActivate(mockContext as any) as any;
-
-      await expect(
-        new Promise((resolve, reject) => {
-          result.subscribe(resolve, reject);
-        }),
-      ).rejects.toThrow(UnauthorizedException);
+      expect(() => guard.canActivate(mockContext as any)).toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

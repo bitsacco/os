@@ -69,15 +69,3 @@ Open a shell at the root and run the following command, assuming you have all th
 $ bunx nest
 ```
 
-## Working with GRPC
-
-We use [gRPC](https://grpc.io/) to communicate between services.
-For each service that defines an rpc interface, we have a `<service>.proto` file in the `/proto` folder.
-If you make any changes to the proto file, you will need to regenerate the grpc code.
-
-```bash
-# generate grpc code
-$ bun proto:gen
-```
-Resulting typescript files are generated in the `/libs/common/src/types/proto` folder.
-You might need to manually update the index file in the types folder to include the new files.

@@ -4,7 +4,6 @@ import {
   CoreMetricsService,
   CORE_DATABASE_METRIC,
   CORE_API_METRIC,
-  CORE_GRPC_METRIC,
   CORE_RESOURCE_METRIC,
 } from './core.metrics';
 
@@ -126,33 +125,6 @@ describe('CoreMetricsService', () => {
       expect(metrics.api.byPath['/api/users'].failed).toBe(1);
       expect(metrics.api.byStatusCode['500']).toBe(1);
       expect(metrics.errors.server_error).toBe(1);
-    });
-  });
-
-  describe('recordGrpcMetric', () => {
-    it('should record gRPC request metrics and emit event', () => {
-      const metric = {
-        service: 'UserService',
-        method: 'FindUser',
-        success: true,
-        duration: 75,
-      };
-
-      service.recordGrpcMetric(metric);
-
-      expect(eventEmitter.emit).toHaveBeenCalledWith(
-        CORE_GRPC_METRIC,
-        expect.objectContaining({
-          ...metric,
-          timestamp: expect.any(String),
-        }),
-      );
-
-      const metrics = service.getMetrics();
-      expect(metrics.grpc.requests).toBe(1);
-      expect(metrics.grpc.successful).toBe(1);
-      expect(metrics.grpc.byService.UserService.total).toBe(1);
-      expect(metrics.grpc.byMethod.FindUser.total).toBe(1);
     });
   });
 

@@ -59,7 +59,6 @@ export function initializeOpenTelemetry(
     instrumentations: [
       getNodeAutoInstrumentations({
         '@opentelemetry/instrumentation-http': { enabled: true },
-        '@opentelemetry/instrumentation-grpc': { enabled: true },
         '@opentelemetry/instrumentation-mongoose': { enabled: true },
         '@opentelemetry/instrumentation-nestjs-core': { enabled: true },
       }),

@@ -166,11 +166,6 @@ All services implement a standard set of operational metrics:
 - `core.api.duration` - Duration of API requests
 - `core.api.errors` - Number of API errors
 
-#### gRPC Metrics
-- `core.grpc.requests` - Number of gRPC requests
-- `core.grpc.duration` - Duration of gRPC requests
-- `core.grpc.errors` - Number of gRPC errors
-
 #### Resource Metrics
 - `core.resources.cpu_usage` - CPU usage percentage
 - `core.resources.memory_usage` - Memory usage in megabytes

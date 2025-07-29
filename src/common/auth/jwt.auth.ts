@@ -1,26 +1,18 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Observable, tap, map, catchError } from 'rxjs';
+import { Observable } from 'rxjs';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { type ClientGrpc } from '@nestjs/microservices';
 import { PassportStrategy } from '@nestjs/passport';
 import {
   CanActivate,
   ExecutionContext,
-  Inject,
   Injectable,
   Logger,
-  Optional,
   SetMetadata,
   UnauthorizedException,
 } from '@nestjs/common';
-import {
-  AuthServiceClient,
-  AUTH_SERVICE_NAME,
-  Role,
-  AuthTokenPayload,
-} from '../types';
+import { Role, AuthTokenPayload } from '../types';
 import { UsersService } from '../users';
 
 @Injectable()
@@ -30,15 +22,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly jwtService: JwtService,
-    @Optional() @Inject(AUTH_SERVICE_NAME) private readonly grpc?: ClientGrpc,
   ) {}
-
-  private get authService(): AuthServiceClient | null {
-    if (!this.grpc) {
-      return null;
-    }
-    return this.grpc.getService<AuthServiceClient>(AUTH_SERVICE_NAME);
-  }
 
   canActivate(
     context: ExecutionContext,
@@ -64,7 +48,7 @@ export class JwtAuthGuard implements CanActivate {
     const roles = this.reflector.get<Role[]>('roles', context.getHandler());
 
     try {
-      // Verify token locally first to avoid unnecessary gRPC calls
+      // Verify token locally
       const tokenPayload =
         this.jwtService.verify<AuthTokenPayload>(accessToken);
 
@@ -97,28 +81,8 @@ export class JwtAuthGuard implements CanActivate {
         throw error;
       }
 
-      // If local verification fails, try to use gRPC auth service if available
-      if (!this.authService) {
-        this.logger.error(
-          'Token verification failed and no auth service available',
-        );
-        throw new UnauthorizedException('Authentication failed');
-      }
-
-      return this.authService
-        .authenticate({
-          accessToken,
-        })
-        .pipe(
-          tap(({ user }) => {
-            request.user = user;
-          }),
-          map(() => true),
-          catchError((err) => {
-            this.logger.error(`Authentication failed: ${err.message}`);
-            throw new UnauthorizedException('Authentication failed');
-          }),
-        );
+      this.logger.error('Token verification failed');
+      throw new UnauthorizedException('Authentication failed');
     }
   }
 }

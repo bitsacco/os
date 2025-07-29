@@ -6,7 +6,6 @@ import {
   type FedimintReceiveSuccessEvent,
   FedimintService,
   LnurlMetricsService,
-  SWAP_SERVICE_NAME,
   TransactionStatus,
   UsersService,
   WalletTxContext,
@@ -43,8 +42,8 @@ describe('ChamaWalletService', () => {
     resetMetrics: jest.fn(),
   };
 
-  const mockSwapGrpc = {
-    getService: jest.fn().mockReturnValue({}),
+  const mockSwapService = {
+    // Add any SwapService methods that are used in tests
   };
 
   const mockChamasService = {
@@ -85,8 +84,8 @@ describe('ChamaWalletService', () => {
           },
         },
         {
-          provide: SWAP_SERVICE_NAME,
-          useValue: mockSwapGrpc,
+          provide: SwapService,
+          useValue: mockSwapService,
         },
         {
           provide: ChamasService,

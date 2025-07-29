@@ -17,15 +17,9 @@ For development, we use a simplified approach with a single global API key that 
 Bitsacco provides several npm scripts to manage API keys:
 
 | Script | Description |
-|--------|-------------|
-| `bun apikey:generate` | Generate a global development API key |
-| `bun apikey:test` | Test API key authentication with the API gateway |
-| `bun apikey:test:grpc` | Test API key authentication for gRPC service-to-service calls |
-| `bun apikey:test:combined` | Test both JWT and API key authentication |
-| `bun apikey:list` | List all API keys in the database |
 | `bun apikey:create` | Create a new API key with custom scopes |
+| `bun apikey:list` | List all API keys in the database |
 | `bun apikey:revoke` | Revoke an existing API key |
-| `bun apikey:rotate` | Rotate an existing service API key |
 
 ### Generate a Global Development API Key
 
@@ -44,9 +38,6 @@ This script:
 ```bash
 # Test the API key with the API gateway
 bun apikey:test
-
-# Test service-to-service communication with the API key
-bun apikey:test:grpc
 
 # Test both JWT and API key authentication
 bun apikey:test:combined
@@ -122,36 +113,15 @@ bun apikey:test:combined
 
 ### Service-to-Service Communication
 
-For gRPC communication, the API key is automatically added by the GrpcApiKeyInterceptor:
+For service-to-service communication, include the API key in your HTTP headers:
 
 ```typescript
-@Module({
-  imports: [
-    ClientsModule.registerAsync([
-      {
-        name: OTHER_SERVICE_NAME,
-        useFactory: (configService: ConfigService) => ({
-          transport: Transport.GRPC,
-          options: {
-            package: 'other_service',
-            protoPath: join(__dirname, '../../../proto/other_service.proto'),
-            url: configService.get('OTHER_SERVICE_GRPC_URL'),
-          },
-        }),
-        inject: [ConfigService],
-      },
-    ]),
-  ],
-  providers: [
-    // Include these providers
-    SecretsService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: GrpcApiKeyInterceptor,
-    },
-  ],
-})
-export class YourModule {}
+// HTTP request with API key for service-to-service communication
+const response = await axios.get('http://other-service:4000/endpoint', {
+  headers: {
+    'x-api-key': process.env.SERVICE_API_KEY,
+  },
+});
 ```
 
 ## API Key Scopes
@@ -233,7 +203,6 @@ For production, implement a regular rotation schedule:
 1. **"API key required" error**
    - Make sure you're including the API key in the `x-api-key` header
    - Check if the endpoint requires an API key
-   - For gRPC calls, confirm the GrpcApiKeyInterceptor is correctly configured
 
 2. **"Insufficient API key permissions" error**
    - Your API key doesn't have the required scopes
@@ -253,9 +222,8 @@ For production, implement a regular rotation schedule:
    - The hash salt might be different from what was used when creating the key
 
 4. **Service-to-service communication failures**
-   - Check that the API key is correctly added to gRPC metadata
+   - Check that the API key is correctly added to request headers
    - Verify the service has the proper service scope (e.g., 'service:auth')
-   - Run `bun apikey:test:grpc` to test gRPC communication
 
 5. **CombinedAuthGuard issues**
    - Ensure both JWT and API key authentication are properly configured

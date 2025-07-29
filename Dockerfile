@@ -9,7 +9,6 @@ COPY nest-cli.json nest-cli.json
 COPY bunfig.toml bunfig.toml
 
 COPY src src
-COPY proto proto
 
 RUN bun install --no-frozen-lockfile
 
@@ -28,6 +27,5 @@ COPY bun.lock ./
 RUN bun install --production --no-frozen-lockfile
 
 COPY --from=development /usr/src/app/dist ./dist
-COPY --from=development /usr/src/app/proto ./proto
 
 CMD ["bun", "dist/main.js"]
