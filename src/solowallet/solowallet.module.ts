@@ -1,13 +1,10 @@
-import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EventEmitterModule } from '@nestjs/event-emitter';
+import { SharedModule } from '../common/shared.module';
 import { HttpModule } from '@nestjs/axios';
 import {
   DatabaseModule,
   FedimintService,
   LnurlMetricsService,
-  LoggerModule,
   RoleValidationService,
 } from '../common';
 import { SolowalletMetricsService } from './solowallet.metrics';
@@ -23,40 +20,16 @@ import { JwtConfigModule } from '../common/jwt-config.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      validationSchema: Joi.object({
-        NODE_ENV: Joi.string().required(),
-        DATABASE_URL: Joi.string().required(),
-        SOLOWALLET_CLIENTD_BASE_URL: Joi.string().required(),
-        SOLOWALLET_CLIENTD_PASSWORD: Joi.string().required(),
-        SOLOWALLET_FEDERATION_ID: Joi.string().required(),
-        SOLOWALLET_GATEWAY_ID: Joi.string().required(),
-        SOLOWALLET_LNURL_CALLBACK: Joi.string().required(),
-        MOCK_BTC_KES_RATE: Joi.number(),
-        CURRENCY_API_KEY: Joi.string(),
-        INTASEND_PUBLIC_KEY: Joi.string().required(),
-        INTASEND_PRIVATE_KEY: Joi.string().required(),
-      }),
-    }),
-    DatabaseModule,
+    SharedModule,
     DatabaseModule.forFeature([
       { name: SolowalletDocument.name, schema: SolowalletSchema },
     ]),
-    LoggerModule,
     HttpModule,
     SwapModule,
-    JwtConfigModule.forRoot(),
-    EventEmitterModule.forRoot({
-      global: true,
-      delimiter: '.',
-      verboseMemoryLeak: true,
-    }),
   ],
   controllers: [SolowalletController],
   providers: [
     SolowalletService,
-    ConfigService,
     SolowalletRepository,
     FedimintService,
     LnurlMetricsService,

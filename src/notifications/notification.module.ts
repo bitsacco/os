@@ -1,7 +1,5 @@
-import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { EventEmitterModule } from '@nestjs/event-emitter';
+import { SharedModule } from '../common/shared.module';
 import { LoggerModule, DatabaseModule } from '../common';
 import { SmsModule } from '../sms/sms.module';
 import { NostrModule } from '../nostr/nostr.module';
@@ -22,19 +20,7 @@ import {
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      validationSchema: Joi.object({
-        DATABASE_URL: Joi.string().required(),
-      }),
-    }),
-    LoggerModule,
-    EventEmitterModule.forRoot({
-      global: true,
-      delimiter: '.',
-      verboseMemoryLeak: true,
-    }),
-    DatabaseModule,
+    SharedModule,
     DatabaseModule.forFeature([
       { name: NotificationDocument.name, schema: NotificationSchema },
       {
@@ -44,7 +30,6 @@ import {
     ]),
     SmsModule,
     NostrModule,
-    JwtConfigModule.forRoot(),
   ],
   controllers: [NotificationController],
   providers: [

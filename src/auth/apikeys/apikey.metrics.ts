@@ -44,8 +44,6 @@ export class ApiKeyMetricsService extends MetricsService {
         observer.observe(this._activeKeyCount);
       },
     );
-
-    this.logger.log('API Key metrics initialized');
   }
 
   // Store active key count for the observable

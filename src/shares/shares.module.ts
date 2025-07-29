@@ -1,11 +1,8 @@
-import * as Joi from 'joi';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { Module } from '@nestjs/common';
+import { SharedModule } from '../common/shared.module';
 import {
   DatabaseModule,
   LnurlMetricsService,
-  LoggerModule,
   RoleValidationService,
 } from '../common';
 import { SharesController } from './shares.controller';
@@ -24,25 +21,15 @@ import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      validationSchema: Joi.object({
-        DATABASE_URL: Joi.string().required(),
-      }),
-    }),
-    EventEmitterModule.forRoot(),
-    DatabaseModule,
+    SharedModule,
     DatabaseModule.forFeature([
       { name: SharesOfferDocument.name, schema: SharesOfferSchema },
       { name: SharesDocument.name, schema: SharesSchema },
     ]),
-    LoggerModule,
-    JwtConfigModule.forRoot(),
     AuthModule,
   ],
   controllers: [SharesController],
   providers: [
-    ConfigService,
     LnurlMetricsService,
     SharesService,
     SharesOfferRepository,

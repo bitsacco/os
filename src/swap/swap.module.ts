@@ -1,13 +1,10 @@
-import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
+import { SharedModule } from '../common/shared.module';
 import { HttpModule } from '@nestjs/axios';
 import { CacheModule } from '@nestjs/cache-manager';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
   DatabaseModule,
   FedimintService,
-  LoggerModule,
   RoleValidationService,
 } from '../common';
 import { SwapController } from './swap.controller';
@@ -27,37 +24,16 @@ import {
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      validationSchema: Joi.object({
-        MOCK_BTC_KES_RATE: Joi.number(),
-        CURRENCY_API_KEY: Joi.string(),
-        DATABASE_URL: Joi.string().required(),
-        INTASEND_PUBLIC_KEY: Joi.string().required(),
-        INTASEND_PRIVATE_KEY: Joi.string().required(),
-        SWAP_CLIENTD_BASE_URL: Joi.string().required(),
-        SWAP_CLIENTD_PASSWORD: Joi.string().required(),
-        SWAP_FEDERATION_ID: Joi.string().required(),
-        SWAP_GATEWAY_ID: Joi.string().required(),
-      }),
-    }),
-    DatabaseModule,
+    SharedModule,
     DatabaseModule.forFeature([
       { name: MpesaOnrampSwapDocument.name, schema: MpesaOnrampSwapSchema },
       { name: MpesaOfframpSwapDocument.name, schema: MpesaOfframpSwapSchema },
     ]),
-    LoggerModule,
     HttpModule,
-    JwtConfigModule.forRoot(),
     CacheModule.register({
       isGlobal: true,
       ttl: 60 * 60 * 5 * 1000, // 5 hours in milliseconds
       max: 1000, // Maximum number of items in cache
-    }),
-    EventEmitterModule.forRoot({
-      global: true,
-      delimiter: '.',
-      verboseMemoryLeak: true,
     }),
   ],
   controllers: [SwapController],
@@ -66,7 +42,6 @@ import {
     SwapService,
     FxService,
     IntasendService,
-    ConfigService,
     FedimintService,
     MpesaOfframpSwapRepository,
     MpesaOnrampSwapRepository,

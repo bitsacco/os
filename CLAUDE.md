@@ -2,7 +2,6 @@
 
 ## Build & Test Commands
 - Build all: `bun build`
-- Build specific app: `bun build:<app>` (auth|api|swap|nostr|sms|shares|solowallet|chama)
 - Lint: `bun lint`
 - Format: `bun format`
 - Test: `bun test`
