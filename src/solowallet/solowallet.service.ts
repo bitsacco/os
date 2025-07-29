@@ -29,6 +29,8 @@ import {
   ContinueDepositFundsRequestDto,
   ContinueWithdrawFundsRequestDto,
   fiatToBtc,
+  validateStateTransition,
+  SOLO_WALLET_STATE_TRANSITIONS,
 } from '../common';
 import { SolowalletMetricsService } from './solowallet.metrics';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -986,6 +988,16 @@ export class SolowalletService {
     const originTx = await this.wallet.findOne({ _id: txId });
     const { status, lightning, reference } = updates;
 
+    // Validate state transition if status is being updated
+    if (status !== undefined && status !== originTx.status) {
+      validateStateTransition(
+        originTx.status,
+        status,
+        SOLO_WALLET_STATE_TRANSITIONS,
+        'solowallet transaction',
+      );
+    }
+
     const { userId } = await this.wallet.findOneAndUpdate(
       { _id: txId },
       {
@@ -1165,7 +1177,15 @@ export class SolowalletService {
       // 3. Decode the invoice to get the amount
       const invoiceDetails = await this.fedimintService.decode(pr);
 
-      // 4. First, try to update the status to PROCESSING with version check
+      // 4. Validate state transition to PROCESSING
+      validateStateTransition(
+        withdrawal.status,
+        TransactionStatus.PROCESSING,
+        SOLO_WALLET_STATE_TRANSITIONS,
+        'solowallet transaction',
+      );
+
+      // 5. First, try to update the status to PROCESSING with version check
       let processingUpdate;
       try {
         processingUpdate = await this.wallet.findOneAndUpdateWithVersion(

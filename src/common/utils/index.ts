@@ -7,3 +7,4 @@ export * from './secrets.service';
 export * from './rate-limit';
 export * from './service-client.decorator';
 export * from './circuit-breaker.service';
+export * from './transaction-state';

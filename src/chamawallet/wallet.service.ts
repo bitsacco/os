@@ -40,6 +40,8 @@ import {
   ChamaTxMetaRequest,
   ChamaMeta,
   fiatToBtc,
+  validateStateTransition,
+  CHAMA_WALLET_STATE_TRANSITIONS,
 } from '../common';
 import {
   ChamaMemberContact,
@@ -1329,7 +1331,15 @@ export class ChamaWalletService {
       // 3. Decode the invoice to get the amount
       const invoiceDetails = await this.fedimintService.decode(pr);
 
-      // 4. First, try to update the status to PROCESSING with version check
+      // 4. Validate state transition to PROCESSING
+      validateStateTransition(
+        withdrawal.status,
+        ChamaTxStatus.PROCESSING,
+        CHAMA_WALLET_STATE_TRANSITIONS,
+        'chama transaction',
+      );
+
+      // 5. First, try to update the status to PROCESSING with version check
       let processingUpdate;
       try {
         processingUpdate = await this.wallet.findOneAndUpdateWithVersion(
