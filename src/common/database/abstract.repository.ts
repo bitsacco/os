@@ -45,6 +45,7 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
         {
           ...update,
           updatedAt: Date.now(),
+          $inc: { __v: 1 },
         },
         {
           new: true,
@@ -57,6 +58,38 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
         `Document was not found with filterQuery:  ${JSON.stringify(filterQuery)}`,
       );
       throw new NotFoundException('Document was not found');
+    }
+
+    return document;
+  }
+
+  async findOneAndUpdateWithVersion(
+    filterQuery: FilterQuery<TDocument>,
+    update: UpdateQuery<TDocument>,
+    expectedVersion: number,
+  ): Promise<TDocument> {
+    const document = await this.model
+      .findOneAndUpdate(
+        {
+          ...filterQuery,
+          __v: expectedVersion,
+        },
+        {
+          ...update,
+          updatedAt: Date.now(),
+          $inc: { __v: 1 },
+        },
+        {
+          new: true,
+        },
+      )
+      .lean<TDocument>(true);
+
+    if (!document) {
+      this.logger.warn(
+        `Document was not found or version mismatch with filterQuery: ${JSON.stringify(filterQuery)}, version: ${expectedVersion}`,
+      );
+      throw new NotFoundException('Document was not found or version mismatch');
     }
 
     return document;

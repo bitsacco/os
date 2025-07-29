@@ -1223,14 +1223,40 @@ export class ChamaWalletService {
       // 3. Decode the invoice to get the amount
       const invoiceDetails = await this.fedimintService.decode(pr);
 
-      // 4. Pay the invoice directly
-      const { operationId, fee } = await this.fedimintService.pay(pr);
+      // 4. First, try to update the status to PROCESSING with version check
+      let processingUpdate;
+      try {
+        processingUpdate = await this.wallet.findOneAndUpdateWithVersion(
+          { _id: withdrawal._id },
+          { status: ChamaTxStatus.PROCESSING },
+          withdrawal.__v,
+        );
+      } catch (error) {
+        // Version mismatch means another process is already handling this
+        throw new Error('Withdrawal is already being processed');
+      }
+
+      // 5. Pay the invoice directly
+      let operationId: string;
+      let fee: number;
+      try {
+        const payResult = await this.fedimintService.pay(pr);
+        operationId = payResult.operationId;
+        fee = payResult.fee;
+      } catch (payError) {
+        // If payment fails, revert to APPROVED status
+        await this.wallet.findOneAndUpdate(
+          { _id: withdrawal._id },
+          { status: ChamaTxStatus.APPROVED },
+        );
+        throw payError;
+      }
 
       // TODO: Issue #78 - https://github.com/bitsacco/os/issues/78
       // Total amount charged = actual withdrawn amount plus fee paid
       const amountMsats = Number(invoiceDetails.amountMsats) + fee;
 
-      // 5. Update the withdrawal record
+      // 6. Update the withdrawal record to COMPLETE
       const updatedWithdrawal = await this.wallet.findOneAndUpdate(
         { _id: withdrawal._id },
         {

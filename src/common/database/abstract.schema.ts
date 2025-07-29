@@ -12,4 +12,7 @@ export class AbstractDocument {
 
   @Prop({ type: Date, default: Date.now })
   updatedAt: Date;
+
+  @Prop({ type: Number, default: 0 })
+  __v: number;
 }
