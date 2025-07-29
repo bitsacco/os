@@ -327,6 +327,138 @@ export class FedimintService {
       throw new Error(`Exceeds length limit (URL: ${url.length} chars)`);
     }
   }
+
+  /**
+   * Check the status of a transaction using its payment tracker
+   * @param paymentTracker The operation ID or payment tracker
+   * @returns The transaction status: 'completed', 'failed', 'pending', 'processing', or 'unknown'
+   */
+  async checkTransactionStatus(paymentTracker: string): Promise<string> {
+    try {
+      if (!paymentTracker) {
+        return 'unknown';
+      }
+
+      // Ensure service is initialized
+      if (!this.baseUrl || !this.federationId) {
+        this.logger.warn('FedimintService not properly initialized');
+        return 'unknown';
+      }
+
+      // Try to list operations and find the one with matching ID
+      try {
+        const listResponse = await firstValueFrom(
+          this.httpService.post(`${this.baseUrl}/list-operations`, {
+            federationId: this.federationId,
+            limit: 100, // Adjust based on needs
+          }),
+        );
+
+        if (listResponse?.data?.operations) {
+          const operation = listResponse.data.operations.find(
+            (op: any) => op.operationId === paymentTracker,
+          );
+
+          if (operation) {
+            return this.mapOperationStatus(operation.status || operation.state);
+          }
+        }
+      } catch (listError) {
+        this.logger.debug(
+          `List operations failed, trying direct status check: ${listError}`,
+        );
+      }
+
+      // Fallback: Try direct operation status check
+      try {
+        const statusResponse = await firstValueFrom(
+          this.httpService.post(`${this.baseUrl}/operation-status`, {
+            federationId: this.federationId,
+            operationId: paymentTracker,
+          }),
+        );
+
+        if (statusResponse?.data?.status || statusResponse?.data?.state) {
+          return this.mapOperationStatus(
+            statusResponse.data.status || statusResponse.data.state,
+          );
+        }
+      } catch (statusError) {
+        this.logger.debug(`Direct status check failed: ${statusError}`);
+      }
+
+      // Final fallback: Check if it's a lightning payment
+      try {
+        const lnStatusResponse = await firstValueFrom(
+          this.httpService.post(`${this.baseUrl}/ln-status`, {
+            federationId: this.federationId,
+            operationId: paymentTracker,
+          }),
+        );
+
+        if (lnStatusResponse?.data?.status) {
+          return this.mapOperationStatus(lnStatusResponse.data.status);
+        }
+      } catch (lnError) {
+        this.logger.debug(`Lightning status check failed: ${lnError}`);
+      }
+
+      return 'unknown';
+    } catch (error) {
+      this.logger.error(
+        `Failed to check transaction status for ${paymentTracker}:`,
+        error,
+      );
+      return 'unknown';
+    }
+  }
+
+  /**
+   * Map Fedimint operation status to our simplified status
+   */
+  private mapOperationStatus(status: string | undefined): string {
+    if (!status) return 'unknown';
+
+    const normalizedStatus = status.toLowerCase();
+
+    // Map various possible statuses
+    if (
+      normalizedStatus.includes('complete') ||
+      normalizedStatus.includes('success') ||
+      normalizedStatus === 'done' ||
+      normalizedStatus === 'finished'
+    ) {
+      return 'completed';
+    }
+
+    if (
+      normalizedStatus.includes('fail') ||
+      normalizedStatus.includes('error') ||
+      normalizedStatus === 'cancelled' ||
+      normalizedStatus === 'rejected'
+    ) {
+      return 'failed';
+    }
+
+    if (
+      normalizedStatus === 'pending' ||
+      normalizedStatus === 'waiting' ||
+      normalizedStatus === 'queued'
+    ) {
+      return 'pending';
+    }
+
+    if (
+      normalizedStatus.includes('process') ||
+      normalizedStatus === 'in_progress' ||
+      normalizedStatus === 'active' ||
+      normalizedStatus === 'running'
+    ) {
+      return 'processing';
+    }
+
+    return 'unknown';
+  }
 }
 
 export interface FlatDecodedInvoice {

@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { JwtConfigModule } from './jwt-config.module';
 import { LoggerModule } from './logger/logger.module';
 import { DatabaseModule } from './database/database.module';
+import { TimeoutConfigService } from './services';
 
 /**
  * SharedModule provides common modules that are used across the application.
@@ -19,6 +20,12 @@ import { DatabaseModule } from './database/database.module';
     LoggerModule,
     DatabaseModule,
   ],
-  exports: [JwtConfigModule, LoggerModule, DatabaseModule],
+  providers: [TimeoutConfigService],
+  exports: [
+    JwtConfigModule,
+    LoggerModule,
+    DatabaseModule,
+    TimeoutConfigService,
+  ],
 })
 export class SharedModule {}

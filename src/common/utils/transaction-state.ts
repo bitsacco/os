@@ -11,14 +11,17 @@ export const SOLO_WALLET_STATE_TRANSITIONS: Record<
     TransactionStatus.PROCESSING,
     TransactionStatus.COMPLETE,
     TransactionStatus.FAILED,
+    TransactionStatus.MANUAL_REVIEW,
   ],
   [TransactionStatus.PROCESSING]: [
     TransactionStatus.COMPLETE,
     TransactionStatus.FAILED,
     TransactionStatus.PENDING, // Allow reverting to pending on payment failure
+    TransactionStatus.MANUAL_REVIEW,
   ],
   [TransactionStatus.COMPLETE]: [], // Final state - no transitions allowed
   [TransactionStatus.FAILED]: [], // Final state - no transitions allowed
+  [TransactionStatus.MANUAL_REVIEW]: [], // Final state - requires manual intervention
   [TransactionStatus.UNRECOGNIZED]: [],
 };
 
@@ -33,20 +36,24 @@ export const CHAMA_WALLET_STATE_TRANSITIONS: Record<
     ChamaTxStatus.APPROVED,
     ChamaTxStatus.REJECTED,
     ChamaTxStatus.FAILED,
+    ChamaTxStatus.MANUAL_REVIEW,
   ],
   [ChamaTxStatus.APPROVED]: [
     ChamaTxStatus.PROCESSING,
     ChamaTxStatus.COMPLETE,
     ChamaTxStatus.FAILED,
+    ChamaTxStatus.MANUAL_REVIEW,
   ],
   [ChamaTxStatus.PROCESSING]: [
     ChamaTxStatus.COMPLETE,
     ChamaTxStatus.FAILED,
     ChamaTxStatus.APPROVED, // Allow reverting to approved on payment failure
+    ChamaTxStatus.MANUAL_REVIEW,
   ],
   [ChamaTxStatus.COMPLETE]: [], // Final state - no transitions allowed
   [ChamaTxStatus.REJECTED]: [], // Final state - no transitions allowed
   [ChamaTxStatus.FAILED]: [], // Final state - no transitions allowed
+  [ChamaTxStatus.MANUAL_REVIEW]: [], // Final state - requires manual intervention
   [ChamaTxStatus.UNRECOGNIZED]: [],
 };
 

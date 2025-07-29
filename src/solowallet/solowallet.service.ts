@@ -31,6 +31,8 @@ import {
   fiatToBtc,
   validateStateTransition,
   SOLO_WALLET_STATE_TRANSITIONS,
+  TimeoutConfigService,
+  TimeoutTransactionType,
 } from '../common';
 import { SolowalletMetricsService } from './solowallet.metrics';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -49,6 +51,7 @@ export class SolowalletService {
     private readonly solowalletMetricsService: SolowalletMetricsService,
     private readonly swapService: SwapService,
     private readonly configService: ConfigService,
+    private readonly timeoutConfigService: TimeoutConfigService,
   ) {
     this.logger.log('SolowalletService created');
 
@@ -118,6 +121,35 @@ export class SolowalletService {
       size,
       pages,
     };
+  }
+
+  private async updateTransactionStatus(
+    transactionId: string,
+    newStatus: TransactionStatus,
+    currentVersion: number,
+    additionalUpdates: any = {},
+  ): Promise<any> {
+    const now = new Date();
+    let timeoutAt = undefined;
+
+    // Set timeout based on new status
+    if (
+      newStatus === TransactionStatus.PENDING ||
+      newStatus === TransactionStatus.PROCESSING
+    ) {
+      timeoutAt = this.timeoutConfigService.calculateTimeoutDate(newStatus);
+    }
+
+    return this.wallet.findOneAndUpdateWithVersion(
+      { _id: transactionId },
+      {
+        status: newStatus,
+        stateChangedAt: now,
+        timeoutAt,
+        ...additionalUpdates,
+      },
+      currentVersion,
+    );
   }
 
   private async aggregateTransactionsByStatus(
@@ -260,6 +292,12 @@ export class SolowalletService {
       }
 
       this.logger.log(`Status: ${status}, paymentTracker: ${paymentTracker}`);
+      const now = new Date();
+      const timeoutAt = this.timeoutConfigService.calculateTimeoutDate(
+        TransactionStatus.PENDING,
+        TimeoutTransactionType.DEPOSIT,
+      );
+
       const deposit = await this.wallet.create({
         userId,
         amountMsats,
@@ -269,6 +307,10 @@ export class SolowalletService {
         type: TransactionType.DEPOSIT,
         status,
         reference,
+        stateChangedAt: now,
+        timeoutAt: status === TransactionStatus.PENDING ? timeoutAt : undefined,
+        retryCount: 0,
+        maxRetries: 3,
         __v: 0,
       });
 
@@ -535,6 +577,8 @@ export class SolowalletService {
         const totalWithdrawnMsats = invoiceMsats + fee;
 
         // Create withdrawal record
+        const now = new Date();
+
         withdrawal = await this.wallet.create({
           userId,
           amountMsats: totalWithdrawnMsats,
@@ -548,6 +592,10 @@ export class SolowalletService {
             inv.description ||
             `withdraw ${amountFiat} KES via Lightning`,
           idempotencyKey,
+          stateChangedAt: now,
+          timeoutAt: undefined, // Complete transactions don't need timeout
+          retryCount: 0,
+          maxRetries: 3,
           __v: 0,
         });
 
@@ -612,6 +660,12 @@ export class SolowalletService {
         };
 
         // Create a pending withdrawal record
+        const now = new Date();
+        const timeoutAt = this.timeoutConfigService.calculateTimeoutDate(
+          TransactionStatus.PENDING,
+          TimeoutTransactionType.LNURL_WITHDRAWAL,
+        );
+
         withdrawal = await this.wallet.create({
           userId,
           amountMsats: maxWithdrawableMsats, // This will be updated when actually claimed
@@ -622,6 +676,10 @@ export class SolowalletService {
           status: TransactionStatus.PENDING, // Pending until someone scans and claims
           reference: reference || `withdraw ${amountFiat} KES via LNURL`,
           idempotencyKey,
+          stateChangedAt: now,
+          timeoutAt,
+          retryCount: 0,
+          maxRetries: 3,
           __v: 0,
         });
 
@@ -682,6 +740,12 @@ export class SolowalletService {
         const totalOfframpMsats = offrampMsats + fee;
 
         // Create withdrawal record
+        const now = new Date();
+        const timeoutAt = this.timeoutConfigService.calculateTimeoutDate(
+          TransactionStatus.PENDING,
+          TimeoutTransactionType.OFFRAMP,
+        );
+
         withdrawal = await this.wallet.create({
           userId,
           amountMsats: totalOfframpMsats,
@@ -692,6 +756,11 @@ export class SolowalletService {
           status,
           reference: reference || `withdraw ${amountFiat} KES to mpesa`,
           idempotencyKey,
+          stateChangedAt: now,
+          timeoutAt:
+            status === TransactionStatus.PENDING ? timeoutAt : undefined,
+          retryCount: 0,
+          maxRetries: 3,
           __v: 0,
         });
 
@@ -1191,11 +1260,10 @@ export class SolowalletService {
       );
 
       // 5. First, try to update the status to PROCESSING with version check
-      let processingUpdate;
       try {
-        processingUpdate = await this.wallet.findOneAndUpdateWithVersion(
-          { _id: withdrawal._id },
-          { status: TransactionStatus.PROCESSING },
+        await this.updateTransactionStatus(
+          withdrawal._id,
+          TransactionStatus.PROCESSING,
           withdrawal.__v,
         );
       } catch (error) {

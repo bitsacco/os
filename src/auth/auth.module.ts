@@ -2,7 +2,6 @@ import * as Joi from 'joi';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { ScheduleModule } from '@nestjs/schedule';
 import {
   DatabaseModule,
   LoggerModule,
@@ -45,7 +44,6 @@ import { SharedModule } from '../common/shared.module';
       { name: TokenDocument.name, schema: TokenSchema },
       { name: ApiKeyDocument.name, schema: ApiKeySchema },
     ]),
-    ScheduleModule.forRoot(),
   ],
   controllers: [AuthController, ApiKeyController],
   providers: [

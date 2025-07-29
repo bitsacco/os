@@ -46,6 +46,18 @@ export class SolowalletDocument extends AbstractDocument {
 
   @Prop({ type: String, required: false })
   idempotencyKey?: string;
+
+  @Prop({ type: Date, required: false })
+  stateChangedAt?: Date;
+
+  @Prop({ type: Date, required: false })
+  timeoutAt?: Date;
+
+  @Prop({ type: Number, required: false, default: 0 })
+  retryCount?: number;
+
+  @Prop({ type: Number, required: false, default: 3 })
+  maxRetries?: number;
 }
 
 export const SolowalletSchema =

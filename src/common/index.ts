@@ -11,3 +11,4 @@ export * from './auth';
 export * from './monitoring';
 export * from './exceptions';
 export * from './shared.module';
+export * from './services';

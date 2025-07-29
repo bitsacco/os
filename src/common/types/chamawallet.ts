@@ -14,6 +14,7 @@ export enum ChamaTxStatus {
   COMPLETE = 3,
   APPROVED = 4,
   REJECTED = 5,
+  MANUAL_REVIEW = 6,
   UNRECOGNIZED = -1,
 }
 

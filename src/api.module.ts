@@ -28,6 +28,7 @@ import {
   SharedModule,
   TelemetryModule,
 } from './common';
+import { TimeoutModule } from './common/timeout/timeout.module';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
 import { IpRateLimitMiddleware } from './middleware/ip-rate-limit.middleware';
@@ -121,6 +122,61 @@ import { MetricsModule } from './metrics/metrics.module';
         CHAMA_EXPERIENCE_URL: Joi.string().required(),
         CHAMA_LNURL_CALLBACK: Joi.string().required(),
         BITLY_TOKEN: Joi.string().required(),
+        // Transaction timeout configuration
+        TX_TIMEOUT_PENDING_MINUTES: Joi.number()
+          .min(1)
+          .max(60)
+          .default(15)
+          .description(
+            'Time before PENDING transactions are considered stuck (1-60 minutes)',
+          ),
+        TX_TIMEOUT_PROCESSING_MINUTES: Joi.number()
+          .min(5)
+          .max(120)
+          .default(30)
+          .description(
+            'Time before PROCESSING transactions are considered stuck (5-120 minutes)',
+          ),
+        TX_TIMEOUT_MAX_RETRIES: Joi.number()
+          .min(1)
+          .max(10)
+          .default(3)
+          .description('Maximum retry attempts for stuck transactions (1-10)'),
+        TX_TIMEOUT_CHECK_INTERVAL_SECONDS: Joi.number()
+          .min(30)
+          .max(300)
+          .default(60)
+          .description(
+            'How often to check for stuck transactions (30-300 seconds)',
+          ),
+        TX_TIMEOUT_DEPOSIT_MINUTES: Joi.number()
+          .min(1)
+          .max(60)
+          .default(15)
+          .description(
+            'Specific timeout for deposit transactions (1-60 minutes)',
+          ),
+        TX_TIMEOUT_WITHDRAWAL_MINUTES: Joi.number()
+          .min(5)
+          .max(120)
+          .default(30)
+          .description(
+            'Specific timeout for withdrawal transactions (5-120 minutes)',
+          ),
+        TX_TIMEOUT_LNURL_MINUTES: Joi.number()
+          .min(5)
+          .max(60)
+          .default(30)
+          .description(
+            'Specific timeout for LNURL withdrawal requests (5-60 minutes)',
+          ),
+        TX_TIMEOUT_OFFRAMP_MINUTES: Joi.number()
+          .min(1)
+          .max(60)
+          .default(15)
+          .description(
+            'Specific timeout for offramp transactions (1-60 minutes)',
+          ),
       }),
     }),
     EventEmitterModule.forRoot({
@@ -130,6 +186,7 @@ import { MetricsModule } from './metrics/metrics.module';
     }),
     SharedModule,
     TelemetryModule,
+    TimeoutModule,
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow<string>('JWT_SECRET'),

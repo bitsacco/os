@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SolowalletService } from './solowallet.service';
 import { SolowalletRepository } from './db';
-import { FedimintService, TransactionStatus, TransactionType } from '../common';
+import {
+  FedimintService,
+  TransactionStatus,
+  TransactionType,
+  TimeoutConfigService,
+} from '../common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { LnurlMetricsService } from '../common/monitoring/lnurl.metrics';
 import { SolowalletMetricsService } from './solowallet.metrics';
@@ -71,6 +76,21 @@ describe('SolowalletService - Balance Calculations', () => {
           useValue: {
             get: jest.fn(),
             getOrThrow: jest.fn(),
+          },
+        },
+        {
+          provide: TimeoutConfigService,
+          useValue: {
+            calculateTimeoutDate: jest.fn().mockReturnValue(new Date()),
+            getConfig: jest.fn().mockReturnValue({
+              pendingTimeoutMinutes: 15,
+              processingTimeoutMinutes: 30,
+              maxRetries: 3,
+              depositTimeoutMinutes: 15,
+              withdrawalTimeoutMinutes: 30,
+              lnurlTimeoutMinutes: 30,
+              offrampTimeoutMinutes: 15,
+            }),
           },
         },
       ],

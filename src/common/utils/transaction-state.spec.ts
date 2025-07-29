@@ -31,6 +31,13 @@ describe('Transaction State Machine', () => {
           TransactionStatus.FAILED,
         ),
       ).toBe(true);
+
+      expect(
+        isValidSoloWalletTransition(
+          TransactionStatus.PENDING,
+          TransactionStatus.MANUAL_REVIEW,
+        ),
+      ).toBe(true);
     });
 
     it('should allow valid transitions from PROCESSING', () => {
@@ -55,6 +62,13 @@ describe('Transaction State Machine', () => {
           TransactionStatus.PENDING,
         ),
       ).toBe(true);
+
+      expect(
+        isValidSoloWalletTransition(
+          TransactionStatus.PROCESSING,
+          TransactionStatus.MANUAL_REVIEW,
+        ),
+      ).toBe(true);
     });
 
     it('should not allow transitions from final states', () => {
@@ -68,6 +82,13 @@ describe('Transaction State Machine', () => {
       expect(
         isValidSoloWalletTransition(
           TransactionStatus.FAILED,
+          TransactionStatus.COMPLETE,
+        ),
+      ).toBe(false);
+
+      expect(
+        isValidSoloWalletTransition(
+          TransactionStatus.MANUAL_REVIEW,
           TransactionStatus.COMPLETE,
         ),
       ).toBe(false);
@@ -173,7 +194,7 @@ describe('Transaction State Machine', () => {
           SOLO_WALLET_STATE_TRANSITIONS,
           'test',
         ),
-      ).toThrow('Allowed transitions: 1, 3, 2');
+      ).toThrow('Allowed transitions: 1, 3, 2, 4');
     });
   });
 
@@ -187,7 +208,8 @@ describe('Transaction State Machine', () => {
       expect(allowed).toContain(TransactionStatus.PROCESSING);
       expect(allowed).toContain(TransactionStatus.COMPLETE);
       expect(allowed).toContain(TransactionStatus.FAILED);
-      expect(allowed).toHaveLength(3);
+      expect(allowed).toContain(TransactionStatus.MANUAL_REVIEW);
+      expect(allowed).toHaveLength(4);
     });
 
     it('should return empty array for final states', () => {

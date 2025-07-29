@@ -6,6 +6,7 @@ import {
   type FedimintReceiveSuccessEvent,
   FedimintService,
   LnurlMetricsService,
+  TimeoutConfigService,
   TransactionStatus,
   UsersService,
   WalletTxContext,
@@ -138,6 +139,21 @@ describe('ChamaWalletService', () => {
                 default:
                   return undefined;
               }
+            }),
+          },
+        },
+        {
+          provide: TimeoutConfigService,
+          useValue: {
+            calculateTimeoutDate: jest.fn().mockReturnValue(new Date()),
+            getConfig: jest.fn().mockReturnValue({
+              pendingTimeoutMinutes: 15,
+              processingTimeoutMinutes: 30,
+              maxRetries: 3,
+              depositTimeoutMinutes: 15,
+              withdrawalTimeoutMinutes: 30,
+              lnurlTimeoutMinutes: 30,
+              offrampTimeoutMinutes: 15,
             }),
           },
         },

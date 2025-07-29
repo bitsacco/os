@@ -6,6 +6,7 @@ import {
   TransactionType,
   FedimintService,
   LnurlMetricsService,
+  TimeoutConfigService,
 } from '../common';
 import { SolowalletMetricsService } from './solowallet.metrics';
 import { Logger } from '@nestjs/common';
@@ -137,6 +138,21 @@ describe('SolowalletService', () => {
                 default:
                   return undefined;
               }
+            }),
+          },
+        },
+        {
+          provide: TimeoutConfigService,
+          useValue: {
+            calculateTimeoutDate: jest.fn().mockReturnValue(new Date()),
+            getConfig: jest.fn().mockReturnValue({
+              pendingTimeoutMinutes: 15,
+              processingTimeoutMinutes: 30,
+              maxRetries: 3,
+              depositTimeoutMinutes: 15,
+              withdrawalTimeoutMinutes: 30,
+              lnurlTimeoutMinutes: 30,
+              offrampTimeoutMinutes: 15,
             }),
           },
         },

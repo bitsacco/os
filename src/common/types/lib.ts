@@ -4,6 +4,7 @@ export enum TransactionStatus {
   PROCESSING = 1,
   FAILED = 2,
   COMPLETE = 3,
+  MANUAL_REVIEW = 4,
   UNRECOGNIZED = -1,
 }
 

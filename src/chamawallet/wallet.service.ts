@@ -42,6 +42,8 @@ import {
   fiatToBtc,
   validateStateTransition,
   CHAMA_WALLET_STATE_TRANSITIONS,
+  TimeoutConfigService,
+  TimeoutTransactionType,
 } from '../common';
 import {
   ChamaMemberContact,
@@ -71,6 +73,7 @@ export class ChamaWalletService {
     private readonly users: UsersService,
     private readonly messenger: ChamaMessageService,
     private readonly configService: ConfigService,
+    private readonly timeoutConfigService: TimeoutConfigService,
   ) {
     // Initialize FedimintService
     this.fedimintService.initialize(
@@ -151,6 +154,12 @@ export class ChamaWalletService {
     }
 
     this.logger.log(`Status: ${status}, paymentTracker: ${paymentTracker}`);
+    const now = new Date();
+    const timeoutAt = this.timeoutConfigService.calculateTimeoutDate(
+      TransactionStatus.PENDING,
+      TimeoutTransactionType.DEPOSIT,
+    );
+
     const deposit = await this.wallet.create({
       memberId,
       chamaId,
@@ -163,6 +172,10 @@ export class ChamaWalletService {
       reviews: [],
       reference,
       context: context ? JSON.stringify(context) : undefined,
+      stateChangedAt: now,
+      timeoutAt: status === ChamaTxStatus.PENDING ? timeoutAt : undefined,
+      retryCount: 0,
+      maxRetries: 3,
       __v: 0,
     });
 
@@ -395,6 +408,16 @@ export class ChamaWalletService {
         reviews: initialReviews, // Include self-approval if admin
         reference: reference || 'Offramp withdrawal (pending approval)',
         idempotencyKey,
+        stateChangedAt: new Date(),
+        timeoutAt:
+          initialStatus === ChamaTxStatus.PENDING
+            ? this.timeoutConfigService.calculateTimeoutDate(
+                TransactionStatus.PENDING,
+                TimeoutTransactionType.WITHDRAWAL,
+              )
+            : undefined,
+        retryCount: 0,
+        maxRetries: 3,
         __v: 0,
       }),
       this.logger,
