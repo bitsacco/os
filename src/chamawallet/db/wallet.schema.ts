@@ -64,7 +64,7 @@ export const ChamaWalletSchema =
 // Ensure uniqueness for idempotency keys per member, chama and transaction type
 ChamaWalletSchema.index(
   { memberId: 1, chamaId: 1, type: 1, idempotencyKey: 1 },
-  { unique: true, sparse: true }
+  { unique: true, sparse: true },
 );
 
 // Ensure uniqueness only when paymentTracker is not null

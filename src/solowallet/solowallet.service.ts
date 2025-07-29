@@ -120,18 +120,23 @@ export class SolowalletService {
     };
   }
 
-  private async aggregateUserTransactions(
+  private async aggregateTransactionsByStatus(
     userId: string,
     type: TransactionType,
+    status: TransactionStatus | TransactionStatus[],
   ): Promise<number> {
     let transactions: number = 0;
     try {
+      const statusFilter = Array.isArray(status)
+        ? { $in: status.map(s => s.toString()) }
+        : status.toString();
+
       transactions = await this.wallet
         .aggregate([
           {
             $match: {
               userId: userId,
-              status: TransactionStatus.COMPLETE.toString(),
+              status: statusFilter,
               type: type.toString(),
             },
           },
@@ -146,47 +151,24 @@ export class SolowalletService {
           return result[0]?.totalMsats || 0;
         });
     } catch (e) {
-      this.logger.error('Error aggregating transactions', e);
+      this.logger.error(`Error aggregating ${Array.isArray(status) ? status.join(', ') : status} transactions`, e);
     }
 
     return transactions;
   }
 
-  private async aggregatePendingTransactions(
+  private async aggregateUserTransactions(
     userId: string,
     type: TransactionType,
   ): Promise<number> {
-    let transactions: number = 0;
-    try {
-      transactions = await this.wallet
-        .aggregate([
-          {
-            $match: {
-              userId: userId,
-              status: {
-                $in: [
-                  TransactionStatus.PENDING.toString(),
-                  TransactionStatus.PROCESSING.toString(),
-                ],
-              },
-              type: type.toString(),
-            },
-          },
-          {
-            $group: {
-              _id: null,
-              totalMsats: { $sum: '$amountMsats' },
-            },
-          },
-        ])
-        .then((result) => {
-          return result[0]?.totalMsats || 0;
-        });
-    } catch (e) {
-      this.logger.error('Error aggregating pending transactions', e);
-    }
+    return this.aggregateTransactionsByStatus(userId, type, TransactionStatus.COMPLETE);
+  }
 
-    return transactions;
+  private async aggregateProcessingTransactions(
+    userId: string,
+    type: TransactionType,
+  ): Promise<number> {
+    return this.aggregateTransactionsByStatus(userId, type, TransactionStatus.PROCESSING);
   }
 
   private async getWalletMeta(userId: string): Promise<WalletMeta> {
@@ -198,7 +180,7 @@ export class SolowalletService {
       userId,
       TransactionType.WITHDRAW,
     );
-    const pendingWithdrawals = await this.aggregatePendingTransactions(
+    const processingWithdrawals = await this.aggregateProcessingTransactions(
       userId,
       TransactionType.WITHDRAW,
     );
@@ -206,7 +188,7 @@ export class SolowalletService {
     return {
       totalDeposits,
       totalWithdrawals,
-      currentBalance: totalDeposits - totalWithdrawals - pendingWithdrawals,
+      currentBalance: totalDeposits - totalWithdrawals - processingWithdrawals,
     };
   }
 
@@ -520,9 +502,11 @@ export class SolowalletService {
       this.logger.log(`Current balance: ${currentBalance} msats`);
 
       // Check if user has enough balance to pay the invoice
-      // Note: currentBalance already accounts for pending withdrawals
+      // Note: currentBalance already accounts for processing withdrawals
       if (invoiceMsats > currentBalance) {
-        throw new Error('Invoice amount exceeds available balance (including pending withdrawals)');
+        throw new Error(
+          'Invoice amount exceeds available balance (including processing withdrawals)',
+        );
       }
 
       try {
@@ -652,9 +636,11 @@ export class SolowalletService {
       });
 
       // Check if user has enough balance
-      // Note: currentBalance already accounts for pending withdrawals
+      // Note: currentBalance already accounts for processing withdrawals
       if (amountMsats > currentBalance) {
-        throw new Error('Insufficient funds for offramp withdrawal (including pending withdrawals)');
+        throw new Error(
+          'Insufficient funds for offramp withdrawal (including processing withdrawals)',
+        );
       }
 
       // Initiate offramp swap
@@ -765,9 +751,11 @@ export class SolowalletService {
       this.logger.log(`Current balance: ${currentBalance} msats`);
 
       // Check if user has enough balance to pay the invoice
-      // Note: currentBalance already accounts for pending withdrawals
+      // Note: currentBalance already accounts for processing withdrawals
       if (invoiceMsats > currentBalance) {
-        throw new Error('Invoice amount exceeds available balance (including pending withdrawals)');
+        throw new Error(
+          'Invoice amount exceeds available balance (including processing withdrawals)',
+        );
       }
 
       try {
@@ -907,9 +895,11 @@ export class SolowalletService {
       });
 
       // Check if user has enough balance
-      // Note: currentBalance already accounts for pending withdrawals
+      // Note: currentBalance already accounts for processing withdrawals
       if (amountMsats > currentBalance) {
-        throw new Error('Insufficient funds for offramp withdrawal (including pending withdrawals)');
+        throw new Error(
+          'Insufficient funds for offramp withdrawal (including processing withdrawals)',
+        );
       }
 
       // Initiate offramp swap

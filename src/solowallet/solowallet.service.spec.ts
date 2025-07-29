@@ -272,6 +272,7 @@ describe('SolowalletService', () => {
         reference: 'Test withdrawal',
         createdAt: new Date(),
         updatedAt: new Date(),
+        __v: 0,
       } as SolowalletDocument);
 
       // Mock the fedimintService.decode and pay methods
@@ -287,6 +288,20 @@ describe('SolowalletService', () => {
         fee: 1000,
       });
 
+      // Mock wallet.findOneAndUpdateWithVersion to return a processing document
+      jest
+        .spyOn(mockWallet, 'findOneAndUpdateWithVersion')
+        .mockResolvedValueOnce({
+          _id: 'lnurl-withdrawal-id',
+          userId: 'test-user',
+          amountMsats: 50000,
+          amountFiat: 100,
+          status: TransactionStatus.PROCESSING,
+          type: TransactionType.WITHDRAW,
+          reference: 'Test withdrawal',
+          __v: 1,
+        } as SolowalletDocument);
+
       // Mock wallet.findOneAndUpdate to return an updated document
       jest.spyOn(mockWallet, 'findOneAndUpdate').mockResolvedValueOnce({
         _id: 'lnurl-withdrawal-id',
@@ -297,6 +312,13 @@ describe('SolowalletService', () => {
         type: TransactionType.WITHDRAW,
         reference: 'Test withdrawal',
       } as SolowalletDocument);
+
+      // Mock the aggregate calls for getWalletMeta
+      jest
+        .spyOn(mockWallet, 'aggregate')
+        .mockResolvedValueOnce([{ totalMsats: 1000000 }]) // deposits
+        .mockResolvedValueOnce([{ totalMsats: 41000 }]) // withdrawals
+        .mockResolvedValueOnce([{ totalMsats: 0 }]); // pending
 
       // Call the method we're testing
       const result = await service.processLnUrlWithdrawCallback(

@@ -312,10 +312,8 @@ export class ChamaWalletService {
             pagination,
             priority: existing._id,
           });
-          const { groupMeta: gMeta, memberMeta: mMeta } = await this.getWalletMeta(
-            chamaId,
-            memberId,
-          );
+          const { groupMeta: gMeta, memberMeta: mMeta } =
+            await this.getWalletMeta(chamaId, memberId);
           return {
             txId: existing._id,
             ledger,
@@ -517,9 +515,11 @@ export class ChamaWalletService {
       this.logger.log(`Invoice amount: ${invoiceMsats} msats`);
 
       // Check if chama has enough total balance
-      // Note: groupBalance already accounts for pending withdrawals
+      // Note: groupBalance already accounts for processing withdrawals
       if (invoiceMsats > groupMeta.groupBalance) {
-        throw new Error('Invoice amount exceeds available chama balance (including pending withdrawals)');
+        throw new Error(
+          'Invoice amount exceeds available chama balance (including processing withdrawals)',
+        );
       }
 
       try {
@@ -623,9 +623,11 @@ export class ChamaWalletService {
       this.logger.log('Processing approved offramp withdrawal');
 
       // Double check if chama has enough total balance
-      // Note: groupBalance already accounts for pending withdrawals
+      // Note: groupBalance already accounts for processing withdrawals
       if (txd.amountMsats > groupMeta.groupBalance) {
-        throw new Error('Insufficient chama funds for offramp withdrawal (including pending withdrawals)');
+        throw new Error(
+          'Insufficient chama funds for offramp withdrawal (including processing withdrawals)',
+        );
       }
 
       try {
@@ -980,13 +982,13 @@ export class ChamaWalletService {
         TransactionType.WITHDRAW,
         chamaId,
       );
-      const pendingWithdrawals = await this.aggregatePendingTransactions(
+      const processingWithdrawals = await this.aggregateProcessingTransactions(
         TransactionType.WITHDRAW,
         chamaId,
       );
 
       const groupBalance =
-        groupDeposits - groupWithdrawals - pendingWithdrawals;
+        groupDeposits - groupWithdrawals - processingWithdrawals;
 
       return {
         groupDeposits,
@@ -1018,14 +1020,14 @@ export class ChamaWalletService {
         chamaId,
         memberId,
       );
-      const pendingWithdrawals = await this.aggregatePendingTransactions(
+      const processingWithdrawals = await this.aggregateProcessingTransactions(
         TransactionType.WITHDRAW,
         chamaId,
         memberId,
       );
 
       const memberBalance =
-        memberDeposits - memberWithdrawals - pendingWithdrawals;
+        memberDeposits - memberWithdrawals - processingWithdrawals;
 
       return {
         memberDeposits,
@@ -1042,58 +1044,9 @@ export class ChamaWalletService {
     }
   }
 
-  private async aggregateTransactions(
+  private async aggregateTransactionsByStatus(
     type: TransactionType,
-    chamaId?: string,
-    memberId?: string,
-  ): Promise<number> {
-    let transactions: number = 0;
-    const filter: ChamaTxFilter & {
-      status: string;
-      type: string;
-    } = {
-      status: ChamaTxStatus.COMPLETE.toString(),
-      type: type.toString(),
-    };
-
-    if (memberId) {
-      filter.memberId = memberId;
-    }
-
-    if (chamaId) {
-      filter.chamaId = chamaId;
-    }
-
-    this.logger.log(`AGGREGATION FILTER : ${JSON.stringify(filter)}`);
-
-    try {
-      transactions = await this.wallet
-        .aggregate([
-          {
-            $match: filter,
-          },
-          {
-            $group: {
-              _id: null,
-              totalMsats: { $sum: '$amountMsats' },
-            },
-          },
-        ])
-        .then((result) => {
-          this.logger.log(`AGGREGATION RESULT: ${JSON.stringify(result)}`);
-          return result[0]?.totalMsats || 0;
-        });
-    } catch (e) {
-      this.logger.error(
-        `Error aggregating transactions: type: ${type}, chamaId: ${chamaId}, memberId: ${memberId}, error: ${e}`,
-      );
-    }
-
-    return transactions;
-  }
-
-  private async aggregatePendingTransactions(
-    type: TransactionType,
+    status: ChamaTxStatus | ChamaTxStatus[],
     chamaId?: string,
     memberId?: string,
   ): Promise<number> {
@@ -1102,13 +1055,9 @@ export class ChamaWalletService {
       status: any;
       type: string;
     } = {
-      status: {
-        $in: [
-          ChamaTxStatus.PENDING.toString(),
-          ChamaTxStatus.PROCESSING.toString(),
-          ChamaTxStatus.APPROVED.toString(),
-        ],
-      },
+      status: Array.isArray(status)
+        ? { $in: status.map(s => s.toString()) }
+        : status.toString(),
       type: type.toString(),
     };
 
@@ -1120,7 +1069,8 @@ export class ChamaWalletService {
       filter.chamaId = chamaId;
     }
 
-    this.logger.log(`PENDING AGGREGATION FILTER : ${JSON.stringify(filter)}`);
+    const statusLabel = Array.isArray(status) ? status.join(', ') : status;
+    this.logger.log(`${statusLabel} AGGREGATION FILTER : ${JSON.stringify(filter)}`);
 
     try {
       transactions = await this.wallet
@@ -1136,18 +1086,32 @@ export class ChamaWalletService {
           },
         ])
         .then((result) => {
-          this.logger.log(
-            `PENDING AGGREGATION RESULT: ${JSON.stringify(result)}`,
-          );
+          this.logger.log(`${statusLabel} AGGREGATION RESULT: ${JSON.stringify(result)}`);
           return result[0]?.totalMsats || 0;
         });
     } catch (e) {
       this.logger.error(
-        `Error aggregating pending transactions: type: ${type}, chamaId: ${chamaId}, memberId: ${memberId}, error: ${e}`,
+        `Error aggregating ${statusLabel} transactions: type: ${type}, chamaId: ${chamaId}, memberId: ${memberId}, error: ${e}`,
       );
     }
 
     return transactions;
+  }
+
+  private async aggregateTransactions(
+    type: TransactionType,
+    chamaId?: string,
+    memberId?: string,
+  ): Promise<number> {
+    return this.aggregateTransactionsByStatus(type, ChamaTxStatus.COMPLETE, chamaId, memberId);
+  }
+
+  private async aggregateProcessingTransactions(
+    type: TransactionType,
+    chamaId?: string,
+    memberId?: string,
+  ): Promise<number> {
+    return this.aggregateTransactionsByStatus(type, ChamaTxStatus.PROCESSING, chamaId, memberId);
   }
 
   @OnEvent(fedimint_receive_success)

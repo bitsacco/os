@@ -3,7 +3,10 @@ import { TransactionStatus, ChamaTxStatus } from '../types';
 /**
  * Valid state transitions for solo wallet transactions
  */
-export const SOLO_WALLET_STATE_TRANSITIONS: Record<TransactionStatus, TransactionStatus[]> = {
+export const SOLO_WALLET_STATE_TRANSITIONS: Record<
+  TransactionStatus,
+  TransactionStatus[]
+> = {
   [TransactionStatus.PENDING]: [
     TransactionStatus.PROCESSING,
     TransactionStatus.COMPLETE,
@@ -22,7 +25,10 @@ export const SOLO_WALLET_STATE_TRANSITIONS: Record<TransactionStatus, Transactio
 /**
  * Valid state transitions for chama wallet transactions
  */
-export const CHAMA_WALLET_STATE_TRANSITIONS: Record<ChamaTxStatus, ChamaTxStatus[]> = {
+export const CHAMA_WALLET_STATE_TRANSITIONS: Record<
+  ChamaTxStatus,
+  ChamaTxStatus[]
+> = {
   [ChamaTxStatus.PENDING]: [
     ChamaTxStatus.APPROVED,
     ChamaTxStatus.REJECTED,
@@ -63,7 +69,11 @@ export function isValidSoloWalletTransition(
   currentState: TransactionStatus,
   newState: TransactionStatus,
 ): boolean {
-  return isValidTransition(currentState, newState, SOLO_WALLET_STATE_TRANSITIONS);
+  return isValidTransition(
+    currentState,
+    newState,
+    SOLO_WALLET_STATE_TRANSITIONS,
+  );
 }
 
 /**
@@ -73,23 +83,28 @@ export function isValidChamaWalletTransition(
   currentState: ChamaTxStatus,
   newState: ChamaTxStatus,
 ): boolean {
-  return isValidTransition(currentState, newState, CHAMA_WALLET_STATE_TRANSITIONS);
+  return isValidTransition(
+    currentState,
+    newState,
+    CHAMA_WALLET_STATE_TRANSITIONS,
+  );
 }
 
 /**
  * Get allowed next states for a given state
  */
-export function getAllowedNextStates<T extends TransactionStatus | ChamaTxStatus>(
-  currentState: T,
-  transitions: Record<T, T[]>,
-): T[] {
+export function getAllowedNextStates<
+  T extends TransactionStatus | ChamaTxStatus,
+>(currentState: T, transitions: Record<T, T[]>): T[] {
   return transitions[currentState] || [];
 }
 
 /**
  * Throws an error if the state transition is invalid
  */
-export function validateStateTransition<T extends TransactionStatus | ChamaTxStatus>(
+export function validateStateTransition<
+  T extends TransactionStatus | ChamaTxStatus,
+>(
   currentState: T,
   newState: T,
   transitions: Record<T, T[]>,
@@ -99,7 +114,7 @@ export function validateStateTransition<T extends TransactionStatus | ChamaTxSta
     const allowed = getAllowedNextStates(currentState, transitions);
     throw new Error(
       `Invalid ${entityType} state transition from ${currentState} to ${newState}. ` +
-      `Allowed transitions: ${allowed.length > 0 ? allowed.join(', ') : 'none (final state)'}`,
+        `Allowed transitions: ${allowed.length > 0 ? allowed.join(', ') : 'none (final state)'}`,
     );
   }
 }

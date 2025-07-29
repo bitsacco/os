@@ -83,12 +83,12 @@ describe('SolowalletService - Balance Calculations', () => {
   describe('getWalletMeta', () => {
     const userId = 'test-user-id';
 
-    it('should calculate balance excluding pending withdrawals', async () => {
+    it('should calculate balance excluding processing withdrawals', async () => {
       // Mock completed transactions
       walletRepository.aggregate
         .mockResolvedValueOnce([{ totalMsats: 10000 }]) // Total deposits
-        .mockResolvedValueOnce([{ totalMsats: 3000 }])  // Total completed withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 2000 }]); // Pending withdrawals
+        .mockResolvedValueOnce([{ totalMsats: 3000 }]) // Total completed withdrawals
+        .mockResolvedValueOnce([{ totalMsats: 2000 }]); // Processing withdrawals
 
       const meta = await (service as any).getWalletMeta(userId);
 
@@ -100,7 +100,7 @@ describe('SolowalletService - Balance Calculations', () => {
 
       // Verify aggregation queries
       expect(walletRepository.aggregate).toHaveBeenCalledTimes(3);
-      
+
       // Check deposit aggregation
       expect(walletRepository.aggregate).toHaveBeenNthCalledWith(1, [
         {
@@ -135,17 +135,12 @@ describe('SolowalletService - Balance Calculations', () => {
         },
       ]);
 
-      // Check pending withdrawal aggregation
+      // Check processing withdrawal aggregation
       expect(walletRepository.aggregate).toHaveBeenNthCalledWith(3, [
         {
           $match: {
             userId,
-            status: {
-              $in: [
-                TransactionStatus.PENDING.toString(),
-                TransactionStatus.PROCESSING.toString(),
-              ],
-            },
+            status: TransactionStatus.PROCESSING.toString(),
             type: TransactionType.WITHDRAW.toString(),
           },
         },
@@ -158,11 +153,11 @@ describe('SolowalletService - Balance Calculations', () => {
       ]);
     });
 
-    it('should handle zero pending withdrawals', async () => {
+    it('should handle zero processing withdrawals', async () => {
       walletRepository.aggregate
         .mockResolvedValueOnce([{ totalMsats: 10000 }]) // Total deposits
-        .mockResolvedValueOnce([{ totalMsats: 3000 }])  // Total completed withdrawals
-        .mockResolvedValueOnce([]);                      // No pending withdrawals
+        .mockResolvedValueOnce([{ totalMsats: 3000 }]) // Total completed withdrawals
+        .mockResolvedValueOnce([]); // No processing withdrawals
 
       const meta = await (service as any).getWalletMeta(userId);
 
@@ -175,9 +170,9 @@ describe('SolowalletService - Balance Calculations', () => {
 
     it('should handle empty aggregation results', async () => {
       walletRepository.aggregate
-        .mockResolvedValueOnce([])  // No deposits
-        .mockResolvedValueOnce([])  // No withdrawals
-        .mockResolvedValueOnce([]);  // No pending
+        .mockResolvedValueOnce([]) // No deposits
+        .mockResolvedValueOnce([]) // No withdrawals
+        .mockResolvedValueOnce([]); // No pending
 
       const meta = await (service as any).getWalletMeta(userId);
 
@@ -188,11 +183,11 @@ describe('SolowalletService - Balance Calculations', () => {
       });
     });
 
-    it('should prevent withdrawal when pending withdrawals would exceed balance', async () => {
+    it('should prevent withdrawal when processing withdrawals would exceed balance', async () => {
       walletRepository.aggregate
         .mockResolvedValueOnce([{ totalMsats: 10000 }]) // Total deposits
-        .mockResolvedValueOnce([{ totalMsats: 3000 }])  // Total completed withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 6000 }]); // Large pending withdrawal
+        .mockResolvedValueOnce([{ totalMsats: 3000 }]) // Total completed withdrawals
+        .mockResolvedValueOnce([{ totalMsats: 6000 }]); // Large processing withdrawal
 
       const meta = await (service as any).getWalletMeta(userId);
 

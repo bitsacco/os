@@ -57,7 +57,7 @@ SolowalletSchema.index({ paymentTracker: 1 }, { unique: true, sparse: true });
 // Ensure uniqueness for idempotency keys per user and transaction type
 SolowalletSchema.index(
   { userId: 1, type: 1, idempotencyKey: 1 },
-  { unique: true, sparse: true }
+  { unique: true, sparse: true },
 );
 
 export function toSolowalletTx(
