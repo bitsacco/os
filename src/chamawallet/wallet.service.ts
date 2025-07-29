@@ -163,6 +163,7 @@ export class ChamaWalletService {
       reviews: [],
       reference,
       context: context ? JSON.stringify(context) : undefined,
+      __v: 0,
     });
 
     // listen for payment (only for direct lightning deposits, not onramp)
@@ -394,6 +395,7 @@ export class ChamaWalletService {
         reviews: initialReviews, // Include self-approval if admin
         reference: reference || 'Offramp withdrawal (pending approval)',
         idempotencyKey,
+        __v: 0,
       }),
       this.logger,
     );

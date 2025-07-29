@@ -118,6 +118,7 @@ export class UsersService implements IUsersService {
       },
       profile: undefined,
       roles: [0], // Explicitly set to Role.Member only
+      __v: 0,
     });
 
     const user = toUser(ud);

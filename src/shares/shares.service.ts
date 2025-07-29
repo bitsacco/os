@@ -58,6 +58,7 @@ export class SharesService {
       subscribedQuantity: 0,
       availableFrom: new Date(availableFrom),
       availableTo: availableTo ? new Date(availableTo) : undefined,
+      __v: 0,
     });
 
     return this.getSharesOffers();
@@ -166,6 +167,7 @@ export class SharesService {
         offerId,
         quantity,
         status: SharesTxStatus.PROPOSED,
+        __v: 0,
       });
 
       // Operation was successful
@@ -272,6 +274,7 @@ export class SharesService {
         quantity: transfer.quantity,
         status: SharesTxStatus.COMPLETE,
         transfer,
+        __v: 0,
       });
 
       // Operation was successful

@@ -47,6 +47,7 @@ export class ApiKeyService {
       scopes: options.scopes,
       expiresAt,
       revoked: false,
+      __v: 0,
     });
 
     this.logger.log(

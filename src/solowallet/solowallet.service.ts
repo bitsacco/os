@@ -258,6 +258,7 @@ export class SolowalletService {
         type: TransactionType.DEPOSIT,
         status,
         reference,
+        __v: 0,
       });
 
       // listen for payment (only for direct lightning deposits, not onramp)
@@ -536,6 +537,7 @@ export class SolowalletService {
             inv.description ||
             `withdraw ${amountFiat} KES via Lightning`,
           idempotencyKey,
+          __v: 0,
         });
 
         this.logger.log(`Withdrawal record created with ID: ${withdrawal._id}`);
@@ -609,6 +611,7 @@ export class SolowalletService {
           status: TransactionStatus.PENDING, // Pending until someone scans and claims
           reference: reference || `withdraw ${amountFiat} KES via LNURL`,
           idempotencyKey,
+          __v: 0,
         });
 
         this.logger.log(
@@ -678,6 +681,7 @@ export class SolowalletService {
           status,
           reference: reference || `withdraw ${amountFiat} KES to mpesa`,
           idempotencyKey,
+          __v: 0,
         });
 
         this.logger.log(

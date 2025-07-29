@@ -62,6 +62,7 @@ export class ChamasService {
         description,
         members: registered,
         createdBy,
+        __v: 0,
       });
       const chama = toChama(cd);
 

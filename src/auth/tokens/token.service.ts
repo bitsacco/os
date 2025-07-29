@@ -442,6 +442,7 @@ export class TokenService {
       previousTokenId: prevTokenId,
       expires,
       revoked: false,
+      __v: 0,
     });
 
     // Sign and return the JWT with longer expiration time

@@ -178,6 +178,7 @@ export class SwapService {
       amountSats: amountSats.toFixed(2),
       retryCount: 0,
       rate,
+      __v: 0,
     });
 
     const mpesa = await this.intasendService.sendMpesaStkPush({
@@ -277,6 +278,7 @@ export class SwapService {
       paymentTracker: operationId,
       state: SwapTransactionState.PENDING,
       retryCount: 0,
+      __v: 0,
     });
 
     // listen for payment

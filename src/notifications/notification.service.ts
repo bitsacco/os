@@ -175,6 +175,7 @@ export class NotificationService {
       importance,
       read: false,
       deliveredTo: [],
+      __v: 0,
     });
 
     const notificationId = dt._id.toString();
