@@ -375,7 +375,7 @@ export class SwapService {
     switch (mpesa.state) {
       case MpesaTransactionState.Complete:
         // Atomically update from PENDING/RETRY to PROCESSING to prevent duplicate processing
-        const processingSwap = await this.onramp.findOneAndUpdate(
+        const processingSwap = await this.onramp.findOneAndUpdateAtomic(
           {
             _id: swap._id,
             state: {
@@ -384,7 +384,8 @@ export class SwapService {
           },
           { state: SwapTransactionState.PROCESSING },
           {
-            new: false, // Return the document before the update
+            returnDocument: 'before',
+            throwIfNotFound: false,
           },
         );
 
@@ -553,7 +554,7 @@ export class SwapService {
     }
 
     // Atomically update swap state from PENDING to PROCESSING to prevent duplicate processing
-    const swap = await this.offramp.findOneAndUpdate(
+    const swap = await this.offramp.findOneAndUpdateAtomic(
       {
         paymentTracker: operationId,
         state: SwapTransactionState.PENDING,
@@ -562,7 +563,8 @@ export class SwapService {
         state: SwapTransactionState.PROCESSING,
       },
       {
-        new: false, // Return the document before the update
+        returnDocument: 'before',
+        throwIfNotFound: false,
       },
     );
 

@@ -63,6 +63,41 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
     return document;
   }
 
+  async findOneAndUpdateAtomic(
+    filterQuery: FilterQuery<TDocument>,
+    update: UpdateQuery<TDocument>,
+    options?: {
+      returnDocument?: 'before' | 'after';
+      throwIfNotFound?: boolean;
+    },
+  ): Promise<TDocument | null> {
+    const returnDocument = options?.returnDocument || 'after';
+    const throwIfNotFound = options?.throwIfNotFound ?? false;
+
+    const document = await this.model
+      .findOneAndUpdate(
+        filterQuery,
+        {
+          ...update,
+          updatedAt: Date.now(),
+          $inc: { __v: 1 },
+        },
+        {
+          new: returnDocument === 'after',
+        },
+      )
+      .lean<TDocument>(true);
+
+    if (!document && throwIfNotFound) {
+      this.logger.warn(
+        `Document was not found with filterQuery:  ${JSON.stringify(filterQuery)}`,
+      );
+      throw new NotFoundException('Document was not found');
+    }
+
+    return document;
+  }
+
   async findOneAndUpdateWithVersion(
     filterQuery: FilterQuery<TDocument>,
     update: UpdateQuery<TDocument>,

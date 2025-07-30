@@ -53,6 +53,7 @@ describe('SwapService', () => {
       find: jest.fn(),
       findOne: jest.fn(),
       findOneAndUpdate: jest.fn(),
+      findOneAndUpdateAtomic: jest.fn(),
       findOneAndDelete: jest.fn(),
     } as unknown as MpesaOnrampSwapRepository;
 
@@ -61,6 +62,7 @@ describe('SwapService', () => {
       find: jest.fn(),
       findOne: jest.fn(),
       findOneAndUpdate: jest.fn(),
+      findOneAndUpdateAtomic: jest.fn(),
       findOneAndDelete: jest.fn(),
     } as unknown as MpesaOfframpSwapRepository;
 
@@ -385,9 +387,20 @@ describe('SwapService', () => {
         },
       );
 
+      // Mock findOneAndUpdate for regular updates
       (
         mockOnrampSwapRepository.findOneAndUpdate as jest.Mock
       ).mockImplementation((where, updateData) => {
+        return {
+          ...swap,
+          state: updateData.state,
+        };
+      });
+
+      // Mock findOneAndUpdateAtomic for atomic updates
+      (
+        mockOnrampSwapRepository.findOneAndUpdateAtomic as jest.Mock
+      ).mockImplementation((where, updateData, options) => {
         // Return the swap for the atomic update check
         if (where.state) {
           return {
@@ -396,10 +409,7 @@ describe('SwapService', () => {
             state: updateData.state,
           };
         }
-        return {
-          ...swap,
-          state: updateData.state,
-        };
+        return null;
       });
 
       await swapService.processSwapUpdate({
@@ -411,11 +421,10 @@ describe('SwapService', () => {
       ).toHaveBeenCalled();
       expect(mockOnrampSwapRepository.findOne).toHaveBeenCalled();
       expect(mockFedimintService.pay).toHaveBeenCalled();
+      expect(
+        mockOnrampSwapRepository.findOneAndUpdateAtomic,
+      ).toHaveBeenCalled();
       expect(mockOnrampSwapRepository.findOneAndUpdate).toHaveBeenCalled();
-      // Should be called multiple times due to atomic updates
-      expect(mockOnrampSwapRepository.findOneAndUpdate).toHaveBeenCalledTimes(
-        2,
-      );
     });
   });
 
