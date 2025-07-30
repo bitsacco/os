@@ -514,7 +514,24 @@ export class SwapService {
       return;
     }
 
-    const swap = await this.offramp.findOne({ paymentTracker: operationId });
+    // Atomically update swap state from PENDING to PROCESSING to prevent duplicate processing
+    const swap = await this.offramp.findOneAndUpdate(
+      {
+        paymentTracker: operationId,
+        state: SwapTransactionState.PENDING,
+      },
+      {
+        state: SwapTransactionState.PROCESSING,
+      },
+    );
+
+    // If no swap was updated, it means it's already been processed
+    if (!swap) {
+      this.logger.warn(
+        `Ignoring duplicate fedimint_receive_success event for operationId ${operationId} - swap not in PENDING state`,
+      );
+      return;
+    }
 
     const { amountFiat } = btcToFiat({
       amountSats: Number(swap.amountSats),
@@ -536,7 +553,6 @@ export class SwapService {
         { _id: swap._id },
         {
           paymentTracker: id,
-          state: SwapTransactionState.PROCESSING,
         },
       );
 
