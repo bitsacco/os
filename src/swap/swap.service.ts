@@ -374,14 +374,40 @@ export class SwapService {
     let updates: { state: SwapTransactionState };
     switch (mpesa.state) {
       case MpesaTransactionState.Complete:
-        // First update to PROCESSING state
-        updates = { state: SwapTransactionState.PROCESSING };
-        await this.onramp.findOneAndUpdate({ _id: swap._id }, updates);
+        // Atomically update from PENDING/RETRY to PROCESSING to prevent duplicate processing
+        const processingSwap = await this.onramp.findOneAndUpdate(
+          {
+            _id: swap._id,
+            state: {
+              $in: [SwapTransactionState.PENDING, SwapTransactionState.RETRY],
+            },
+          },
+          { state: SwapTransactionState.PROCESSING },
+          {
+            new: false, // Return the document before the update
+          },
+        );
+
+        if (!processingSwap) {
+          this.logger.warn(
+            `Swap ${swap._id} already being processed or completed. Current state: ${swap.state}`,
+          );
+          return;
+        }
 
         // Then trigger the actual BTC swap
-        const updatedSwap = await this.onramp.findOne({ _id: swap._id });
-        const { state } = await this.swapToBtc(updatedSwap);
+        const { state, operationId } = await this.swapToBtc(processingSwap._id);
         updates = { state };
+
+        // Update with the final state and operation ID if successful
+        if (operationId) {
+          await this.onramp.findOneAndUpdate(
+            { _id: swap._id },
+            { state, btcOperationId: operationId },
+          );
+        } else {
+          await this.onramp.findOneAndUpdate({ _id: swap._id }, { state });
+        }
         break;
       case MpesaTransactionState.Processing:
         updates = { state: SwapTransactionState.PROCESSING };
@@ -397,7 +423,10 @@ export class SwapService {
         break;
     }
 
-    await this.onramp.findOneAndUpdate({ _id: swap._id }, updates);
+    // Only update if we have updates to apply (not already handled in the Complete case)
+    if (mpesa.state !== MpesaTransactionState.Complete) {
+      await this.onramp.findOneAndUpdate({ _id: swap._id }, updates);
+    }
 
     // Emit swap status change event for onramp swaps
     const txStatus = mapSwapTxStateToTransactionStatus(updates.state);
@@ -419,10 +448,16 @@ export class SwapService {
   }
 
   private async swapToBtc(
-    swap: MpesaOnrampSwapDocument,
+    swapId: string,
   ): Promise<{ state: SwapTransactionState; operationId?: string }> {
-    this.logger.log('Swapping to BTC');
-    this.logger.log('Swap', swap);
+    this.logger.log(`Swapping to BTC for swap ${swapId}`);
+
+    // Fetch the swap with the current state
+    const swap = await this.onramp.findOne({ _id: swapId });
+
+    if (!swap) {
+      throw new Error(`Swap ${swapId} not found`);
+    }
 
     if (
       swap.state === SwapTransactionState.COMPLETE ||
@@ -522,6 +557,9 @@ export class SwapService {
       },
       {
         state: SwapTransactionState.PROCESSING,
+      },
+      {
+        new: false, // Return the document before the update
       },
     );
 

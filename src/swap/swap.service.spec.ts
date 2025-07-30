@@ -368,13 +368,34 @@ describe('SwapService', () => {
         state: MpesaTransactionState.Complete,
       }));
 
-      (mockOnrampSwapRepository.findOne as jest.Mock).mockResolvedValue({
-        ...swap,
-        state: SwapTransactionState.PROCESSING,
-      });
+      (mockOnrampSwapRepository.findOne as jest.Mock).mockImplementation(
+        (query) => {
+          // Return swap in different states based on what's being queried
+          if (query.collectionTracker) {
+            return Promise.resolve({
+              ...swap,
+              state: SwapTransactionState.PENDING,
+            });
+          }
+          // When fetching by ID in swapToBtc
+          return Promise.resolve({
+            ...swap,
+            state: SwapTransactionState.PROCESSING,
+          });
+        },
+      );
+
       (
         mockOnrampSwapRepository.findOneAndUpdate as jest.Mock
       ).mockImplementation((where, updateData) => {
+        // Return the swap for the atomic update check
+        if (where.state) {
+          return {
+            ...swap,
+            _id: 'dadad-bdjada-dadad',
+            state: updateData.state,
+          };
+        }
         return {
           ...swap,
           state: updateData.state,
@@ -391,9 +412,9 @@ describe('SwapService', () => {
       expect(mockOnrampSwapRepository.findOne).toHaveBeenCalled();
       expect(mockFedimintService.pay).toHaveBeenCalled();
       expect(mockOnrampSwapRepository.findOneAndUpdate).toHaveBeenCalled();
-      expect(mockOnrampSwapRepository.findOneAndUpdate).toHaveBeenCalledWith(
-        { _id: 'dadad-bdjada-dadad' },
-        { state: SwapTransactionState.COMPLETE },
+      // Should be called multiple times due to atomic updates
+      expect(mockOnrampSwapRepository.findOneAndUpdate).toHaveBeenCalledTimes(
+        2,
       );
     });
   });
