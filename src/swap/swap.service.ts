@@ -371,7 +371,7 @@ export class SwapService {
       throw new Error('Failed to create or update swap');
     }
 
-    let updates: { state: SwapTransactionState };
+    let updates: { state: SwapTransactionState } | undefined;
     switch (mpesa.state) {
       case MpesaTransactionState.Complete:
         // Atomically update from PENDING/RETRY to PROCESSING to prevent duplicate processing
@@ -395,8 +395,8 @@ export class SwapService {
           return;
         }
 
-        // Then trigger the actual BTC swap
-        const { state, operationId } = await this.swapToBtc(processingSwap._id);
+        // Then trigger the actual BTC swap using the original swap._id
+        const { state, operationId } = await this.swapToBtc(swap._id);
         updates = { state };
 
         // Update with the final state and operation ID if successful
@@ -424,24 +424,27 @@ export class SwapService {
     }
 
     // Only update if we have updates to apply (not already handled in the Complete case)
-    if (mpesa.state !== MpesaTransactionState.Complete) {
+    if (mpesa.state !== MpesaTransactionState.Complete && updates) {
       await this.onramp.findOneAndUpdate({ _id: swap._id }, updates);
     }
 
-    // Emit swap status change event for onramp swaps
-    const txStatus = mapSwapTxStateToTransactionStatus(updates.state);
-    const statusEvent: SwapStatusChangeEvent = {
-      context: SwapContext.ONRAMP,
-      payload: {
-        swapTracker: swap._id,
-        swapStatus: txStatus,
-      },
-    };
+    // Only emit event if we have a state to report
+    if (updates) {
+      // Emit swap status change event for onramp swaps
+      const txStatus = mapSwapTxStateToTransactionStatus(updates.state);
+      const statusEvent: SwapStatusChangeEvent = {
+        context: SwapContext.ONRAMP,
+        payload: {
+          swapTracker: swap._id,
+          swapStatus: txStatus,
+        },
+      };
 
-    this.logger.log(
-      `Emitting swap_status_change event for onramp: ${JSON.stringify(statusEvent)}`,
-    );
-    this.eventEmitter.emit(swap_status_change, statusEvent);
+      this.logger.log(
+        `Emitting swap_status_change event for onramp: ${JSON.stringify(statusEvent)}`,
+      );
+      this.eventEmitter.emit(swap_status_change, statusEvent);
+    }
 
     this.logger.log('Swap Updated');
     return;
