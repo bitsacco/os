@@ -30,7 +30,6 @@ import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-  MpesaOnrampSwapDocument,
   MpesaOnrampSwapRepository,
   MpesaOfframpSwapRepository,
   SwapTransactionState,
@@ -374,7 +373,39 @@ export class SwapService {
     let updates: { state: SwapTransactionState } | undefined;
     switch (mpesa.state) {
       case MpesaTransactionState.Complete:
-        // Atomically update from PENDING/RETRY to PROCESSING to prevent duplicate processing
+        // Check current state first
+        if (swap.state === SwapTransactionState.COMPLETE) {
+          this.logger.warn(`Swap ${swap._id} already completed`);
+          return;
+        }
+
+        if (swap.state === SwapTransactionState.FAILED) {
+          this.logger.warn(`Swap ${swap._id} already failed`);
+          return;
+        }
+
+        // If already in PROCESSING state, complete the lightning payment
+        if (swap.state === SwapTransactionState.PROCESSING) {
+          this.logger.log(
+            `Swap ${swap._id} already in PROCESSING state, completing lightning payment`,
+          );
+          const { state, operationId } = await this.swapToBtc(swap._id);
+
+          // Update with the final state and operation ID if successful
+          if (operationId) {
+            await this.onramp.findOneAndUpdate(
+              { _id: swap._id },
+              { state, btcOperationId: operationId },
+            );
+          } else {
+            await this.onramp.findOneAndUpdate({ _id: swap._id }, { state });
+          }
+
+          updates = { state };
+          break;
+        }
+
+        // For PENDING/RETRY states, atomically update to PROCESSING first
         const processingSwap = await this.onramp.findOneAndUpdateAtomic(
           {
             _id: swap._id,
@@ -390,13 +421,13 @@ export class SwapService {
         );
 
         if (!processingSwap) {
-          this.logger.warn(
-            `Swap ${swap._id} already being processed or completed. Current state: ${swap.state}`,
+          this.logger.error(
+            `Failed to update swap ${swap._id} to PROCESSING. Current state: ${swap.state}`,
           );
           return;
         }
 
-        // Then trigger the actual BTC swap using the original swap._id
+        // Then trigger the actual BTC swap
         const { state, operationId } = await this.swapToBtc(swap._id);
         updates = { state };
 
