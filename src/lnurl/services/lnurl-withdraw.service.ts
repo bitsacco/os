@@ -3,18 +3,9 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { ConfigService } from '@nestjs/config';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import {
-  LnurlTransaction,
-  LnurlTransactionDocument,
-} from '../schemas/lnurl-transaction.schema';
-import { LnurlCommonService } from './lnurl-common.service';
-import { FedimintService } from '../../common/fedimint/fedimint.service';
-import { FxService } from '../../swap/fx/fx.service';
 import {
   LnurlType,
   LnurlSubType,
@@ -22,22 +13,22 @@ import {
   WithdrawLink,
   LnurlWithdrawResponse,
   LnurlWithdrawCallbackResponse,
-} from '../types';
-import { TransactionStatus, Currency } from '../../common/types';
-import { mapToSupportedCurrency } from '../../common/utils';
+  TransactionStatus,
+  FedimintService,
+  LnurlTransactionDocument as LnurlTransactionInterface,
+} from '../../common';
+import { LnurlCommonService } from './lnurl-common.service';
+import { LnurlTransactionService } from './lnurl-transaction.service';
 
 @Injectable()
 export class LnurlWithdrawService {
   private readonly logger = new Logger(LnurlWithdrawService.name);
 
   constructor(
-    @InjectModel(LnurlTransaction.name)
-    private readonly lnurlTransactionModel: Model<LnurlTransactionDocument>,
     private readonly lnurlCommonService: LnurlCommonService,
+    private readonly lnurlTransactionService: LnurlTransactionService,
     private readonly fedimintService: FedimintService,
-    private readonly configService: ConfigService,
     private readonly eventEmitter: EventEmitter2,
-    private readonly fxService: FxService,
   ) {}
 
   /**
@@ -77,45 +68,28 @@ export class LnurlWithdrawService {
     };
 
     // Create transaction record
-    const exchangeRate = await this.getExchangeRate();
-    const transaction = new this.lnurlTransactionModel({
+    const transaction = await this.lnurlTransactionService.createTransaction({
       type: LnurlType.WITHDRAW,
       subType: options.singleUse
         ? LnurlSubType.LINK_WITHDRAW
         : LnurlSubType.QR_WITHDRAW,
-      status: TransactionStatus.PENDING,
       userId,
       amountMsats: options.amountMsats,
-      amountFiat: this.lnurlCommonService.msatsToFiat(
-        options.amountMsats,
-        exchangeRate,
-      ),
-      currency: Currency.KES,
       lnurlData: {
         withdraw: withdrawData,
       },
-      lightning: {},
       reference: options.description || 'LNURL Withdrawal',
     });
-
-    await transaction.save();
 
     // Generate LNURL
     const withdrawUrl = `${callback}?k1=${k1}`;
     const lnurl = this.lnurlCommonService.encodeLnurl(withdrawUrl);
-
-    // Generate QR code
-    const qrCode = await this.lnurlCommonService.generateQrCode(lnurl, {
-      size: 512,
-      margin: 4,
-    });
 
     this.logger.log(`Withdrawal link created with k1: ${k1}`);
 
     return {
       withdrawId: transaction._id.toString(),
       lnurl,
-      qrCode,
       k1,
       expiresAt,
       minWithdrawable,
@@ -219,18 +193,35 @@ export class LnurlWithdrawService {
 
       // Update transaction with success
       const updatedTransaction =
-        await this.lnurlTransactionModel.findByIdAndUpdate(
-          transaction._id,
+        await this.lnurlTransactionService.updateTransactionStatus(
+          transaction._id.toString(),
+          TransactionStatus.COMPLETE,
           {
-            status: TransactionStatus.COMPLETE,
             completedAt: new Date(),
-            'lightning.invoice': pr,
-            'lightning.operationId': operationId,
-            'lnurlData.withdraw.claimedAt': new Date(),
-            'lnurlData.withdraw.claimingWallet': 'External wallet', // Could extract from invoice
+            lightning: {
+              invoice: pr,
+              operationId: operationId,
+            },
           },
-          { new: true },
         );
+
+      // Update withdrawal specific data
+      if (!updatedTransaction) {
+        this.logger.error(
+          `Failed to update transaction status for withdrawal ${transaction._id}`,
+        );
+        throw new InternalServerErrorException(
+          'Failed to update transaction status. Transaction may be in inconsistent state.',
+        );
+      }
+
+      await this.lnurlTransactionService.updateOne(
+        { _id: updatedTransaction._id },
+        {
+          'lnurlData.withdraw.claimedAt': new Date(),
+          'lnurlData.withdraw.claimingWallet': 'External wallet',
+        },
+      );
 
       // Emit success event
       this.eventEmitter.emit('lnurl.withdraw.completed', {
@@ -278,8 +269,8 @@ export class LnurlWithdrawService {
    */
   private async findPendingWithdrawal(
     k1: string,
-  ): Promise<LnurlTransactionDocument | null> {
-    return this.lnurlTransactionModel.findOne({
+  ): Promise<LnurlTransactionInterface | null> {
+    return this.lnurlTransactionService.findOne({
       type: LnurlType.WITHDRAW,
       status: {
         $in: [TransactionStatus.PENDING, TransactionStatus.PROCESSING],
@@ -295,39 +286,17 @@ export class LnurlWithdrawService {
     transactionId: string,
     status: TransactionStatus,
   ): Promise<void> {
-    await this.lnurlTransactionModel.updateOne(
-      { _id: transactionId },
-      {
-        status,
-        updatedAt: new Date(),
-      },
+    await this.lnurlTransactionService.updateTransactionStatus(
+      transactionId,
+      status,
     );
-  }
-
-  /**
-   * Get exchange rate from FxService
-   */
-  private async getExchangeRate(): Promise<number> {
-    try {
-      // Get BTC to KES exchange rate
-      const rate = await this.fxService.getExchangeRate(
-        mapToSupportedCurrency(Currency.BTC),
-        mapToSupportedCurrency(Currency.KES),
-      );
-      return rate;
-    } catch (error) {
-      this.logger.error(`Failed to get exchange rate: ${error.message}`);
-      throw new Error(
-        'Unable to fetch current exchange rate. Please try again later.',
-      );
-    }
   }
 
   /**
    * Cancel a withdrawal link
    */
   async cancelWithdrawal(withdrawId: string, userId: string): Promise<void> {
-    const transaction = await this.lnurlTransactionModel.findOne({
+    const transaction = await this.lnurlTransactionService.findOne({
       _id: withdrawId,
       userId,
       type: LnurlType.WITHDRAW,
@@ -351,22 +320,15 @@ export class LnurlWithdrawService {
     limit: number = 20,
     offset: number = 0,
   ): Promise<{
-    withdrawals: LnurlTransactionDocument[];
+    withdrawals: LnurlTransactionInterface[];
     total: number;
   }> {
-    const query = {
-      userId,
-      type: LnurlType.WITHDRAW,
-    };
-
-    const [withdrawals, total] = await Promise.all([
-      this.lnurlTransactionModel
-        .find(query)
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .skip(offset),
-      this.lnurlTransactionModel.countDocuments(query),
-    ]);
+    const { transactions: withdrawals, total } =
+      await this.lnurlTransactionService.findByUser(userId, {
+        type: LnurlType.WITHDRAW,
+        limit,
+        offset,
+      });
 
     return { withdrawals, total };
   }
@@ -377,8 +339,8 @@ export class LnurlWithdrawService {
   async getWithdrawalStatus(
     withdrawId: string,
     userId: string,
-  ): Promise<LnurlTransactionDocument> {
-    const transaction = await this.lnurlTransactionModel.findOne({
+  ): Promise<LnurlTransactionInterface> {
+    const transaction = await this.lnurlTransactionService.findOne({
       _id: withdrawId,
       userId,
       type: LnurlType.WITHDRAW,

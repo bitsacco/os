@@ -4,14 +4,15 @@ import {
   BadRequestException,
   NotFoundException,
   HttpException,
-  OnModuleInit,
-  OnModuleDestroy,
+  Inject,
 } from '@nestjs/common';
+import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+import { isLightningAddress, isLnurl, isBech32 } from '../../common';
 import { LnurlCommonService } from './lnurl-common.service';
-import { isLightningAddress, isLnurl, isBech32 } from '../types';
 
 export interface ResolvedLnurl {
   type: 'pay' | 'withdraw' | 'channel' | 'auth';
@@ -33,43 +34,19 @@ export interface LnurlPayMetadata {
   successAction?: any;
 }
 
-export interface ExternalMetadataCache {
-  url: string;
-  metadata: any;
-  cachedAt: Date;
-  ttl: number;
-  lastAccessed: Date;
-}
-
 @Injectable()
-export class LnurlResolverService implements OnModuleInit, OnModuleDestroy {
+export class LnurlResolverService {
   private readonly logger = new Logger(LnurlResolverService.name);
-  private readonly metadataCache = new Map<string, ExternalMetadataCache>();
   private readonly defaultTimeout = 10000; // 10 seconds
   private readonly maxRedirects = 3;
-  private readonly maxCacheSize = 1000; // Maximum number of cache entries
-  private readonly cleanupIntervalMs = 60000; // Clean up every minute
-  private cleanupInterval: NodeJS.Timeout;
+  private readonly CACHE_TTL = 300000; // 5 minutes in milliseconds
 
   constructor(
     private readonly lnurlCommonService: LnurlCommonService,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
-
-  onModuleInit() {
-    // Start periodic cleanup
-    this.cleanupInterval = setInterval(() => {
-      this.performCacheCleanup();
-    }, this.cleanupIntervalMs);
-  }
-
-  onModuleDestroy() {
-    // Clear interval on module destroy
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-    }
-  }
 
   /**
    * Resolve any LNURL input (Lightning Address, LNURL string, or URL)
@@ -108,13 +85,7 @@ export class LnurlResolverService implements OnModuleInit, OnModuleDestroy {
 
     const [username, domain] = address.split('@');
 
-    // Check if domain is valid
-    const isValidDomain = await this.lnurlCommonService.validateDomain(domain);
-    if (!isValidDomain) {
-      throw new BadRequestException(
-        `Domain ${domain} is not accessible or blacklisted`,
-      );
-    }
+    // TODO: Validate domains
 
     // Construct the well-known URL
     const url = `https://${domain}/.well-known/lnurlp/${username}`;
@@ -157,12 +128,11 @@ export class LnurlResolverService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(`Fetching external metadata from: ${url}`);
 
     // Check cache first
-    const cached = this.metadataCache.get(url);
-    if (cached && this.isCacheValid(cached)) {
+    const cacheKey = `lnurl-metadata:${url}`;
+    const cached = await this.cacheManager.get<any>(cacheKey);
+    if (cached) {
       this.logger.log(`Returning cached metadata for: ${url}`);
-      // Update last accessed time for LRU
-      cached.lastAccessed = new Date();
-      return cached.metadata;
+      return cached;
     }
 
     try {
@@ -181,20 +151,8 @@ export class LnurlResolverService implements OnModuleInit, OnModuleDestroy {
       const metadata = response.data;
 
       // Cache the response
-      const cacheTtl = options?.cacheTtl || 300; // 5 minutes default
-
-      // Check if cache is full and evict LRU entry if needed
-      if (this.metadataCache.size >= this.maxCacheSize) {
-        this.evictLRUEntry();
-      }
-
-      this.metadataCache.set(url, {
-        url,
-        metadata,
-        cachedAt: new Date(),
-        ttl: cacheTtl,
-        lastAccessed: new Date(),
-      });
+      const cacheTtl = options?.cacheTtl || this.CACHE_TTL;
+      await this.cacheManager.set(cacheKey, metadata, cacheTtl);
 
       return metadata;
     } catch (error) {
@@ -289,74 +247,5 @@ export class LnurlResolverService implements OnModuleInit, OnModuleDestroy {
       typeof response.metadata === 'string' &&
       response.tag === 'payRequest'
     );
-  }
-
-  /**
-   * Check if cache entry is still valid
-   */
-  private isCacheValid(entry: ExternalMetadataCache): boolean {
-    const now = new Date();
-    const age = (now.getTime() - entry.cachedAt.getTime()) / 1000;
-    return age < entry.ttl;
-  }
-
-  /**
-   * Evict the least recently used cache entry
-   */
-  private evictLRUEntry(): void {
-    let lruKey: string | null = null;
-    let lruTime = new Date();
-
-    // Find the least recently used entry
-    this.metadataCache.forEach((entry, key) => {
-      if (entry.lastAccessed < lruTime) {
-        lruTime = entry.lastAccessed;
-        lruKey = key;
-      }
-    });
-
-    if (lruKey) {
-      this.metadataCache.delete(lruKey);
-      this.logger.debug(`Evicted LRU cache entry: ${lruKey}`);
-    }
-  }
-
-  /**
-   * Perform periodic cache cleanup
-   */
-  private performCacheCleanup(): void {
-    let expiredCount = 0;
-    const keysToDelete: string[] = [];
-
-    this.metadataCache.forEach((entry, key) => {
-      if (!this.isCacheValid(entry)) {
-        keysToDelete.push(key);
-        expiredCount++;
-      }
-    });
-
-    keysToDelete.forEach((key) => this.metadataCache.delete(key));
-
-    if (expiredCount > 0) {
-      this.logger.log(`Cleaned up ${expiredCount} expired cache entries`);
-    }
-  }
-
-  /**
-   * Clear all cache entries
-   */
-  clearCache(): void {
-    this.metadataCache.clear();
-    this.logger.log('Metadata cache cleared');
-  }
-
-  /**
-   * Get cache statistics
-   */
-  getCacheStats(): { size: number; entries: string[] } {
-    return {
-      size: this.metadataCache.size,
-      entries: Array.from(this.metadataCache.keys()),
-    };
   }
 }

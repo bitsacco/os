@@ -1,13 +1,13 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { BadRequestException } from '@nestjs/common';
+import { of, throwError } from 'rxjs';
+import { Cache } from 'cache-manager';
 import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { BadRequestException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { encodeLnurl, decodeLnurl } from '../../common';
 import { LnurlResolverService } from './lnurl-resolver.service';
 import { LnurlCommonService } from './lnurl-common.service';
-import { encodeLnurl, decodeLnurl } from '../utils/lnurl-encoder';
-import { Cache } from 'cache-manager';
-import { of, throwError } from 'rxjs';
 
 describe('LnurlResolverService', () => {
   let service: LnurlResolverService;
@@ -98,9 +98,6 @@ describe('LnurlResolverService', () => {
         metadata,
         raw: metadata,
       });
-      expect(lnurlCommonService.validateDomain).toHaveBeenCalledWith(
-        'wallet.com',
-      );
     });
 
     it('should resolve an LNURL string', async () => {
@@ -183,9 +180,6 @@ describe('LnurlResolverService', () => {
       };
 
       const cacheKey = 'lnurl:cached@wallet.com';
-      jest
-        .spyOn(lnurlCommonService, 'createCacheKey')
-        .mockReturnValue(cacheKey);
       jest.spyOn(cacheManager, 'get').mockImplementation(async (key) => {
         if (key === cacheKey) {
           return cachedMetadata;

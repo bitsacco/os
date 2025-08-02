@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
-import { LnurlCommonService } from '../services/lnurl-common.service';
+import { LnurlCommonService } from './lnurl-common.service';
 
 describe('LnurlCommonService', () => {
   let service: LnurlCommonService;

@@ -9,7 +9,6 @@ import {
   UsersRepository,
   UsersSchema,
   UsersService,
-  LnurlMetricsService,
 } from '../common';
 import { ChamasService } from '../chamas/chamas.service';
 import { ChamaWalletService } from '../chamawallet/wallet.service';
@@ -47,7 +46,6 @@ import { SmsModule } from '../sms/sms.module';
     ChamaMessageService,
     UsersService,
     UsersRepository,
-    LnurlMetricsService,
   ],
   exports: [ChamasService, ChamaWalletService],
 })

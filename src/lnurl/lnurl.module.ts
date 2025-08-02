@@ -14,22 +14,25 @@ import { LnurlWithdrawService } from './services/lnurl-withdraw.service';
 import { LnurlPaymentService } from './services/lnurl-payment.service';
 import { LnurlResolverService } from './services/lnurl-resolver.service';
 import { LnurlCommonService } from './services/lnurl-common.service';
-import { AddressResolverService } from './services/address-resolver.service';
+import { LnurlTransactionService } from './services/lnurl-transaction.service';
 import { LnurlMetricsService } from './lnurl.metrics';
 
 // Schemas
 import {
   LnurlTransaction,
   LnurlTransactionSchema,
-} from './schemas/lnurl-transaction.schema';
+} from './db/lnurl-transaction.schema';
 import {
-  LightningAddress,
+  LightningAddressDocument,
   LightningAddressSchema,
-} from './schemas/lightning-address.schema';
+} from './db/lightning-address.schema';
 import {
   ExternalLnurlTarget,
   ExternalLnurlTargetSchema,
-} from './schemas/external-target.schema';
+} from './db/external-target.schema';
+
+// Repositories
+import { LightningAddressRepository } from './db/lightning-address.repository';
 
 // External dependencies
 import { FedimintService } from '../common/fedimint/fedimint.service';
@@ -40,6 +43,7 @@ import { ChamasService } from '../chamas/chamas.service';
 import { ChamaWalletService } from '../chamawallet/wallet.service';
 import { NotificationModule } from '../notifications/notification.module';
 import { SwapModule } from '../swap/swap.module';
+import { FxService } from '../swap/fx/fx.service';
 
 @Module({
   imports: [
@@ -47,7 +51,7 @@ import { SwapModule } from '../swap/swap.module';
     HttpModule,
     MongooseModule.forFeature([
       { name: LnurlTransaction.name, schema: LnurlTransactionSchema },
-      { name: LightningAddress.name, schema: LightningAddressSchema },
+      { name: LightningAddressDocument.name, schema: LightningAddressSchema },
       { name: ExternalLnurlTarget.name, schema: ExternalLnurlTargetSchema },
     ]),
     SolowalletModule,
@@ -62,16 +66,18 @@ import { SwapModule } from '../swap/swap.module';
   ],
   providers: [
     LightningAddressService,
+    LightningAddressRepository,
     LnurlWithdrawService,
     LnurlPaymentService,
     LnurlResolverService,
     LnurlCommonService,
-    AddressResolverService,
+    LnurlTransactionService,
     LnurlMetricsService,
     FedimintService,
     SolowalletService,
     ChamasService,
     ChamaWalletService,
+    FxService,
   ],
   exports: [
     LightningAddressService,

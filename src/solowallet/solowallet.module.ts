@@ -4,7 +4,6 @@ import { HttpModule } from '@nestjs/axios';
 import {
   DatabaseModule,
   FedimintService,
-  LnurlMetricsService,
   RoleValidationService,
 } from '../common';
 import { SolowalletMetricsService } from './solowallet.metrics';
@@ -32,7 +31,6 @@ import { JwtConfigModule } from '../common/jwt-config.module';
     SolowalletService,
     SolowalletRepository,
     FedimintService,
-    LnurlMetricsService,
     SolowalletMetricsService,
     RoleValidationService,
   ],

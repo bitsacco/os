@@ -5,7 +5,6 @@ import {
   FedimintContext,
   type FedimintReceiveSuccessEvent,
   FedimintService,
-  LnurlMetricsService,
   TimeoutConfigService,
   TransactionStatus,
   UsersService,
@@ -99,10 +98,6 @@ describe('ChamaWalletService', () => {
         {
           provide: ChamaMessageService,
           useValue: mockMessengerService,
-        },
-        {
-          provide: LnurlMetricsService,
-          useValue: mockMetricsService,
         },
         {
           provide: ChamaMetricsService,

@@ -7,12 +7,7 @@ import {
   isLightningAddress,
   parseLightningAddress,
   generateK1,
-  generateQrCode,
-  validateUrl,
-  isDomainWhitelisted,
-  isDomainBlacklisted,
-} from '../utils';
-import { QrCodeOptions } from '../types';
+} from '../../common';
 
 @Injectable()
 export class LnurlCommonService {
@@ -55,45 +50,6 @@ export class LnurlCommonService {
       this.logger.error(`Failed to encode LNURL: ${error.message}`);
       throw error;
     }
-  }
-
-  /**
-   * Generate QR code
-   */
-  async generateQrCode(data: string, options?: QrCodeOptions): Promise<string> {
-    try {
-      return await generateQrCode(data, options);
-    } catch (error) {
-      this.logger.error(`Failed to generate QR code: ${error.message}`);
-      throw error;
-    }
-  }
-
-  /**
-   * Validate a domain
-   */
-  async validateDomain(domain: string): Promise<boolean> {
-    // Check blacklist
-    if (isDomainBlacklisted(domain)) {
-      this.logger.warn(`Domain ${domain} is blacklisted`);
-      return false;
-    }
-
-    // Whitelisted domains are automatically valid
-    if (isDomainWhitelisted(domain)) {
-      return true;
-    }
-
-    // For other domains, validate SSL
-    const url = `https://${domain}`;
-    const result = await validateUrl(url);
-
-    if (!result.valid) {
-      this.logger.warn(`Domain ${domain} validation failed: ${result.error}`);
-      return false;
-    }
-
-    return true;
   }
 
   /**

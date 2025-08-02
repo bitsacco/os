@@ -1,10 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SharedModule } from '../common/shared.module';
-import {
-  DatabaseModule,
-  LnurlMetricsService,
-  RoleValidationService,
-} from '../common';
+import { DatabaseModule, RoleValidationService } from '../common';
 import { SharesController } from './shares.controller';
 import { SharesService } from './shares.service';
 import {
@@ -30,7 +26,6 @@ import { AuthModule } from '../auth/auth.module';
   ],
   controllers: [SharesController],
   providers: [
-    LnurlMetricsService,
     SharesService,
     SharesOfferRepository,
     SharesRepository,

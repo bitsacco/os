@@ -9,7 +9,6 @@ import {
   TimeoutConfigService,
 } from '../common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { LnurlMetricsService } from '../common/monitoring/lnurl.metrics';
 import { SolowalletMetricsService } from './solowallet.metrics';
 import { SwapService } from '../swap/swap.service';
 import { ConfigService } from '@nestjs/config';
@@ -57,10 +56,6 @@ describe('SolowalletService - Idempotency', () => {
             on: jest.fn(),
             emit: jest.fn(),
           },
-        },
-        {
-          provide: LnurlMetricsService,
-          useValue: {},
         },
         {
           provide: SolowalletMetricsService,

@@ -6,25 +6,16 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import {
-  LightningAddress,
-  LightningAddressDocument,
-} from '../schemas/lightning-address.schema';
-import {
-  LnurlTransaction,
-  LnurlTransactionDocument,
-} from '../schemas/lnurl-transaction.schema';
-import { AddressResolverService } from './address-resolver.service';
-import { LnurlCommonService } from './lnurl-common.service';
+import { LightningAddressDocument, LightningAddressRepository } from '../db';
 import { LnurlMetricsService } from '../lnurl.metrics';
-import { FedimintService } from '../../common/fedimint/fedimint.service';
 import { SolowalletService } from '../../solowallet/solowallet.service';
 import { ChamaWalletService } from '../../chamawallet/wallet.service';
-import { FxService } from '../../swap/fx/fx.service';
+import { ChamasService } from '../../chamas/chamas.service';
+import { LnurlCommonService } from './lnurl-common.service';
+import { LnurlTransactionService } from './lnurl-transaction.service';
 import {
+  FedimintService,
   AddressType,
   LightningAddressMetadata,
   LightningAddressSettings,
@@ -34,27 +25,26 @@ import {
   LnurlType,
   LnurlSubType,
   ResolvedAddress,
-} from '../types';
-import { TransactionStatus, Currency } from '../../common/types';
-import { mapToSupportedCurrency } from '../../common/utils';
+  ParsedAddress,
+  TransactionStatus,
+  LnurlTransactionDocument,
+  isLightningAddress,
+} from '../../common';
 
 @Injectable()
 export class LightningAddressService {
   private readonly logger = new Logger(LightningAddressService.name);
 
   constructor(
-    @InjectModel(LightningAddress.name)
-    private readonly lightningAddressModel: Model<LightningAddressDocument>,
-    @InjectModel(LnurlTransaction.name)
-    private readonly lnurlTransactionModel: Model<LnurlTransactionDocument>,
-    private readonly addressResolverService: AddressResolverService,
+    private readonly lightningAddressRepository: LightningAddressRepository,
     private readonly lnurlCommonService: LnurlCommonService,
     private readonly lnurlMetricsService: LnurlMetricsService,
+    private readonly lnurlTransactionService: LnurlTransactionService,
     private readonly fedimintService: FedimintService,
     private readonly solowalletService: SolowalletService,
     private readonly chamaWalletService: ChamaWalletService,
+    private readonly chamasService: ChamasService,
     private readonly eventEmitter: EventEmitter2,
-    private readonly fxService: FxService,
   ) {}
 
   /**
@@ -94,8 +84,7 @@ export class LightningAddressService {
     }
 
     // Check availability
-    const isAvailable =
-      await this.addressResolverService.isAddressAvailable(normalizedAddress);
+    const isAvailable = await this.isAddressAvailable(normalizedAddress);
     if (!isAvailable) {
       throw new ConflictException(
         `Address ${normalizedAddress} is not available`,
@@ -104,10 +93,7 @@ export class LightningAddressService {
 
     // Check if owner already has an address of this type
     if (type === AddressType.PERSONAL) {
-      const existing = await this.addressResolverService.findByOwner(
-        ownerId,
-        AddressType.PERSONAL,
-      );
+      const existing = await this.findByOwner(ownerId, AddressType.PERSONAL);
       if (existing) {
         throw new ConflictException(
           'You already have a personal Lightning Address',
@@ -137,7 +123,7 @@ export class LightningAddressService {
       ...settings,
     };
 
-    const lightningAddress = new this.lightningAddressModel({
+    const lightningAddress = await this.lightningAddressRepository.create({
       address: normalizedAddress,
       domain,
       type,
@@ -148,9 +134,8 @@ export class LightningAddressService {
         totalReceived: 0,
         paymentCount: 0,
       },
+      __v: 0,
     });
-
-    await lightningAddress.save();
 
     // Record metric
     this.lnurlMetricsService.recordLightningAddressCreated(
@@ -171,11 +156,9 @@ export class LightningAddressService {
     addressId: string,
     userId: string,
   ): Promise<LightningAddressDocument> {
-    const address = await this.lightningAddressModel.findById(addressId);
-
-    if (!address) {
-      throw new NotFoundException('Lightning Address not found');
-    }
+    const address = await this.lightningAddressRepository.findOne({
+      _id: addressId,
+    });
 
     // Check ownership
     if (address.ownerId !== userId) {
@@ -199,18 +182,27 @@ export class LightningAddressService {
       settings?: Partial<LightningAddressSettings>;
     },
   ): Promise<LightningAddressDocument> {
-    const address = await this.getAddress(addressId, userId);
+    // First verify ownership
+    await this.getAddress(addressId, userId);
+
+    const updateQuery: any = {};
 
     if (updates.metadata) {
-      Object.assign(address.metadata, updates.metadata);
+      Object.keys(updates.metadata).forEach((key) => {
+        updateQuery[`metadata.${key}`] = updates.metadata![key];
+      });
     }
 
     if (updates.settings) {
-      Object.assign(address.settings, updates.settings);
+      Object.keys(updates.settings).forEach((key) => {
+        updateQuery[`settings.${key}`] = updates.settings![key];
+      });
     }
 
-    address.updatedAt = new Date();
-    await address.save();
+    const address = await this.lightningAddressRepository.findOneAndUpdate(
+      { _id: addressId },
+      { $set: updateQuery },
+    );
 
     this.logger.log(
       `Lightning Address updated: ${address.address}@${address.domain}`,
@@ -223,12 +215,14 @@ export class LightningAddressService {
    * Delete Lightning Address
    */
   async deleteAddress(addressId: string, userId: string): Promise<void> {
-    const address = await this.getAddress(addressId, userId);
+    // First verify ownership
+    await this.getAddress(addressId, userId);
 
     // Soft delete by disabling
-    address.settings.enabled = false;
-    address.updatedAt = new Date();
-    await address.save();
+    const address = await this.lightningAddressRepository.findOneAndUpdate(
+      { _id: addressId },
+      { $set: { 'settings.enabled': false } },
+    );
 
     this.logger.log(
       `Lightning Address disabled: ${address.address}@${address.domain}`,
@@ -239,7 +233,7 @@ export class LightningAddressService {
    * List user's Lightning Addresses
    */
   async listUserAddresses(userId: string): Promise<LightningAddressDocument[]> {
-    return this.addressResolverService.findAllByOwner(userId);
+    return this.lightningAddressRepository.find({ ownerId: userId });
   }
 
   /**
@@ -247,8 +241,7 @@ export class LightningAddressService {
    */
   async generatePayResponse(address: string): Promise<LnurlPayResponse> {
     const fullAddress = `${address}@${this.lnurlCommonService.isInternalDomain('bitsacco.com') ? 'bitsacco.com' : 'bitsacco.com'}`;
-    const resolved =
-      await this.addressResolverService.resolveAddress(fullAddress);
+    const resolved = await this.resolveAddress(fullAddress);
 
     if (resolved.type !== 'internal' || !resolved.metadata) {
       throw new NotFoundException('Lightning Address not found');
@@ -284,13 +277,10 @@ export class LightningAddressService {
       `Processing payment callback for ${address}, amount: ${amountMsats}`,
     );
 
-    const startTime = Date.now();
-
     try {
       // Resolve the address
       const fullAddress = `${address}@${this.lnurlCommonService.isInternalDomain('bitsacco.com') ? 'bitsacco.com' : 'bitsacco.com'}`;
-      const resolved =
-        await this.addressResolverService.resolveAddress(fullAddress);
+      const resolved = await this.resolveAddress(fullAddress);
 
       if (resolved.type !== 'internal' || !resolved.metadata) {
         throw new NotFoundException('Lightning Address not found');
@@ -318,22 +308,15 @@ export class LightningAddressService {
       );
 
       // Create transaction record
-      const exchangeRate = await this.getExchangeRate();
-      const transaction = new this.lnurlTransactionModel({
+      const transaction = await this.lnurlTransactionService.createTransaction({
         type: LnurlType.PAY_IN,
         subType: LnurlSubType.LIGHTNING_ADDRESS,
-        status: TransactionStatus.PENDING,
         userId: resolved.ownerId!,
         chamaId:
           resolved.addressType === AddressType.CHAMA
             ? resolved.ownerId
             : undefined,
         amountMsats,
-        amountFiat: this.lnurlCommonService.msatsToFiat(
-          amountMsats,
-          exchangeRate,
-        ),
-        currency: Currency.KES,
         lnurlData: {
           lightningAddress: {
             address: fullAddress,
@@ -341,14 +324,20 @@ export class LightningAddressService {
             comment: options?.comment,
           },
         },
-        lightning: {
-          invoice: invoice.invoice,
-          operationId: invoice.operationId,
-        },
         reference: `Lightning Address payment to ${fullAddress}`,
       });
 
-      await transaction.save();
+      // Update with lightning details
+      await this.lnurlTransactionService.updateTransactionStatus(
+        transaction._id.toString(),
+        TransactionStatus.PENDING,
+        {
+          lightning: {
+            invoice: invoice.invoice,
+            operationId: invoice.operationId,
+          },
+        },
+      );
 
       // Start monitoring for payment
       this.monitorPayment(
@@ -396,114 +385,158 @@ export class LightningAddressService {
   /**
    * Monitor payment and update wallet on success
    */
-  private async monitorPayment(
+  private monitorPayment(
     transactionId: string,
     operationId: string,
     resolved: ResolvedAddress,
-  ): Promise<void> {
+  ): void {
     this.logger.log(`Monitoring payment for transaction ${transactionId}`);
 
-    // Set a timeout to handle cases where no event is received
-    const timeoutId = setTimeout(async () => {
-      this.logger.warn(
-        `Payment timeout for operation ${operationId}, marking as failed`,
-      );
+    // Set up payment timeout
+    const timeoutId = setTimeout(
+      () => this.handlePaymentTimeout(transactionId, operationId),
+      300000, // 5 minutes
+    );
 
-      // Update transaction as failed due to timeout
-      await this.lnurlTransactionModel.findByIdAndUpdate(transactionId, {
-        status: TransactionStatus.FAILED,
-        completedAt: new Date(),
-        failureReason: 'Payment timeout - no response received',
-      });
-    }, 300000); // 5 minutes timeout
-
-    // Listen for Fedimint payment success - using once() for automatic cleanup
+    // Listen for payment success
     this.eventEmitter.once(
       `fedimint.receive.success.${operationId}`,
       async () => {
-        // Clear the timeout since we received a response
         clearTimeout(timeoutId);
-
-        try {
-          // Update transaction status
-          const transaction =
-            await this.lnurlTransactionModel.findByIdAndUpdate(
-              transactionId,
-              {
-                status: TransactionStatus.COMPLETE,
-                completedAt: new Date(),
-              },
-              { new: true },
-            );
-
-          if (!transaction) {
-            this.logger.error(`Transaction ${transactionId} not found`);
-            return;
-          }
-
-          // Process the deposit based on address type
-          if (resolved.addressType === AddressType.PERSONAL) {
-            // Deposit to personal wallet
-            await this.solowalletService.depositFunds({
-              userId: resolved.ownerId!,
-              amountFiat: transaction.amountFiat,
-              reference: `Lightning Address payment received via ${transaction.lnurlData.lightningAddress?.address}`,
-            });
-          } else if (
-            resolved.addressType === AddressType.CHAMA ||
-            resolved.addressType === AddressType.MEMBER_CHAMA
-          ) {
-            // Deposit to chama wallet
-            await this.chamaWalletService.deposit({
-              chamaId: resolved.ownerId!, // Chama ID
-              memberId: resolved.memberId || resolved.ownerId!, // Member ID for member-chama, or chama ID for direct chama deposits
-              amountFiat: transaction.amountFiat,
-              reference: `Lightning Address payment received via ${transaction.lnurlData.lightningAddress?.address}`,
-            });
-          }
-
-          // Send notification if enabled
-          if (resolved.settings?.notifyOnPayment) {
-            this.eventEmitter.emit('payment.received', {
-              userId: resolved.ownerId,
-              amount: transaction.amountMsats,
-              address: transaction.lnurlData.lightningAddress?.address,
-            });
-          }
-
-          this.logger.log(`Payment completed for transaction ${transactionId}`);
-        } catch (error) {
-          this.logger.error(
-            `Failed to process payment completion: ${error.message}`,
-          );
-        }
+        await this.handlePaymentSuccess(transactionId, resolved);
       },
     );
 
-    // Listen for payment failure - using once() for automatic cleanup
+    // Listen for payment failure
     this.eventEmitter.once(
       `fedimint.receive.failure.${operationId}`,
       async (data) => {
-        // Clear the timeout since we received a response
         clearTimeout(timeoutId);
-
-        try {
-          await this.lnurlTransactionModel.findByIdAndUpdate(transactionId, {
-            status: TransactionStatus.FAILED,
-            completedAt: new Date(),
-            failureReason: data.error || 'Payment failed',
-          });
-
-          this.logger.error(
-            `Payment failed for transaction ${transactionId}: ${data.error}`,
-          );
-        } catch (error) {
-          this.logger.error(
-            `Failed to update failed payment: ${error.message}`,
-          );
-        }
+        await this.handlePaymentFailure(transactionId, data.error);
       },
     );
+  }
+
+  /**
+   * Handle payment timeout
+   */
+  private async handlePaymentTimeout(
+    transactionId: string,
+    operationId: string,
+  ): Promise<void> {
+    this.logger.warn(
+      `Payment timeout for operation ${operationId}, marking as failed`,
+    );
+
+    await this.lnurlTransactionService.updateTransactionStatus(
+      transactionId,
+      TransactionStatus.FAILED,
+      {
+        completedAt: new Date(),
+        error: 'Payment timeout - no response received',
+      },
+    );
+  }
+
+  /**
+   * Handle successful payment
+   */
+  private async handlePaymentSuccess(
+    transactionId: string,
+    resolved: ResolvedAddress,
+  ): Promise<void> {
+    try {
+      // Update transaction status
+      const transaction =
+        await this.lnurlTransactionService.updateTransactionStatus(
+          transactionId,
+          TransactionStatus.COMPLETE,
+          { completedAt: new Date() },
+        );
+
+      if (!transaction) {
+        this.logger.error(`Transaction ${transactionId} not found`);
+        return;
+      }
+
+      // Process the deposit
+      await this.processDeposit(transaction, resolved);
+
+      // Send notification if enabled
+      if (resolved.settings?.notifyOnPayment) {
+        this.eventEmitter.emit('payment.received', {
+          userId: resolved.ownerId,
+          amount: transaction.amountMsats,
+          address: transaction.lnurlData.lightningAddress?.address,
+        });
+      }
+
+      this.logger.log(`Payment completed for transaction ${transactionId}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to process payment completion: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Handle failed payment
+   */
+  private async handlePaymentFailure(
+    transactionId: string,
+    error?: string,
+  ): Promise<void> {
+    try {
+      await this.lnurlTransactionService.updateTransactionStatus(
+        transactionId,
+        TransactionStatus.FAILED,
+        {
+          completedAt: new Date(),
+          error: error || 'Payment failed',
+        },
+      );
+
+      this.logger.error(
+        `Payment failed for transaction ${transactionId}: ${error}`,
+      );
+    } catch (updateError) {
+      this.logger.error(
+        `Failed to update failed payment: ${updateError.message}`,
+      );
+    }
+  }
+
+  /**
+   * Process deposit to appropriate wallet
+   */
+  private async processDeposit(
+    transaction: LnurlTransactionDocument,
+    resolved: ResolvedAddress,
+  ): Promise<void> {
+    const reference = `Lightning Address payment received via ${transaction.lnurlData.lightningAddress?.address}`;
+
+    switch (resolved.addressType) {
+      case AddressType.PERSONAL:
+        await this.solowalletService.depositFunds({
+          userId: resolved.ownerId!,
+          amountFiat: transaction.amountFiat,
+          reference,
+        });
+        break;
+
+      case AddressType.CHAMA:
+      case AddressType.MEMBER_CHAMA:
+        await this.chamaWalletService.deposit({
+          chamaId: resolved.ownerId!,
+          memberId: resolved.memberId || resolved.ownerId!,
+          amountFiat: transaction.amountFiat,
+          reference,
+        });
+        break;
+
+      default:
+        this.logger.warn(`Unknown address type: ${resolved.addressType}`);
+    }
   }
 
   /**
@@ -513,13 +546,18 @@ export class LightningAddressService {
     addressId: string,
     amountMsats: number,
   ): Promise<void> {
-    await this.lightningAddressModel.findByIdAndUpdate(addressId, {
-      $inc: {
-        'stats.totalReceived': amountMsats,
-        'stats.paymentCount': 1,
+    await this.lightningAddressRepository.findOneAndUpdate(
+      { _id: addressId },
+      {
+        $inc: {
+          'stats.totalReceived': amountMsats,
+          'stats.paymentCount': 1,
+        },
+        $set: {
+          'stats.lastPaymentAt': new Date(),
+        },
       },
-      'stats.lastPaymentAt': new Date(),
-    });
+    );
   }
 
   /**
@@ -537,39 +575,251 @@ export class LightningAddressService {
     // Verify ownership
     await this.getAddress(addressId, userId);
 
-    const query = {
-      type: LnurlType.PAY_IN,
-      'lnurlData.lightningAddress.addressId': addressId,
-    };
-
-    const [payments, total] = await Promise.all([
-      this.lnurlTransactionModel
-        .find(query)
-        .sort({ createdAt: -1 })
-        .limit(limit)
-        .skip(offset),
-      this.lnurlTransactionModel.countDocuments(query),
-    ]);
+    const { transactions: payments, total } =
+      await this.lnurlTransactionService.findByUser(userId, {
+        type: LnurlType.PAY_IN,
+        limit,
+        offset,
+      });
 
     return { payments, total };
   }
 
   /**
-   * Get exchange rate from FxService
+   * Parse a Lightning Address into its components
    */
-  private async getExchangeRate(): Promise<number> {
+  private async parseAddressFormat(
+    fullAddress: string,
+  ): Promise<ParsedAddress> {
+    if (!isLightningAddress(fullAddress)) {
+      throw new BadRequestException('Invalid Lightning Address format');
+    }
+
+    const [localPart, domain] = fullAddress.split('@');
+
+    // Check if it's a member-chama format (username-chamaname)
+    if (localPart.includes('-')) {
+      const parts = localPart.split('-');
+      if (parts.length === 2) {
+        const [username, chamaname] = parts;
+        return {
+          localPart,
+          domain,
+          username,
+          chamaname,
+        };
+      }
+    }
+
+    // Standard format (username or chamaname)
+    return {
+      localPart,
+      domain,
+    };
+  }
+
+  /**
+   * Resolve a Lightning Address to its destination wallet
+   */
+  private async resolveAddress(fullAddress: string): Promise<ResolvedAddress> {
+    const parsed = await this.parseAddressFormat(fullAddress);
+
+    // Only handle internal domains
+    if (!this.lnurlCommonService.isInternalDomain(parsed.domain)) {
+      throw new BadRequestException(`Domain ${parsed.domain} is not supported`);
+    }
+
+    // Handle member-chama format
+    if (parsed.username && parsed.chamaname) {
+      return this.resolveMemberChamaAddress(parsed.username, parsed.chamaname);
+    }
+
+    // Handle standard format
+    return this.resolveStandardAddress(parsed.localPart);
+  }
+
+  /**
+   * Resolve a standard Lightning Address (personal or chama)
+   */
+  private async resolveStandardAddress(
+    address: string,
+  ): Promise<ResolvedAddress> {
+    this.logger.log(`Resolving standard address: ${address}`);
+
+    const lightningAddress = await this.lightningAddressRepository.findOne({
+      address: address.toLowerCase(),
+      'settings.enabled': true,
+    });
+
+    if (!lightningAddress) {
+      throw new NotFoundException(`Lightning Address ${address} not found`);
+    }
+
+    return {
+      type: 'internal',
+      addressType: lightningAddress.type,
+      ownerId: lightningAddress.ownerId,
+      addressId: lightningAddress._id.toString(),
+      metadata: {
+        identifier: `${lightningAddress.address}@${lightningAddress.domain}`,
+        description: lightningAddress.metadata.description,
+        minSendable: lightningAddress.metadata.minSendable,
+        maxSendable: lightningAddress.metadata.maxSendable,
+        commentAllowed: lightningAddress.metadata.commentAllowed,
+      },
+      settings: lightningAddress.settings,
+    };
+  }
+
+  /**
+   * Resolve a member-chama Lightning Address
+   */
+  private async resolveMemberChamaAddress(
+    username: string,
+    chamaname: string,
+  ): Promise<ResolvedAddress> {
+    this.logger.log(`Resolving member-chama address: ${username}-${chamaname}`);
+
+    // First, find the user's Lightning Address
+    const userAddress = await this.lightningAddressRepository.findOne({
+      address: username.toLowerCase(),
+      type: AddressType.PERSONAL,
+      'settings.enabled': true,
+    });
+
+    if (!userAddress) {
+      throw new NotFoundException(`User ${username} not found`);
+    }
+
+    // Then, find the chama's Lightning Address
+    const chamaAddress = await this.lightningAddressRepository.findOne({
+      address: chamaname.toLowerCase(),
+      type: AddressType.CHAMA,
+      'settings.enabled': true,
+    });
+
+    if (!chamaAddress) {
+      throw new NotFoundException(`Chama ${chamaname} not found`);
+    }
+
+    // Verify that the user is a member of the chama
     try {
-      // Get BTC to KES exchange rate
-      const rate = await this.fxService.getExchangeRate(
-        mapToSupportedCurrency(Currency.BTC),
-        mapToSupportedCurrency(Currency.KES),
+      const chama = await this.chamasService.findChama({
+        chamaId: chamaAddress.ownerId,
+      });
+      const isMember = chama.members.some(
+        (member) => member.userId === userAddress.ownerId,
       );
-      return rate;
+
+      if (!isMember) {
+        throw new ForbiddenException(
+          `User ${username} is not a member of chama ${chamaname}`,
+        );
+      }
     } catch (error) {
-      this.logger.error(`Failed to get exchange rate: ${error.message}`);
-      throw new Error(
-        'Unable to fetch current exchange rate. Please try again later.',
+      if (error instanceof ForbiddenException) {
+        throw error;
+      }
+      this.logger.error(`Failed to verify chama membership: ${error.message}`);
+      throw new NotFoundException(
+        `Unable to verify membership for chama ${chamaname}`,
       );
     }
+
+    return {
+      type: 'internal',
+      addressType: AddressType.MEMBER_CHAMA,
+      ownerId: chamaAddress.ownerId, // Chama ID
+      memberId: userAddress.ownerId, // User ID
+      addressId: chamaAddress._id.toString(),
+      metadata: {
+        identifier: `${username}-${chamaname}@${chamaAddress.domain}`,
+        description: `${userAddress.metadata.description} to ${chamaAddress.metadata.description}`,
+        minSendable: chamaAddress.metadata.minSendable,
+        maxSendable: chamaAddress.metadata.maxSendable,
+        commentAllowed: chamaAddress.metadata.commentAllowed,
+      },
+      settings: chamaAddress.settings,
+    };
+  }
+
+  /**
+   * Check if a Lightning Address is available
+   */
+  private async isAddressAvailable(address: string): Promise<boolean> {
+    const normalizedAddress = address.toLowerCase().trim();
+
+    // Check reserved words
+    const reserved = [
+      'admin',
+      'administrator',
+      'support',
+      'help',
+      'api',
+      'www',
+      'mail',
+      'ftp',
+      'email',
+      'test',
+      'root',
+      'system',
+      'info',
+      'contact',
+      'about',
+      'legal',
+      'terms',
+      'privacy',
+      'security',
+      'billing',
+      'payment',
+      'invoice',
+      'account',
+      'user',
+      'users',
+      'chama',
+      'chamas',
+      'group',
+      'groups',
+      'wallet',
+      'wallets',
+      'lightning',
+      'bitcoin',
+      'btc',
+      'sats',
+      'satoshi',
+      'ln',
+      'lnurl',
+      'bitsacco',
+      'app',
+      'mobile',
+      'web',
+      'service',
+    ];
+
+    if (reserved.includes(normalizedAddress)) {
+      return false;
+    }
+
+    // Check if already taken
+    const existing = await this.lightningAddressRepository.findOne({
+      address: normalizedAddress,
+    });
+
+    return !existing;
+  }
+
+  /**
+   * Find Lightning Address by owner
+   */
+  private async findByOwner(
+    ownerId: string,
+    type?: AddressType,
+  ): Promise<LightningAddressDocument | null> {
+    const query: any = { ownerId };
+    if (type) {
+      query.type = type;
+    }
+
+    return this.lightningAddressRepository.findOne(query);
   }
 }

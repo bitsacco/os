@@ -1,24 +1,24 @@
-import { describe, it, expect } from '@jest/globals';
-import { AddressType, LnurlType, LnurlSubType } from '../types/lnurl.types';
+import { describe, it, expect } from 'bun:test';
+import { AddressType, LnurlType, LnurlSubType } from '../../common';
 
 describe('Lightning Address Types', () => {
-  it('should have correct address types', () => {
-    expect(AddressType.PERSONAL).toBe('PERSONAL');
-    expect(AddressType.CHAMA).toBe('CHAMA');
-    expect(AddressType.MEMBER_CHAMA).toBe('MEMBER_CHAMA');
+  it('should have correct address type values', () => {
+    expect(AddressType.PERSONAL as string).toBe('PERSONAL');
+    expect(AddressType.CHAMA as string).toBe('CHAMA');
+    expect(AddressType.MEMBER_CHAMA as string).toBe('MEMBER_CHAMA');
   });
 
-  it('should have correct LNURL types', () => {
-    expect(LnurlType.PAY_IN).toBe('PAY_IN');
-    expect(LnurlType.PAY_OUT).toBe('PAY_OUT');
-    expect(LnurlType.WITHDRAW).toBe('WITHDRAW');
+  it('should have correct LNURL type values', () => {
+    expect(LnurlType.PAY_IN as string).toBe('PAY_IN');
+    expect(LnurlType.PAY_OUT as string).toBe('PAY_OUT');
+    expect(LnurlType.WITHDRAW as string).toBe('WITHDRAW');
   });
 
-  it('should have correct LNURL subtypes', () => {
-    expect(LnurlSubType.LIGHTNING_ADDRESS).toBe('LIGHTNING_ADDRESS');
-    expect(LnurlSubType.EXTERNAL_PAY).toBe('EXTERNAL_PAY');
-    expect(LnurlSubType.QR_WITHDRAW).toBe('QR_WITHDRAW');
-    expect(LnurlSubType.LINK_WITHDRAW).toBe('LINK_WITHDRAW');
+  it('should have correct LNURL subtype values', () => {
+    expect(LnurlSubType.LIGHTNING_ADDRESS as string).toBe('LIGHTNING_ADDRESS');
+    expect(LnurlSubType.EXTERNAL_PAY as string).toBe('EXTERNAL_PAY');
+    expect(LnurlSubType.QR_WITHDRAW as string).toBe('QR_WITHDRAW');
+    expect(LnurlSubType.LINK_WITHDRAW as string).toBe('LINK_WITHDRAW');
   });
 });
 

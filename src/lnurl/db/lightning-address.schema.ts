@@ -1,13 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { AbstractDocument } from '../../common/database/abstract.schema';
 import {
+  AbstractDocument,
   AddressType,
   LightningAddressMetadata,
   LightningAddressSettings,
   LightningAddressStats,
-  LightningAddressDocument as ILightningAddressDocument,
-} from '../types';
+} from '../../common';
 
 @Schema()
 class Metadata implements LightningAddressMetadata {
@@ -61,10 +59,7 @@ class Stats implements LightningAddressStats {
 }
 
 @Schema({ collection: 'lightning_addresses', versionKey: false })
-export class LightningAddress
-  extends AbstractDocument
-  implements Omit<ILightningAddressDocument, '_id'>
-{
+export class LightningAddressDocument extends AbstractDocument {
   @Prop({
     type: String,
     required: true,
@@ -122,8 +117,9 @@ export class LightningAddress
   stats: LightningAddressStats;
 }
 
-export const LightningAddressSchema =
-  SchemaFactory.createForClass(LightningAddress);
+export const LightningAddressSchema = SchemaFactory.createForClass(
+  LightningAddressDocument,
+);
 
 // Indexes
 LightningAddressSchema.index({ address: 1, domain: 1 }, { unique: true });
@@ -155,5 +151,3 @@ LightningAddressSchema.pre('save', function (next) {
 
   next();
 });
-
-export type LightningAddressDocument = LightningAddress & Document;

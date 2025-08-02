@@ -1,13 +1,13 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { AbstractDocument } from '../../common/database/abstract.schema';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import {
+  AbstractDocument,
   ExternalTargetInfo,
   ExternalTargetStats,
   ExternalTargetPreferences,
   ExternalTargetMetadata,
   ExternalLnurlTargetDocument as IExternalLnurlTargetDocument,
-} from '../types';
+} from '../../common';
 
 @Schema()
 class TargetMetadata implements ExternalTargetMetadata {

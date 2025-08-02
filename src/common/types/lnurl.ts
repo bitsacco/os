@@ -1,4 +1,4 @@
-import { Currency, TransactionStatus } from '../../common/types';
+import { Currency, TransactionStatus } from './lib';
 
 // LNURL Types
 export enum LnurlType {
@@ -49,20 +49,6 @@ export interface LightningAddressStats {
   totalReceived: number; // Total amount received
   paymentCount: number; // Number of payments
   lastPaymentAt?: Date;
-}
-
-export interface LightningAddressDocument {
-  _id: string;
-  address: string; // e.g., "username" or "chamaname"
-  domain: string; // e.g., "bitsacco.com"
-  type: AddressType;
-  ownerId: string; // userId or chamaId
-  memberId?: string; // For MEMBER_CHAMA type
-  metadata: LightningAddressMetadata;
-  settings: LightningAddressSettings;
-  stats: LightningAddressStats;
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 // LNURL Transaction interfaces
@@ -265,41 +251,8 @@ export interface WithdrawOptions {
 export interface WithdrawLink {
   withdrawId: string;
   lnurl: string;
-  qrCode?: string;
   k1: string;
   expiresAt: Date;
   minWithdrawable: number;
   maxWithdrawable: number;
-}
-
-// Utility types
-export interface QrCodeOptions {
-  size?: number;
-  margin?: number;
-  format?: 'png' | 'svg' | 'base64';
-  logo?: string;
-  color?: {
-    dark?: string;
-    light?: string;
-  };
-}
-
-// Type guards
-export function isLightningAddress(input: string): boolean {
-  const pattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  return pattern.test(input);
-}
-
-export function isLnurl(input: string): boolean {
-  return input.toLowerCase().startsWith('lnurl');
-}
-
-export function isBech32(input: string): boolean {
-  try {
-    // Basic bech32 validation
-    const pattern = /^lnurl[0-9a-z]+$/i;
-    return pattern.test(input) && input.length > 10;
-  } catch {
-    return false;
-  }
 }

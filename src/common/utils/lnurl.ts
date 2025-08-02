@@ -127,3 +127,17 @@ export function getLightningAddressUrl(address: string): string {
 export function generateK1(): string {
   return randomBytes(32).toString('hex');
 }
+
+export function isLnurl(input: string): boolean {
+  return input.toLowerCase().startsWith('lnurl');
+}
+
+export function isBech32(input: string): boolean {
+  try {
+    // Basic bech32 validation
+    const pattern = /^lnurl[0-9a-z]+$/i;
+    return pattern.test(input) && input.length > 10;
+  } catch {
+    return false;
+  }
+}

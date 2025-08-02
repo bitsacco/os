@@ -1,3 +1,5 @@
+import { Model } from 'mongoose';
+import { firstValueFrom } from 'rxjs';
 import {
   Injectable,
   Logger,
@@ -6,25 +8,10 @@ import {
   ForbiddenException,
   HttpException,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
+import { InjectModel } from '@nestjs/mongoose';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { firstValueFrom } from 'rxjs';
-import {
-  ExternalLnurlTarget,
-  ExternalLnurlTargetDocument,
-} from '../schemas/external-target.schema';
-import {
-  LnurlTransaction,
-  LnurlTransactionDocument,
-} from '../schemas/lnurl-transaction.schema';
-import { LnurlResolverService } from './lnurl-resolver.service';
-import { LnurlCommonService } from './lnurl-common.service';
-import { LnurlMetricsService } from '../lnurl.metrics';
-import { FedimintService } from '../../common/fedimint/fedimint.service';
 import { SolowalletService } from '../../solowallet/solowallet.service';
-import { FxService } from '../../swap/fx/fx.service';
 import {
   LnurlType,
   LnurlSubType,
@@ -32,9 +19,20 @@ import {
   ExternalTargetInfo,
   ExternalTargetPreferences,
   isLightningAddress,
-} from '../types';
-import { TransactionStatus, Currency } from '../../common/types';
-import { mapToSupportedCurrency } from '../../common/utils';
+  TransactionStatus,
+  Currency,
+  FedimintService,
+  LnurlTransactionDocument as LnurlTransactionInterface,
+} from '../../common';
+import {
+  ExternalLnurlTarget,
+  LnurlTransactionDocument,
+  ExternalLnurlTargetDocument,
+} from '../db';
+import { LnurlMetricsService } from '../lnurl.metrics';
+import { LnurlResolverService } from './lnurl-resolver.service';
+import { LnurlCommonService } from './lnurl-common.service';
+import { LnurlTransactionService } from './lnurl-transaction.service';
 
 export interface ExternalPaymentOptions {
   amountMsats: number;
@@ -64,16 +62,14 @@ export class LnurlPaymentService {
   constructor(
     @InjectModel(ExternalLnurlTarget.name)
     private readonly externalTargetModel: Model<ExternalLnurlTargetDocument>,
-    @InjectModel(LnurlTransaction.name)
-    private readonly lnurlTransactionModel: Model<LnurlTransactionDocument>,
     private readonly lnurlResolverService: LnurlResolverService,
     private readonly lnurlCommonService: LnurlCommonService,
+    private readonly lnurlTransactionService: LnurlTransactionService,
     private readonly lnurlMetricsService: LnurlMetricsService,
     private readonly fedimintService: FedimintService,
     private readonly solowalletService: SolowalletService,
     private readonly httpService: HttpService,
     private readonly eventEmitter: EventEmitter2,
-    private readonly fxService: FxService,
   ) {}
 
   /**
@@ -338,19 +334,12 @@ export class LnurlPaymentService {
     domain: string,
     amountMsats: number,
     invoice: any,
-  ): Promise<LnurlTransactionDocument> {
-    const exchangeRate = await this.getExchangeRate();
-    const transaction = new this.lnurlTransactionModel({
+  ): Promise<LnurlTransactionInterface> {
+    const transaction = await this.lnurlTransactionService.createTransaction({
       type: LnurlType.PAY_OUT,
       subType: LnurlSubType.EXTERNAL_PAY,
-      status: TransactionStatus.PENDING,
       userId,
       amountMsats,
-      amountFiat: this.lnurlCommonService.msatsToFiat(
-        amountMsats,
-        exchangeRate,
-      ),
-      currency: Currency.KES,
       lnurlData: {
         externalPay: {
           targetAddress: isLightningAddress(target) ? target : undefined,
@@ -361,13 +350,20 @@ export class LnurlPaymentService {
           successAction: invoice.successAction,
         },
       },
-      lightning: {
-        invoice: invoice.pr,
-      },
       reference: `Payment to ${target}`,
     });
 
-    await transaction.save();
+    // Update with lightning details
+    await this.lnurlTransactionService.updateTransactionStatus(
+      transaction._id.toString(),
+      TransactionStatus.PENDING,
+      {
+        lightning: {
+          invoice: invoice.pr,
+        },
+      },
+    );
+
     return transaction;
   }
 
@@ -380,81 +376,55 @@ export class LnurlPaymentService {
     invoice: string,
     amountMsats: number,
   ): Promise<PaymentResult> {
-    let fundsWithdrawn = false;
-    let withdrawalReference: string;
-    const exchangeRate = await this.getExchangeRate();
-    const amountFiat = this.lnurlCommonService.msatsToFiat(
+    // Get amount in fiat for withdrawal
+    const exchangeRate = await this.lnurlTransactionService.getExchangeRate();
+    const amountFiat = this.lnurlTransactionService.msatsToFiat(
       amountMsats,
       exchangeRate,
     );
 
     try {
-      // First, attempt the external payment without withdrawing funds
-      const { operationId } = await this.fedimintService.pay(invoice);
-
-      // Only withdraw funds after successful payment
-      withdrawalReference = `LNURL payment: ${transactionId}`;
+      // Withdraw funds from user wallet first
+      const withdrawalReference = `LNURL payment: ${transactionId}`;
       await this.solowalletService.withdrawFunds({
         userId,
         amountFiat,
         reference: withdrawalReference,
       });
-      fundsWithdrawn = true;
+
+      // Then attempt the payment
+      const { operationId } = await this.fedimintService.pay(invoice);
 
       // Update transaction status
-      await this.lnurlTransactionModel.findByIdAndUpdate(transactionId, {
-        status: TransactionStatus.COMPLETE,
-        completedAt: new Date(),
-        'lightning.operationId': operationId,
-      });
+      await this.lnurlTransactionService.updateTransactionStatus(
+        transactionId,
+        TransactionStatus.COMPLETE,
+        {
+          completedAt: new Date(),
+          lightning: {
+            operationId,
+          },
+        },
+      );
 
       return {
         success: true,
         paymentId: transactionId,
       };
     } catch (error) {
-      // If funds were withdrawn but the transaction update failed, we need to refund
-      if (fundsWithdrawn) {
-        try {
-          this.logger.warn(
-            `Payment succeeded but transaction update failed. Refunding user ${userId} for transaction ${transactionId}`,
-          );
-
-          // Refund the user
-          await this.solowalletService.depositFunds({
-            userId,
-            amountFiat,
-            reference: `Refund for failed LNURL payment: ${transactionId}`,
-            onramp: { currency: Currency.KES, origin: undefined },
-          });
-
-          this.logger.log(
-            `Successfully refunded ${amountFiat} to user ${userId} for failed transaction ${transactionId}`,
-          );
-        } catch (refundError) {
-          // Log critical error - manual intervention needed
-          this.logger.error(
-            `CRITICAL: Failed to refund user ${userId} after payment failure. Transaction: ${transactionId}, Amount: ${amountFiat}`,
-            refundError.stack,
-          );
-
-          // Emit event for monitoring/alerting
-          this.eventEmitter.emit('critical.refund.failed', {
-            userId,
-            transactionId,
-            amountFiat,
-            error: refundError.message,
-          });
-        }
-      }
-
       // Update transaction as failed
-      await this.lnurlTransactionModel.findByIdAndUpdate(transactionId, {
-        status: TransactionStatus.FAILED,
-        completedAt: new Date(),
-        failureReason: error.message,
-        refunded: fundsWithdrawn,
-      });
+      await this.lnurlTransactionService.updateTransactionStatus(
+        transactionId,
+        TransactionStatus.FAILED,
+        {
+          completedAt: new Date(),
+          error: error.message,
+        },
+      );
+
+      this.logger.error(
+        `Payment failed for transaction ${transactionId}: ${error.message}`,
+      );
 
       return {
         success: false,
@@ -506,24 +476,19 @@ export class LnurlPaymentService {
     const startOfDay = new Date();
     startOfDay.setHours(0, 0, 0, 0);
 
-    const result = await this.lnurlTransactionModel.aggregate([
-      {
-        $match: {
-          userId,
-          type: LnurlType.PAY_OUT,
-          status: TransactionStatus.COMPLETE,
-          createdAt: { $gte: startOfDay },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: '$amountMsats' },
-        },
-      },
-    ]);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
 
-    return result[0]?.total || 0;
+    const stats = await this.lnurlTransactionService.getTransactionStats(
+      userId,
+      LnurlType.PAY_OUT,
+      {
+        startDate: startOfDay,
+        endDate: endOfDay,
+      },
+    );
+
+    return stats.totalSent;
   }
 
   /**
@@ -534,24 +499,21 @@ export class LnurlPaymentService {
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const result = await this.lnurlTransactionModel.aggregate([
-      {
-        $match: {
-          userId,
-          type: LnurlType.PAY_OUT,
-          status: TransactionStatus.COMPLETE,
-          createdAt: { $gte: startOfMonth },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: '$amountMsats' },
-        },
-      },
-    ]);
+    const endOfMonth = new Date();
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+    endOfMonth.setDate(0); // Last day of current month
+    endOfMonth.setHours(23, 59, 59, 999);
 
-    return result[0]?.total || 0;
+    const stats = await this.lnurlTransactionService.getTransactionStats(
+      userId,
+      LnurlType.PAY_OUT,
+      {
+        startDate: startOfMonth,
+        endDate: endOfMonth,
+      },
+    );
+
+    return stats.totalSent;
   }
 
   /**
@@ -651,53 +613,37 @@ export class LnurlPaymentService {
       offset?: number;
     },
   ): Promise<{
-    payments: LnurlTransactionDocument[];
+    payments: LnurlTransactionInterface[];
     total: number;
   }> {
-    const query: any = {
-      userId,
+    // Get payments using transaction service
+    const result = await this.lnurlTransactionService.findByUser(userId, {
       type: LnurlType.PAY_OUT,
-    };
+      limit: options?.limit,
+      offset: options?.offset,
+    });
 
+    // If targetId is specified, filter the results
     if (options?.targetId) {
-      // Find target to get its domain/address
       const target = await this.externalTargetModel.findById(options.targetId);
       if (target) {
-        query.$or = [
-          { 'lnurlData.externalPay.targetAddress': target.target.address },
-          { 'lnurlData.externalPay.targetUrl': target.target.lnurl },
-        ];
+        const filteredPayments = result.transactions.filter((payment) => {
+          const externalPay = payment.lnurlData?.externalPay;
+          return (
+            externalPay?.targetAddress === target.target.address ||
+            externalPay?.targetUrl === target.target.lnurl
+          );
+        });
+        return {
+          payments: filteredPayments,
+          total: filteredPayments.length,
+        };
       }
     }
 
-    const [payments, total] = await Promise.all([
-      this.lnurlTransactionModel
-        .find(query)
-        .sort({ createdAt: -1 })
-        .limit(options?.limit || 20)
-        .skip(options?.offset || 0),
-      this.lnurlTransactionModel.countDocuments(query),
-    ]);
-
-    return { payments, total };
-  }
-
-  /**
-   * Get exchange rate from FxService
-   */
-  private async getExchangeRate(): Promise<number> {
-    try {
-      // Get BTC to KES exchange rate
-      const rate = await this.fxService.getExchangeRate(
-        mapToSupportedCurrency(Currency.BTC),
-        mapToSupportedCurrency(Currency.KES),
-      );
-      return rate;
-    } catch (error) {
-      this.logger.error(`Failed to get exchange rate: ${error.message}`);
-      throw new Error(
-        'Unable to fetch current exchange rate. Please try again later.',
-      );
-    }
+    return {
+      payments: result.transactions,
+      total: result.total,
+    };
   }
 }

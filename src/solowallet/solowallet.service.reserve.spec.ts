@@ -8,7 +8,6 @@ import {
   TimeoutConfigService,
 } from '../common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { LnurlMetricsService } from '../common/monitoring/lnurl.metrics';
 import { SolowalletMetricsService } from './solowallet.metrics';
 import { SwapService } from '../swap/swap.service';
 import { ConfigService } from '@nestjs/config';
@@ -34,10 +33,6 @@ describe('SolowalletService - Balance Reserve', () => {
         {
           provide: EventEmitter2,
           useValue: { on: jest.fn() },
-        },
-        {
-          provide: LnurlMetricsService,
-          useValue: {},
         },
         {
           provide: SolowalletMetricsService,

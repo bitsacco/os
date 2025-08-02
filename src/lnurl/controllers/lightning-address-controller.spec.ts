@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from 'bun:test';
 
 describe('Lightning Address Controller Endpoints', () => {
   describe('LNURL-pay endpoint', () => {

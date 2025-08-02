@@ -22,7 +22,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { LightningAddressService } from '../services/lightning-address.service';
-import { AddressType } from '../types';
+import { AddressType } from '../../common/types/lnurl';
 import { CreateLightningAddressDto, UpdateLightningAddressDto } from '../dto';
 
 @ApiTags('Lightning Address')

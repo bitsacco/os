@@ -1,163 +1,199 @@
-import { Injectable } from '@nestjs/common';
-import { Counter, Histogram, Gauge, register } from 'prom-client';
+import { Injectable, Logger } from '@nestjs/common';
+import {
+  metrics,
+  Meter,
+  Counter,
+  Histogram,
+  ObservableGauge,
+  ObservableResult,
+  Attributes,
+} from '@opentelemetry/api';
 
+/**
+ * LnurlMetricsService using OpenTelemetry API
+ *
+ * This service maintains comprehensive LNURL-specific metrics while integrating
+ * with the common telemetry infrastructure through OpenTelemetry API.
+ */
 @Injectable()
 export class LnurlMetricsService {
+  private readonly logger = new Logger(LnurlMetricsService.name);
+  private readonly meter: Meter;
+
   // Withdrawal metrics
-  private readonly withdrawalCreatedCounter: Counter<string>;
-  private readonly withdrawalCompletedCounter: Counter<string>;
-  private readonly withdrawalFailedCounter: Counter<string>;
-  private readonly withdrawalDurationHistogram: Histogram<string>;
-  private readonly activeWithdrawalsGauge: Gauge<string>;
+  private readonly withdrawalCreatedCounter: Counter;
+  private readonly withdrawalCompletedCounter: Counter;
+  private readonly withdrawalFailedCounter: Counter;
+  private readonly withdrawalDurationHistogram: Histogram;
+  private activeWithdrawalsGauge: ObservableGauge;
+  private activeWithdrawalsState: Map<string, number> = new Map();
 
   // Lightning Address metrics
-  private readonly lightningAddressCreatedCounter: Counter<string>;
-  private readonly lightningAddressPaymentCounter: Counter<string>;
-  private readonly lightningAddressPaymentAmountHistogram: Histogram<string>;
-  private readonly activeLightningAddressesGauge: Gauge<string>;
+  private readonly lightningAddressCreatedCounter: Counter;
+  private readonly lightningAddressPaymentCounter: Counter;
+  private readonly lightningAddressPaymentAmountHistogram: Histogram;
+  private activeLightningAddressesGauge: ObservableGauge;
+  private activeLightningAddressesState: Map<string, number> = new Map();
 
   // External payment metrics
-  private readonly externalPaymentCounter: Counter<string>;
-  private readonly externalPaymentFailedCounter: Counter<string>;
-  private readonly externalPaymentDurationHistogram: Histogram<string>;
-  private readonly externalPaymentAmountHistogram: Histogram<string>;
+  private readonly externalPaymentCounter: Counter;
+  private readonly externalPaymentFailedCounter: Counter;
+  private readonly externalPaymentDurationHistogram: Histogram;
+  private readonly externalPaymentAmountHistogram: Histogram;
 
   // General LNURL metrics
-  private readonly lnurlRequestDurationHistogram: Histogram<string>;
-  private readonly lnurlErrorCounter: Counter<string>;
+  private readonly lnurlRequestDurationHistogram: Histogram;
+  private readonly lnurlErrorCounter: Counter;
 
   constructor() {
-    // Withdrawal metrics
-    this.withdrawalCreatedCounter = new Counter({
-      name: 'lnurl_withdrawal_created_total',
-      help: 'Total number of LNURL withdrawals created',
-      labelNames: ['type', 'batch'], // 'single_use', 'reusable'
+    // Get meter from OpenTelemetry API
+    this.meter = metrics.getMeter('lnurl', '1.0.0');
+
+    // Initialize withdrawal metrics
+    this.withdrawalCreatedCounter = this.meter.createCounter(
+      'lnurl.withdrawal.created.total',
+      {
+        description: 'Total number of LNURL withdrawals created',
+      },
+    );
+
+    this.withdrawalCompletedCounter = this.meter.createCounter(
+      'lnurl.withdrawal.completed.total',
+      {
+        description: 'Total number of LNURL withdrawals completed',
+      },
+    );
+
+    this.withdrawalFailedCounter = this.meter.createCounter(
+      'lnurl.withdrawal.failed.total',
+      {
+        description: 'Total number of LNURL withdrawals failed',
+      },
+    );
+
+    this.withdrawalDurationHistogram = this.meter.createHistogram(
+      'lnurl.withdrawal.duration',
+      {
+        description: 'Duration of LNURL withdrawal process',
+        unit: 'seconds',
+      },
+    );
+
+    this.activeWithdrawalsGauge = this.meter.createObservableGauge(
+      'lnurl.withdrawal.active',
+      {
+        description: 'Number of active LNURL withdrawal links',
+      },
+    );
+    this.activeWithdrawalsGauge.addCallback(
+      (observableResult: ObservableResult<Attributes>) => {
+        this.activeWithdrawalsState.forEach((value, type) => {
+          observableResult.observe(value, { type });
+        });
+      },
+    );
+
+    // Initialize Lightning Address metrics
+    this.lightningAddressCreatedCounter = this.meter.createCounter(
+      'lnurl.lightning_address.created.total',
+      {
+        description: 'Total number of Lightning Addresses created',
+      },
+    );
+
+    this.lightningAddressPaymentCounter = this.meter.createCounter(
+      'lnurl.lightning_address.payment.total',
+      {
+        description: 'Total number of payments received via Lightning Address',
+      },
+    );
+
+    this.lightningAddressPaymentAmountHistogram = this.meter.createHistogram(
+      'lnurl.lightning_address.payment.amount',
+      {
+        description: 'Payment amounts received via Lightning Address',
+        unit: 'millisatoshis',
+      },
+    );
+
+    this.activeLightningAddressesGauge = this.meter.createObservableGauge(
+      'lnurl.lightning_address.active',
+      {
+        description: 'Number of active Lightning Addresses',
+      },
+    );
+    this.activeLightningAddressesGauge.addCallback(
+      (observableResult: ObservableResult<Attributes>) => {
+        this.activeLightningAddressesState.forEach((value, type) => {
+          observableResult.observe(value, { type });
+        });
+      },
+    );
+
+    // Initialize external payment metrics
+    this.externalPaymentCounter = this.meter.createCounter(
+      'lnurl.external_payment.total',
+      {
+        description: 'Total number of external LNURL payments',
+      },
+    );
+
+    this.externalPaymentFailedCounter = this.meter.createCounter(
+      'lnurl.external_payment.failed.total',
+      {
+        description: 'Total number of failed external LNURL payments',
+      },
+    );
+
+    this.externalPaymentDurationHistogram = this.meter.createHistogram(
+      'lnurl.external_payment.duration',
+      {
+        description: 'Duration of external LNURL payment process',
+        unit: 'seconds',
+      },
+    );
+
+    this.externalPaymentAmountHistogram = this.meter.createHistogram(
+      'lnurl.external_payment.amount',
+      {
+        description: 'Payment amounts sent to external LNURL addresses',
+        unit: 'millisatoshis',
+      },
+    );
+
+    // Initialize general LNURL metrics
+    this.lnurlRequestDurationHistogram = this.meter.createHistogram(
+      'lnurl.request.duration',
+      {
+        description: 'Duration of LNURL API requests',
+        unit: 'seconds',
+      },
+    );
+
+    this.lnurlErrorCounter = this.meter.createCounter('lnurl.error.total', {
+      description: 'Total number of LNURL errors',
     });
 
-    this.withdrawalCompletedCounter = new Counter({
-      name: 'lnurl_withdrawal_completed_total',
-      help: 'Total number of LNURL withdrawals completed',
-      labelNames: ['type'],
-    });
-
-    this.withdrawalFailedCounter = new Counter({
-      name: 'lnurl_withdrawal_failed_total',
-      help: 'Total number of LNURL withdrawals failed',
-      labelNames: ['type', 'reason'],
-    });
-
-    this.withdrawalDurationHistogram = new Histogram({
-      name: 'lnurl_withdrawal_duration_seconds',
-      help: 'Duration of LNURL withdrawal process',
-      labelNames: ['status'],
-      buckets: [0.1, 0.5, 1, 2, 5, 10, 30],
-    });
-
-    this.activeWithdrawalsGauge = new Gauge({
-      name: 'lnurl_active_withdrawals',
-      help: 'Number of active LNURL withdrawal links',
-      labelNames: ['type'],
-    });
-
-    // Lightning Address metrics
-    this.lightningAddressCreatedCounter = new Counter({
-      name: 'lnurl_lightning_address_created_total',
-      help: 'Total number of Lightning Addresses created',
-      labelNames: ['type'], // 'personal', 'chama', 'member_chama'
-    });
-
-    this.lightningAddressPaymentCounter = new Counter({
-      name: 'lnurl_lightning_address_payment_total',
-      help: 'Total number of payments received via Lightning Address',
-      labelNames: ['address_type', 'status'],
-    });
-
-    this.lightningAddressPaymentAmountHistogram = new Histogram({
-      name: 'lnurl_lightning_address_payment_amount_msats',
-      help: 'Payment amounts received via Lightning Address',
-      labelNames: ['address_type'],
-      buckets: [1000, 10000, 100000, 1000000, 10000000, 100000000],
-    });
-
-    this.activeLightningAddressesGauge = new Gauge({
-      name: 'lnurl_active_lightning_addresses',
-      help: 'Number of active Lightning Addresses',
-      labelNames: ['type'],
-    });
-
-    // External payment metrics
-    this.externalPaymentCounter = new Counter({
-      name: 'lnurl_external_payment_total',
-      help: 'Total number of external LNURL payments',
-      labelNames: ['domain', 'status'],
-    });
-
-    this.externalPaymentFailedCounter = new Counter({
-      name: 'lnurl_external_payment_failed_total',
-      help: 'Total number of failed external LNURL payments',
-      labelNames: ['domain', 'reason'],
-    });
-
-    this.externalPaymentDurationHistogram = new Histogram({
-      name: 'lnurl_external_payment_duration_seconds',
-      help: 'Duration of external LNURL payment process',
-      labelNames: ['domain', 'status'],
-      buckets: [0.5, 1, 2, 5, 10, 30],
-    });
-
-    this.externalPaymentAmountHistogram = new Histogram({
-      name: 'lnurl_external_payment_amount_msats',
-      help: 'Payment amounts sent to external LNURL addresses',
-      labelNames: ['domain'],
-      buckets: [1000, 10000, 100000, 1000000, 10000000, 100000000],
-    });
-
-    // General LNURL metrics
-    this.lnurlRequestDurationHistogram = new Histogram({
-      name: 'lnurl_request_duration_seconds',
-      help: 'Duration of LNURL API requests',
-      labelNames: ['endpoint', 'method', 'status'],
-      buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
-    });
-
-    this.lnurlErrorCounter = new Counter({
-      name: 'lnurl_error_total',
-      help: 'Total number of LNURL errors',
-      labelNames: ['type', 'endpoint', 'error_code'],
-    });
-
-    // Register all metrics
-    register.registerMetric(this.withdrawalCreatedCounter);
-    register.registerMetric(this.withdrawalCompletedCounter);
-    register.registerMetric(this.withdrawalFailedCounter);
-    register.registerMetric(this.withdrawalDurationHistogram);
-    register.registerMetric(this.activeWithdrawalsGauge);
-    register.registerMetric(this.lightningAddressCreatedCounter);
-    register.registerMetric(this.lightningAddressPaymentCounter);
-    register.registerMetric(this.lightningAddressPaymentAmountHistogram);
-    register.registerMetric(this.activeLightningAddressesGauge);
-    register.registerMetric(this.externalPaymentCounter);
-    register.registerMetric(this.externalPaymentFailedCounter);
-    register.registerMetric(this.externalPaymentDurationHistogram);
-    register.registerMetric(this.externalPaymentAmountHistogram);
-    register.registerMetric(this.lnurlRequestDurationHistogram);
-    register.registerMetric(this.lnurlErrorCounter);
+    this.logger.log('LnurlMetricsService initialized with OpenTelemetry');
   }
 
   // Withdrawal metrics methods
   recordWithdrawalCreated(type: 'single_use' | 'reusable', count: number = 1) {
-    this.withdrawalCreatedCounter.inc({ type, batch: 'single' }, count);
+    this.withdrawalCreatedCounter.add(count, {
+      type,
+      batch: count > 1 ? 'batch' : 'single',
+    });
   }
 
   recordWithdrawalCompleted(
     type: 'single_use' | 'reusable',
     durationMs: number,
   ) {
-    this.withdrawalCompletedCounter.inc({ type });
-    this.withdrawalDurationHistogram.observe(
-      { status: 'completed' },
-      durationMs / 1000,
-    );
+    this.withdrawalCompletedCounter.add(1, { type });
+    this.withdrawalDurationHistogram.record(durationMs / 1000, {
+      status: 'completed',
+      type,
+    });
   }
 
   recordWithdrawalFailed(
@@ -165,20 +201,21 @@ export class LnurlMetricsService {
     reason: string,
     durationMs: number,
   ) {
-    this.withdrawalFailedCounter.inc({ type, reason });
-    this.withdrawalDurationHistogram.observe(
-      { status: 'failed' },
-      durationMs / 1000,
-    );
+    this.withdrawalFailedCounter.add(1, { type, reason });
+    this.withdrawalDurationHistogram.record(durationMs / 1000, {
+      status: 'failed',
+      type,
+      reason,
+    });
   }
 
   setActiveWithdrawals(type: 'single_use' | 'reusable', count: number) {
-    this.activeWithdrawalsGauge.set({ type }, count);
+    this.activeWithdrawalsState.set(type, count);
   }
 
   // Lightning Address metrics methods
   recordLightningAddressCreated(type: 'personal' | 'chama' | 'member_chama') {
-    this.lightningAddressCreatedCounter.inc({ type });
+    this.lightningAddressCreatedCounter.add(1, { type });
   }
 
   recordLightningAddressPayment(
@@ -186,15 +223,15 @@ export class LnurlMetricsService {
     status: 'success' | 'failed',
     amountMsats?: number,
   ) {
-    this.lightningAddressPaymentCounter.inc({
+    this.lightningAddressPaymentCounter.add(1, {
       address_type: addressType,
       status,
     });
+
     if (amountMsats && status === 'success') {
-      this.lightningAddressPaymentAmountHistogram.observe(
-        { address_type: addressType },
-        amountMsats,
-      );
+      this.lightningAddressPaymentAmountHistogram.record(amountMsats, {
+        address_type: addressType,
+      });
     }
   }
 
@@ -202,7 +239,7 @@ export class LnurlMetricsService {
     type: 'personal' | 'chama' | 'member_chama',
     count: number,
   ) {
-    this.activeLightningAddressesGauge.set({ type }, count);
+    this.activeLightningAddressesState.set(type, count);
   }
 
   // External payment metrics methods
@@ -213,18 +250,21 @@ export class LnurlMetricsService {
     amountMsats?: number,
     failureReason?: string,
   ) {
-    this.externalPaymentCounter.inc({ domain, status });
-    this.externalPaymentDurationHistogram.observe(
-      { domain, status },
-      durationMs / 1000,
-    );
+    this.externalPaymentCounter.add(1, { domain, status });
+    this.externalPaymentDurationHistogram.record(durationMs / 1000, {
+      domain,
+      status,
+    });
 
     if (status === 'failed' && failureReason) {
-      this.externalPaymentFailedCounter.inc({ domain, reason: failureReason });
+      this.externalPaymentFailedCounter.add(1, {
+        domain,
+        reason: failureReason,
+      });
     }
 
     if (amountMsats && status === 'success') {
-      this.externalPaymentAmountHistogram.observe({ domain }, amountMsats);
+      this.externalPaymentAmountHistogram.record(amountMsats, { domain });
     }
   }
 
@@ -235,13 +275,14 @@ export class LnurlMetricsService {
     status: number,
     durationMs: number,
   ) {
-    this.lnurlRequestDurationHistogram.observe(
-      { endpoint, method, status: status.toString() },
-      durationMs / 1000,
-    );
+    this.lnurlRequestDurationHistogram.record(durationMs / 1000, {
+      endpoint,
+      method,
+      status: status.toString(),
+    });
   }
 
   recordError(type: string, endpoint: string, errorCode: string) {
-    this.lnurlErrorCounter.inc({ type, endpoint, error_code: errorCode });
+    this.lnurlErrorCounter.add(1, { type, endpoint, error_code: errorCode });
   }
 }
