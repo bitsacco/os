@@ -5,7 +5,6 @@ import { decode } from 'light-bolt11-decoder';
 import { catchError, firstValueFrom, map } from 'rxjs';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import {
   fedimint_receive_success,
@@ -44,6 +43,32 @@ export class FedimintService {
     password: string,
     lnUrlCallback?: string,
   ) {
+    // Validate required configuration values
+    if (!baseUrl || typeof baseUrl !== 'string') {
+      throw new Error(
+        'CLIENTD_BASE_URL is required and must be a valid string',
+      );
+    }
+    if (!federationId || typeof federationId !== 'string') {
+      throw new Error('FEDERATION_ID is required and must be a valid string');
+    }
+    if (!gatewayId || typeof gatewayId !== 'string') {
+      throw new Error('GATEWAY_ID is required and must be a valid string');
+    }
+    if (!password || typeof password !== 'string') {
+      throw new Error(
+        'CLIENTD_PASSWORD is required and must be a valid string',
+      );
+    }
+
+    // Validate URL format
+    try {
+      new URL(baseUrl);
+    } catch {
+      throw new Error(
+        `CLIENTD_BASE_URL must be a valid URL. Received: ${baseUrl}`,
+      );
+    }
     this.baseUrl = baseUrl;
     this.federationId = federationId;
     this.gatewayId = gatewayId;
@@ -51,7 +76,7 @@ export class FedimintService {
     if (lnUrlCallback) {
       this.lnUrlCallback = lnUrlCallback;
     }
-    this.logger.log('FedimintService initialized');
+    this.logger.log('FedimintService initialized with validated configuration');
   }
 
   private async post<S, T>(endpoint: string, data: S): Promise<T> {

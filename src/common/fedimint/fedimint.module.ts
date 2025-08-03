@@ -18,12 +18,13 @@ import { FedimintService } from './fedimint.service';
         const fedimintService = new FedimintService(httpService, eventEmitter);
 
         // Initialize with common configuration
+        // Use getOrThrow to ensure required configuration values are present
         fedimintService.initialize(
-          configService.get<string>('CLIENTD_BASE_URL'),
-          configService.get<string>('FEDERATION_ID'),
-          configService.get<string>('GATEWAY_ID'),
-          configService.get<string>('CLIENTD_PASSWORD'),
-          configService.get<string>('LNURL_CALLBACK_BASE_URL'),
+          configService.getOrThrow<string>('CLIENTD_BASE_URL'),
+          configService.getOrThrow<string>('FEDERATION_ID'),
+          configService.getOrThrow<string>('GATEWAY_ID'),
+          configService.getOrThrow<string>('CLIENTD_PASSWORD'),
+          configService.getOrThrow<string>('LNURL_CALLBACK_BASE_URL'),
         );
 
         return fedimintService;

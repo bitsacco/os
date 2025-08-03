@@ -44,6 +44,66 @@ describe('FedimintService', () => {
     }).not.toThrow();
   });
 
+  it('should throw error when baseUrl is missing', async () => {
+    const fedimintService = await createFedimintService(mockCfg);
+
+    expect(() => {
+      fedimintService.initialize('', 'federation123', 'gateway123', 'password');
+    }).toThrow('CLIENTD_BASE_URL is required and must be a valid string');
+  });
+
+  it('should throw error when baseUrl is invalid URL', async () => {
+    const fedimintService = await createFedimintService(mockCfg);
+
+    expect(() => {
+      fedimintService.initialize(
+        'not-a-valid-url',
+        'federation123',
+        'gateway123',
+        'password',
+      );
+    }).toThrow('CLIENTD_BASE_URL must be a valid URL');
+  });
+
+  it('should throw error when federationId is missing', async () => {
+    const fedimintService = await createFedimintService(mockCfg);
+
+    expect(() => {
+      fedimintService.initialize(
+        'http://localhost:2121',
+        '',
+        'gateway123',
+        'password',
+      );
+    }).toThrow('FEDERATION_ID is required and must be a valid string');
+  });
+
+  it('should throw error when gatewayId is missing', async () => {
+    const fedimintService = await createFedimintService(mockCfg);
+
+    expect(() => {
+      fedimintService.initialize(
+        'http://localhost:2121',
+        'federation123',
+        '',
+        'password',
+      );
+    }).toThrow('GATEWAY_ID is required and must be a valid string');
+  });
+
+  it('should throw error when password is missing', async () => {
+    const fedimintService = await createFedimintService(mockCfg);
+
+    expect(() => {
+      fedimintService.initialize(
+        'http://localhost:2121',
+        'federation123',
+        'gateway123',
+        '',
+      );
+    }).toThrow('CLIENTD_PASSWORD is required and must be a valid string');
+  });
+
   describe('createLnUrlWithdrawPoint', () => {
     let fedimintService: FedimintService;
     let mockHttpService: Partial<HttpService>;
