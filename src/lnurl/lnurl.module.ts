@@ -32,6 +32,7 @@ import {
   ExternalLnurlTarget,
   ExternalLnurlTargetSchema,
 } from './db/external-target.schema';
+import { UsersDocument, UsersSchema } from '../common/database';
 
 // Repositories
 import { LightningAddressRepository } from './db/lightning-address.repository';
@@ -42,6 +43,9 @@ import { SolowalletModule } from '../solowallet/solowallet.module';
 import { ChamaModule } from '../chamas/chama.module';
 import { NotificationModule } from '../notifications/notification.module';
 import { SwapModule } from '../swap/swap.module';
+import { UsersService } from '../common/users/users.service';
+import { UsersRepository } from '../common/users/users.repository';
+import { RoleValidationService } from '../common/auth/role-validation.service';
 
 @Module({
   imports: [
@@ -51,6 +55,7 @@ import { SwapModule } from '../swap/swap.module';
       { name: LnurlTransaction.name, schema: LnurlTransactionSchema },
       { name: LightningAddressDocument.name, schema: LightningAddressSchema },
       { name: ExternalLnurlTarget.name, schema: ExternalLnurlTargetSchema },
+      { name: UsersDocument.name, schema: UsersSchema },
     ]),
     SolowalletModule,
     ChamaModule,
@@ -72,6 +77,9 @@ import { SwapModule } from '../swap/swap.module';
     LnurlCommonService,
     LnurlTransactionService,
     LnurlMetricsService,
+    UsersService,
+    UsersRepository,
+    RoleValidationService,
     // FedimintService is now provided globally by FedimintModule in SharedModule
     // Services from imported modules are already available
     // SolowalletService - from SolowalletModule

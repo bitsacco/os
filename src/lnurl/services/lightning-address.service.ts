@@ -14,6 +14,7 @@ import { ChamaWalletService } from '../../chamawallet/wallet.service';
 import { ChamasService } from '../../chamas/chamas.service';
 import { LnurlCommonService } from './lnurl-common.service';
 import { LnurlTransactionService } from './lnurl-transaction.service';
+import { UsersService } from '../../common/users/users.service';
 import {
   FedimintService,
   AddressType,
@@ -45,6 +46,7 @@ export class LightningAddressService {
     private readonly chamaWalletService: ChamaWalletService,
     private readonly chamasService: ChamasService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly usersService: UsersService,
   ) {}
 
   /**
@@ -98,6 +100,31 @@ export class LightningAddressService {
         throw new ConflictException(
           'You already have a personal Lightning Address',
         );
+      }
+
+      // Update user's profile name if they don't have one
+      try {
+        const user = await this.usersService.findUser({ id: ownerId });
+        if (!user.profile?.name) {
+          await this.usersService.updateUser({
+            userId: ownerId,
+            updates: {
+              profile: {
+                name: normalizedAddress,
+                avatarUrl: user.profile?.avatarUrl,
+              },
+              roles: user.roles,
+            },
+          });
+          this.logger.log(
+            `Updated user ${ownerId} profile name to ${normalizedAddress}`,
+          );
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Failed to update user profile name: ${error.message}`,
+        );
+        // Continue with address creation even if profile update fails
       }
     }
 
