@@ -1,6 +1,5 @@
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
@@ -39,8 +38,6 @@ import {
   ChamaTxMetaRequest,
   ChamaMeta,
   fiatToBtc,
-  validateStateTransition,
-  CHAMA_WALLET_STATE_TRANSITIONS,
   TimeoutConfigService,
   TimeoutTransactionType,
 } from '../common';
@@ -49,7 +46,6 @@ import {
   ChamaMessageService,
 } from '../chamas/chamas.messaging';
 import { ChamasService } from '../chamas/chamas.service';
-import { ChamaMetricsService } from '../chamas/chama.metrics';
 import { SwapService } from '../swap/swap.service';
 import {
   ChamaWalletDocument,
@@ -65,23 +61,12 @@ export class ChamaWalletService {
     private readonly wallet: ChamaWalletRepository,
     private readonly fedimintService: FedimintService,
     private readonly eventEmitter: EventEmitter2,
-    private readonly chamaMetricsService: ChamaMetricsService,
     private readonly swapService: SwapService,
     private readonly chamas: ChamasService,
     private readonly users: UsersService,
     private readonly messenger: ChamaMessageService,
-    private readonly configService: ConfigService,
     private readonly timeoutConfigService: TimeoutConfigService,
   ) {
-    // Initialize FedimintService
-    this.fedimintService.initialize(
-      this.configService.get<string>('CHAMA_CLIENTD_BASE_URL'),
-      this.configService.get<string>('CHAMA_FEDERATION_ID'),
-      this.configService.get<string>('CHAMA_GATEWAY_ID'),
-      this.configService.get<string>('CHAMA_CLIENTD_PASSWORD'),
-      this.configService.get<string>('CHAMA_LNURL_CALLBACK'),
-    );
-
     this.eventEmitter.on(
       fedimint_receive_success,
       this.handleSuccessfulReceive.bind(this),
@@ -333,7 +318,7 @@ export class ChamaWalletService {
             memberMeta: mMeta,
           };
         }
-      } catch (e) {
+      } catch {
         // Document not found, continue with new withdrawal
       }
     }
@@ -887,7 +872,7 @@ export class ChamaWalletService {
         memberIds = (await this.chamas.findChama({ chamaId })).members.map(
           (member) => member.userId,
         );
-      } catch (_) {
+      } catch {
         this.logger.error(`Chama with id ${chamaId} not found`);
         memberIds = [];
       }

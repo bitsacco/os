@@ -40,7 +40,6 @@ import { SmsModule } from '../sms/sms.module';
     ChamaWalletService,
     ChamasRepository,
     ChamaWalletRepository,
-    FedimintService,
     ChamaMetricsService,
     RoleValidationService,
     ChamaMessageService,

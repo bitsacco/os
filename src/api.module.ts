@@ -100,12 +100,6 @@ import { MetricsModule } from './metrics/metrics.module';
         // Nostr module
         NOSTR_PUBLIC_KEY: Joi.string().required(),
         NOSTR_PRIVATE_KEY: Joi.string().required(),
-        // Solowallet module
-        SOLOWALLET_CLIENTD_BASE_URL: Joi.string().required(),
-        SOLOWALLET_CLIENTD_PASSWORD: Joi.string().required(),
-        SOLOWALLET_FEDERATION_ID: Joi.string().required(),
-        SOLOWALLET_GATEWAY_ID: Joi.string().required(),
-        SOLOWALLET_LNURL_CALLBACK: Joi.string().required(),
         // LNURL module
         LNURL_DOMAIN: Joi.string().default('bitsacco.com'),
         LNURL_CALLBACK_BASE_URL: Joi.string().required(),
@@ -124,12 +118,7 @@ import { MetricsModule } from './metrics/metrics.module';
         SWAP_FEDERATION_ID: Joi.string().required(),
         SWAP_GATEWAY_ID: Joi.string().required(),
         // Chama module
-        CHAMA_CLIENTD_BASE_URL: Joi.string().required(),
-        CHAMA_CLIENTD_PASSWORD: Joi.string().required(),
-        CHAMA_FEDERATION_ID: Joi.string().required(),
-        CHAMA_GATEWAY_ID: Joi.string().required(),
         CHAMA_EXPERIENCE_URL: Joi.string().required(),
-        CHAMA_LNURL_CALLBACK: Joi.string().required(),
         BITLY_TOKEN: Joi.string().required(),
         // Transaction timeout configuration
         TX_TIMEOUT_PENDING_MINUTES: Joi.number()

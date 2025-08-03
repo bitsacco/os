@@ -1,5 +1,4 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import {
   Currency,
   DepositFundsRequestDto,
@@ -24,7 +23,6 @@ import {
   SolowalletTx,
   FindTxRequestDto,
   FmLightning,
-  parseTransactionStatus,
   ContinueDepositFundsRequestDto,
   ContinueWithdrawFundsRequestDto,
   fiatToBtc,
@@ -48,20 +46,9 @@ export class SolowalletService {
     private readonly eventEmitter: EventEmitter2,
     private readonly solowalletMetricsService: SolowalletMetricsService,
     private readonly swapService: SwapService,
-    private readonly configService: ConfigService,
     private readonly timeoutConfigService: TimeoutConfigService,
   ) {
     this.logger.log('SolowalletService created');
-
-    // Initialize FedimintService
-    this.fedimintService.initialize(
-      this.configService.get<string>('SOLOWALLET_CLIENTD_BASE_URL'),
-      this.configService.get<string>('SOLOWALLET_FEDERATION_ID'),
-      this.configService.get<string>('SOLOWALLET_GATEWAY_ID'),
-      this.configService.get<string>('SOLOWALLET_CLIENTD_PASSWORD'),
-      this.configService.get<string>('SOLOWALLET_LNURL_CALLBACK'),
-    );
-
     this.eventEmitter.on(
       fedimint_receive_success,
       this.handleSuccessfulReceive.bind(this),
@@ -241,7 +228,6 @@ export class SolowalletService {
     pagination,
   }: DepositFundsRequestDto): Promise<UserTxsResponse> {
     const startTime = Date.now();
-    let success = false;
     let errorType: string | undefined;
 
     try {
@@ -329,7 +315,6 @@ export class SolowalletService {
       const meta = await this.getWalletMeta(userId);
 
       // Record successful deposit metrics
-      success = true;
 
       // Record metrics for this operation
       this.solowalletMetricsService.recordDepositMetric({
@@ -533,7 +518,7 @@ export class SolowalletService {
             userId,
           };
         }
-      } catch (e) {
+      } catch {
         // Document not found, continue with new withdrawal
       }
     }

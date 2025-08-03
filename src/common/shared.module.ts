@@ -3,6 +3,7 @@ import { JwtConfigModule } from './jwt-config.module';
 import { LoggerModule } from './logger/logger.module';
 import { DatabaseModule } from './database/database.module';
 import { TimeoutConfigService } from './services';
+import { FedimintModule } from './fedimint';
 
 /**
  * SharedModule provides common modules that are used across the application.
@@ -19,6 +20,7 @@ import { TimeoutConfigService } from './services';
     // Common modules
     LoggerModule,
     DatabaseModule,
+    FedimintModule,
   ],
   providers: [TimeoutConfigService],
   exports: [
@@ -26,6 +28,7 @@ import { TimeoutConfigService } from './services';
     LoggerModule,
     DatabaseModule,
     TimeoutConfigService,
+    FedimintModule,
   ],
 })
 export class SharedModule {}

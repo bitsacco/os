@@ -72,25 +72,7 @@ import { SwapModule } from '../swap/swap.module';
     LnurlCommonService,
     LnurlTransactionService,
     LnurlMetricsService,
-    {
-      provide: FedimintService,
-      useFactory: (
-        httpService: HttpService,
-        eventEmitter: EventEmitter2,
-        configService: ConfigService,
-      ) => {
-        const fedimintService = new FedimintService(httpService, eventEmitter);
-        fedimintService.initialize(
-          configService.get<string>('CLIENTD_BASE_URL'),
-          configService.get<string>('FEDERATION_ID'),
-          configService.get<string>('GATEWAY_ID'),
-          configService.get<string>('CLIENTD_PASSWORD'),
-          configService.get<string>('LNURL_CALLBACK_BASE_URL'),
-        );
-        return fedimintService;
-      },
-      inject: [HttpService, EventEmitter2, ConfigService],
-    },
+    // FedimintService is now provided globally by FedimintModule in SharedModule
     // Services from imported modules are already available
     // SolowalletService - from SolowalletModule
     // ChamasService - from ChamaModule

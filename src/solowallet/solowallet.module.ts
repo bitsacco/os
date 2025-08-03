@@ -30,7 +30,6 @@ import { JwtConfigModule } from '../common/jwt-config.module';
   providers: [
     SolowalletService,
     SolowalletRepository,
-    FedimintService,
     SolowalletMetricsService,
     RoleValidationService,
   ],
