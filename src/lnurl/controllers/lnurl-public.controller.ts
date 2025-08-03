@@ -154,11 +154,20 @@ export class LnurlPublicController {
 
     // Validate and parse amount
     const amountMsats = parseInt(amount);
-    if (isNaN(amountMsats) || amountMsats <= 0) {
+    if (isNaN(amountMsats)) {
       throw new BadRequestException(
-        'Invalid amount. Amount must be a positive number in millisatoshis.',
+        'Invalid amount format. Amount must be a numeric string representing millisatoshis (e.g., "10000" for 10 sats).',
       );
     }
+
+    if (amountMsats <= 0) {
+      throw new BadRequestException(
+        'Invalid amount value. Amount must be greater than 0 millisatoshis.',
+      );
+    }
+
+    // Note: The actual min/max validation happens in the service layer after retrieving
+    // the lightning address metadata, as limits can vary per address
 
     // Safely parse the nostr parameter if provided
     let parsedNostr: any;

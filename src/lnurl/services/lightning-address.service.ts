@@ -294,7 +294,11 @@ export class LightningAddressService {
           resolved.metadata.maxSendable,
         )
       ) {
-        throw new BadRequestException('Amount out of acceptable range');
+        const minSats = Math.floor(resolved.metadata.minSendable / 1000);
+        const maxSats = Math.floor(resolved.metadata.maxSendable / 1000);
+        throw new BadRequestException(
+          `Amount must be between ${resolved.metadata.minSendable} and ${resolved.metadata.maxSendable} millisatoshis (${minSats} to ${maxSats} sats). You requested ${amountMsats} millisatoshis.`,
+        );
       }
 
       // Generate invoice

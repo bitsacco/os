@@ -114,8 +114,10 @@ export class LnurlPaymentService {
           metadata.maxSendable,
         )
       ) {
+        const minSats = Math.floor(metadata.minSendable / 1000);
+        const maxSats = Math.floor(metadata.maxSendable / 1000);
         throw new BadRequestException(
-          `Amount must be between ${metadata.minSendable} and ${metadata.maxSendable} millisatoshis`,
+          `Amount must be between ${metadata.minSendable} and ${metadata.maxSendable} millisatoshis (${minSats} to ${maxSats} sats). You requested ${options.amountMsats} millisatoshis.`,
         );
       }
 

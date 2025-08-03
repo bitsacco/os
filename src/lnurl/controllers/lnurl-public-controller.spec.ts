@@ -252,21 +252,18 @@ describe('LnurlPublicController Security Tests', () => {
     it('should validate amount is a positive number', () => {
       const validateAmount = (amountString: string): number => {
         const amountMsats = parseInt(amountString);
-        if (isNaN(amountMsats) || amountMsats <= 0) {
-          throw new Error('Amount must be a positive number');
+        if (isNaN(amountMsats)) {
+          throw new Error('Invalid amount format');
+        }
+        if (amountMsats <= 0) {
+          throw new Error('Invalid amount value');
         }
         return amountMsats;
       };
 
-      expect(() => validateAmount('invalid')).toThrow(
-        'Amount must be a positive number',
-      );
-      expect(() => validateAmount('-1000')).toThrow(
-        'Amount must be a positive number',
-      );
-      expect(() => validateAmount('0')).toThrow(
-        'Amount must be a positive number',
-      );
+      expect(() => validateAmount('invalid')).toThrow('Invalid amount format');
+      expect(() => validateAmount('-1000')).toThrow('Invalid amount value');
+      expect(() => validateAmount('0')).toThrow('Invalid amount value');
 
       expect(validateAmount('1')).toBe(1);
       expect(validateAmount('1000000')).toBe(1000000);
