@@ -2,12 +2,8 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { AbstractDocument } from '../../common/database/abstract.schema';
 import { Currency, TransactionStatus } from '../../common/types';
-import {
-  LnurlType,
-  LnurlSubType,
-  LnurlData,
-  LnurlLightning,
-} from '../../common/types/lnurl';
+import { LnurlType, LnurlSubType } from '../../common/types/lnurl';
+import type { LnurlData, LnurlLightning } from '../../common/types/lnurl';
 
 @Schema({ collection: 'lnurl_transactions', versionKey: false })
 export class LnurlTransaction extends AbstractDocument {

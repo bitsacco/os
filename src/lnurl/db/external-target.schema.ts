@@ -1,7 +1,7 @@
 import { Document } from 'mongoose';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import {
-  AbstractDocument,
+import { AbstractDocument } from '../../common';
+import type {
   ExternalTargetInfo,
   ExternalTargetStats,
   ExternalTargetPreferences,

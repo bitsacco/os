@@ -1,4 +1,11 @@
-import { Controller, Get, Param, Query, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  Logger,
+  BadRequestException,
+} from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
@@ -16,6 +23,53 @@ export class LnurlPublicController {
   constructor(
     private readonly lightningAddressService: LightningAddressService,
   ) {}
+
+  /**
+   * Safely parse JSON with validation and error handling
+   * @param jsonString - The JSON string to parse
+   * @param fieldName - The name of the field being parsed (for error messages)
+   * @returns Parsed JSON object or undefined if invalid
+   */
+  private safeJsonParse(jsonString: string, fieldName: string): any {
+    if (!jsonString || jsonString.trim() === '') {
+      return undefined;
+    }
+
+    try {
+      // First, validate that the string is not too large (prevent DoS)
+      const maxLength = 10000; // 10KB limit for JSON input
+      if (jsonString.length > maxLength) {
+        throw new BadRequestException(
+          `${fieldName} is too large (max ${maxLength} characters)`,
+        );
+      }
+
+      // Attempt to parse the JSON
+      const parsed = JSON.parse(jsonString);
+
+      // Additional validation can be added here based on expected structure
+      // For example, if we expect an object:
+      if (typeof parsed !== 'object' || parsed === null) {
+        throw new BadRequestException(
+          `${fieldName} must be a valid JSON object`,
+        );
+      }
+
+      return parsed;
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      // Log the error for debugging but don't expose internal details
+      this.logger.error(
+        `Failed to parse ${fieldName}: ${error.message}`,
+        error.stack,
+      );
+      throw new BadRequestException(
+        `Invalid JSON in ${fieldName} parameter. Please provide valid JSON.`,
+      );
+    }
+  }
 
   /**
    * LNURL-pay endpoint (public)
@@ -98,15 +152,24 @@ export class LnurlPublicController {
   ) {
     this.logger.log(`LNURL callback for ${address}, amount: ${amount}`);
 
+    // Validate and parse amount
     const amountMsats = parseInt(amount);
-    if (isNaN(amountMsats)) {
-      throw new Error('Invalid amount');
+    if (isNaN(amountMsats) || amountMsats <= 0) {
+      throw new BadRequestException(
+        'Invalid amount. Amount must be a positive number in millisatoshis.',
+      );
+    }
+
+    // Safely parse the nostr parameter if provided
+    let parsedNostr: any;
+    if (nostr) {
+      parsedNostr = this.safeJsonParse(nostr, 'nostr');
     }
 
     return await this.lightningAddressService.processPaymentCallback(
       address,
       amountMsats,
-      { comment, nostr: nostr ? JSON.parse(nostr) : undefined },
+      { comment, nostr: parsedNostr },
     );
   }
 }

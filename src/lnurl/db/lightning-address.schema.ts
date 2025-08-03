@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import {
-  AbstractDocument,
-  AddressType,
+import { AbstractDocument, AddressType } from '../../common';
+import type {
   LightningAddressMetadata,
   LightningAddressSettings,
   LightningAddressStats,

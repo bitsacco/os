@@ -16,19 +16,16 @@ import {
   LnurlType,
   LnurlSubType,
   PaymentResult,
-  ExternalTargetInfo,
-  ExternalTargetPreferences,
   isLightningAddress,
   TransactionStatus,
-  Currency,
   FedimintService,
   LnurlTransactionDocument as LnurlTransactionInterface,
 } from '../../common';
-import {
-  ExternalLnurlTarget,
-  LnurlTransactionDocument,
-  ExternalLnurlTargetDocument,
-} from '../db';
+import type {
+  ExternalTargetInfo,
+  ExternalTargetPreferences,
+} from '../../common';
+import { ExternalLnurlTarget, ExternalLnurlTargetDocument } from '../db';
 import { LnurlMetricsService } from '../lnurl.metrics';
 import { LnurlResolverService } from './lnurl-resolver.service';
 import { LnurlCommonService } from './lnurl-common.service';
@@ -459,7 +456,9 @@ export class LnurlPaymentService {
   /**
    * Get user payment limits
    */
-  private async getUserPaymentLimits(_userId: string): Promise<PaymentLimit> {
+  private async getUserPaymentLimits(
+    _userId: string, // eslint-disable-line @typescript-eslint/no-unused-vars
+  ): Promise<PaymentLimit> {
     // TODO: Implement user-specific limits from database
     // For now, return default limits
     return {
