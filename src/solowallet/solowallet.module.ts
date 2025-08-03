@@ -34,5 +34,6 @@ import { JwtConfigModule } from '../common/jwt-config.module';
     SolowalletMetricsService,
     RoleValidationService,
   ],
+  exports: [SolowalletService],
 })
 export class SolowalletModule {}

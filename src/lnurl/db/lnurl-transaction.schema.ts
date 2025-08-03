@@ -13,7 +13,7 @@ import {
 export class LnurlTransaction extends AbstractDocument {
   @Prop({
     type: String,
-    enum: Object.values(LnurlType),
+    enum: Object.values(LnurlType).filter((v) => typeof v === 'string'),
     required: true,
     index: true,
   })
@@ -21,7 +21,7 @@ export class LnurlTransaction extends AbstractDocument {
 
   @Prop({
     type: String,
-    enum: Object.values(LnurlSubType),
+    enum: Object.values(LnurlSubType).filter((v) => typeof v === 'string'),
     required: false,
     index: true,
   })
@@ -29,7 +29,7 @@ export class LnurlTransaction extends AbstractDocument {
 
   @Prop({
     type: Number,
-    enum: Object.values(TransactionStatus),
+    enum: Object.values(TransactionStatus).filter((v) => typeof v === 'number'),
     required: true,
     index: true,
   })
@@ -63,7 +63,7 @@ export class LnurlTransaction extends AbstractDocument {
 
   @Prop({
     type: Number,
-    enum: Object.values(Currency),
+    enum: Object.values(Currency).filter((v) => typeof v === 'number'),
     required: true,
   })
   currency: Currency;
@@ -76,9 +76,9 @@ export class LnurlTransaction extends AbstractDocument {
 
   @Prop({
     type: Object,
-    required: true,
+    required: false,
   })
-  lightning: LnurlLightning;
+  lightning?: LnurlLightning;
 
   @Prop({
     type: String,

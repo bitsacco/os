@@ -1,10 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule } from '@nestjs/config';
-import { HttpModule } from '@nestjs/axios';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { HttpModule, HttpService } from '@nestjs/axios';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 // Controllers
 import { LightningAddressController } from './controllers/lightning-address.controller';
+import { LnurlPublicController } from './controllers/lnurl-public.controller';
 import { LnurlWithdrawController } from './controllers/lnurl-withdraw.controller';
 import { LnurlPaymentController } from './controllers/lnurl-payment.controller';
 
@@ -37,13 +39,9 @@ import { LightningAddressRepository } from './db/lightning-address.repository';
 // External dependencies
 import { FedimintService } from '../common/fedimint/fedimint.service';
 import { SolowalletModule } from '../solowallet/solowallet.module';
-import { SolowalletService } from '../solowallet/solowallet.service';
 import { ChamaModule } from '../chamas/chama.module';
-import { ChamasService } from '../chamas/chamas.service';
-import { ChamaWalletService } from '../chamawallet/wallet.service';
 import { NotificationModule } from '../notifications/notification.module';
 import { SwapModule } from '../swap/swap.module';
-import { FxService } from '../swap/fx/fx.service';
 
 @Module({
   imports: [
@@ -61,6 +59,7 @@ import { FxService } from '../swap/fx/fx.service';
   ],
   controllers: [
     LightningAddressController,
+    LnurlPublicController,
     LnurlWithdrawController,
     LnurlPaymentController,
   ],
@@ -73,11 +72,30 @@ import { FxService } from '../swap/fx/fx.service';
     LnurlCommonService,
     LnurlTransactionService,
     LnurlMetricsService,
-    FedimintService,
-    SolowalletService,
-    ChamasService,
-    ChamaWalletService,
-    FxService,
+    {
+      provide: FedimintService,
+      useFactory: (
+        httpService: HttpService,
+        eventEmitter: EventEmitter2,
+        configService: ConfigService,
+      ) => {
+        const fedimintService = new FedimintService(httpService, eventEmitter);
+        fedimintService.initialize(
+          configService.get<string>('CLIENTD_BASE_URL'),
+          configService.get<string>('FEDERATION_ID'),
+          configService.get<string>('GATEWAY_ID'),
+          configService.get<string>('CLIENTD_PASSWORD'),
+          configService.get<string>('LNURL_CALLBACK_BASE_URL'),
+        );
+        return fedimintService;
+      },
+      inject: [HttpService, EventEmitter2, ConfigService],
+    },
+    // Services from imported modules are already available
+    // SolowalletService - from SolowalletModule
+    // ChamasService - from ChamaModule
+    // ChamaWalletService - from ChamaModule
+    // FxService - from SwapModule
   ],
   exports: [
     LightningAddressService,

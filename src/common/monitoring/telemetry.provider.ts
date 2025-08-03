@@ -20,14 +20,28 @@ export class TelemetryProvider implements OnModuleDestroy {
 
     // Initialize default Prometheus metrics
     try {
+      // Clear any existing metrics first
+      promClient.register.clear();
+
+      // Skip metrics initialization in Bun environment due to compatibility issues
+      if (typeof Bun !== 'undefined') {
+        console.log('Skipping Prometheus default metrics in Bun environment');
+        this.initialized = true;
+        return;
+      }
+
+      // Collect default metrics with basic configuration
       promClient.collectDefaultMetrics({
         prefix: 'bitsacco_os_',
         register: promClient.register,
+        labels: { app: 'bitsacco-os' },
       });
       this.initialized = true;
     } catch (error) {
       // Handle initialization errors (e.g., in test environments)
       console.warn('Failed to initialize Prometheus metrics:', error);
+      // Don't let metrics failure prevent app startup
+      this.initialized = true;
     }
   }
 

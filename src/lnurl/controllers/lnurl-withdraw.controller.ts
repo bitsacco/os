@@ -23,7 +23,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 
 @ApiTags('LNURL Withdraw')
-@Controller('v1/lnurl/withdraw')
+@Controller('lnurl/withdraw')
 export class LnurlWithdrawController {
   private readonly logger = new Logger(LnurlWithdrawController.name);
 

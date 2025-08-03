@@ -80,14 +80,12 @@ export class LightningAddressDocument extends AbstractDocument {
     type: String,
     enum: Object.values(AddressType),
     required: true,
-    index: true,
   })
   type: AddressType;
 
   @Prop({
     type: String,
     required: true,
-    index: true,
   })
   ownerId: string;
 

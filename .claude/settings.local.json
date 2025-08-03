@@ -43,7 +43,9 @@
       "Bash(tsc:*)",
       "WebFetch(domain:github.com)",
       "Bash(docker logs:*)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(curl:*)",
+      "Bash(journalctl:*)"
     ],
     "deny": []
   }

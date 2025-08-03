@@ -35,7 +35,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { CurrentUser } from '../../common/auth/decorators';
 
 @ApiTags('LNURL Payment')
-@Controller('v1/lnurl/payment')
+@Controller('lnurl/payment')
 @UseGuards(AuthGuard('jwt'))
 @ApiBearerAuth()
 export class LnurlPaymentController {
@@ -105,7 +105,7 @@ export class LnurlPaymentController {
     });
 
     return {
-      targets: result.targets.map((target) => ({
+      items: result.targets.map((target) => ({
         id: target._id.toString(),
         type: target.type,
         target: target.target,
@@ -238,7 +238,7 @@ export class LnurlPaymentController {
     );
 
     return {
-      payments: result.payments.map((payment) => ({
+      items: result.payments.map((payment) => ({
         id: payment._id.toString(),
         amountMsats: payment.amountMsats,
         amountFiat: payment.amountFiat,

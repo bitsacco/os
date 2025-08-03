@@ -61,13 +61,13 @@ import { MetricsModule } from './metrics/metrics.module';
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION: Joi.string().required(),
-        THROTTLE_TTL: Joi.number().default(60),
-        THROTTLE_LIMIT: Joi.number().default(120),
-        IP_RATE_LIMIT_ENABLED: Joi.boolean().default(true),
-        IP_RATE_LIMIT: Joi.number().default(30),
-        IP_RATE_LIMIT_WINDOW: Joi.number().default(60),
-        IP_RATE_LIMIT_BURST: Joi.number().default(10),
-        IP_RATE_LIMIT_TRUSTED: Joi.string().default(''),
+        THROTTLE_TTL: Joi.number().optional().default(60),
+        THROTTLE_LIMIT: Joi.number().optional().default(120),
+        IP_RATE_LIMIT_ENABLED: Joi.boolean().optional().default(true),
+        IP_RATE_LIMIT: Joi.number().optional().default(30),
+        IP_RATE_LIMIT_WINDOW: Joi.number().optional().default(60),
+        IP_RATE_LIMIT_BURST: Joi.number().optional().default(10),
+        IP_RATE_LIMIT_TRUSTED: Joi.string().optional().default(''),
         CSP_REPORT_URI: Joi.string().optional(),
         DOCS_API_KEY: Joi.when('NODE_ENV', {
           is: 'production',
@@ -109,6 +109,11 @@ import { MetricsModule } from './metrics/metrics.module';
         // LNURL module
         LNURL_DOMAIN: Joi.string().default('bitsacco.com'),
         LNURL_CALLBACK_BASE_URL: Joi.string().required(),
+        // Fedimint Service Configuration (for LNURL module)
+        CLIENTD_BASE_URL: Joi.string().required(),
+        CLIENTD_PASSWORD: Joi.string().required(),
+        FEDERATION_ID: Joi.string().required(),
+        GATEWAY_ID: Joi.string().required(),
         // Swap module
         MOCK_BTC_KES_RATE: Joi.number(),
         CURRENCY_API_KEY: Joi.string(),

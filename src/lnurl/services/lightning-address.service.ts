@@ -801,11 +801,20 @@ export class LightningAddressService {
     }
 
     // Check if already taken
-    const existing = await this.lightningAddressRepository.findOne({
-      address: normalizedAddress,
-    });
-
-    return !existing;
+    try {
+      await this.lightningAddressRepository.findOne({
+        address: normalizedAddress,
+      });
+      // If we get here, the address exists
+      return false;
+    } catch (error) {
+      // If NotFoundException is thrown, the address is available
+      if (error instanceof NotFoundException) {
+        return true;
+      }
+      // Re-throw other errors
+      throw error;
+    }
   }
 
   /**
@@ -820,6 +829,13 @@ export class LightningAddressService {
       query.type = type;
     }
 
-    return this.lightningAddressRepository.findOne(query);
+    try {
+      return await this.lightningAddressRepository.findOne(query);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return null;
+      }
+      throw error;
+    }
   }
 }

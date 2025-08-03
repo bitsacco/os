@@ -81,7 +81,6 @@ export class LnurlTransactionService {
       amountFiat,
       currency,
       lnurlData,
-      lightning: {},
       reference,
     });
 
