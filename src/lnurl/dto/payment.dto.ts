@@ -13,6 +13,7 @@ import { AMOUNT_VALIDATION } from './base.dto';
 
 export enum WalletType {
   SOLO = 'solo',
+  CHAMA = 'chama',
 }
 
 export class ExternalPaymentDto {
@@ -82,6 +83,14 @@ export class ExternalPaymentDto {
   @IsOptional()
   @IsString()
   txId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Chama ID (required when walletType is "chama")',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @IsOptional()
+  @IsString()
+  chamaId?: string;
 }
 
 export class UpdateTargetPreferencesDto {

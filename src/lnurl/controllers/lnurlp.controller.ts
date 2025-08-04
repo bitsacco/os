@@ -68,6 +68,7 @@ export class LnurlPaymentController {
     const result = await this.lnurlPaymentService.payExternal({
       userId: dto.userId,
       walletType: dto.walletType,
+      chamaId: dto.chamaId,
       lightningAddress: dto.target,
       amountSats: dto.amountSats,
       comment: dto.comment,
