@@ -3,30 +3,7 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 import { BadRequestException } from '@nestjs/common';
 import { LnurlController } from './lnurl.controller';
 import { LightningAddressService } from '../services/lightning-address.service';
-
-function createMockFunction() {
-  const mockFn = async (...args: any[]) => mockFn.mockReturnValue;
-  mockFn.mockReturnValue = undefined;
-  mockFn.mockResolvedValue = (value: any) => {
-    mockFn.mockReturnValue = Promise.resolve(value);
-    return mockFn;
-  };
-  mockFn.mockRejectedValue = (value: any) => {
-    mockFn.mockReturnValue = Promise.reject(value);
-    return mockFn;
-  };
-  mockFn.calls = [];
-  const originalFn = mockFn;
-  const wrappedFn = (...args: any[]) => {
-    wrappedFn.calls.push(args);
-    return originalFn(...args);
-  };
-  wrappedFn.mockReturnValue = originalFn.mockReturnValue;
-  wrappedFn.mockResolvedValue = originalFn.mockResolvedValue;
-  wrappedFn.mockRejectedValue = originalFn.mockRejectedValue;
-  wrappedFn.calls = originalFn.calls;
-  return wrappedFn;
-}
+import { createMockFunction } from '../test-utils';
 
 describe('LnurlController', () => {
   let controller: LnurlController;

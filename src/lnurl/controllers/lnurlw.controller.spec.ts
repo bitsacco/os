@@ -5,38 +5,21 @@ import { JwtService } from '@nestjs/jwt';
 import { LnurlWithdrawController } from './lnurlw.controller';
 import { LnurlWithdrawService } from '../services/lnurl-withdraw.service';
 import { JwtAuthGuard } from '../../common/auth/jwt.auth';
-
-function createMockFunction() {
-  const mockFn = async (...args: any[]) => mockFn.mockReturnValue;
-  mockFn.mockReturnValue = undefined;
-  mockFn.mockResolvedValue = (value: any) => {
-    mockFn.mockReturnValue = Promise.resolve(value);
-    return mockFn;
-  };
-  mockFn.mockRejectedValue = (value: any) => {
-    mockFn.mockReturnValue = Promise.reject(value);
-    return mockFn;
-  };
-  mockFn.calls = [];
-  const originalFn = mockFn;
-  const wrappedFn = (...args: any[]) => {
-    wrappedFn.calls.push(args);
-    return originalFn(...args);
-  };
-  wrappedFn.mockReturnValue = originalFn.mockReturnValue;
-  wrappedFn.mockResolvedValue = originalFn.mockResolvedValue;
-  wrappedFn.mockRejectedValue = originalFn.mockRejectedValue;
-  wrappedFn.calls = originalFn.calls;
-  return wrappedFn;
-}
+import {
+  createMockFunction,
+  createCommonMocks,
+  createMockUser,
+} from '../test-utils';
 
 describe('LnurlWithdrawController', () => {
   let controller: LnurlWithdrawController;
   let lnurlWithdrawService: any;
 
-  const mockUser = { id: 'user123', userId: 'user123' };
+  const mockUser = createMockUser({ id: 'user123', userId: 'user123' });
 
   beforeEach(async () => {
+    const { reflector, jwtService } = createCommonMocks();
+
     const mockLnurlWithdrawService = {
       handleWithdrawQuery: createMockFunction(),
       processWithdrawCallback: createMockFunction(),
@@ -49,23 +32,9 @@ describe('LnurlWithdrawController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [LnurlWithdrawController],
       providers: [
-        {
-          provide: LnurlWithdrawService,
-          useValue: mockLnurlWithdrawService,
-        },
-        {
-          provide: JwtService,
-          useValue: {
-            verify: createMockFunction(),
-            sign: createMockFunction(),
-          },
-        },
-        {
-          provide: Reflector,
-          useValue: {
-            get: createMockFunction(),
-          },
-        },
+        { provide: LnurlWithdrawService, useValue: mockLnurlWithdrawService },
+        { provide: JwtService, useValue: jwtService },
+        { provide: Reflector, useValue: reflector },
         JwtAuthGuard,
       ],
     }).compile();

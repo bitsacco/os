@@ -1,37 +1,44 @@
-import { Model } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 import { randomUUID } from 'crypto';
 import {
   Injectable,
   Logger,
   BadRequestException,
-  NotFoundException,
   HttpException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { InjectModel } from '@nestjs/mongoose';
 import { SolowalletService } from '../../solowallet/solowallet.service';
 import { ChamaWalletService } from '../../chamawallet/wallet.service';
 import {
   LnurlType,
   PaymentResult,
-  isLightningAddress,
   LnurlTransactionDocument as LnurlTransactionInterface,
 } from '../../common';
-import type {
-  ExternalTargetInfo,
-  ExternalTargetPreferences,
-} from '../../common';
 import { WalletType } from '../dto';
-import { ExternalLnurlTarget, ExternalLnurlTargetDocument } from '../db';
 import { LnurlResolverService } from './lnurl-resolver.service';
 import { LnurlCommonService } from './lnurl-common.service';
 import { LnurlTransactionService } from './lnurl-transaction.service';
 
+export interface LnurlSuccessAction {
+  tag: string;
+  description?: string;
+  url?: string;
+  message?: string;
+}
+
+export interface LnurlInvoiceResponse {
+  pr: string; // payment request (invoice)
+  routes?: any[];
+  disposable?: boolean;
+  successAction?: LnurlSuccessAction;
+  metadata?: string;
+  comment?: string;
+}
+
 export interface ExternalPaymentResult extends PaymentResult {
   targetId?: string;
   domain: string;
-  successAction?: any;
+  successAction?: LnurlSuccessAction;
 }
 
 export interface ExternalPaymentOptions {
@@ -42,7 +49,6 @@ export interface ExternalPaymentOptions {
   amountSats: number;
   comment?: string;
   reference: string;
-  idempotencyKey?: string;
   txId?: string;
 }
 
@@ -52,8 +58,6 @@ export class LnurlPaymentService {
   private readonly defaultPaymentTimeout = 30000; // 30 seconds
 
   constructor(
-    @InjectModel(ExternalLnurlTarget.name)
-    private readonly externalTargetModel: Model<ExternalLnurlTargetDocument>,
     private readonly lnurlResolverService: LnurlResolverService,
     private readonly lnurlCommonService: LnurlCommonService,
     private readonly lnurlTransactionService: LnurlTransactionService,
@@ -137,8 +141,7 @@ export class LnurlPaymentService {
           });
         } else {
           // Create new transaction with server-generated idempotency key
-          const idempotencyKey =
-            options.idempotencyKey || `lnurl-pay-${randomUUID()}`;
+          const idempotencyKey = `lnurl-pay-${randomUUID()}`;
           result = await this.solowalletService.withdrawFunds({
             userId: options.userId,
             amountFiat,
@@ -182,7 +185,7 @@ export class LnurlPaymentService {
     target: string,
     amountSats: number,
     comment?: string,
-  ): Promise<{ invoice: string; metadata: any }> {
+  ): Promise<{ invoice: string; metadata: LnurlInvoiceResponse }> {
     this.logger.log(
       `Preparing external payment to ${target} for ${amountSats} sats`,
     );
@@ -242,8 +245,7 @@ export class LnurlPaymentService {
     callback: string,
     amountMsats: number,
     comment?: string,
-    payerData?: any,
-  ): Promise<any> {
+  ): Promise<LnurlInvoiceResponse> {
     this.logger.log(
       `Requesting invoice from ${callback} with amount ${amountMsats} msats`,
     );
@@ -254,10 +256,6 @@ export class LnurlPaymentService {
 
     if (comment) {
       url.searchParams.append('comment', comment);
-    }
-
-    if (payerData) {
-      url.searchParams.append('payerdata', JSON.stringify(payerData));
     }
 
     this.logger.log(`Making request to: ${url.toString()}`);
@@ -304,145 +302,11 @@ export class LnurlPaymentService {
   }
 
   /**
-   * Save or update external target
-   */
-  async saveExternalTarget(
-    userId: string,
-    target: string,
-    resolved: any,
-    nickname?: string,
-  ): Promise<ExternalLnurlTargetDocument> {
-    const isAddress = isLightningAddress(target);
-    const targetInfo: ExternalTargetInfo = {
-      address: isAddress ? target : undefined,
-      lnurl: !isAddress ? target : undefined,
-      domain: resolved.domain,
-      metadata: {
-        callback: resolved.metadata.callback,
-        minSendable: resolved.metadata.minSendable,
-        maxSendable: resolved.metadata.maxSendable,
-        commentAllowed: resolved.metadata.commentAllowed,
-        tag: resolved.metadata.tag,
-        metadata: resolved.metadata.metadata,
-        cachedAt: new Date(),
-        ttl: 3600, // 1 hour
-      },
-    };
-
-    // Check if target already exists
-    const existing = await this.externalTargetModel.findOne({
-      userId,
-      'target.domain': resolved.domain,
-      $or: [{ 'target.address': target }, { 'target.lnurl': target }],
-    });
-
-    if (existing) {
-      // Update existing target
-      existing.target.metadata = targetInfo.metadata;
-      existing.updatedAt = new Date();
-      if (nickname) {
-        existing.preferences.nickname = nickname;
-      }
-      await existing.save();
-      return existing;
-    }
-
-    // Create new target
-    const newTarget = new this.externalTargetModel({
-      userId,
-      type: isAddress ? 'LIGHTNING_ADDRESS' : 'LNURL_PAY',
-      target: targetInfo,
-      stats: {
-        totalSent: 0,
-        paymentCount: 0,
-      },
-      preferences: {
-        nickname,
-        isFavorite: false,
-      },
-    });
-
-    await newTarget.save();
-    return newTarget;
-  }
-
-  /**
-   * Get user's saved targets
-   */
-  async getSavedTargets(
-    userId: string,
-    options?: {
-      favorites?: boolean;
-      limit?: number;
-      offset?: number;
-    },
-  ): Promise<{
-    targets: ExternalLnurlTargetDocument[];
-    total: number;
-  }> {
-    const query: any = { userId };
-
-    if (options?.favorites) {
-      query['preferences.isFavorite'] = true;
-    }
-
-    const [targets, total] = await Promise.all([
-      this.externalTargetModel
-        .find(query)
-        .sort({ 'stats.lastUsedAt': -1 })
-        .limit(options?.limit || 20)
-        .skip(options?.offset || 0),
-      this.externalTargetModel.countDocuments(query),
-    ]);
-
-    return { targets, total };
-  }
-
-  /**
-   * Update target preferences
-   */
-  async updateTargetPreferences(
-    userId: string,
-    targetId: string,
-    preferences: Partial<ExternalTargetPreferences>,
-  ): Promise<ExternalLnurlTargetDocument> {
-    const target = await this.externalTargetModel.findOne({
-      _id: targetId,
-      userId,
-    });
-
-    if (!target) {
-      throw new NotFoundException('Target not found');
-    }
-
-    Object.assign(target.preferences, preferences);
-    target.updatedAt = new Date();
-    await target.save();
-
-    return target;
-  }
-
-  /**
-   * Delete saved target
-   */
-  async deleteSavedTarget(userId: string, targetId: string): Promise<void> {
-    const result = await this.externalTargetModel.deleteOne({
-      _id: targetId,
-      userId,
-    });
-
-    if (result.deletedCount === 0) {
-      throw new NotFoundException('Target not found');
-    }
-  }
-
-  /**
    * Get payment history for external payments
    */
   async getExternalPaymentHistory(
     userId: string,
     options?: {
-      targetId?: string;
       limit?: number;
       offset?: number;
     },
@@ -456,24 +320,6 @@ export class LnurlPaymentService {
       limit: options?.limit,
       offset: options?.offset,
     });
-
-    // If targetId is specified, filter the results
-    if (options?.targetId) {
-      const target = await this.externalTargetModel.findById(options.targetId);
-      if (target) {
-        const filteredPayments = result.transactions.filter((payment) => {
-          const externalPay = payment.lnurlData?.externalPay;
-          return (
-            externalPay?.targetAddress === target.target.address ||
-            externalPay?.targetUrl === target.target.lnurl
-          );
-        });
-        return {
-          payments: filteredPayments,
-          total: filteredPayments.length,
-        };
-      }
-    }
 
     return {
       payments: result.transactions,

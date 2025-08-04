@@ -7,38 +7,21 @@ import { LightningAddressService } from '../services/lightning-address.service';
 import { JwtAuthGuard } from '../../common/auth/jwt.auth';
 import { CreateLightningAddressDto, UpdateLightningAddressDto } from '../dto';
 import { AddressType } from '../../common/types/lnurl';
-
-function createMockFunction() {
-  const mockFn = async (...args: any[]) => mockFn.mockReturnValue;
-  mockFn.mockReturnValue = undefined;
-  mockFn.mockResolvedValue = (value: any) => {
-    mockFn.mockReturnValue = Promise.resolve(value);
-    return mockFn;
-  };
-  mockFn.mockRejectedValue = (value: any) => {
-    mockFn.mockReturnValue = Promise.reject(value);
-    return mockFn;
-  };
-  mockFn.calls = [];
-  const originalFn = mockFn;
-  const wrappedFn = (...args: any[]) => {
-    wrappedFn.calls.push(args);
-    return originalFn(...args);
-  };
-  wrappedFn.mockReturnValue = originalFn.mockReturnValue;
-  wrappedFn.mockResolvedValue = originalFn.mockResolvedValue;
-  wrappedFn.mockRejectedValue = originalFn.mockRejectedValue;
-  wrappedFn.calls = originalFn.calls;
-  return wrappedFn;
-}
+import {
+  createMockFunction,
+  createCommonMocks,
+  createMockUser,
+} from '../test-utils';
 
 describe('LightningAddressController', () => {
   let controller: LightningAddressController;
   let lightningAddressService: any;
 
-  const mockUser = { id: 'user123', _id: 'user123' };
+  const mockUser = createMockUser({ id: 'user123', _id: 'user123' });
 
   beforeEach(async () => {
+    const { reflector, jwtService } = createCommonMocks();
+
     const mockLightningAddressService = {
       createAddress: createMockFunction(),
       listUserAddresses: createMockFunction(),
@@ -55,19 +38,8 @@ describe('LightningAddressController', () => {
           provide: LightningAddressService,
           useValue: mockLightningAddressService,
         },
-        {
-          provide: JwtService,
-          useValue: {
-            verify: createMockFunction(),
-            sign: createMockFunction(),
-          },
-        },
-        {
-          provide: Reflector,
-          useValue: {
-            get: createMockFunction(),
-          },
-        },
+        { provide: JwtService, useValue: jwtService },
+        { provide: Reflector, useValue: reflector },
         JwtAuthGuard,
       ],
     }).compile();

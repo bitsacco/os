@@ -16,61 +16,6 @@ export class BaseResponseDto {
 }
 
 /**
- * Target response for saved payment targets
- */
-export class TargetResponseDto {
-  @ApiProperty({
-    description: 'Target ID',
-  })
-  id: string;
-
-  @ApiProperty({
-    description: 'Target type',
-    enum: ['LIGHTNING_ADDRESS', 'LNURL_PAY'],
-  })
-  type: string;
-
-  @ApiProperty({
-    description: 'Target information',
-  })
-  target: {
-    address?: string;
-    lnurl?: string;
-    domain: string;
-    metadata?: any;
-  };
-
-  @ApiProperty({
-    description: 'Usage statistics',
-  })
-  stats: {
-    totalSent: number;
-    paymentCount: number;
-    lastUsedAt?: Date;
-  };
-
-  @ApiProperty({
-    description: 'User preferences',
-  })
-  preferences: {
-    nickname?: string;
-    isFavorite: boolean;
-    defaultAmount?: number;
-    defaultComment?: string;
-  };
-
-  @ApiProperty({
-    description: 'Creation date',
-  })
-  createdAt: Date;
-
-  @ApiProperty({
-    description: 'Last update date',
-  })
-  updatedAt: Date;
-}
-
-/**
  * List response with pagination info
  */
 export class PaginatedResponseDto<T> {
@@ -80,17 +25,6 @@ export class PaginatedResponseDto<T> {
   total: number;
 
   items: T[];
-}
-
-/**
- * List targets response
- */
-export class ListTargetsResponseDto extends PaginatedResponseDto<TargetResponseDto> {
-  @ApiProperty({
-    description: 'List of saved targets',
-    type: [TargetResponseDto],
-  })
-  items: TargetResponseDto[];
 }
 
 /**
@@ -158,4 +92,29 @@ export class PaymentHistoryResponseDto extends PaginatedResponseDto<PaymentHisto
     type: [PaymentHistoryItemDto],
   })
   items: PaymentHistoryItemDto[];
+}
+
+/**
+ * External payment response
+ */
+export class ExternalPaymentResponseDto {
+  @ApiProperty({
+    description: 'Whether the payment was successful',
+  })
+  success: boolean;
+
+  @ApiProperty({
+    description: 'Transaction ID',
+  })
+  txId: string;
+
+  @ApiProperty({
+    description: 'Status message',
+  })
+  message: string;
+
+  @ApiPropertyOptional({
+    description: 'Error message if payment failed',
+  })
+  error?: string;
 }
