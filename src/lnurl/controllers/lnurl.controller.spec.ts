@@ -150,46 +150,4 @@ describe('LnurlController', () => {
     });
   });
 
-  describe('validateAddress', () => {
-    it('should validate external Lightning Address', async () => {
-      const address = 'user@walletofsatoshi.com';
-      const mockResponse = {
-        valid: true,
-        metadata: {
-          callback: 'https://walletofsatoshi.com/.well-known/lnurlp/user',
-          minSendable: 1000,
-          maxSendable: 100000000000,
-          metadata: '[["text/plain","Pay to user@walletofsatoshi.com"]]',
-          tag: 'payRequest',
-        },
-      };
-
-      lightningAddressService.validateExternalAddress.mockResolvedValue(
-        mockResponse,
-      );
-
-      const result = await controller.validateAddress(address);
-
-      expect(
-        lightningAddressService.validateExternalAddress.calls,
-      ).toContainEqual([address]);
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should return validation failure for invalid address', async () => {
-      const address = 'invalid@nonexistent.com';
-      const mockResponse = {
-        valid: false,
-        error: 'Lightning Address not found or unreachable',
-      };
-
-      lightningAddressService.validateExternalAddress.mockResolvedValue(
-        mockResponse,
-      );
-
-      const result = await controller.validateAddress(address);
-
-      expect(result).toEqual(mockResponse);
-    });
-  });
 });

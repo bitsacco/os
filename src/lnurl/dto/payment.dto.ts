@@ -6,6 +6,7 @@ import {
   MaxLength,
   IsEnum,
   IsNotEmpty,
+  IsInt,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -40,11 +41,11 @@ export class ExternalPaymentDto {
   target: string;
 
   @ApiProperty({
-    description: 'Amount in satoshis',
+    description: 'Amount in satoshis (must be a whole number)',
     example: 1000,
     minimum: 1,
   })
-  @IsNumber()
+  @IsInt({ message: 'Amount must be a whole number of satoshis' })
   @Min(1)
   amountSats: number;
 

@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: ./Dockerfile
       target: development
-    command: bun run dev
+    command: sh -c "apt-get update && apt-get install -y procps && bun run dev"
     restart: always
     depends_on:
       - mongodb

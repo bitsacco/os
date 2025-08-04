@@ -35,7 +35,26 @@ async function bootstrap() {
     }),
   );
 
-  app.setGlobalPrefix(API_VERSION);
+  // Set global prefix for all routes except .well-known
+  //
+  // IMPORTANT: Why .well-known is excluded from versioning:
+  //
+  // The .well-known prefix is a standard convention defined in RFC 5785 for hosting
+  // metadata at predictable URLs. Lightning addresses specifically use the path
+  // .well-known/lnurlp/{username} as per the LNURL specification (LUD-16).
+  //
+  // External Lightning wallets expect this endpoint to be available at the root
+  // domain without any version prefix. For example:
+  // - Correct: https://bitsacco.com/.well-known/lnurlp/alice
+  // - Wrong: https://bitsacco.com/v1/.well-known/lnurlp/alice
+  //
+  // All other API routes (including the LNURL callback) should maintain the /v1/
+  // prefix for proper API versioning. The callback URL in the LNURL response
+  // correctly includes the version prefix.
+  app.setGlobalPrefix(API_VERSION, {
+    exclude: ['.well-known/lnurlp/(.*)'],
+  });
+
   // app.enableVersioning({
   //   type: VersioningType.URI,
   //   defaultVersion: API_VERSION,

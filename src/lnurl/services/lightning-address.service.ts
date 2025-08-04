@@ -622,45 +622,6 @@ export class LightningAddressService {
   }
 
   /**
-   * Validate an external Lightning Address
-   */
-  async validateExternalAddress(address: string): Promise<{
-    valid: boolean;
-    metadata?: any;
-    error?: string;
-  }> {
-    this.logger.log(`Validating external Lightning Address: ${address}`);
-
-    try {
-      // Validate format
-      if (!isLightningAddress(address)) {
-        return {
-          valid: false,
-          error: 'Invalid Lightning Address format',
-        };
-      }
-
-      // Resolve the address to get metadata
-      const metadata =
-        await this.lnurlResolverService.resolveLightningAddress(address);
-
-      return {
-        valid: true,
-        metadata,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to validate address ${address}: ${error.message}`,
-      );
-
-      return {
-        valid: false,
-        error: error.message || 'Failed to validate address',
-      };
-    }
-  }
-
-  /**
    * Pay an external Lightning Address
    * This method is used by solowallet and chamawallet services to send payments
    * to external lightning addresses
