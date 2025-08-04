@@ -74,6 +74,14 @@ export class ExternalPaymentDto {
   @IsOptional()
   @IsString()
   idempotencyKey?: string;
+
+  @ApiPropertyOptional({
+    description: 'Existing transaction ID to continue a pending payment',
+    example: '507f1f77bcf86cd799439011',
+  })
+  @IsOptional()
+  @IsString()
+  txId?: string;
 }
 
 export class UpdateTargetPreferencesDto {

@@ -16,36 +16,6 @@ export class BaseResponseDto {
 }
 
 /**
- * External payment response
- */
-export class ExternalPaymentResponseDto extends BaseResponseDto {
-  @ApiPropertyOptional({
-    description: 'Payment transaction ID',
-  })
-  paymentId?: string;
-
-  @ApiPropertyOptional({
-    description: 'Payment preimage (proof of payment)',
-  })
-  preimage?: string;
-
-  @ApiPropertyOptional({
-    description: 'Saved target ID if target was saved',
-  })
-  targetId?: string;
-
-  @ApiProperty({
-    description: 'Domain of the external service',
-  })
-  domain: string;
-
-  @ApiPropertyOptional({
-    description: 'Success action from external service',
-  })
-  successAction?: any;
-}
-
-/**
  * Target response for saved payment targets
  */
 export class TargetResponseDto {

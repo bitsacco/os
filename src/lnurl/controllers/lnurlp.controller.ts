@@ -73,6 +73,7 @@ export class LnurlPaymentController {
       comment: dto.comment,
       reference: dto.reference,
       idempotencyKey: dto.idempotencyKey,
+      txId: dto.txId,
     });
 
     return result;

@@ -59,6 +59,7 @@ export interface DelegatedPaymentOptions {
   comment?: string;
   reference: string;
   idempotencyKey?: string;
+  txId?: string;
 }
 
 @Injectable()
@@ -89,7 +90,9 @@ export class LnurlPaymentService {
     error?: string;
   }> {
     this.logger.log(
-      `Processing external payment from ${options.userId} to ${options.lightningAddress}`,
+      `Processing external payment from ${options.userId} to ${options.lightningAddress}${
+        options.txId ? ` (continuing tx: ${options.txId})` : ''
+      }`,
     );
 
     try {
@@ -118,19 +121,34 @@ export class LnurlPaymentService {
       const reference =
         options.reference || `Payment to ${options.lightningAddress}`;
 
-      // Call solowallet withdrawal with the invoice
-      const result = await this.solowalletService.withdrawFunds({
-        userId: options.userId,
-        amountFiat,
-        reference,
-        lightning: { invoice },
-        idempotencyKey: options.idempotencyKey,
-      });
+      let result;
+
+      if (options.txId) {
+        // Continue existing transaction
+        result = await this.solowalletService.continueWithdrawFunds({
+          userId: options.userId,
+          txId: options.txId,
+          amountFiat,
+          reference,
+          lightning: { invoice },
+        });
+      } else {
+        // Create new transaction
+        result = await this.solowalletService.withdrawFunds({
+          userId: options.userId,
+          amountFiat,
+          reference,
+          lightning: { invoice },
+          idempotencyKey: options.idempotencyKey,
+        });
+      }
 
       return {
         success: true,
         txId: result.txId,
-        message: 'Payment initiated successfully',
+        message: options.txId
+          ? 'Payment continued successfully'
+          : 'Payment initiated successfully',
       };
     } catch (error) {
       this.logger.error(`External payment failed: ${error.message}`);
