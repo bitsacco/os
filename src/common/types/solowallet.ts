@@ -32,6 +32,7 @@ export interface WithdrawFundsRequest {
   offramp?: OfframpSwapTarget | undefined;
   lightning?: Bolt11 | undefined;
   lnurlRequest?: boolean | undefined;
+  lightningAddress?: string | undefined;
   pagination?: PaginatedRequest | undefined;
 }
 

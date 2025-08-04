@@ -5,12 +5,34 @@ import {
   IsBoolean,
   Min,
   MaxLength,
-  IsObject,
+  IsEnum,
+  IsNotEmpty,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AMOUNT_VALIDATION } from './base.dto';
 
+export enum WalletType {
+  SOLO = 'solo',
+}
+
 export class ExternalPaymentDto {
+  @ApiProperty({
+    description: 'User ID for delegated payment',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @IsNotEmpty()
+  @IsString()
+  userId: string;
+
+  @ApiProperty({
+    description: 'Wallet type marker',
+    enum: WalletType,
+    example: WalletType.SOLO,
+  })
+  @IsNotEmpty()
+  @IsEnum(WalletType)
+  walletType: WalletType;
+
   @ApiProperty({
     description: 'Target Lightning Address or LNURL',
     example: 'alice@wallet.com',
@@ -19,13 +41,21 @@ export class ExternalPaymentDto {
   target: string;
 
   @ApiProperty({
-    description: 'Amount in millisatoshis',
-    example: 50000,
-    minimum: AMOUNT_VALIDATION.minimum,
+    description: 'Amount in satoshis',
+    example: 1000,
+    minimum: 1,
   })
   @IsNumber()
-  @Min(AMOUNT_VALIDATION.minimum)
-  amountMsats: number;
+  @Min(1)
+  amountSats: number;
+
+  @ApiProperty({
+    description: 'Reference for the transaction',
+    example: 'Payment to Alice',
+  })
+  @IsNotEmpty()
+  @IsString()
+  reference: string;
 
   @ApiPropertyOptional({
     description: 'Optional comment for the payment',
@@ -38,29 +68,12 @@ export class ExternalPaymentDto {
   comment?: string;
 
   @ApiPropertyOptional({
-    description: 'Save this target for future payments',
-    default: false,
-  })
-  @IsOptional()
-  @IsBoolean()
-  saveTarget?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Nickname for saved target',
-    example: 'Alice Coffee Shop',
-    maxLength: 100,
+    description: 'Idempotency key to prevent duplicate payments',
+    example: 'pay-2024-01-15-001',
   })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
-  targetNickname?: string;
-
-  @ApiPropertyOptional({
-    description: 'Payer data for LNURL-pay',
-  })
-  @IsOptional()
-  @IsObject()
-  payerData?: any;
+  idempotencyKey?: string;
 }
 
 export class UpdateTargetPreferencesDto {

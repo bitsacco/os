@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { HttpModule, HttpService } from '@nestjs/axios';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ConfigModule } from '@nestjs/config';
+import { HttpModule } from '@nestjs/axios';
 
 // Controllers
-import { LightningAddressController } from './controllers/lightning-address.controller';
-import { LnurlPublicController } from './controllers/lnurl-public.controller';
-import { LnurlWithdrawController } from './controllers/lnurl-withdraw.controller';
-import { LnurlPaymentController } from './controllers/lnurl-payment.controller';
+import { LnurlController } from './controllers/lnurl.controller';
+import { LightningAddressController } from './controllers/lnaddr.controller';
+import { LnurlWithdrawController } from './controllers/lnurlw.controller';
+import { LnurlPaymentController } from './controllers/lnurlp.controller';
 
 // Services
 import { LightningAddressService } from './services/lightning-address.service';
@@ -38,11 +37,10 @@ import { UsersDocument, UsersSchema } from '../common/database';
 import { LightningAddressRepository } from './db/lightning-address.repository';
 
 // External dependencies
-import { FedimintService } from '../common/fedimint/fedimint.service';
 import { SolowalletModule } from '../solowallet/solowallet.module';
 import { ChamaModule } from '../chamas/chama.module';
 import { NotificationModule } from '../notifications/notification.module';
-import { SwapModule } from '../swap/swap.module';
+import { SwapModule } from '../swap';
 import { UsersService } from '../common/users/users.service';
 import { UsersRepository } from '../common/users/users.repository';
 import { RoleValidationService } from '../common/auth/role-validation.service';
@@ -64,7 +62,7 @@ import { RoleValidationService } from '../common/auth/role-validation.service';
   ],
   controllers: [
     LightningAddressController,
-    LnurlPublicController,
+    LnurlController,
     LnurlWithdrawController,
     LnurlPaymentController,
   ],

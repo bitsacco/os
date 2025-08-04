@@ -51,6 +51,16 @@ export interface ExternalPaymentResult extends PaymentResult {
   successAction?: any;
 }
 
+export interface DelegatedPaymentOptions {
+  userId: string;
+  walletType: 'solo';
+  lightningAddress: string;
+  amountSats: number;
+  comment?: string;
+  reference: string;
+  idempotencyKey?: string;
+}
+
 @Injectable()
 export class LnurlPaymentService {
   private readonly logger = new Logger(LnurlPaymentService.name);
@@ -72,7 +82,139 @@ export class LnurlPaymentService {
   /**
    * Pay to an external Lightning Address or LNURL
    */
-  async payExternal(
+  async payExternal(options: DelegatedPaymentOptions): Promise<{
+    success: boolean;
+    txId: string;
+    message: string;
+    error?: string;
+  }> {
+    this.logger.log(
+      `Processing external payment from ${options.userId} to ${options.lightningAddress}`,
+    );
+
+    try {
+      // Step 1: Validate wallet type
+      if (options.walletType !== 'solo') {
+        throw new BadRequestException('Unsupported wallet type');
+      }
+
+      // Step 2: Prepare the payment (resolve address and get invoice)
+      const { invoice } = await this.prepareExternalPayment(
+        options.lightningAddress,
+        options.amountSats,
+        options.comment,
+      );
+
+      // Step 3: Convert sats to fiat for wallet service
+      const exchangeRate = await this.lnurlTransactionService.getExchangeRate();
+      const amountMsats = options.amountSats * 1000;
+      const amountFiat = this.lnurlTransactionService.msatsToFiat(
+        amountMsats,
+        exchangeRate,
+      );
+
+      // Step 4: Delegate to wallet (we've already validated it's 'solo')
+      // Include the Lightning address in the reference
+      const reference =
+        options.reference || `Payment to ${options.lightningAddress}`;
+
+      // Call solowallet withdrawal with the invoice
+      const result = await this.solowalletService.withdrawFunds({
+        userId: options.userId,
+        amountFiat,
+        reference,
+        lightning: { invoice },
+        idempotencyKey: options.idempotencyKey,
+      });
+
+      return {
+        success: true,
+        txId: result.txId,
+        message: 'Payment initiated successfully',
+      };
+    } catch (error) {
+      this.logger.error(`External payment failed: ${error.message}`);
+
+      // Re-throw HTTP exceptions (including BadRequestException)
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // For non-HTTP errors, return error response
+      return {
+        success: false,
+        txId: '',
+        message: 'Payment failed',
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Prepare external payment by resolving address and fetching invoice
+   * This is used by wallet services that need just the invoice
+   */
+  async prepareExternalPayment(
+    target: string,
+    amountSats: number,
+    comment?: string,
+  ): Promise<{ invoice: string; metadata: any }> {
+    this.logger.log(
+      `Preparing external payment to ${target} for ${amountSats} sats`,
+    );
+
+    // Resolve the target
+    const resolved = await this.lnurlResolverService.resolve(target);
+
+    if (resolved.type !== 'pay') {
+      throw new BadRequestException('Target does not support payments');
+    }
+
+    // Convert sats to millisats
+    const amountMsats = amountSats * 1000;
+
+    // Validate amount
+    const metadata = resolved.metadata;
+    if (
+      !this.lnurlCommonService.validateAmount(
+        amountMsats,
+        metadata.minSendable,
+        metadata.maxSendable,
+      )
+    ) {
+      const minSats = Math.floor(metadata.minSendable / 1000);
+      const maxSats = Math.floor(metadata.maxSendable / 1000);
+      throw new BadRequestException(
+        `Amount must be between ${minSats} and ${maxSats} sats. You requested ${amountSats} sats.`,
+      );
+    }
+
+    // Check comment length if provided
+    if (comment && metadata.commentAllowed) {
+      if (comment.length > metadata.commentAllowed) {
+        throw new BadRequestException(
+          `Comment too long. Maximum ${metadata.commentAllowed} characters allowed`,
+        );
+      }
+    }
+
+    // Request invoice from external service
+    const invoice = await this.requestInvoice(
+      metadata.callback,
+      amountMsats,
+      comment,
+    );
+
+    return {
+      invoice: invoice.pr,
+      metadata: invoice,
+    };
+  }
+
+  /**
+   * Pay to an external Lightning Address or LNURL (Legacy - for backward compatibility)
+   */
+  private async payExternalLegacy(
     userId: string,
     target: string,
     options: ExternalPaymentOptions,
@@ -208,7 +350,9 @@ export class LnurlPaymentService {
     comment?: string,
     payerData?: any,
   ): Promise<any> {
-    this.logger.log(`Requesting invoice from ${callback}`);
+    this.logger.log(
+      `Requesting invoice from ${callback} with amount ${amountMsats} msats`,
+    );
 
     // Build callback URL with parameters
     const url = new URL(callback);
@@ -221,6 +365,8 @@ export class LnurlPaymentService {
     if (payerData) {
       url.searchParams.append('payerdata', JSON.stringify(payerData));
     }
+
+    this.logger.log(`Making request to: ${url.toString()}`);
 
     try {
       const response = await firstValueFrom(
@@ -253,7 +399,9 @@ export class LnurlPaymentService {
         throw error;
       }
 
-      this.logger.error(`Failed to request invoice: ${error.message}`);
+      this.logger.error(
+        `Failed to request invoice: ${error.message}. Status: ${error.response?.status}. Response data: ${JSON.stringify(error.response?.data || 'No response data')}`,
+      );
       throw new HttpException(
         'Failed to get invoice from external service',
         503,

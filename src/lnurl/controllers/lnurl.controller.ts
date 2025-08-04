@@ -6,19 +6,12 @@ import {
   Logger,
   BadRequestException,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { LightningAddressService } from '../services/lightning-address.service';
 
-@ApiTags('LNURL Public')
 @Controller()
-export class LnurlPublicController {
-  private readonly logger = new Logger(LnurlPublicController.name);
+export class LnurlController {
+  private readonly logger = new Logger(LnurlController.name);
 
   constructor(
     private readonly lightningAddressService: LightningAddressService,
@@ -77,9 +70,11 @@ export class LnurlPublicController {
    */
   @Get('.well-known/lnurlp/:address')
   @ApiOperation({
-    summary: 'LNURL-pay endpoint for Lightning Address',
+    summary: 'Get LNURL-pay metadata for Lightning Address',
     description:
-      'Returns LNURL-pay metadata for a Lightning Address. This endpoint is queried by external Lightning wallets.',
+      'Standard LNURL-pay endpoint that returns payment metadata for a Lightning Address. ' +
+      'This endpoint is queried by Lightning wallets when a user enters a Lightning Address (e.g., user@bitsacco.com). ' +
+      'The response includes payment limits, callback URL, and descriptive metadata.',
   })
   @ApiParam({
     name: 'address',
@@ -110,9 +105,11 @@ export class LnurlPublicController {
    */
   @Get('lnurl/callback/:address')
   @ApiOperation({
-    summary: 'LNURL-pay callback endpoint',
+    summary: 'Generate Lightning invoice for payment',
     description:
-      'Generates a Lightning invoice for payment. Called by wallets after displaying the LNURL-pay metadata.',
+      'LNURL-pay callback endpoint that generates a Lightning invoice when a user confirms payment. ' +
+      'This is called by the wallet after displaying payment details to the user. ' +
+      'Supports optional comments and Nostr zap requests. Returns a Lightning invoice (bolt11) that the wallet will pay.',
   })
   @ApiParam({
     name: 'address',
@@ -180,5 +177,54 @@ export class LnurlPublicController {
       amountMsats,
       { comment, nostr: parsedNostr },
     );
+  }
+
+  /**
+   * Validate an external Lightning Address
+   */
+  @Get('lnurl/validate-address')
+  @ApiOperation({
+    summary: 'Validate external Lightning Address',
+    description:
+      'Validates whether an external Lightning Address (e.g., user@getalby.com) is active and reachable. ' +
+      "This endpoint checks if the address exists by querying the external service's LNURL-pay endpoint. " +
+      'Useful for verifying addresses before sending payments or storing them as withdrawal targets.',
+  })
+  @ApiQuery({
+    name: 'address',
+    required: true,
+    type: String,
+    description:
+      'Full Lightning Address including domain (e.g., user@domain.com)',
+    example: 'user@walletofsatoshi.com',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Address validation successful',
+    schema: {
+      example: {
+        valid: true,
+        metadata: {
+          callback: 'https://walletofsatoshi.com/.well-known/lnurlp/user',
+          minSendable: 1000,
+          maxSendable: 100000000000,
+          metadata: '[[\"text/plain\",\"Pay to user@walletofsatoshi.com\"]]',
+          tag: 'payRequest',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Address validation failed',
+    schema: {
+      example: {
+        valid: false,
+        error: 'Lightning Address not found or unreachable',
+      },
+    },
+  })
+  async validateAddress(@Query('address') address: string) {
+    return await this.lightningAddressService.validateExternalAddress(address);
   }
 }

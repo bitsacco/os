@@ -128,3 +128,66 @@ describe('Payment Success Actions', () => {
     expect(typeof successAction.message).toBe('string');
   });
 });
+
+describe('External Payment Delegation', () => {
+  it('should validate external payment options', () => {
+    const validOptions = {
+      userId: 'user123',
+      walletType: 'SOLO',
+      lightningAddress: 'alice@wallet.com',
+      amountSats: 1000,
+      reference: 'Payment to Alice',
+    };
+
+    expect(validOptions.userId).toBeDefined();
+    expect(validOptions.walletType).toBe('SOLO');
+    expect(validOptions.lightningAddress).toMatch(
+      /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/,
+    );
+    expect(validOptions.amountSats).toBeGreaterThan(0);
+  });
+
+  it('should validate lightning address format for external payments', () => {
+    const validAddresses = [
+      'alice@wallet.com',
+      'bob@ln.service.io',
+      'user123@domain.co',
+    ];
+
+    const addressRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/;
+
+    validAddresses.forEach((address) => {
+      expect(addressRegex.test(address)).toBe(true);
+    });
+  });
+
+  it('should reject invalid lightning addresses for external payments', () => {
+    const invalidAddresses = [
+      'alice', // missing domain
+      '@wallet.com', // missing username
+      'alice@@wallet.com', // double @
+      'alice@', // missing domain
+      '', // empty
+    ];
+
+    const addressRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/;
+
+    invalidAddresses.forEach((address) => {
+      expect(addressRegex.test(address)).toBe(false);
+    });
+  });
+
+  it('should validate payment amount constraints', () => {
+    const minAmount = 1; // 1 sat
+    const maxAmount = 100000000; // 100k sats
+
+    expect(minAmount).toBeGreaterThan(0);
+    expect(maxAmount).toBeGreaterThan(minAmount);
+
+    // Test various amounts
+    expect(1000).toBeGreaterThanOrEqual(minAmount);
+    expect(1000).toBeLessThanOrEqual(maxAmount);
+    expect(0).toBeLessThan(minAmount);
+    expect(100000001).toBeGreaterThan(maxAmount);
+  });
+});

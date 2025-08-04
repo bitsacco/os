@@ -144,6 +144,15 @@ export class WithdrawFundsRequestDto implements WithdrawFundsRequest {
   @IsOptional()
   @IsString()
   @ApiProperty({
+    description: 'Lightning address for withdrawal (e.g., user@wallet.com)',
+    example: 'alice@getalby.com',
+    required: false,
+  })
+  lightningAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({
     description: 'Idempotency key to prevent duplicate withdrawals',
     example: 'withdraw-2024-01-15-unique-id',
     required: false,
@@ -281,4 +290,106 @@ export class LnUrlWithdrawStatusRequestDto {
   @Type(() => String)
   @ApiProperty({ description: 'ID of the withdrawal to check' })
   withdrawId: string;
+}
+
+export class PayToExternalAddressRequestDto {
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
+  userId: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @ApiProperty({
+    description: 'Lightning address to pay to (e.g., user@wallet.com)',
+    example: 'alice@getalby.com',
+  })
+  lightningAddress: string;
+
+  @IsNumber()
+  @Min(1)
+  @ApiProperty({
+    description: 'Amount in satoshis to send',
+    example: 1000,
+  })
+  amountSats: number;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({
+    description: 'Optional comment for the payment',
+    example: 'Payment for services',
+    required: false,
+  })
+  comment?: string;
+
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({
+    description: 'Reference for the transaction',
+    example: 'External payment to alice@getalby.com',
+  })
+  reference: string;
+
+  @IsOptional()
+  @IsString()
+  @ApiProperty({
+    description: 'Idempotency key to prevent duplicate payments',
+    example: 'pay-external-2024-01-15-unique-id',
+    required: false,
+  })
+  idempotencyKey?: string;
+}
+
+export class PayToExternalAddressResponseDto {
+  @ApiProperty({
+    description: 'Unique transaction ID',
+    example: '4a4b4c4d-cb98-40b1-9ed2-a13006a9f670',
+  })
+  txId: string;
+
+  @ApiProperty({
+    description: 'Whether the payment was successful',
+    example: true,
+  })
+  success: boolean;
+
+  @ApiProperty({
+    description: 'Amount sent in satoshis',
+    example: 1000,
+  })
+  amountSats: number;
+
+  @ApiProperty({
+    description: 'Fee paid in satoshis',
+    example: 5,
+  })
+  feeSats: number;
+
+  @ApiProperty({
+    description: 'Total amount withdrawn (amount + fee) in satoshis',
+    example: 1005,
+  })
+  totalAmountSats: number;
+
+  @ApiProperty({
+    description: 'Lightning address that was paid',
+    example: 'alice@getalby.com',
+  })
+  lightningAddress: string;
+
+  @ApiProperty({
+    description: 'Operation ID from the lightning network',
+    example: 'op_123456789',
+    required: false,
+  })
+  operationId?: string;
+
+  @ApiProperty({
+    description: 'Error message if payment failed',
+    required: false,
+  })
+  error?: string;
 }

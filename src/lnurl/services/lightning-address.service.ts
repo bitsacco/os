@@ -7,6 +7,8 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 import { LightningAddressDocument, LightningAddressRepository } from '../db';
 import { LnurlMetricsService } from '../lnurl.metrics';
 import { SolowalletService } from '../../solowallet/solowallet.service';
@@ -14,6 +16,7 @@ import { ChamaWalletService } from '../../chamawallet/wallet.service';
 import { ChamasService } from '../../chamas/chamas.service';
 import { LnurlCommonService } from './lnurl-common.service';
 import { LnurlTransactionService } from './lnurl-transaction.service';
+import { LnurlResolverService } from './lnurl-resolver.service';
 import { UsersService } from '../../common/users/users.service';
 import {
   FedimintService,
@@ -41,12 +44,14 @@ export class LightningAddressService {
     private readonly lnurlCommonService: LnurlCommonService,
     private readonly lnurlMetricsService: LnurlMetricsService,
     private readonly lnurlTransactionService: LnurlTransactionService,
+    private readonly lnurlResolverService: LnurlResolverService,
     private readonly fedimintService: FedimintService,
     private readonly solowalletService: SolowalletService,
     private readonly chamaWalletService: ChamaWalletService,
     private readonly chamasService: ChamasService,
     private readonly eventEmitter: EventEmitter2,
     private readonly usersService: UsersService,
+    private readonly httpService: HttpService,
   ) {}
 
   /**
@@ -614,6 +619,153 @@ export class LightningAddressService {
       });
 
     return { payments, total };
+  }
+
+  /**
+   * Validate an external Lightning Address
+   */
+  async validateExternalAddress(address: string): Promise<{
+    valid: boolean;
+    metadata?: any;
+    error?: string;
+  }> {
+    this.logger.log(`Validating external Lightning Address: ${address}`);
+
+    try {
+      // Validate format
+      if (!isLightningAddress(address)) {
+        return {
+          valid: false,
+          error: 'Invalid Lightning Address format',
+        };
+      }
+
+      // Resolve the address to get metadata
+      const metadata =
+        await this.lnurlResolverService.resolveLightningAddress(address);
+
+      return {
+        valid: true,
+        metadata,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to validate address ${address}: ${error.message}`,
+      );
+
+      return {
+        valid: false,
+        error: error.message || 'Failed to validate address',
+      };
+    }
+  }
+
+  /**
+   * Pay an external Lightning Address
+   * This method is used by solowallet and chamawallet services to send payments
+   * to external lightning addresses
+   */
+  async payExternalLightningAddress(request: {
+    lightningAddress: string;
+    amountMsats: number;
+    comment?: string;
+  }): Promise<{
+    success: boolean;
+    operationId?: string;
+    fee?: number;
+    totalAmountMsats?: number;
+    error?: string;
+  }> {
+    try {
+      this.logger.log(
+        `Processing external lightning address payment: ${request.lightningAddress} for ${request.amountMsats} msats`,
+      );
+
+      // Step 1: Validate lightning address format
+      if (!isLightningAddress(request.lightningAddress)) {
+        return {
+          success: false,
+          error: 'Invalid lightning address format',
+        };
+      }
+
+      // Step 2: Resolve the lightning address to get LNURL metadata
+      const lnurlMetadata =
+        await this.lnurlResolverService.resolveLightningAddress(
+          request.lightningAddress,
+        );
+
+      // Step 3: Validate amount is within limits
+      if (
+        request.amountMsats < lnurlMetadata.minSendable ||
+        request.amountMsats > lnurlMetadata.maxSendable
+      ) {
+        return {
+          success: false,
+          error: `Amount ${request.amountMsats} msats is outside allowed range: ${lnurlMetadata.minSendable}-${lnurlMetadata.maxSendable} msats`,
+        };
+      }
+
+      // Step 4: Request invoice from the callback URL
+      const callbackUrl = new URL(lnurlMetadata.callback);
+      callbackUrl.searchParams.append('amount', request.amountMsats.toString());
+
+      if (request.comment && lnurlMetadata.commentAllowed) {
+        const maxCommentLength = lnurlMetadata.commentAllowed;
+        const truncatedComment = request.comment.substring(0, maxCommentLength);
+        callbackUrl.searchParams.append('comment', truncatedComment);
+      }
+
+      this.logger.log(`Requesting invoice from: ${callbackUrl.toString()}`);
+
+      // Use HttpService from lnurlResolverService's httpService
+      const invoiceResponse = await firstValueFrom(
+        this.httpService.get<{
+          pr: string;
+          routes?: any[];
+          successAction?: any;
+        }>(callbackUrl.toString()),
+      );
+
+      if (!invoiceResponse.data || !invoiceResponse.data.pr) {
+        return {
+          success: false,
+          error: 'Failed to get lightning invoice from external service',
+        };
+      }
+
+      const invoice = invoiceResponse.data.pr;
+      this.logger.log(
+        `Successfully got invoice for lightning address: ${request.lightningAddress}`,
+      );
+
+      // Step 5: Pay the invoice using fedimint
+      const { operationId, fee } = await this.fedimintService.pay(invoice);
+
+      this.logger.log(
+        `Lightning address payment successful. Operation ID: ${operationId}, Fee: ${fee} msats`,
+      );
+
+      // Calculate total amount withdrawn (invoice amount + fee)
+      const totalAmountMsats = request.amountMsats + fee;
+
+      return {
+        success: true,
+        operationId,
+        fee,
+        totalAmountMsats,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to pay lightning address: ${request.lightningAddress}`,
+        error,
+      );
+      return {
+        success: false,
+        error:
+          error.message || 'Unknown error during lightning address payment',
+      };
+    }
   }
 
   /**

@@ -14,7 +14,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
@@ -23,7 +22,6 @@ import {
 import { LnurlPaymentService } from '../services/lnurl-payment.service';
 import {
   ExternalPaymentDto,
-  ExternalPaymentResponseDto,
   UpdateTargetPreferencesDto,
   ListTargetsQueryDto,
   ListTargetsResponseDto,
@@ -31,13 +29,11 @@ import {
   PaymentHistoryQueryDto,
   PaymentHistoryResponseDto,
 } from '../dto';
-import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from '../../common/auth/jwt.auth';
 import { CurrentUser } from '../../common/auth/decorators';
+import { User } from '../../common/types';
 
-@ApiTags('LNURL Payment')
-@Controller('lnurl/payment')
-@UseGuards(AuthGuard('jwt'))
-@ApiBearerAuth()
+@Controller('lnurlp')
 export class LnurlPaymentController {
   private readonly logger = new Logger(LnurlPaymentController.name);
 
@@ -48,40 +44,43 @@ export class LnurlPaymentController {
   @ApiOperation({
     summary: 'Make payment to external Lightning Address or LNURL',
     description:
-      'Send a payment to an external Lightning Address (e.g., alice@wallet.com) or LNURL',
+      'Send a payment to an external Lightning Address (e.g., alice@wallet.com) or LNURL. ' +
+      'This endpoint resolves the Lightning address, fetches the invoice, ' +
+      'and delegates the payment to the appropriate wallet service.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Payment processed successfully',
-    type: ExternalPaymentResponseDto,
+    description: 'Payment initiated successfully',
   })
   @ApiResponse({ status: 400, description: 'Invalid payment request' })
   @ApiResponse({ status: 403, description: 'Payment limit exceeded' })
   @ApiResponse({ status: 503, description: 'External service unavailable' })
-  async payExternal(
-    @CurrentUser() user: any,
-    @Body() dto: ExternalPaymentDto,
-  ): Promise<ExternalPaymentResponseDto> {
+  async payExternal(@Body() dto: ExternalPaymentDto): Promise<{
+    success: boolean;
+    txId: string;
+    message: string;
+    error?: string;
+  }> {
     this.logger.log(
-      `External payment request from user ${user.userId} to ${dto.target}`,
+      `External payment request from user ${dto.userId} to ${dto.target}`,
     );
 
-    const result = await this.lnurlPaymentService.payExternal(
-      user.userId,
-      dto.target,
-      {
-        amountMsats: dto.amountMsats,
-        comment: dto.comment,
-        payerData: dto.payerData,
-        saveTarget: dto.saveTarget,
-        targetNickname: dto.targetNickname,
-      },
-    );
+    const result = await this.lnurlPaymentService.payExternal({
+      userId: dto.userId,
+      walletType: dto.walletType,
+      lightningAddress: dto.target,
+      amountSats: dto.amountSats,
+      comment: dto.comment,
+      reference: dto.reference,
+      idempotencyKey: dto.idempotencyKey,
+    });
 
     return result;
   }
 
   @Get('targets')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'List saved payment targets',
     description:
@@ -93,12 +92,12 @@ export class LnurlPaymentController {
     type: ListTargetsResponseDto,
   })
   async getSavedTargets(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: ListTargetsQueryDto,
   ): Promise<ListTargetsResponseDto> {
-    this.logger.log(`Fetching saved targets for user ${user.userId}`);
+    this.logger.log(`Fetching saved targets for user ${user.id}`);
 
-    const result = await this.lnurlPaymentService.getSavedTargets(user.userId, {
+    const result = await this.lnurlPaymentService.getSavedTargets(user.id, {
       favorites: query.favorites,
       limit: query.limit,
       offset: query.offset,
@@ -119,6 +118,8 @@ export class LnurlPaymentController {
   }
 
   @Get('targets/:targetId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get a specific saved target',
     description: 'Retrieve details of a specific saved payment target',
@@ -131,15 +132,14 @@ export class LnurlPaymentController {
   })
   @ApiResponse({ status: 404, description: 'Target not found' })
   async getSavedTarget(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Param('targetId') targetId: string,
   ): Promise<TargetResponseDto> {
-    this.logger.log(`Fetching target ${targetId} for user ${user.userId}`);
+    this.logger.log(`Fetching target ${targetId} for user ${user.id}`);
 
-    const targets = await this.lnurlPaymentService.getSavedTargets(
-      user.userId,
-      { limit: 1 },
-    );
+    const targets = await this.lnurlPaymentService.getSavedTargets(user.id, {
+      limit: 1,
+    });
 
     const target = targets.targets.find((t) => t._id.toString() === targetId);
     if (!target) {
@@ -158,6 +158,8 @@ export class LnurlPaymentController {
   }
 
   @Patch('targets/:targetId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Update target preferences',
     description: 'Update preferences for a saved payment target',
@@ -170,14 +172,14 @@ export class LnurlPaymentController {
   })
   @ApiResponse({ status: 404, description: 'Target not found' })
   async updateTargetPreferences(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Param('targetId') targetId: string,
     @Body() dto: UpdateTargetPreferencesDto,
   ): Promise<TargetResponseDto> {
-    this.logger.log(`Updating target ${targetId} for user ${user.userId}`);
+    this.logger.log(`Updating target ${targetId} for user ${user.id}`);
 
     const updated = await this.lnurlPaymentService.updateTargetPreferences(
-      user.userId,
+      user.id,
       targetId,
       dto,
     );
@@ -194,6 +196,8 @@ export class LnurlPaymentController {
   }
 
   @Delete('targets/:targetId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Delete saved target',
@@ -203,15 +207,17 @@ export class LnurlPaymentController {
   @ApiResponse({ status: 204, description: 'Target deleted successfully' })
   @ApiResponse({ status: 404, description: 'Target not found' })
   async deleteSavedTarget(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Param('targetId') targetId: string,
   ): Promise<void> {
-    this.logger.log(`Deleting target ${targetId} for user ${user.userId}`);
+    this.logger.log(`Deleting target ${targetId} for user ${user.id}`);
 
-    await this.lnurlPaymentService.deleteSavedTarget(user.userId, targetId);
+    await this.lnurlPaymentService.deleteSavedTarget(user.id, targetId);
   }
 
   @Get('history')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Get external payment history',
     description:
@@ -223,13 +229,13 @@ export class LnurlPaymentController {
     type: PaymentHistoryResponseDto,
   })
   async getPaymentHistory(
-    @CurrentUser() user: any,
+    @CurrentUser() user: User,
     @Query() query: PaymentHistoryQueryDto,
   ): Promise<PaymentHistoryResponseDto> {
-    this.logger.log(`Fetching payment history for user ${user.userId}`);
+    this.logger.log(`Fetching payment history for user ${user.id}`);
 
     const result = await this.lnurlPaymentService.getExternalPaymentHistory(
-      user.userId,
+      user.id,
       {
         targetId: query.targetId,
         limit: query.limit,
