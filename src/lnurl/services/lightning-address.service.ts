@@ -6,33 +6,31 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 import { LightningAddressDocument, LightningAddressRepository } from '../db';
 import { LnurlMetricsService } from '../lnurl.metrics';
 import { SolowalletService } from '../../solowallet/solowallet.service';
 import { ChamaWalletService } from '../../chamawallet/wallet.service';
 import { ChamasService } from '../../chamas/chamas.service';
 import { LnurlCommonService } from './lnurl-common.service';
-import { LnurlTransactionService } from './lnurl-transaction.service';
 import { LnurlResolverService } from './lnurl-resolver.service';
+import { LnurlTransactionService } from './lnurl-transaction.service';
 import { UsersService } from '../../common/users/users.service';
+import { SwapService } from '../../swap/swap.service';
 import {
-  FedimintService,
   AddressType,
   LightningAddressMetadata,
   LightningAddressSettings,
   LnurlPayResponse,
   LnurlPayInvoiceResponse,
   PaymentOptions,
-  LnurlType,
-  LnurlSubType,
   ResolvedAddress,
   ParsedAddress,
-  TransactionStatus,
-  LnurlTransactionDocument,
   isLightningAddress,
+  Currency,
+  btcToFiat,
+  LnurlTransactionDocument,
+  LnurlType,
 } from '../../common';
 
 @Injectable()
@@ -43,15 +41,14 @@ export class LightningAddressService {
     private readonly lightningAddressRepository: LightningAddressRepository,
     private readonly lnurlCommonService: LnurlCommonService,
     private readonly lnurlMetricsService: LnurlMetricsService,
-    private readonly lnurlTransactionService: LnurlTransactionService,
     private readonly lnurlResolverService: LnurlResolverService,
-    private readonly fedimintService: FedimintService,
+    private readonly lnurlTransactionService: LnurlTransactionService,
     private readonly solowalletService: SolowalletService,
     private readonly chamaWalletService: ChamaWalletService,
     private readonly chamasService: ChamasService,
-    private readonly eventEmitter: EventEmitter2,
     private readonly usersService: UsersService,
     private readonly httpService: HttpService,
+    private readonly swapService: SwapService,
   ) {}
 
   /**
@@ -272,7 +269,13 @@ export class LightningAddressService {
    * Generate LNURL-pay response for a Lightning Address
    */
   async generatePayResponse(address: string): Promise<LnurlPayResponse> {
-    const fullAddress = `${address}@${this.lnurlCommonService.isInternalDomain('bitsacco.com') ? 'bitsacco.com' : 'bitsacco.com'}`;
+    // First try to find the address in our database to get the correct domain
+    const addressDoc = await this.lightningAddressRepository.findOne({
+      address: address.toLowerCase(),
+    });
+
+    const domain = addressDoc?.domain || 'bitsacco.com';
+    const fullAddress = `${address}@${domain}`;
     const resolved = await this.resolveAddress(fullAddress);
 
     if (resolved.type !== 'internal' || !resolved.metadata) {
@@ -310,8 +313,13 @@ export class LightningAddressService {
     );
 
     try {
-      // Resolve the address
-      const fullAddress = `${address}@${this.lnurlCommonService.isInternalDomain('bitsacco.com') ? 'bitsacco.com' : 'bitsacco.com'}`;
+      // Resolve the address using the stored domain
+      const addressDoc = await this.lightningAddressRepository.findOne({
+        address: address.toLowerCase(),
+      });
+
+      const domain = addressDoc?.domain || 'bitsacco.com';
+      const fullAddress = `${address}@${domain}`;
       const resolved = await this.resolveAddress(fullAddress);
 
       if (resolved.type !== 'internal' || !resolved.metadata) {
@@ -333,54 +341,70 @@ export class LightningAddressService {
         );
       }
 
-      // Generate invoice
+      // Get current exchange rate to convert msats to fiat
+      const quote = await this.swapService.getQuote({
+        from: Currency.BTC,
+        to: Currency.KES,
+        amount: '1', // Get rate for 1 KES to determine BTC/KES rate
+      });
+
+      // Convert msats to fiat using the exchange rate
+      const { amountFiat } = btcToFiat({
+        amountMsats,
+        fiatToBtcRate: Number(quote.rate),
+      });
+
+      // Generate invoice using the appropriate wallet service
       const description = options?.comment
         ? `${resolved.metadata.description} - ${options.comment}`
         : resolved.metadata.description || 'Bitsacco Payment';
 
-      const invoice = await this.fedimintService.invoice(
-        amountMsats,
-        description,
-      );
+      let userTxsResponse: any;
 
-      // Create transaction record
-      const transaction = await this.lnurlTransactionService.createTransaction({
-        type: LnurlType.PAY_IN,
-        subType: LnurlSubType.LIGHTNING_ADDRESS,
-        userId: resolved.ownerId!,
-        chamaId:
-          resolved.addressType === AddressType.CHAMA
-            ? resolved.ownerId
-            : undefined,
-        amountMsats,
-        lnurlData: {
-          lightningAddress: {
-            address: fullAddress,
-            addressId: resolved.addressId!,
-            comment: options?.comment,
-          },
-        },
-        reference: `Lightning Address payment to ${fullAddress}`,
-      });
+      // Delegate to the appropriate wallet service based on address type
+      switch (resolved.addressType) {
+        case AddressType.PERSONAL:
+          // Use the existing depositFunds method
+          userTxsResponse = await this.solowalletService.depositFunds({
+            userId: resolved.ownerId!,
+            amountFiat,
+            reference: description,
+            pagination: { page: 0, size: 1 }, // We only need the first transaction
+          });
+          break;
 
-      // Update with lightning details
-      await this.lnurlTransactionService.updateTransactionStatus(
-        transaction._id.toString(),
-        TransactionStatus.PENDING,
-        {
-          lightning: {
-            invoice: invoice.invoice,
-            operationId: invoice.operationId,
-          },
-        },
-      );
+        case AddressType.CHAMA:
+        case AddressType.MEMBER_CHAMA:
+          // Use the existing deposit method
+          userTxsResponse = await this.chamaWalletService.deposit({
+            chamaId: resolved.ownerId!,
+            memberId: resolved.memberId || resolved.ownerId!,
+            amountFiat,
+            reference: description,
+            pagination: { page: 0, size: 1 }, // We only need the first transaction
+          });
+          break;
 
-      // Start monitoring for payment
-      this.monitorPayment(
-        transaction._id.toString(),
-        invoice.operationId,
-        resolved,
-      );
+        default:
+          throw new BadRequestException(
+            `Unsupported address type: ${resolved.addressType}`,
+          );
+      }
+
+      // Extract the invoice from the transaction in the ledger
+      const transactions = userTxsResponse?.ledger?.transactions || [];
+      if (transactions.length === 0) {
+        throw new Error('No transaction found in ledger response');
+      }
+
+      const transaction = transactions[0];
+      const lightningData = transaction.lightning;
+
+      if (!lightningData || !lightningData.invoice) {
+        throw new Error('No invoice found in transaction lightning data');
+      }
+
+      const invoice = lightningData.invoice;
 
       // Update stats
       await this.updateAddressStats(resolved.addressId!, amountMsats);
@@ -398,7 +422,7 @@ export class LightningAddressService {
         `Payment received! Thank you for paying ${address}.`;
 
       return {
-        pr: invoice.invoice,
+        pr: invoice,
         routes: [],
         successAction: this.lnurlCommonService.formatSuccessAction(
           'message',
@@ -419,159 +443,16 @@ export class LightningAddressService {
   }
 
   /**
-   * Monitor payment and update wallet on success
+   * Find Lightning Address by ID
    */
-  private monitorPayment(
-    transactionId: string,
-    operationId: string,
-    resolved: ResolvedAddress,
-  ): void {
-    this.logger.log(`Monitoring payment for transaction ${transactionId}`);
-
-    // Set up payment timeout
-    const timeoutId = setTimeout(
-      () => this.handlePaymentTimeout(transactionId, operationId),
-      300000, // 5 minutes
-    );
-
-    // Listen for payment success
-    this.eventEmitter.once(
-      `fedimint.receive.success.${operationId}`,
-      async () => {
-        clearTimeout(timeoutId);
-        await this.handlePaymentSuccess(transactionId, resolved);
-      },
-    );
-
-    // Listen for payment failure
-    this.eventEmitter.once(
-      `fedimint.receive.failure.${operationId}`,
-      async (data) => {
-        clearTimeout(timeoutId);
-        await this.handlePaymentFailure(transactionId, data.error);
-      },
-    );
-  }
-
-  /**
-   * Handle payment timeout
-   */
-  private async handlePaymentTimeout(
-    transactionId: string,
-    operationId: string,
-  ): Promise<void> {
-    this.logger.warn(
-      `Payment timeout for operation ${operationId}, marking as failed`,
-    );
-
-    await this.lnurlTransactionService.updateTransactionStatus(
-      transactionId,
-      TransactionStatus.FAILED,
-      {
-        completedAt: new Date(),
-        error: 'Payment timeout - no response received',
-      },
-    );
-  }
-
-  /**
-   * Handle successful payment
-   */
-  private async handlePaymentSuccess(
-    transactionId: string,
-    resolved: ResolvedAddress,
-  ): Promise<void> {
+  async findById(addressId: string): Promise<LightningAddressDocument | null> {
     try {
-      // Update transaction status
-      const transaction =
-        await this.lnurlTransactionService.updateTransactionStatus(
-          transactionId,
-          TransactionStatus.COMPLETE,
-          { completedAt: new Date() },
-        );
-
-      if (!transaction) {
-        this.logger.error(`Transaction ${transactionId} not found`);
-        return;
-      }
-
-      // Process the deposit
-      await this.processDeposit(transaction, resolved);
-
-      // Send notification if enabled
-      if (resolved.settings?.notifyOnPayment) {
-        this.eventEmitter.emit('payment.received', {
-          userId: resolved.ownerId,
-          amount: transaction.amountMsats,
-          address: transaction.lnurlData.lightningAddress?.address,
-        });
-      }
-
-      this.logger.log(`Payment completed for transaction ${transactionId}`);
+      return await this.lightningAddressRepository.findOne({ _id: addressId });
     } catch (error) {
-      this.logger.error(
-        `Failed to process payment completion: ${error.message}`,
-      );
-    }
-  }
-
-  /**
-   * Handle failed payment
-   */
-  private async handlePaymentFailure(
-    transactionId: string,
-    error?: string,
-  ): Promise<void> {
-    try {
-      await this.lnurlTransactionService.updateTransactionStatus(
-        transactionId,
-        TransactionStatus.FAILED,
-        {
-          completedAt: new Date(),
-          error: error || 'Payment failed',
-        },
-      );
-
-      this.logger.error(
-        `Payment failed for transaction ${transactionId}: ${error}`,
-      );
-    } catch (updateError) {
-      this.logger.error(
-        `Failed to update failed payment: ${updateError.message}`,
-      );
-    }
-  }
-
-  /**
-   * Process deposit to appropriate wallet
-   */
-  private async processDeposit(
-    transaction: LnurlTransactionDocument,
-    resolved: ResolvedAddress,
-  ): Promise<void> {
-    const reference = `Lightning Address payment received via ${transaction.lnurlData.lightningAddress?.address}`;
-
-    switch (resolved.addressType) {
-      case AddressType.PERSONAL:
-        await this.solowalletService.depositFunds({
-          userId: resolved.ownerId!,
-          amountFiat: transaction.amountFiat,
-          reference,
-        });
-        break;
-
-      case AddressType.CHAMA:
-      case AddressType.MEMBER_CHAMA:
-        await this.chamaWalletService.deposit({
-          chamaId: resolved.ownerId!,
-          memberId: resolved.memberId || resolved.ownerId!,
-          amountFiat: transaction.amountFiat,
-          reference,
-        });
-        break;
-
-      default:
-        this.logger.warn(`Unknown address type: ${resolved.addressType}`);
+      if (error instanceof NotFoundException) {
+        return null;
+      }
+      throw error;
     }
   }
 
@@ -594,139 +475,6 @@ export class LightningAddressService {
         },
       },
     );
-  }
-
-  /**
-   * Get payment history for a Lightning Address
-   */
-  async getPaymentHistory(
-    addressId: string,
-    userId: string,
-    limit: number = 20,
-    offset: number = 0,
-  ): Promise<{
-    payments: LnurlTransactionDocument[];
-    total: number;
-  }> {
-    // Verify ownership
-    await this.getAddress(addressId, userId);
-
-    const { transactions: payments, total } =
-      await this.lnurlTransactionService.findByUser(userId, {
-        type: LnurlType.PAY_IN,
-        limit,
-        offset,
-      });
-
-    return { payments, total };
-  }
-
-  /**
-   * Pay an external Lightning Address
-   * This method is used by solowallet and chamawallet services to send payments
-   * to external lightning addresses
-   */
-  async payExternalLightningAddress(request: {
-    lightningAddress: string;
-    amountMsats: number;
-    comment?: string;
-  }): Promise<{
-    success: boolean;
-    operationId?: string;
-    fee?: number;
-    totalAmountMsats?: number;
-    error?: string;
-  }> {
-    try {
-      this.logger.log(
-        `Processing external lightning address payment: ${request.lightningAddress} for ${request.amountMsats} msats`,
-      );
-
-      // Step 1: Validate lightning address format
-      if (!isLightningAddress(request.lightningAddress)) {
-        return {
-          success: false,
-          error: 'Invalid lightning address format',
-        };
-      }
-
-      // Step 2: Resolve the lightning address to get LNURL metadata
-      const lnurlMetadata =
-        await this.lnurlResolverService.resolveLightningAddress(
-          request.lightningAddress,
-        );
-
-      // Step 3: Validate amount is within limits
-      if (
-        request.amountMsats < lnurlMetadata.minSendable ||
-        request.amountMsats > lnurlMetadata.maxSendable
-      ) {
-        return {
-          success: false,
-          error: `Amount ${request.amountMsats} msats is outside allowed range: ${lnurlMetadata.minSendable}-${lnurlMetadata.maxSendable} msats`,
-        };
-      }
-
-      // Step 4: Request invoice from the callback URL
-      const callbackUrl = new URL(lnurlMetadata.callback);
-      callbackUrl.searchParams.append('amount', request.amountMsats.toString());
-
-      if (request.comment && lnurlMetadata.commentAllowed) {
-        const maxCommentLength = lnurlMetadata.commentAllowed;
-        const truncatedComment = request.comment.substring(0, maxCommentLength);
-        callbackUrl.searchParams.append('comment', truncatedComment);
-      }
-
-      this.logger.log(`Requesting invoice from: ${callbackUrl.toString()}`);
-
-      // Use HttpService from lnurlResolverService's httpService
-      const invoiceResponse = await firstValueFrom(
-        this.httpService.get<{
-          pr: string;
-          routes?: any[];
-          successAction?: any;
-        }>(callbackUrl.toString()),
-      );
-
-      if (!invoiceResponse.data || !invoiceResponse.data.pr) {
-        return {
-          success: false,
-          error: 'Failed to get lightning invoice from external service',
-        };
-      }
-
-      const invoice = invoiceResponse.data.pr;
-      this.logger.log(
-        `Successfully got invoice for lightning address: ${request.lightningAddress}`,
-      );
-
-      // Step 5: Pay the invoice using fedimint
-      const { operationId, fee } = await this.fedimintService.pay(invoice);
-
-      this.logger.log(
-        `Lightning address payment successful. Operation ID: ${operationId}, Fee: ${fee} msats`,
-      );
-
-      // Calculate total amount withdrawn (invoice amount + fee)
-      const totalAmountMsats = request.amountMsats + fee;
-
-      return {
-        success: true,
-        operationId,
-        fee,
-        totalAmountMsats,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Failed to pay lightning address: ${request.lightningAddress}`,
-        error,
-      );
-      return {
-        success: false,
-        error:
-          error.message || 'Unknown error during lightning address payment',
-      };
-    }
   }
 
   /**
@@ -981,5 +729,62 @@ export class LightningAddressService {
       }
       throw error;
     }
+  }
+
+  /**
+   * Get payment history for a Lightning Address
+   */
+  async getPaymentHistory(
+    addressId: string,
+    userId: string,
+    limit: number = 20,
+    offset: number = 0,
+  ): Promise<{
+    transactions: LnurlTransactionDocument[];
+    total: number;
+    address: string;
+  }> {
+    this.logger.log(
+      `Getting payment history for address ${addressId} by user ${userId}`,
+    );
+
+    // First, verify the address exists and belongs to the user
+    const address = await this.findById(addressId);
+    if (!address) {
+      throw new NotFoundException('Lightning Address not found');
+    }
+
+    // Check ownership based on address type
+    let isOwner = false;
+    switch (address.type) {
+      case AddressType.PERSONAL:
+        isOwner = address.ownerId === userId;
+        break;
+      case AddressType.CHAMA:
+      case AddressType.MEMBER_CHAMA:
+        // For chama addresses, check if user is a member
+        // This would require checking chama membership
+        isOwner = address.ownerId === userId || address.memberId === userId;
+        break;
+    }
+
+    if (!isOwner) {
+      throw new ForbiddenException(
+        'You do not have permission to view this address history',
+      );
+    }
+
+    // Get transactions for this address
+    const result = await this.lnurlTransactionService.findByAddress(addressId, {
+      type: LnurlType.PAY_IN,
+      limit,
+      offset,
+    });
+
+    return {
+      transactions: result.transactions,
+      total: result.total,
+      address: `${address.address}@${address.domain}`,
+    };
   }
 }

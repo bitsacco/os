@@ -12,7 +12,6 @@ import { SwapService } from './swap.service';
 import { FxService } from './fx/fx.service';
 import { IntasendService } from './intasend/intasend.service';
 import { SwapMetricsService } from './metrics/swap.metrics';
-import { JwtConfigModule } from '../common/jwt-config.module';
 import {
   MpesaOfframpSwapRepository,
   MpesaOfframpSwapDocument,

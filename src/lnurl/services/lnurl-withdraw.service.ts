@@ -14,11 +14,12 @@ import {
   LnurlWithdrawResponse,
   LnurlWithdrawCallbackResponse,
   TransactionStatus,
-  FedimintService,
   LnurlTransactionDocument as LnurlTransactionInterface,
 } from '../../common';
 import { LnurlCommonService } from './lnurl-common.service';
 import { LnurlTransactionService } from './lnurl-transaction.service';
+import { SolowalletService } from '../../solowallet/solowallet.service';
+import { ChamaWalletService } from '../../chamawallet/wallet.service';
 
 @Injectable()
 export class LnurlWithdrawService {
@@ -27,7 +28,8 @@ export class LnurlWithdrawService {
   constructor(
     private readonly lnurlCommonService: LnurlCommonService,
     private readonly lnurlTransactionService: LnurlTransactionService,
-    private readonly fedimintService: FedimintService,
+    private readonly solowalletService: SolowalletService,
+    private readonly chamaWalletService: ChamaWalletService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
@@ -188,8 +190,8 @@ export class LnurlWithdrawService {
         TransactionStatus.PROCESSING,
       );
 
-      // Pay the invoice using Fedimint
-      const { operationId } = await this.fedimintService.pay(pr);
+      // Delegate invoice payment to appropriate wallet service
+      const paymentResult = await this.delegateInvoicePayment(transaction, pr);
 
       // Update transaction with success
       const updatedTransaction =
@@ -200,7 +202,7 @@ export class LnurlWithdrawService {
             completedAt: new Date(),
             lightning: {
               invoice: pr,
-              operationId: operationId,
+              operationId: paymentResult.operationId,
             },
           },
         );
@@ -351,5 +353,102 @@ export class LnurlWithdrawService {
     }
 
     return transaction;
+  }
+
+  /**
+   * Extract operation ID from wallet service response
+   */
+  private extractOperationIdFromResponse(result: any): {
+    operationId: string;
+    fee: number;
+  } {
+    // Validate that we have a valid response structure
+    if (
+      !result?.ledger?.transactions ||
+      !Array.isArray(result.ledger.transactions)
+    ) {
+      throw new InternalServerErrorException(
+        'Invalid response structure from wallet service',
+      );
+    }
+
+    // Check if we have at least one transaction
+    if (result.ledger.transactions.length === 0) {
+      throw new InternalServerErrorException(
+        'No transactions found in wallet service response',
+      );
+    }
+
+    // Extract lightning data from the first transaction
+    const firstTransaction = result.ledger.transactions[0];
+    const lightningField = firstTransaction.lightning;
+    const lightningData =
+      typeof lightningField === 'string'
+        ? JSON.parse(lightningField || '{}')
+        : lightningField || {};
+
+    return {
+      operationId: lightningData.operationId || '',
+      fee: 0, // Fee is handled internally by the wallet service
+    };
+  }
+
+  /**
+   * Delegate invoice payment to the appropriate wallet service based on transaction context
+   */
+  private async delegateInvoicePayment(
+    transaction: LnurlTransactionInterface,
+    invoice: string,
+  ): Promise<{ operationId: string; fee?: number }> {
+    this.logger.log(
+      `Delegating invoice payment for transaction ${transaction._id}`,
+    );
+
+    // Determine which wallet service to use based on transaction data
+    if (transaction.chamaId) {
+      // This is a chama withdrawal - use ChamaWalletService
+      this.logger.log(
+        `Using ChamaWalletService for chama ${transaction.chamaId}`,
+      );
+
+      // For LNURL withdrawals, we need to find if there's an approved withdrawal
+      // transaction that matches this withdrawal request
+      const approvedWithdrawal =
+        await this.chamaWalletService.findApprovedLnurlWithdrawal(
+          transaction.lnurlData.withdraw?.k1 || '',
+        );
+
+      if (!approvedWithdrawal) {
+        throw new BadRequestException(
+          `No approved chama withdrawal found for LNURL request with k1: ${transaction.lnurlData.withdraw?.k1} (Transaction ID: ${transaction._id})`,
+        );
+      }
+
+      // Use the chama wallet service to continue the withdrawal with the lightning invoice
+      const result = await this.chamaWalletService.continueWithdraw({
+        chamaId: transaction.chamaId,
+        memberId: approvedWithdrawal.memberId,
+        txId: approvedWithdrawal.id,
+        lightning: { invoice },
+        pagination: { page: 0, size: 1 },
+      });
+
+      return this.extractOperationIdFromResponse(result);
+    } else {
+      // This is a personal wallet withdrawal - use SolowalletService
+      this.logger.log(`Using SolowalletService for user ${transaction.userId}`);
+
+      // For solo wallet, we can directly use the withdrawal method
+      // Since this is an LNURL withdrawal, we need to handle it as a lightning invoice withdrawal
+      const result = await this.solowalletService.withdrawFunds({
+        userId: transaction.userId,
+        amountFiat: transaction.amountFiat,
+        reference: transaction.reference,
+        lightning: { invoice },
+        pagination: { page: 0, size: 1 },
+      });
+
+      return this.extractOperationIdFromResponse(result);
+    }
   }
 }

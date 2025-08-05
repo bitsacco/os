@@ -149,5 +149,4 @@ describe('LnurlController', () => {
       ).rejects.toThrow(BadRequestException);
     });
   });
-
 });

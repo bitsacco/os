@@ -1,4 +1,5 @@
-import IntaSend = require('intasend-node');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const IntaSend = require('intasend-node');
 import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger } from '@nestjs/common';
 import {
@@ -17,7 +18,7 @@ import {
 @Injectable()
 export class IntasendService {
   private readonly logger = new Logger(IntasendService.name);
-  private intasend: IntaSend;
+  private intasend: any;
 
   constructor(private readonly configService: ConfigService) {
     this.logger.log('IntasendService created');

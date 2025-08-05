@@ -145,7 +145,6 @@ export class TokenService {
   async refreshTokens(refreshToken: string): Promise<TokenResponse> {
     const startTime = Date.now();
     let userId: string | undefined;
-    let tokenId: string | undefined;
 
     // Extract token info for rate limiting
     try {
@@ -157,9 +156,9 @@ export class TokenService {
         userId = decoded.sub;
       }
       if (decoded?.jti) {
-        tokenId = decoded.jti;
+        // tokenId = decoded.jti; // Currently not used
       }
-    } catch (e) {
+    } catch {
       // Continue even if we can't decode - the validation step will reject invalid tokens
     }
 

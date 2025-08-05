@@ -46,7 +46,7 @@ export class FxService {
       .get<{
         btcToKesRate: string;
       }>(cacheKey)
-      .catch((_) => undefined);
+      .catch(() => undefined);
     if (cachedRate) {
       this.logger.log('Returning cached currency rates');
       return cachedRate;

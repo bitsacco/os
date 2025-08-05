@@ -78,7 +78,6 @@ import { RoleValidationService } from '../common/auth/role-validation.service';
     UsersService,
     UsersRepository,
     RoleValidationService,
-    // FedimintService is now provided globally by FedimintModule in SharedModule
     // Services from imported modules are already available
     // SolowalletService - from SolowalletModule
     // ChamasService - from ChamaModule

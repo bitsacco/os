@@ -45,7 +45,8 @@
       "Bash(docker logs:*)",
       "Bash(docker compose:*)",
       "Bash(curl:*)",
-      "Bash(journalctl:*)"
+      "Bash(journalctl:*)",
+      "Bash(node:*)"
     ],
     "deny": []
   }

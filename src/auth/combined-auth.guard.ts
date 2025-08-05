@@ -1,7 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { JwtAuthGuard, ApiKeyGuard } from '../common';
 import { Reflector } from '@nestjs/core';
-import { Observable, from, lastValueFrom } from 'rxjs';
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class CombinedAuthGuard implements CanActivate {
@@ -34,7 +34,7 @@ export class CombinedAuthGuard implements CanActivate {
       return this.apiKeyGuard.canActivate(context);
     }
 
-    // Otherwise use JWT auth - wrap with lastValueFrom to handle Observable result
+    // Otherwise use JWT auth
     const result = this.jwtAuthGuard.canActivate(context);
 
     // Handle different return types

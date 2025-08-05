@@ -266,4 +266,41 @@ export class LnurlTransactionService {
 
     return { totalReceived, totalSent, count };
   }
+
+  /**
+   * Find transactions by Lightning Address ID
+   */
+  async findByAddress(
+    addressId: string,
+    filters?: {
+      type?: LnurlType;
+      status?: TransactionStatus;
+      limit?: number;
+      offset?: number;
+    },
+  ): Promise<{ transactions: LnurlTransactionDocument[]; total: number }> {
+    const query: any = { 'lnurlData.addressId': addressId };
+
+    if (filters?.type) {
+      query.type = filters.type;
+    }
+    if (filters?.status) {
+      query.status = filters.status;
+    }
+
+    const limit = filters?.limit || 20;
+    const offset = filters?.offset || 0;
+
+    const [transactions, total] = await Promise.all([
+      this.transactionModel
+        .find(query)
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(offset)
+        .exec(),
+      this.transactionModel.countDocuments(query).exec(),
+    ]);
+
+    return { transactions, total };
+  }
 }
