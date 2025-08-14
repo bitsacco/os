@@ -10,7 +10,7 @@ services:
     depends_on:
       - mongodb
     env_file:
-      - ./.dev.env
+      - ./.env
     environment:
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=1000
@@ -31,21 +31,25 @@ services:
       - mongodb_datadir:/data/db
     restart: always
 
-  clientd:
-    image: okjodom/fedimint-clientd:v0.4.1
-    container_name: clientd
+  fmcd:
+    image: okjodom/fmcd:latest
+    container_name: fmcd
     environment:
-      - FEDIMINT_CLIENTD_DB_PATH=/var/lib/clientd
-      - FEDIMINT_CLIENTD_PASSWORD=fmcdpass
-      - FEDIMINT_CLIENTD_ADDR=clientd:7070
-      - FEDIMINT_CLIENTD_MODE=rest
-      - FEDIMINT_CLIENTD_INVITE_CODE=fed11qgqrgvnhwden5te0v9k8q6rp9ekh2arfdeukuet595cr2ttpd3jhq6rzve6zuer9wchxvetyd938gcewvdhk6tcqqysptkuvknc7erjgf4em3zfh90kffqf9srujn6q53d6r056e4apze5cw27h75
+      - FMCD_DATA_DIR=/data
+      - FMCD_ADDR=0.0.0.0:7070
+      - FMCD_MODE=rest
+      - FMCD_INVITE_CODE=fed11qgqrgvnhwden5te0v9k8q6rp9ekh2arfdeukuet595cr2ttpd3jhq6rzve6zuer9wchxvetyd938gcewvdhk6tcqqysptkuvknc7erjgf4em3zfh90kffqf9srujn6q53d6r056e4apze5cw27h75
+      # Option A: Auto-generate password (default)
+      # Option B: Set explicit password
+      # - FMCD_PASSWORD=fmcdpass
+      # Option C: Disable auth (dev only)
+      # - FMCD_NO_AUTH=true
     ports:
       - 7070:7070
     volumes:
-      - clientd_datadir:/var/lib/clientd
+      - fmcd_datadir:/data
     restart: always
 
 volumes:
   mongodb_datadir:
-  clientd_datadir:
+  fmcd_datadir:

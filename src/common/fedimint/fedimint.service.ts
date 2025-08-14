@@ -83,11 +83,18 @@ export class FedimintService {
     const url = `${this.baseUrl}/v2${endpoint}`;
     this.logger.log(`POST ${url} : ${JSON.stringify(data)}`);
 
+    // fmcd uses HTTP Basic Authentication (matching phoenixd's auth model)
+    // Username is always "fmcd", password is from config
+    const username = 'fmcd';
+    const basicAuth = Buffer.from(`${username}:${this.password}`).toString(
+      'base64',
+    );
+
     return firstValueFrom(
       this.httpService
         .post<T>(url, data, {
           headers: {
-            Authorization: `Bearer ${this.password}`,
+            Authorization: `Basic ${basicAuth}`,
             'Content-Type': 'application/json',
           },
         })
