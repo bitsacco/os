@@ -349,10 +349,12 @@ export class LightningAddressService {
       });
 
       // Convert msats to fiat using the exchange rate
-      const { amountFiat } = btcToFiat({
+      // Round the amountFiat to 2 decimal places to avoid precision issues
+      const { amountFiat: rawAmountFiat } = btcToFiat({
         amountMsats,
         fiatToBtcRate: Number(quote.rate),
       });
+      const amountFiat = Number.parseFloat(rawAmountFiat.toFixed(2));
 
       // Generate invoice using the appropriate wallet service
       const description = options?.comment

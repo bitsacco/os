@@ -36,7 +36,7 @@ export function fiatToBtc({
   amountMsats: number;
 } {
   const amountBtc = amountFiat / btcToFiatRate;
-  const amountSats = amountBtc * 100000000;
+  const amountSats = Math.floor(amountBtc * 100000000);
   const amountMsats = Math.floor(amountSats * 1000);
 
   return { amountBtc, amountSats, amountMsats };

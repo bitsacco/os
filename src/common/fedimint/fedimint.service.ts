@@ -115,8 +115,11 @@ export class FedimintService {
     invoice: string;
     operationId: string;
   }> {
+    // Ensure amountMsat is always an integer (no decimal places)
+    const amountMsatInt = Math.floor(amountMsat);
+
     this.logger.log(
-      `Generating invoice for amount: ${amountMsat} msats (fees implicitly included)`,
+      `Generating invoice for amount: ${amountMsatInt} msats (fees implicitly included)`,
     );
 
     const FEE_LIMIT_PERCENTAGE = 0.01; // 1% max for fees
@@ -129,12 +132,12 @@ export class FedimintService {
         WithGatewayId,
       LightningInvoiceResponse
     >('/ln/invoice', {
-      amountMsat,
+      amountMsat: amountMsatInt,
       description,
       federationId: this.federationId,
       gatewayId: this.gatewayId,
       extra_meta: {
-        feeLimit: Math.round(amountMsat * FEE_LIMIT_PERCENTAGE),
+        feeLimit: Math.round(amountMsatInt * FEE_LIMIT_PERCENTAGE),
       },
     });
 
