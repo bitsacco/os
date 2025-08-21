@@ -181,6 +181,8 @@ export interface LnurlPayInvoiceResponse {
     url?: string;
     description?: string;
   };
+  disposable?: boolean; // Indicates if invoice is single-use (always true for BOLT11)
+  verify?: string; // Server signature of the invoice for authenticity verification
 }
 
 // LNURL-withdraw response types (LUD-03)

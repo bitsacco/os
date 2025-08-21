@@ -38,7 +38,7 @@ describe('LnurlController', () => {
         maxSendable: 100000000,
         minSendable: 1000,
         metadata: '[["text/plain","Pay to alice@bitsacco.com"]]',
-        tag: 'payRequest',
+        tag: 'payRequest' as const,
       };
 
       lightningAddressService.generatePayResponse.mockResolvedValue(
@@ -64,7 +64,7 @@ describe('LnurlController', () => {
         routes: [],
         successAction: {
           tag: 'message',
-          message: 'Payment received! Thank you.',
+          message: 'Thanks.',
         },
       };
 

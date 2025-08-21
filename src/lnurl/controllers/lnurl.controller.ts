@@ -136,7 +136,7 @@ export class LnurlController {
         routes: [],
         successAction: {
           tag: 'message',
-          message: 'Payment received! Thank you.',
+          message: 'Thanks.',
         },
       },
     },

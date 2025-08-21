@@ -418,6 +418,9 @@ export class LightningAddressService {
         amountMsats,
       );
 
+      // Generate signature for the invoice
+      const verify = this.lnurlCommonService.generateInvoiceSignature(invoice);
+
       // Return response
       const successMessage =
         resolved.settings?.customSuccessMessage ||
@@ -430,6 +433,8 @@ export class LightningAddressService {
           'message',
           successMessage,
         ),
+        disposable: true, // BOLT11 invoices are always single-use
+        verify, // Server signature for authenticity verification
       };
     } catch (error) {
       this.logger.error(`Failed to process payment callback: ${error.message}`);

@@ -185,7 +185,7 @@ describe('LightningAddressController', () => {
           maxSendable: 200000000,
         },
         settings: {
-          customSuccessMessage: 'Payment received! Thank you.',
+          customSuccessMessage: 'Thanks.',
         },
       };
 
@@ -201,7 +201,7 @@ describe('LightningAddressController', () => {
           enabled: true,
           allowComments: true,
           notifyOnPayment: true,
-          customSuccessMessage: 'Payment received! Thank you.',
+          customSuccessMessage: 'Thanks.',
         },
       };
 

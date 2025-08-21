@@ -120,7 +120,7 @@ describe('Payment Success Actions', () => {
   it('should format message success action', () => {
     const successAction = {
       tag: 'message',
-      message: 'Payment received! Thank you.',
+      message: 'Thanks.',
     };
 
     expect(successAction.tag).toBe('message');

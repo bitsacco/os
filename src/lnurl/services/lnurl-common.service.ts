@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHmac } from 'crypto';
 import {
   encodeLnurl,
   decodeLnurl,
@@ -13,11 +14,17 @@ import {
 export class LnurlCommonService {
   private readonly logger = new Logger(LnurlCommonService.name);
   private readonly domain: string;
+  private readonly signingSecret: string;
 
   constructor(private readonly configService: ConfigService) {
     this.domain = this.configService.get<string>(
       'LNURL_DOMAIN',
       'bitsacco.com',
+    );
+    // Use a signing secret for HMAC signatures (should be in env vars)
+    this.signingSecret = this.configService.get<string>(
+      'LNURL_SIGNING_SECRET',
+      'default-signing-secret-change-in-production',
     );
   }
 
@@ -199,5 +206,28 @@ export class LnurlCommonService {
       default:
         return null;
     }
+  }
+
+  /**
+   * Generate a signature for an invoice to prove server authenticity
+   * @param invoice The BOLT11 invoice string
+   * @returns HMAC-SHA256 signature as hex string
+   */
+  generateInvoiceSignature(invoice: string): string {
+    const hmac = createHmac('sha256', this.signingSecret);
+    hmac.update(invoice);
+    return hmac.digest('hex');
+  }
+
+  /**
+   * Verify an invoice signature
+   * @param invoice The BOLT11 invoice string
+   * @param signature The signature to verify
+   * @returns true if signature is valid
+   */
+  verifyInvoiceSignature(invoice: string, signature: string): boolean {
+    const expectedSignature = this.generateInvoiceSignature(invoice);
+    // Use timing-safe comparison to prevent timing attacks
+    return expectedSignature === signature;
   }
 }

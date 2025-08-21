@@ -17,6 +17,7 @@ describe('LnurlCommonService', () => {
               const config = {
                 LNURL_DOMAIN: 'bitsacco.com',
                 LNURL_CALLBACK_BASE_URL: 'https://api.bitsacco.com',
+                LNURL_SIGNING_SECRET: 'test-signing-secret',
               };
               return config[key] || defaultValue;
             }),
@@ -210,6 +211,56 @@ describe('LnurlCommonService', () => {
         description: 'View receipt',
         url: 'https://example.com/receipt',
       });
+    });
+  });
+
+  describe('Invoice signature generation and verification', () => {
+    const testInvoice = 'lnbc100n1p0example...'; // Example BOLT11 invoice
+
+    it('should generate a signature for an invoice', () => {
+      const signature = service.generateInvoiceSignature(testInvoice);
+      expect(signature).toBeTruthy();
+      expect(typeof signature).toBe('string');
+      // HMAC-SHA256 produces 64 character hex string
+      expect(signature.length).toBe(64);
+      expect(/^[a-f0-9]{64}$/.test(signature)).toBe(true);
+    });
+
+    it('should generate consistent signatures for the same invoice', () => {
+      const signature1 = service.generateInvoiceSignature(testInvoice);
+      const signature2 = service.generateInvoiceSignature(testInvoice);
+      expect(signature1).toBe(signature2);
+    });
+
+    it('should generate different signatures for different invoices', () => {
+      const invoice1 = 'lnbc100n1p0example1...';
+      const invoice2 = 'lnbc100n1p0example2...';
+      const signature1 = service.generateInvoiceSignature(invoice1);
+      const signature2 = service.generateInvoiceSignature(invoice2);
+      expect(signature1).not.toBe(signature2);
+    });
+
+    it('should verify a valid signature', () => {
+      const signature = service.generateInvoiceSignature(testInvoice);
+      const isValid = service.verifyInvoiceSignature(testInvoice, signature);
+      expect(isValid).toBe(true);
+    });
+
+    it('should reject an invalid signature', () => {
+      const invalidSignature = 'a'.repeat(64); // Invalid signature
+      const isValid = service.verifyInvoiceSignature(
+        testInvoice,
+        invalidSignature,
+      );
+      expect(isValid).toBe(false);
+    });
+
+    it('should reject a signature for a different invoice', () => {
+      const invoice1 = 'lnbc100n1p0example1...';
+      const invoice2 = 'lnbc100n1p0example2...';
+      const signature1 = service.generateInvoiceSignature(invoice1);
+      const isValid = service.verifyInvoiceSignature(invoice2, signature1);
+      expect(isValid).toBe(false);
     });
   });
 });
