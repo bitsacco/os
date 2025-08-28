@@ -7,6 +7,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
 import { LightningAddressDocument, LightningAddressRepository } from '../db';
 import { LnurlMetricsService } from '../lnurl.metrics';
 import { SolowalletService } from '../../solowallet/solowallet.service';
@@ -49,6 +50,7 @@ export class LightningAddressService {
     private readonly usersService: UsersService,
     private readonly httpService: HttpService,
     private readonly swapService: SwapService,
+    private readonly configService: ConfigService,
   ) {}
 
   /**
@@ -140,7 +142,12 @@ export class LightningAddressService {
         metadata?.description || `Pay to ${normalizedAddress}@${domain}`,
       identifier: `${normalizedAddress}@${domain}`,
       minSendable: metadata?.minSendable || 1000, // 1 sat minimum
-      maxSendable: metadata?.maxSendable || 100000000000, // 100k sats maximum
+      maxSendable:
+        metadata?.maxSendable ||
+        this.configService.get<number>(
+          'LNURL_MAX_SENDABLE_MSATS',
+          10_000_000_000_000,
+        ),
       commentAllowed: metadata?.commentAllowed || 255,
       ...metadata,
     };

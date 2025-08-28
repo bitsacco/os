@@ -59,7 +59,7 @@ describe('LightningAddressController', () => {
         metadata: {
           description: 'Alice Lightning Address',
           minSendable: 1000,
-          maxSendable: 100000000,
+          maxSendable: 50000000000000,
         },
         settings: {
           enabled: true,
@@ -154,7 +154,7 @@ describe('LightningAddressController', () => {
         metadata: {
           description: 'Alice Lightning Address',
           minSendable: 1000,
-          maxSendable: 100000000,
+          maxSendable: 50000000000000,
         },
         settings: {
           enabled: true,
@@ -182,7 +182,7 @@ describe('LightningAddressController', () => {
       const updateDto: UpdateLightningAddressDto = {
         metadata: {
           description: 'Updated Alice Lightning Address',
-          maxSendable: 200000000,
+          maxSendable: 50000000000000,
         },
         settings: {
           customSuccessMessage: 'Payment received! Thank you.',
@@ -195,7 +195,7 @@ describe('LightningAddressController', () => {
         metadata: {
           description: 'Updated Alice Lightning Address',
           minSendable: 1000,
-          maxSendable: 200000000,
+          maxSendable: 50000000000000,
         },
         settings: {
           enabled: true,

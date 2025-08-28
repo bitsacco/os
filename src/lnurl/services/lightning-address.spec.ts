@@ -92,7 +92,7 @@ describe('LNURL-pay Response Format', () => {
     const response = {
       callback: 'https://api.bitsacco.com/v1/lnurl/callback/alice',
       minSendable: 1000,
-      maxSendable: 100000000,
+      maxSendable: 50000000000000,
       metadata: '[[\"text/plain\",\"Pay to alice@bitsacco.com\"]]',
       tag: 'payRequest',
       commentAllowed: 255,

@@ -58,7 +58,7 @@ export class LightningAddressController {
         metadata: {
           description: 'Pay to alice@bitsacco.com',
           minSendable: 1000,
-          maxSendable: 100000000000,
+          maxSendable: 50000000000000,
         },
         settings: {
           enabled: true,

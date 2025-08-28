@@ -103,6 +103,11 @@ import { MetricsModule } from './metrics/metrics.module';
         // LNURL module
         LNURL_DOMAIN: Joi.string().default('bitsacco.com'),
         LNURL_CALLBACK_BASE_URL: Joi.string().required(),
+        LNURL_MAX_SENDABLE_MSATS: Joi.number()
+          .default(10_000_000_000_000)
+          .description(
+            'Maximum receivable amount in millisatoshis (default: 0.1 BTC)',
+          ),
         // Fedimint Service Configuration (for LNURL module)
         CLIENTD_BASE_URL: Joi.string().required(),
         CLIENTD_PASSWORD: Joi.string().required(),
