@@ -142,12 +142,9 @@ export class LightningAddressService {
         metadata?.description || `Pay to ${normalizedAddress}@${domain}`,
       identifier: `${normalizedAddress}@${domain}`,
       minSendable: metadata?.minSendable || 1000, // 1 sat minimum
-      maxSendable:
-        metadata?.maxSendable ||
-        this.configService.get<number>(
-          'LNURL_MAX_SENDABLE_MSATS',
-          10_000_000_000_000,
-        ),
+      maxSendable: this.configService.getOrThrow<number>(
+        'LNURL_MAX_SENDABLE_MSATS',
+      ),
       commentAllowed: metadata?.commentAllowed || 255,
       ...metadata,
     };
@@ -333,18 +330,23 @@ export class LightningAddressService {
         throw new NotFoundException('Lightning Address not found');
       }
 
-      // Validate amount
+      // Validate amount using configured max sendable
+      const maxSendable = this.configService.get<number>(
+        'LNURL_MAX_SENDABLE_MSATS',
+        10_000_000_000_000,
+      );
+
       if (
         !this.lnurlCommonService.validateAmount(
           amountMsats,
           resolved.metadata.minSendable,
-          resolved.metadata.maxSendable,
+          maxSendable,
         )
       ) {
         const minSats = Math.floor(resolved.metadata.minSendable / 1000);
-        const maxSats = Math.floor(resolved.metadata.maxSendable / 1000);
+        const maxSats = Math.floor(maxSendable / 1000);
         throw new BadRequestException(
-          `Amount must be between ${resolved.metadata.minSendable} and ${resolved.metadata.maxSendable} millisatoshis (${minSats} to ${maxSats} sats). You requested ${amountMsats} millisatoshis.`,
+          `Amount must be between ${resolved.metadata.minSendable} and ${maxSendable} millisatoshis (${minSats} to ${maxSats} sats). You requested ${amountMsats} millisatoshis.`,
         );
       }
 
