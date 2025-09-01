@@ -25,7 +25,7 @@ export function generatePhoneNumber(): string {
     '254712',
   ];
   const randomPrefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-  const randomSuffix = Math.floor(Math.random() * 1000000)
+  const randomSuffix = Math.floor(Math.random() * 1_000_000)
     .toString()
     .padStart(6, '0');
   return `${randomPrefix}${randomSuffix}`;
@@ -81,7 +81,7 @@ export function kesToMsats(amountKES: number): number {
  */
 export function generateLightningInvoice(): string {
   // This is a simplified version, real lightning invoices have a specific format
-  return `lnbc${Math.floor(Math.random() * 1000000)}${Array.from(
+  return `lnbc${Math.floor(Math.random() * 1_000_000)}${Array.from(
     { length: 100 },
     () =>
       '0123456789abcdefghjklmnpqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'[

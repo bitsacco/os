@@ -66,8 +66,8 @@ describe('Lightning Address Validation', () => {
 
 describe('Lightning Address Metadata', () => {
   it('should have valid default values', () => {
-    const defaultMinSendable = 1000; // 1 sat
-    const defaultMaxSendable = 100000000000; // 100k sats
+    const defaultMinSendable = 1_000; // 1 sat
+    const defaultMaxSendable = 100_000_000_000; // 100k sats
     const defaultCommentAllowed = 255;
 
     expect(defaultMinSendable).toBeGreaterThan(0);

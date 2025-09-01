@@ -8,6 +8,7 @@ import {
   LnurlSubType,
   LnurlTransactionDocument,
   mapToSupportedCurrency,
+  btcToFiat,
 } from '../../common';
 import { FxService } from '../../swap/fx/fx.service';
 import { LnurlTransaction } from '../db/lnurl-transaction.schema';
@@ -44,7 +45,7 @@ export class LnurlTransactionService {
   }
 
   /**
-   * Create a new LNURL transaction - centralized implementation
+   * Create a new LNURL transaction
    */
   async createTransaction(params: {
     type: LnurlType;
@@ -69,7 +70,10 @@ export class LnurlTransactionService {
 
     // Get exchange rate for fiat conversion
     const exchangeRate = await this.getExchangeRate(Currency.BTC, currency);
-    const amountFiat = this.msatsToFiat(amountMsats, exchangeRate);
+    const { amountFiat } = btcToFiat({
+      amountMsats,
+      fiatToBtcRate: exchangeRate,
+    });
 
     const transaction = new this.transactionModel({
       type,
@@ -170,22 +174,6 @@ export class LnurlTransactionService {
   async handlePaymentTimeout(transactionId: string): Promise<void> {
     await this.updateTransactionStatus(transactionId, TransactionStatus.FAILED);
     this.logger.log(`Payment timeout for transaction ${transactionId}`);
-  }
-
-  /**
-   * Convert millisatoshis to fiat
-   */
-  msatsToFiat(amountMsats: number, exchangeRate: number): number {
-    const btcAmount = amountMsats / 100000000000; // Convert msats to BTC
-    return parseFloat((btcAmount * exchangeRate).toFixed(2));
-  }
-
-  /**
-   * Convert fiat to millisatoshis
-   */
-  fiatToMsats(amountFiat: number, exchangeRate: number): number {
-    const btcAmount = amountFiat / exchangeRate;
-    return Math.round(btcAmount * 100000000000); // Convert BTC to msats
   }
 
   /**

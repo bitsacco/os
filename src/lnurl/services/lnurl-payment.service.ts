@@ -13,6 +13,7 @@ import {
   LnurlType,
   PaymentResult,
   LnurlTransactionDocument as LnurlTransactionInterface,
+  btcToFiat,
 } from '../../common';
 import { WalletType } from '../dto';
 import { LnurlResolverService } from './lnurl-resolver.service';
@@ -108,10 +109,10 @@ export class LnurlPaymentService {
       // Step 3: Convert sats to fiat for wallet service
       const exchangeRate = await this.lnurlTransactionService.getExchangeRate();
       const amountMsats = options.amountSats * 1000;
-      const amountFiat = this.lnurlTransactionService.msatsToFiat(
+      const { amountFiat } = btcToFiat({
         amountMsats,
-        exchangeRate,
-      );
+        fiatToBtcRate: exchangeRate,
+      });
 
       // Step 4: Delegate to appropriate wallet service
       // Include the Lightning address in the reference

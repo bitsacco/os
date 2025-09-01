@@ -85,24 +85,6 @@ export class LnurlCommonService {
   }
 
   /**
-   * Format amount from fiat to millisatoshis
-   */
-  fiatToMsats(amountFiat: number, rate: number): number {
-    // Convert fiat to BTC then to millisatoshis
-    const btc = amountFiat / rate;
-    return Math.round(btc * 100000000 * 1000); // BTC to sats to msats
-  }
-
-  /**
-   * Format amount from millisatoshis to fiat
-   */
-  msatsToFiat(amountMsats: number, rate: number): number {
-    // Convert msats to BTC then to fiat
-    const btc = amountMsats / (100000000 * 1000);
-    return Math.round(btc * rate * 100) / 100; // Round to 2 decimal places
-  }
-
-  /**
    * Validate amount is within acceptable range
    */
   validateAmount(

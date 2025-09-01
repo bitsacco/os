@@ -247,7 +247,7 @@ LNURL_CALLBACK_BASE_URL=https://api.bitsacco.com
 
 # Optional configurations
 LNURL_WITHDRAWAL_EXPIRY_MINUTES=60
-LNURL_MAX_WITHDRAWABLE_SATS=1000000
+LNURL_MAX_WITHDRAWABLE_SATS=1_000_000
 LNURL_MIN_WITHDRAWABLE_SATS=1
 LNURL_EXTERNAL_PAYMENT_TIMEOUT_MS=30000
 LNURL_METADATA_CACHE_TTL_SECONDS=300
@@ -346,8 +346,8 @@ const address = await lightningAddressService.createAddress(userId, {
   address: 'alice',
   type: 'PERSONAL',
   settings: {
-    minReceivable: 1000,
-    maxReceivable: 1000000,
+    minReceivable: 1_000,
+    maxReceivable: 1_000_000,
     description: 'Tips for Alice'
   }
 });

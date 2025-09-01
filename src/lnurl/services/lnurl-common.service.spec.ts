@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { LnurlCommonService } from './lnurl-common.service';
+import { btcToFiat, fiatToBtc } from '../../common';
 
 describe('LnurlCommonService', () => {
   let service: LnurlCommonService;
@@ -111,13 +112,31 @@ describe('LnurlCommonService', () => {
     const btcToKesRate = 5000000; // 1 BTC = 5M KES
 
     it('should convert fiat to millisatoshis', () => {
-      expect(service.fiatToMsats(100, btcToKesRate)).toBe(2000000); // 100 KES = 2M msats
-      expect(service.fiatToMsats(1000, btcToKesRate)).toBe(20000000); // 1000 KES = 20M msats
+      const result1 = fiatToBtc({
+        amountFiat: 100,
+        btcToFiatRate: btcToKesRate,
+      });
+      expect(result1.amountMsats).toBe(2000000); // 100 KES = 2M msats
+
+      const result2 = fiatToBtc({
+        amountFiat: 1000,
+        btcToFiatRate: btcToKesRate,
+      });
+      expect(result2.amountMsats).toBe(20000000); // 1000 KES = 20M msats
     });
 
     it('should convert millisatoshis to fiat', () => {
-      expect(service.msatsToFiat(2000000, btcToKesRate)).toBe(100);
-      expect(service.msatsToFiat(20000000, btcToKesRate)).toBe(1000);
+      const result1 = btcToFiat({
+        amountMsats: 2000000,
+        fiatToBtcRate: btcToKesRate,
+      });
+      expect(result1.amountFiat).toBeCloseTo(100, 2);
+
+      const result2 = btcToFiat({
+        amountMsats: 20000000,
+        fiatToBtcRate: btcToKesRate,
+      });
+      expect(result2.amountFiat).toBeCloseTo(1000, 2);
     });
   });
 

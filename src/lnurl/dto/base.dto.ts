@@ -30,11 +30,11 @@ export class BaseLightningMetadataDto {
 
   @ApiPropertyOptional({
     description: 'Maximum sendable amount in millisatoshis',
-    default: 100000000000,
+    default: 100_000_000_000,
   })
   @IsOptional()
   @IsNumber()
-  @Max(1000000000000000) // 1M sats
+  @Max(100_0000_000_000_000) // 1M sats
   maxSendable?: number;
 
   @ApiPropertyOptional({

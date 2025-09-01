@@ -87,8 +87,8 @@ export class LnurlController {
     schema: {
       example: {
         callback: 'https://bitsacco.com/v1/lnurl/callback/alice',
-        maxSendable: 100000000,
-        minSendable: 1000,
+        maxSendable: 100_000_000,
+        minSendable: 1_000,
         metadata: '[["text/plain","Pay to alice@bitsacco.com"]]',
         tag: 'payRequest',
       },

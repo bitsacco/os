@@ -1,5 +1,9 @@
 import { SupportedCurrencyType, Currency } from '../types';
 
+const BTC_IN_SATS = 100_000_000;
+const SATS_IN_MILLI_SATS = 1_000;
+const BTC_IN_MILLI_SATS = 100_000_000_000;
+
 export function mapToCurrency(currency: SupportedCurrencyType): Currency {
   switch (currency) {
     case 'KES':
@@ -36,8 +40,8 @@ export function fiatToBtc({
   amountMsats: number;
 } {
   const amountBtc = amountFiat / btcToFiatRate;
-  const amountSats = Math.floor(amountBtc * 100000000);
-  const amountMsats = Math.floor(amountSats * 1000);
+  const amountSats = Math.floor(amountBtc * BTC_IN_SATS);
+  const amountMsats = Math.floor(amountSats * SATS_IN_MILLI_SATS);
 
   return { amountBtc, amountSats, amountMsats };
 }
@@ -60,9 +64,9 @@ export function btcToFiat({
   if (amountBtc !== undefined) {
     btcAmount = amountBtc;
   } else if (amountSats !== undefined) {
-    btcAmount = amountSats / 100000000;
+    btcAmount = amountSats / BTC_IN_SATS;
   } else if (amountMsats !== undefined) {
-    btcAmount = amountMsats / 100000000000;
+    btcAmount = amountMsats / BTC_IN_MILLI_SATS;
   } else {
     throw new Error(
       'One of amountBtc, amountSats, or amountMsats must be provided',
