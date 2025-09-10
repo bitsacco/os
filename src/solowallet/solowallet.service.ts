@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import {
   Currency,
   DepositFundsRequestDto,
@@ -26,6 +31,7 @@ import {
   ContinueDepositFundsRequestDto,
   ContinueWithdrawFundsRequestDto,
   fiatToBtc,
+  btcToFiat,
   validateStateTransition,
   SOLO_WALLET_STATE_TRANSITIONS,
   TimeoutConfigService,
@@ -223,6 +229,7 @@ export class SolowalletService {
   async depositFunds({
     userId,
     amountFiat,
+    amountMsats: requestedAmountMsats,
     reference,
     onramp,
     pagination,
@@ -231,23 +238,71 @@ export class SolowalletService {
     let errorType: string | undefined;
 
     try {
-      const quote = await this.swapService.getQuote({
-        from: onramp?.currency || Currency.KES,
-        to: Currency.BTC,
-        amount: amountFiat.toString(),
-      });
+      // Validate that either amountFiat or amountMsats is provided
+      if (!amountFiat && !requestedAmountMsats) {
+        throw new BadRequestException(
+          'Either amountFiat or amountMsats must be provided',
+        );
+      }
 
-      const { amountMsats } = fiatToBtc({
-        amountFiat: Number(amountFiat),
-        btcToFiatRate: Number(quote.rate),
-      });
+      if (amountFiat && requestedAmountMsats) {
+        throw new BadRequestException(
+          'Cannot specify both amountFiat and amountMsats',
+        );
+      }
 
-      this.logger.log(
-        `Quote rate: ${quote.rate}, amountFiat: ${amountFiat}, calculated amountMsats: ${amountMsats}`,
-      );
+      let finalAmountMsats: number;
+      let finalAmountFiat: number;
+      let quote: any;
+
+      if (requestedAmountMsats) {
+        // Direct msats mode - for Lightning Address payments
+        if (onramp) {
+          throw new BadRequestException(
+            'amountMsats cannot be used with onramp payments',
+          );
+        }
+        finalAmountMsats = requestedAmountMsats;
+
+        // Get exchange rate to calculate fiat equivalent for tracking
+        quote = await this.swapService.getQuote({
+          from: Currency.KES,
+          to: Currency.BTC,
+          amount: '1',
+        });
+
+        const { amountFiat: calculatedAmountFiat } = btcToFiat({
+          amountMsats: finalAmountMsats,
+          fiatToBtcRate: Number(quote.rate),
+        });
+        finalAmountFiat = calculatedAmountFiat;
+
+        this.logger.log(
+          `Direct msats mode: ${finalAmountMsats} msats, calculated fiat equivalent: ${finalAmountFiat}`,
+        );
+      } else {
+        // Fiat mode - traditional flow
+        quote = await this.swapService.getQuote({
+          from: onramp?.currency || Currency.KES,
+          to: Currency.BTC,
+          amount: amountFiat!.toString(),
+        });
+
+        const { amountMsats } = fiatToBtc({
+          amountFiat: Number(amountFiat!),
+          btcToFiatRate: Number(quote.rate),
+        });
+
+        finalAmountMsats = amountMsats;
+        finalAmountFiat = amountFiat!;
+
+        this.logger.log(
+          `Fiat mode: ${finalAmountFiat} fiat, calculated amountMsats: ${finalAmountMsats}`,
+        );
+      }
 
       const lightning = await this.fedimintService.invoice(
-        amountMsats,
+        finalAmountMsats,
         reference,
       );
 
@@ -260,7 +315,7 @@ export class SolowalletService {
             id: quote.id,
             refreshIfExpired: false,
           },
-          amountFiat: amountFiat.toString(),
+          amountFiat: finalAmountFiat.toString(),
           reference,
           source: onramp,
           target: {
@@ -284,8 +339,8 @@ export class SolowalletService {
 
       const deposit = await this.wallet.create({
         userId,
-        amountMsats,
-        amountFiat,
+        amountMsats: finalAmountMsats,
+        amountFiat: finalAmountFiat,
         lightning: JSON.stringify(lightning),
         paymentTracker,
         type: TransactionType.DEPOSIT,
@@ -319,8 +374,8 @@ export class SolowalletService {
       // Record metrics for this operation
       this.solowalletMetricsService.recordDepositMetric({
         userId,
-        amountMsats,
-        amountFiat,
+        amountMsats: finalAmountMsats,
+        amountFiat: finalAmountFiat,
         method: onramp ? 'onramp' : 'lightning',
         success: true,
         duration: Date.now() - startTime,

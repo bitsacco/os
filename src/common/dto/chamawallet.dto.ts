@@ -34,6 +34,7 @@ import {
   OnrampSwapSourceDto,
 } from './swap.dto';
 import { IsRequiredUUID, PaginatedRequestDto } from './lib.dto';
+import { IsEitherAmountFiatOrMsats } from './amount.validator';
 
 const UUIDDecorator = () => {
   return applyDecorators(
@@ -82,8 +83,19 @@ class ChamaBaseDto extends PaginationDto {
 }
 
 class ChamaTransactionBaseDto extends ChamaBaseDto {
+  @IsOptional()
   @AmountFiatDecorator()
-  amountFiat: number;
+  @IsEitherAmountFiatOrMsats()
+  amountFiat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @ApiProperty({
+    example: 10000,
+    description: 'Amount in millisatoshis',
+    required: false,
+  })
+  amountMsats?: number;
 
   @ReferenceDecorator()
   reference: string;

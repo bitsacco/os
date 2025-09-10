@@ -52,7 +52,8 @@ export interface ChamaTxContext {
 export interface ChamaDepositRequest {
   memberId: string;
   chamaId: string;
-  amountFiat: number;
+  amountFiat?: number;
+  amountMsats?: number;
   reference?: string | undefined;
   onramp?: OnrampSwapSource | undefined;
   context?: ChamaTxContext | undefined;
@@ -62,7 +63,8 @@ export interface ChamaDepositRequest {
 export interface ChamaContinueDepositRequest {
   chamaId: string;
   txId: string;
-  amountFiat: number;
+  amountFiat?: number;
+  amountMsats?: number;
   reference?: string | undefined;
   onramp?: OnrampSwapSource | undefined;
   pagination?: PaginatedRequest | undefined;
@@ -71,7 +73,8 @@ export interface ChamaContinueDepositRequest {
 export interface ChamaWithdrawRequest {
   memberId: string;
   chamaId: string;
-  amountFiat: number;
+  amountFiat?: number;
+  amountMsats?: number;
   reference?: string | undefined;
   pagination?: PaginatedRequest | undefined;
 }

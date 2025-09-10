@@ -11,11 +11,6 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  Bolt11InvoiceDto,
-  OfframpSwapTargetDto,
-  OnrampSwapSourceDto,
-} from './swap.dto';
-import {
   DepositFundsRequest,
   ContinueDepositFundsRequest,
   ContinueWithdrawFundsRequest,
@@ -26,7 +21,13 @@ import {
   TransactionStatus,
   FindTxRequest,
 } from '../types';
+import {
+  Bolt11InvoiceDto,
+  OfframpSwapTargetDto,
+  OnrampSwapSourceDto,
+} from './swap.dto';
 import { PaginatedRequestDto } from './lib.dto';
+import { IsEitherAmountFiatOrMsats } from './amount.validator';
 
 export class DepositFundsRequestDto implements DepositFundsRequest {
   @IsNotEmpty()
@@ -41,10 +42,22 @@ export class DepositFundsRequestDto implements DepositFundsRequest {
   @ApiProperty()
   reference: string;
 
+  @IsOptional()
   @IsNumber()
   @Min(1)
-  @ApiProperty({ example: 2 })
-  amountFiat: number;
+  @ApiProperty({ example: 2, required: false })
+  @IsEitherAmountFiatOrMsats()
+  amountFiat?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @ApiProperty({
+    example: 10000,
+    description: 'Amount in millisatoshis',
+    required: false,
+  })
+  amountMsats?: number;
 
   @ValidateNested()
   @Type(() => OnrampSwapSourceDto)

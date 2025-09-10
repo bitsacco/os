@@ -10,7 +10,8 @@ import {
 
 export interface DepositFundsRequest {
   userId: string;
-  amountFiat: number;
+  amountFiat?: number;
+  amountMsats?: number;
   reference: string;
   onramp?: OnrampSwapSource | undefined;
   pagination?: PaginatedRequest | undefined;

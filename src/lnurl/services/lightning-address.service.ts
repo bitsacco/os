@@ -18,6 +18,7 @@ import { LnurlResolverService } from './lnurl-resolver.service';
 import { LnurlTransactionService } from './lnurl-transaction.service';
 import { UsersService } from '../../common/users/users.service';
 import { SwapService } from '../../swap/swap.service';
+import { FedimintService } from '../../common/fedimint/fedimint.service';
 import {
   AddressType,
   LightningAddressMetadata,
@@ -51,6 +52,7 @@ export class LightningAddressService {
     private readonly httpService: HttpService,
     private readonly swapService: SwapService,
     private readonly configService: ConfigService,
+    private readonly fedimintService: FedimintService,
   ) {}
 
   /**
@@ -350,21 +352,6 @@ export class LightningAddressService {
         );
       }
 
-      // Get current exchange rate to convert msats to fiat
-      const quote = await this.swapService.getQuote({
-        from: Currency.BTC,
-        to: Currency.KES,
-        amount: '1', // Get rate for 1 KES to determine BTC/KES rate
-      });
-
-      // Convert msats to fiat using the exchange rate
-      // Round the amountFiat to 2 decimal places to avoid precision issues
-      const { amountFiat: rawAmountFiat } = btcToFiat({
-        amountMsats,
-        fiatToBtcRate: Number(quote.rate),
-      });
-      const amountFiat = Number.parseFloat(rawAmountFiat.toFixed(2));
-
       // Generate invoice using the appropriate wallet service
       const description = options?.comment
         ? `${resolved.metadata.description} - ${options.comment}`
@@ -373,12 +360,13 @@ export class LightningAddressService {
       let userTxsResponse: any;
 
       // Delegate to the appropriate wallet service based on address type
+      // Pass msats directly to avoid precision loss from fiat conversion
       switch (resolved.addressType) {
         case AddressType.PERSONAL:
-          // Use the existing depositFunds method
+          // Use the existing depositFunds method with direct msats
           userTxsResponse = await this.solowalletService.depositFunds({
             userId: resolved.ownerId!,
-            amountFiat,
+            amountMsats,
             reference: description,
             pagination: { page: 0, size: 1 }, // We only need the first transaction
           });
@@ -386,11 +374,11 @@ export class LightningAddressService {
 
         case AddressType.CHAMA:
         case AddressType.MEMBER_CHAMA:
-          // Use the existing deposit method
+          // Use the existing deposit method with direct msats
           userTxsResponse = await this.chamaWalletService.deposit({
             chamaId: resolved.ownerId!,
             memberId: resolved.memberId || resolved.ownerId!,
-            amountFiat,
+            amountMsats,
             reference: description,
             pagination: { page: 0, size: 1 }, // We only need the first transaction
           });
@@ -416,6 +404,32 @@ export class LightningAddressService {
       }
 
       const invoice = lightningData.invoice;
+
+      // Validate that the generated invoice amount matches the requested amount
+      try {
+        const decodedInvoice = await this.fedimintService.decode(invoice);
+        const invoiceAmountMsats = Number(decodedInvoice.amountMsats);
+
+        // Allow small tolerance for precision differences (1 msat)
+        const tolerance = 1;
+        if (Math.abs(invoiceAmountMsats - amountMsats) > tolerance) {
+          this.logger.error(
+            `Invoice amount mismatch: requested ${amountMsats} msats, got ${invoiceAmountMsats} msats from invoice`,
+          );
+          throw new Error(
+            `Invoice amount validation failed: requested ${amountMsats} msats, but generated invoice contains ${invoiceAmountMsats} msats`,
+          );
+        }
+
+        this.logger.log(
+          `Invoice amount validation passed: ${invoiceAmountMsats} msats matches requested ${amountMsats} msats`,
+        );
+      } catch (decodeError) {
+        this.logger.error(
+          `Failed to decode invoice for amount validation: ${decodeError?.message || String(decodeError)}`,
+        );
+        // Don't block payment flow if decode fails, but log the error
+      }
 
       // Update stats
       await this.updateAddressStats(resolved.addressId!, amountMsats);
