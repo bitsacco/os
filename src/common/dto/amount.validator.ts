@@ -38,7 +38,7 @@ export function IsEitherAmountFiatOrMsats(
           // Exactly one should be provided (XOR logic)
           return hasAmountFiat !== hasAmountMsats;
         },
-        defaultMessage(args: ValidationArguments) {
+        defaultMessage() {
           return 'Either amountFiat or amountMsats must be provided, but not both';
         },
       },

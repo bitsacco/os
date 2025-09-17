@@ -5,7 +5,6 @@ import {
   Logger,
   Param,
   Post,
-  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -15,7 +14,6 @@ import {
   ApiParam,
   ApiBearerAuth,
   ApiCookieAuth,
-  ApiQuery,
   ApiSecurity,
 } from '@nestjs/swagger';
 import {
@@ -29,7 +27,6 @@ import {
   HandleServiceErrors,
   ResourceOwnerGuard,
   CheckOwnership,
-  TransactionStatus,
 } from '../common';
 import { SolowalletService } from './solowallet.service';
 import { ConfigService } from '@nestjs/config';

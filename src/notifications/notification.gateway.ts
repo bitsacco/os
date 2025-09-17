@@ -350,8 +350,7 @@ export class NotificationGateway
     status: 200,
   })
   handleNotificationCreated(payload: NotificationCreatedEvent) {
-    const { userId, notificationId, title, body, topic, importance, channels } =
-      payload;
+    const { userId, notificationId, title, body, topic, importance } = payload;
 
     // Emit to the specific user if connected
     this.emitToUser(userId, 'notification:created', {

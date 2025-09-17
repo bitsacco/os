@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { IntasendService } from './intasend.service';
-import { SendSTKPushDto } from '../dto';
+import { SendSTKPushDto } from './intasend.dto';
 
 describe('IntasendService', () => {
   let mockCfg: jest.Mocked<ConfigService> = {

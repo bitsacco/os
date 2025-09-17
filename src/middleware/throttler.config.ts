@@ -55,7 +55,6 @@ export class InMemoryThrottlerStorage implements ThrottlerStorage {
     ttl: number,
     limit: number = 60,
     blockDuration: number = 0,
-    throttlerName: string = 'default',
   ): Promise<ThrottlerStorageRecord> {
     const record = this.storage.get(key);
     const now = Date.now();

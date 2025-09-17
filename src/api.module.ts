@@ -49,6 +49,8 @@ import { LnurlModule } from './lnurl/lnurl.module';
 
 // Import the metrics module
 import { MetricsModule } from './metrics/metrics.module';
+// Import the dashboard module
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -201,6 +203,7 @@ import { MetricsModule } from './metrics/metrics.module';
     }),
     // Core modules
     MetricsModule,
+    DashboardModule,
     // Feature modules
     SmsModule,
     SharesModule,

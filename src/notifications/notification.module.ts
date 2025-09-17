@@ -1,9 +1,8 @@
 import { Module } from '@nestjs/common';
 import { SharedModule } from '../common/shared.module';
-import { LoggerModule, DatabaseModule } from '../common';
+import { DatabaseModule } from '../common';
 import { SmsModule } from '../sms/sms.module';
 import { NostrModule } from '../nostr/nostr.module';
-import { JwtConfigModule } from '../common/jwt-config.module';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { NotificationGateway } from './notification.gateway';

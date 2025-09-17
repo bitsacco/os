@@ -102,15 +102,6 @@ export function toChamaWalletTx(
     updatedAt = doc.updatedAt.toString();
   }
 
-  let context = undefined;
-  if (doc.context) {
-    try {
-      context = JSON.parse(doc.context);
-    } catch (error) {
-      logger.warn(`Error parsing transaction context: ${error}`);
-    }
-  }
-
   return {
     id: doc._id,
     memberId: doc.memberId,

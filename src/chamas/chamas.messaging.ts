@@ -179,7 +179,7 @@ export class ChamaMessageService {
         ).then((results) =>
           this.logger.log('Sent withdrawal requests', results),
         );
-      } catch (e) {
+      } catch {
         this.logger.log(`Failed to encode chama details`);
       }
     })();

@@ -1,6 +1,4 @@
-import { Currency } from './lib';
-
-export type SupportedCurrencyType = Extract<Currency, 'KES' | 'BTC'>;
+export type SupportedCurrencyType = 'KES' | 'BTC';
 
 export const SupportedCurrencies = {
   KES: 'KES' as SupportedCurrencyType,

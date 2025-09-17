@@ -1,7 +1,7 @@
 # Bitsacco Open Source
 
-This repository has moved to [https://minmoto/bitsaccoserver](https://github.com/minmoto/bitsaccoserver)
+This projeNANCE only. We are in the process of a reimplmentation at [github.com/bitsacco/server](https://github.com/bitsacco/server)
 
 ## License
 
-Bitsacco Open Source is [MIT licensed](https://github.com/bitsacco/opensource/blob/main/LICENSE).
+Bitsacco Open Source is [MIT licensed](https://github.com/bitsacco/server/blob/main/LICENSE).

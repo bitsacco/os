@@ -113,8 +113,11 @@ describe('SolowalletService - Idempotency', () => {
         idempotencyKey: mockIdempotencyKey,
         status: TransactionStatus.PENDING,
         amountMsats: 1000,
+        lightning: 'mock-lightning-data',
+        reference: 'mock-reference',
         createdAt: new Date(),
         updatedAt: new Date(),
+        __v: 0,
       };
 
       // Mock finding existing transaction
@@ -170,9 +173,11 @@ describe('SolowalletService - Idempotency', () => {
         status: TransactionStatus.PENDING,
         amountMsats: 1000,
         amountFiat: 100,
+        lightning: 'mock-lightning-data',
         reference: 'Test withdrawal',
         createdAt: new Date(),
         updatedAt: new Date(),
+        __v: 0,
       });
 
       // Mock pagination - need to return the created transaction
@@ -201,10 +206,8 @@ describe('SolowalletService - Idempotency', () => {
         reference: 'Test withdrawal',
         // No idempotencyKey provided
         offramp: {
-          provider: 'test-provider',
-          providerId: 'test-id',
-          currency: 'KES',
-          target: {
+          currency: Currency.KES,
+          payout: {
             type: 'mobile',
             mobile: '254712345678',
           },

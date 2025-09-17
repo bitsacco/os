@@ -9,7 +9,6 @@ import {
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { trace, metrics } from '@opentelemetry/api';
 import { Resource } from '@opentelemetry/resources';
-import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { ATTR_DEPLOYMENT_ENVIRONMENT } from './semconv';
@@ -17,21 +16,9 @@ import { ATTR_DEPLOYMENT_ENVIRONMENT } from './semconv';
 /**
  * Initialize OpenTelemetry for the application
  * @param serviceName Name of the service to use in metrics and tracing
- * @param prometheusPort Port to expose Prometheus metrics on. If provided, start a PrometheusExporter
  * @returns The NodeSDK instance that can be used to shut down telemetry
  */
-export function initializeOpenTelemetry(
-  serviceName: string,
-  prometheusPort?: number,
-) {
-  // Create Prometheus exporter
-  const exporter = prometheusPort
-    ? new PrometheusExporter({
-        port: prometheusPort,
-        endpoint: '/metrics',
-      })
-    : null;
-
+export function initializeOpenTelemetry(serviceName: string) {
   // Optional: configure endpoint. If not provided, it will try to use the default
   // which is http://localhost:4318/v1/traces
   const otlpExporterUrl =
@@ -63,19 +50,12 @@ export function initializeOpenTelemetry(
         '@opentelemetry/instrumentation-nestjs-core': { enabled: true },
       }),
     ],
-    metricReader: exporter,
     spanProcessor,
   });
 
   try {
     sdk.start();
     console.log(`OpenTelemetry initialized for ${serviceName}`);
-
-    if (exporter) {
-      console.log(
-        `Prometheus metrics available at port ${prometheusPort}/metrics`,
-      );
-    }
   } catch (error) {
     console.error('Error initializing OpenTelemetry', error);
   }

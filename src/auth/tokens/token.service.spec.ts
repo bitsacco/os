@@ -54,6 +54,7 @@ describe('TokenService', () => {
     revoked: false,
     createdAt: new Date(),
     updatedAt: new Date(),
+    __v: 0,
   };
 
   beforeEach(async () => {

@@ -94,7 +94,7 @@ export class NostrService {
           this.ndk.pool.connectedRelays().length,
         );
       })
-      .catch((e) => {
+      .catch(() => {
         this.logger.warn('NostrService disconnected');
         this.connected = false;
       });
@@ -218,7 +218,6 @@ export class NostrService {
     retry = true,
   }: SendEncryptedNostrDmDto): Promise<void> {
     const startTime = Date.now();
-    let success = false;
     let recipientType = NostrRecipientType.other;
     let errorType: string | undefined;
 
@@ -254,7 +253,6 @@ export class NostrService {
       await this.publishEventWithRetry(dm, retry ? 5 : 0);
 
       // Record successful message metric
-      success = true;
       this.metricsService.recordMessageMetric({
         messageType: NostrMessageType.encrypted,
         recipientType,

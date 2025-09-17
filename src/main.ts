@@ -14,8 +14,7 @@ const API_VERSION = 'v1';
 
 async function bootstrap() {
   // Initialize OpenTelemetry for the monolith
-  const prometheusPort = parseInt(process.env.PROMETHEUS_PORT || '9090', 10);
-  const otelSdk = initializeOpenTelemetry('bitsacco-os', prometheusPort);
+  const otelSdk = initializeOpenTelemetry('bitsacco-os');
 
   // Set SDK in global telemetry provider
   getGlobalTelemetryProvider().setSdk(otelSdk);
@@ -119,7 +118,7 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`🚀 Application running on port ${port}`);
   console.log(
-    `📊 Prometheus metrics available at http://localhost:${prometheusPort}/metrics`,
+    `📊 Dashboard API available at http://localhost:${port}/v1/dashboard`,
   );
 }
 

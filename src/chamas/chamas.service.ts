@@ -43,7 +43,6 @@ export class ChamasService {
     createdBy,
   }: CreateChamaDto): Promise<Chama> {
     const startTime = Date.now();
-    let success = false;
     let errorType: string | undefined;
 
     try {
@@ -69,7 +68,6 @@ export class ChamasService {
       this.messenger.sendChamaInvites(chama, invites);
 
       // Record successful chama creation metrics
-      success = true;
       this.metricsService.recordChamaCreationMetric({
         chamaId: chama.id,
         createdById: createdBy,
@@ -209,7 +207,6 @@ export class ChamasService {
 
   async joinChama({ chamaId, memberInfo }: JoinChamaRequest): Promise<Chama> {
     const startTime = Date.now();
-    let success = false;
     let errorType: string | undefined;
 
     try {
@@ -227,7 +224,6 @@ export class ChamasService {
       const chama = toChama(updatedChama);
 
       // Record successful membership metrics
-      success = true;
       this.metricsService.recordMembershipMetric({
         chamaId,
         memberId: memberInfo.userId,
@@ -302,7 +298,11 @@ export class ChamasService {
       // Fetch all chamas matching the filter
       const cds = await this.chamas.find(filter);
 
-      let { page, size } = pagination || {
+      const { page } = pagination || {
+        page: default_page,
+        size: default_page_size,
+      };
+      let { size } = pagination || {
         page: default_page,
         size: default_page_size,
       };

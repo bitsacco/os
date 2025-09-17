@@ -81,11 +81,15 @@ describe('ChamasService', () => {
           },
         ],
         createdBy: 'creator-123',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        __v: 0,
       };
 
       const mockUpdateRequest = {
         chamaId: mockChamaId,
         updates: {
+          addMembers: [],
           updateMembers: [
             {
               userId: mockUserId,
@@ -99,9 +103,14 @@ describe('ChamasService', () => {
       jest.spyOn(chamasRepository, 'findOne').mockResolvedValue(mockChamaDoc);
 
       // Mock findUsersById to return the user
-      jest
-        .spyOn(usersService, 'findUsersById')
-        .mockResolvedValue([{ id: mockUserId }]);
+      jest.spyOn(usersService, 'findUsersById').mockResolvedValue([
+        {
+          id: mockUserId,
+          profile: { name: 'Test User' },
+          phone: { number: '+1234567890', verified: true },
+          roles: [],
+        },
+      ]);
 
       // Mock findOneAndUpdate to return our updated chama
       const updatedChamaDoc = {
@@ -112,6 +121,9 @@ describe('ChamasService', () => {
             roles: [0, 1], // Member and Admin roles
           },
         ],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        __v: 0,
       };
       jest
         .spyOn(chamasRepository, 'findOneAndUpdate')
@@ -168,6 +180,9 @@ describe('ChamasService', () => {
           },
         ],
         createdBy: 'creator-123',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        __v: 0,
       };
 
       // Mock the user profiles
@@ -180,10 +195,13 @@ describe('ChamasService', () => {
           },
           phone: {
             number: '+1234567890',
+            verified: true,
           },
           nostr: {
             npub: 'npub123456789',
+            verified: true,
           },
+          roles: [],
         },
         {
           id: mockUserIds[1],
@@ -192,7 +210,13 @@ describe('ChamasService', () => {
           },
           phone: {
             number: '+0987654321',
+            verified: true,
           },
+          nostr: {
+            npub: 'npub987654321',
+            verified: false,
+          },
+          roles: [],
         },
       ];
 
@@ -230,8 +254,9 @@ describe('ChamasService', () => {
             userId: mockUserIds[1],
             roles: [0],
             name: 'Jane Smith',
+            avatarUrl: undefined,
             phoneNumber: '+0987654321',
-            nostrNpub: undefined,
+            nostrNpub: 'npub987654321',
           },
         ],
       });

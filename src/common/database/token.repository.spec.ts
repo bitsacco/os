@@ -15,10 +15,13 @@ describe('TokenRepository', () => {
     _id: 'someId',
     userId: mockUserId,
     tokenId: mockTokenId,
+    tokenFamily: 'token-family-id',
+    previousTokenId: 'previous-token-id',
     expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     revoked: false,
     createdAt: new Date(),
     updatedAt: new Date(),
+    __v: 0,
   };
 
   beforeEach(async () => {

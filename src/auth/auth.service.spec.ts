@@ -132,7 +132,7 @@ describe('AuthService', () => {
       jest.spyOn(usersService, 'validateUser').mockResolvedValue({
         user: mockUser,
         authorized: true,
-      });
+      } as const);
 
       const loginRequest = {
         phone: '+1234567890',
@@ -160,7 +160,8 @@ describe('AuthService', () => {
     it('should return only user when not authorized', async () => {
       jest.spyOn(usersService, 'validateUser').mockResolvedValue({
         user: mockUser,
-        authorized: false,
+        authorized: false as const,
+        otp: '123456',
       });
 
       const loginRequest = {
@@ -229,7 +230,7 @@ describe('AuthService', () => {
         user: mockUser,
         authorized: false,
         otp: '123456',
-      });
+      } as const);
 
       const registerRequest: RegisterUserRequestDto = {
         phone: '+1234567890',
@@ -255,8 +256,7 @@ describe('AuthService', () => {
       jest.spyOn(usersService, 'registerUser').mockResolvedValue({
         user: mockUser,
         authorized: true,
-        otp: '123456',
-      });
+      } as const);
 
       const registerRequest: RegisterUserRequestDto = {
         phone: '+1234567890',
@@ -279,7 +279,7 @@ describe('AuthService', () => {
         user: mockUser,
         authorized: false,
         otp: '123456',
-      });
+      } as const);
 
       // Mock SMS failure
       (smsService.sendSms as jest.Mock).mockRejectedValue(
@@ -322,7 +322,7 @@ describe('AuthService', () => {
       jest.spyOn(usersService, 'verifyUser').mockResolvedValue({
         user: mockUser,
         authorized: true,
-      });
+      } as const);
 
       const verifyRequest = {
         phone: '+1234567890',
@@ -346,7 +346,7 @@ describe('AuthService', () => {
         user: mockUser,
         authorized: false,
         otp: '654321',
-      };
+      } as const;
 
       jest.spyOn(usersService, 'verifyUser').mockResolvedValue(preAuth);
 
@@ -387,6 +387,11 @@ describe('AuthService', () => {
       const tokenPayload = {
         user: mockUser,
         expires: new Date(Date.now() + 3600 * 1000), // 1 hour from now
+        iat: Math.floor(Date.now() / 1000),
+        nbf: Math.floor(Date.now() / 1000),
+        iss: 'bitsacco',
+        aud: 'bitsacco-users',
+        jti: 'test-jti',
       };
 
       jest
@@ -429,6 +434,12 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException when user no longer exists', async () => {
       const tokenPayload = {
         user: mockUser,
+        expires: new Date(Date.now() + 3600 * 1000), // 1 hour from now
+        iat: Math.floor(Date.now() / 1000),
+        nbf: Math.floor(Date.now() / 1000),
+        iss: 'bitsacco',
+        aud: 'bitsacco-users',
+        jti: 'test-jti',
       };
 
       jest

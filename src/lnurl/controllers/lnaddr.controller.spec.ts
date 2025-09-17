@@ -72,10 +72,17 @@ describe('LightningAddressController', () => {
         _id: '507f1f77bcf86cd799439011',
         address: 'alice',
         domain: 'bitsacco.com',
-        type: 'PERSONAL',
+        type: AddressType.PERSONAL,
         ownerId: mockUser.id,
         metadata: createDto.metadata,
         settings: createDto.settings,
+        stats: {
+          totalReceived: 0,
+          paymentCount: 0,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        __v: 0,
       };
 
       lightningAddressService.createAddress.mockResolvedValue(mockResponse);
@@ -101,7 +108,25 @@ describe('LightningAddressController', () => {
       const mockResponse = {
         _id: '507f1f77bcf86cd799439011',
         address: 'alice',
-        type: 'PERSONAL',
+        domain: 'bitsacco.com',
+        type: AddressType.PERSONAL,
+        ownerId: mockUser.id,
+        metadata: {
+          minSendable: 1000,
+          maxSendable: 1000000,
+        },
+        settings: {
+          enabled: true,
+          allowComments: true,
+          notifyOnPayment: true,
+        },
+        stats: {
+          totalReceived: 0,
+          paymentCount: 0,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        __v: 0,
       };
 
       lightningAddressService.createAddress.mockResolvedValue(mockResponse);
@@ -126,8 +151,24 @@ describe('LightningAddressController', () => {
           _id: '507f1f77bcf86cd799439011',
           address: 'alice',
           domain: 'bitsacco.com',
-          type: 'PERSONAL',
-          enabled: true,
+          type: AddressType.PERSONAL,
+          ownerId: mockUser.id,
+          metadata: {
+            minSendable: 1000,
+            maxSendable: 1000000,
+          },
+          settings: {
+            enabled: true,
+            allowComments: true,
+            notifyOnPayment: true,
+          },
+          stats: {
+            totalReceived: 0,
+            paymentCount: 0,
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          __v: 0,
         },
       ];
 
@@ -150,7 +191,8 @@ describe('LightningAddressController', () => {
         _id: addressId,
         address: 'alice',
         domain: 'bitsacco.com',
-        type: 'PERSONAL',
+        type: AddressType.PERSONAL,
+        ownerId: mockUser.id,
         metadata: {
           description: 'Alice Lightning Address',
           minSendable: 1000,
@@ -161,6 +203,13 @@ describe('LightningAddressController', () => {
           allowComments: true,
           notifyOnPayment: true,
         },
+        stats: {
+          totalReceived: 0,
+          paymentCount: 0,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        __v: 0,
       };
 
       lightningAddressService.getAddress.mockResolvedValue(mockResponse);
@@ -192,6 +241,9 @@ describe('LightningAddressController', () => {
       const mockResponse = {
         _id: addressId,
         address: 'alice',
+        domain: 'bitsacco.com',
+        type: AddressType.PERSONAL,
+        ownerId: mockUser.id,
         metadata: {
           description: 'Updated Alice Lightning Address',
           minSendable: 1000,
@@ -203,6 +255,13 @@ describe('LightningAddressController', () => {
           notifyOnPayment: true,
           customSuccessMessage: 'Payment received! Thank you.',
         },
+        stats: {
+          totalReceived: 0,
+          paymentCount: 0,
+        },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        __v: 0,
       };
 
       lightningAddressService.updateAddress.mockResolvedValue(mockResponse);
@@ -242,7 +301,7 @@ describe('LightningAddressController', () => {
       const req = { user: mockUser } as any;
       const addressId = '507f1f77bcf86cd799439011';
       const mockResponse = {
-        payments: [
+        transactions: [
           {
             _id: '507f1f77bcf86cd799439013',
             type: 'PAY_IN',
@@ -253,6 +312,7 @@ describe('LightningAddressController', () => {
           },
         ],
         total: 1,
+        address: 'alice@bitsacco.com',
       };
 
       lightningAddressService.getPaymentHistory.mockResolvedValue(mockResponse);
@@ -274,8 +334,9 @@ describe('LightningAddressController', () => {
       const limit = 10;
       const offset = 5;
       const mockResponse = {
-        payments: [],
+        transactions: [],
         total: 0,
+        address: 'alice@bitsacco.com',
       };
 
       lightningAddressService.getPaymentHistory.mockResolvedValue(mockResponse);

@@ -20,14 +20,6 @@ describe('SolowalletController', () => {
       continueDepositFunds: jest.fn().mockResolvedValue({}),
       continueWithdrawFunds: jest.fn().mockResolvedValue({}),
       updateTransaction: jest.fn().mockResolvedValue({}),
-      processLnUrlWithdrawCallback: jest
-        .fn()
-        .mockResolvedValue({ success: true }),
-      findPendingLnurlWithdrawal: jest.fn().mockResolvedValue({
-        id: 'test-id',
-        status: 'PENDING',
-        amountMsats: 50000,
-      }),
     };
 
     const mockConfigService = {

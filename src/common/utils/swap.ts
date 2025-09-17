@@ -1,4 +1,3 @@
-import { Logger } from '@nestjs/common';
 import { fiatToBtc } from './currency';
 
 // Note: These utilities were for gRPC communication.

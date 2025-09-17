@@ -2,7 +2,10 @@
  * Creates a mock function with basic Jest-like API for Bun tests
  */
 export function createMockFunction() {
-  const mockFn = async (..._args: any[]) => mockFn.mockReturnValue;
+  const mockFn = async (...args: any[]) => {
+    void args; // explicitly ignore args
+    return mockFn.mockReturnValue;
+  };
   mockFn.mockReturnValue = undefined as any;
   mockFn.mockResolvedValue = (value: any) => {
     mockFn.mockReturnValue = Promise.resolve(value);

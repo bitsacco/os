@@ -21,8 +21,6 @@ import {
   type CreateChamaRequest,
   type FilterChamasRequest,
   type FindChamaRequest,
-  type JoinChamaRequest,
-  type UpdateChamaRequest,
   type PaginatedRequest,
 } from '../types';
 import { NpubDecorators, PhoneDecorators } from './decorators';

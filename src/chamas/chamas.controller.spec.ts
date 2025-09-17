@@ -102,7 +102,7 @@ describe('ChamasController', () => {
       ],
     }).compile();
 
-    chamaController = module.get<ChamasController>(ChamasController);
+    chamaController = module.get(ChamasController);
   });
 
   it('should be defined', () => {

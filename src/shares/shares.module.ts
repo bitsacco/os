@@ -12,7 +12,6 @@ import {
   SharesSchema,
 } from './db';
 import { SharesMetricsService } from './shares.metrics';
-import { JwtConfigModule } from '../common/jwt-config.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({

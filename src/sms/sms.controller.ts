@@ -4,15 +4,7 @@ import {
   ApiBearerAuth,
   ApiCookieAuth,
 } from '@nestjs/swagger';
-import {
-  Body,
-  Controller,
-  Logger,
-  Post,
-  UseGuards,
-  Get,
-  Param,
-} from '@nestjs/common';
+import { Body, Controller, Logger, Post, UseGuards } from '@nestjs/common';
 import {
   JwtAuthGuard,
   SendBulkSmsDto,

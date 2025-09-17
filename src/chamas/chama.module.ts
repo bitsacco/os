@@ -3,7 +3,6 @@ import { SharedModule } from '../common/shared.module';
 import { HttpModule } from '@nestjs/axios';
 import {
   DatabaseModule,
-  FedimintService,
   RoleValidationService,
   UsersDocument,
   UsersRepository,

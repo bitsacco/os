@@ -24,20 +24,23 @@ describe('SharesService', () => {
     id: 'offer123',
     quantity: 100,
     subscribedQuantity: 20,
-    availableFrom: new Date().toISOString(),
+    availableFrom: new Date(),
     availableTo: new Date(Date.now() + 86400000),
     createdAt: new Date(),
     updatedAt: new Date(),
+    __v: 0,
   };
 
   const mockFullySubscribedOffer = {
     _id: 'fullOffer123',
+    id: 'fullOffer123',
     quantity: 50,
     subscribedQuantity: 50,
     availableFrom: new Date(),
     availableTo: new Date(Date.now() + 86400000),
     createdAt: new Date(),
     updatedAt: new Date(),
+    __v: 0,
   };
 
   const mockSharesTx = {
@@ -49,6 +52,7 @@ describe('SharesService', () => {
     status: SharesTxStatus.PROPOSED,
     createdAt: new Date(),
     updatedAt: new Date(),
+    __v: 0,
   };
 
   beforeEach(async () => {
@@ -119,7 +123,17 @@ describe('SharesService', () => {
         .spyOn(sharesOfferRepository, 'create')
         .mockResolvedValue(mockSharesOffer);
       jest.spyOn(service, 'getSharesOffers').mockResolvedValue({
-        offers: [mockSharesOffer],
+        offers: [
+          {
+            id: mockSharesOffer.id,
+            quantity: mockSharesOffer.quantity,
+            subscribedQuantity: mockSharesOffer.subscribedQuantity,
+            availableFrom: mockSharesOffer.availableFrom.toISOString(),
+            availableTo: mockSharesOffer.availableTo.toISOString(),
+            createdAt: mockSharesOffer.createdAt.toISOString(),
+            updatedAt: mockSharesOffer.updatedAt.toISOString(),
+          },
+        ],
         totalOfferQuantity: 100,
         totalSubscribedQuantity: 20,
       });
@@ -129,7 +143,7 @@ describe('SharesService', () => {
       // Arrange
       const offerDto = {
         quantity: 100,
-        availableFrom: new Date().toISOString(),
+        availableFrom: new Date(),
         availableTo: new Date(Date.now() + 86400000).toISOString(),
       };
 
@@ -151,7 +165,7 @@ describe('SharesService', () => {
       // Arrange
       const offerDto = {
         quantity: 0,
-        availableFrom: new Date().toISOString(),
+        availableFrom: new Date(),
         availableTo: new Date(Date.now() + 86400000).toISOString(),
       };
 
@@ -166,7 +180,7 @@ describe('SharesService', () => {
       // Arrange
       const offerDto = {
         quantity: -10,
-        availableFrom: new Date().toISOString(),
+        availableFrom: new Date(),
         availableTo: new Date(Date.now() + 86400000).toISOString(),
       };
 
@@ -193,7 +207,26 @@ describe('SharesService', () => {
         },
       });
       jest.spyOn(service, 'getSharesOffers').mockResolvedValue({
-        offers: [mockSharesOffer, mockFullySubscribedOffer],
+        offers: [
+          {
+            id: mockSharesOffer.id,
+            quantity: mockSharesOffer.quantity,
+            subscribedQuantity: mockSharesOffer.subscribedQuantity,
+            availableFrom: mockSharesOffer.availableFrom.toISOString(),
+            availableTo: mockSharesOffer.availableTo.toISOString(),
+            createdAt: mockSharesOffer.createdAt.toISOString(),
+            updatedAt: mockSharesOffer.updatedAt.toISOString(),
+          },
+          {
+            id: mockFullySubscribedOffer.id,
+            quantity: mockFullySubscribedOffer.quantity,
+            subscribedQuantity: mockFullySubscribedOffer.subscribedQuantity,
+            availableFrom: mockFullySubscribedOffer.availableFrom.toISOString(),
+            availableTo: mockFullySubscribedOffer.availableTo.toISOString(),
+            createdAt: mockFullySubscribedOffer.createdAt.toISOString(),
+            updatedAt: mockFullySubscribedOffer.updatedAt.toISOString(),
+          },
+        ],
         totalOfferQuantity: 150, // 100 + 50
         totalSubscribedQuantity: 70, // 20 + 50
       });
@@ -355,7 +388,26 @@ describe('SharesService', () => {
       });
       jest.spyOn(service, 'updateShares').mockResolvedValue(null);
       jest.spyOn(service, 'getSharesOffers').mockResolvedValue({
-        offers: [mockSharesOffer, mockFullySubscribedOffer],
+        offers: [
+          {
+            id: mockSharesOffer.id,
+            quantity: mockSharesOffer.quantity,
+            subscribedQuantity: mockSharesOffer.subscribedQuantity,
+            availableFrom: mockSharesOffer.availableFrom.toISOString(),
+            availableTo: mockSharesOffer.availableTo.toISOString(),
+            createdAt: mockSharesOffer.createdAt.toISOString(),
+            updatedAt: mockSharesOffer.updatedAt.toISOString(),
+          },
+          {
+            id: mockFullySubscribedOffer.id,
+            quantity: mockFullySubscribedOffer.quantity,
+            subscribedQuantity: mockFullySubscribedOffer.subscribedQuantity,
+            availableFrom: mockFullySubscribedOffer.availableFrom.toISOString(),
+            availableTo: mockFullySubscribedOffer.availableTo.toISOString(),
+            createdAt: mockFullySubscribedOffer.createdAt.toISOString(),
+            updatedAt: mockFullySubscribedOffer.updatedAt.toISOString(),
+          },
+        ],
         totalOfferQuantity: 150, // 100 + 50
         totalSubscribedQuantity: 70, // 20 + 50
       });

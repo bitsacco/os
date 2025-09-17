@@ -35,7 +35,7 @@ export interface PostUserAuth {
 type UserAuth = PreUserAuth | PostUserAuth;
 
 export interface IUsersService {
-  validateUser(loginDto: LoginUserRequestDto): Promise<PostUserAuth>;
+  validateUser(loginDto: LoginUserRequestDto): Promise<UserAuth>;
 
   registerUser(registerDto: RegisterUserRequestDto): Promise<PreUserAuth>;
 
@@ -173,7 +173,7 @@ export class UsersService implements IUsersService {
       if (!isValidOtp) {
         throw new UnauthorizedException('Invalid OTP');
       }
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
 
@@ -268,7 +268,7 @@ export class UsersService implements IUsersService {
       if (!isValidOtp) {
         throw new UnauthorizedException('Invalid credentials');
       }
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid credentials');
     }
 

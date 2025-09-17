@@ -29,8 +29,6 @@ import {
   ResolvedAddress,
   ParsedAddress,
   isLightningAddress,
-  Currency,
-  btcToFiat,
   LnurlTransactionDocument,
   LnurlType,
 } from '../../common';

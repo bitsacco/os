@@ -1,5 +1,4 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { TransactionStatus, ChamaTxStatus } from '../types';
 import { SolowalletRepository } from '../../solowallet/db';

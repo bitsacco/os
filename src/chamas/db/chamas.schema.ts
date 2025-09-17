@@ -81,7 +81,7 @@ function toChamaMember(doc: ChamaMemberDocument): ChamaMember {
 export function parseMemberRole(status: string): ChamaMemberRole {
   try {
     return Number(status) as ChamaMemberRole;
-  } catch (error) {
+  } catch {
     return ChamaMemberRole.Member;
   }
 }
