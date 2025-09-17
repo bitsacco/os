@@ -100,7 +100,7 @@ export interface ExportStatusResponse {
  */
 @ApiTags('Dashboard')
 @ApiBearerAuth()
-@Controller('api/v1/dashboard')
+@Controller('dashboard')
 @UseGuards(JwtAuthGuard)
 export class DashboardController {
   private readonly logger = new Logger(DashboardController.name);
