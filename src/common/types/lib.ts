@@ -11,6 +11,7 @@ export enum TransactionStatus {
 export enum TransactionType {
   DEPOSIT = 0,
   WITHDRAW = 1,
+  WALLET_CREATION = 2,
   UNRECOGNIZED = -1,
 }
 

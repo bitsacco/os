@@ -36,6 +36,7 @@ import {
   SOLO_WALLET_STATE_TRANSITIONS,
   TimeoutConfigService,
   TimeoutTransactionType,
+  WalletType,
 } from '../common';
 import { SolowalletMetricsService } from './solowallet.metrics';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
@@ -150,6 +151,13 @@ export class SolowalletService {
   ): Promise<number> {
     let transactions: number = 0;
     try {
+      if (!this.wallet) {
+        this.logger.warn(
+          'Wallet repository not available, returning 0 for aggregation',
+        );
+        return 0;
+      }
+
       const statusFilter = Array.isArray(status)
         ? { $in: status.map((s) => s.toString()) }
         : status.toString();
@@ -233,7 +241,12 @@ export class SolowalletService {
     reference,
     onramp,
     pagination,
-  }: DepositFundsRequestDto): Promise<UserTxsResponse> {
+    walletId,
+    walletType,
+  }: DepositFundsRequestDto & {
+    walletId?: string;
+    walletType?: WalletType;
+  }): Promise<UserTxsResponse> {
     const startTime = Date.now();
     let errorType: string | undefined;
 
@@ -351,6 +364,9 @@ export class SolowalletService {
         retryCount: 0,
         maxRetries: 3,
         __v: 0,
+        // Add wallet context for personal savings features (backward compatible)
+        walletId: walletId || undefined,
+        walletType: (walletType as WalletType) || WalletType.STANDARD,
       });
 
       // listen for payment (only for direct lightning deposits, not onramp)
@@ -549,7 +565,12 @@ export class SolowalletService {
     lnurlRequest,
     pagination,
     idempotencyKey,
-  }: WithdrawFundsRequestDto): Promise<UserTxsResponse> {
+    walletId,
+    walletType,
+  }: WithdrawFundsRequestDto & {
+    walletId?: string;
+    walletType?: WalletType;
+  }): Promise<UserTxsResponse> {
     // Check for existing transaction with same idempotency key
     if (idempotencyKey) {
       try {
@@ -635,6 +656,9 @@ export class SolowalletService {
           retryCount: 0,
           maxRetries: 3,
           __v: 0,
+          // Add wallet context for personal savings features (backward compatible)
+          walletId: walletId || undefined,
+          walletType: (walletType as WalletType) || WalletType.STANDARD,
         });
 
         this.logger.log(`Withdrawal record created with ID: ${withdrawal._id}`);
@@ -719,6 +743,9 @@ export class SolowalletService {
           retryCount: 0,
           maxRetries: 3,
           __v: 0,
+          // Add wallet context for personal savings features (backward compatible)
+          walletId: walletId || undefined,
+          walletType: (walletType as WalletType) || WalletType.STANDARD,
         });
 
         this.logger.log(
@@ -800,6 +827,9 @@ export class SolowalletService {
           retryCount: 0,
           maxRetries: 3,
           __v: 0,
+          // Add wallet context for personal savings features (backward compatible)
+          walletId: walletId || undefined,
+          walletType: (walletType as WalletType) || WalletType.STANDARD,
         });
 
         this.logger.log(

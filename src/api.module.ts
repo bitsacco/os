@@ -46,6 +46,7 @@ import { AuthModule } from './auth/auth.module';
 import { SwapModule } from './swap/swap.module';
 import { ChamaModule } from './chamas/chama.module';
 import { LnurlModule } from './lnurl/lnurl.module';
+import { PersonalModule } from './personal/personal.module';
 
 // Import the metrics module
 import { MetricsModule } from './metrics/metrics.module';
@@ -212,6 +213,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AuthModule,
     SwapModule,
     SolowalletModule,
+    PersonalModule,
     ChamaModule,
     LnurlModule,
     ThrottlerModule.forRootAsync({

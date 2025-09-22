@@ -12,3 +12,4 @@ export * from './api';
 export * from './validator';
 export * from './fedimint';
 export * from './lnurl';
+export * from './wallet';

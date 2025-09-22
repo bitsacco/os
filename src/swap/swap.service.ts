@@ -207,6 +207,10 @@ export class SwapService {
     try {
       const swap = await this.onramp.findOne({ _id: id });
 
+      if (!swap) {
+        throw new Error(`Onramp swap with id ${id} not found`);
+      }
+
       return {
         ...swap,
         id: swap._id.toString(),
@@ -300,6 +304,10 @@ export class SwapService {
   async findOfframpSwap({ id }: FindSwapDto): Promise<SwapResponse> {
     try {
       const swap = await this.offramp.findOne({ _id: id });
+
+      if (!swap) {
+        throw new Error(`Offramp swap with id ${id} not found`);
+      }
 
       return {
         ...swap,
