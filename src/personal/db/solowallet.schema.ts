@@ -70,7 +70,7 @@ export class SolowalletDocument extends AbstractDocument {
   })
   walletType?: WalletType;
 
-  @Prop({ type: String })
+  @Prop({ type: String, default: 'Default Wallet' })
   walletName?: string; // Custom wallet name
 
   // Target wallet fields

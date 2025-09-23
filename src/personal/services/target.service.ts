@@ -5,13 +5,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { WalletType, TransactionType } from '../../common';
-import { SolowalletRepository, SolowalletDocument } from '../../solowallet/db';
-import { PersonalWalletService } from './personal-wallet.service';
 import {
   SetTargetDto,
   UpdateTargetDto,
   TargetProgressResponseDto,
 } from '../dto';
+import { SolowalletRepository, SolowalletDocument } from '../db';
+import { PersonalWalletService } from './wallet.service';
 
 @Injectable()
 export class TargetService {
@@ -38,10 +38,8 @@ export class TargetService {
       throw new BadRequestException('Cannot set target for locked wallet');
     }
 
-    const balance = await this.personalWalletService.getWalletBalance(
-      userId,
-      walletId,
-    );
+    const { currentBalance: balance } =
+      await this.personalWalletService.getWalletMeta(userId, walletId);
     // Use msats if provided, otherwise we'll need the fiat amount (validation should ensure one is provided)
     const targetAmountMsats = setTargetDto.targetAmountMsats || 0;
     const targetAmountFiat = setTargetDto.targetAmountFiat;
@@ -90,10 +88,8 @@ export class TargetService {
       throw new BadRequestException('Wallet is not a target wallet');
     }
 
-    const balance = await this.personalWalletService.getWalletBalance(
-      userId,
-      walletId,
-    );
+    const { currentBalance: balance } =
+      await this.personalWalletService.getWalletMeta(userId, walletId);
 
     // Handle dual-currency target updates
     const newTargetAmountMsats =
@@ -194,10 +190,8 @@ export class TargetService {
       );
     }
 
-    const balance = await this.personalWalletService.getWalletBalance(
-      userId,
-      walletId,
-    );
+    const { currentBalance: balance } =
+      await this.personalWalletService.getWalletMeta(userId, walletId);
 
     return this.buildProgressResponse(
       userId,
@@ -220,10 +214,11 @@ export class TargetService {
 
     const progressData = await Promise.all(
       targetWallets.map(async (wallet) => {
-        const balance = await this.personalWalletService.getWalletBalance(
-          userId,
-          wallet.walletId!,
-        );
+        const { currentBalance: balance } =
+          await this.personalWalletService.getWalletMeta(
+            userId,
+            wallet.walletId!,
+          );
         return this.buildProgressResponse(
           userId,
           wallet.walletId!,
@@ -257,10 +252,8 @@ export class TargetService {
       );
     }
 
-    const balance = await this.personalWalletService.getWalletBalance(
-      userId,
-      walletId,
-    );
+    const { currentBalance: balance } =
+      await this.personalWalletService.getWalletMeta(userId, walletId);
     const targetAmount = wallet.targetAmountMsats || 0; // Use msats for calculation
     const remainingAmount = Math.max(0, targetAmount - balance);
 
@@ -354,7 +347,8 @@ export class TargetService {
   ): Promise<TargetProgressResponseDto> {
     const balance =
       currentAmount ??
-      (await this.personalWalletService.getWalletBalance(userId, walletId));
+      (await this.personalWalletService.getWalletMeta(userId, walletId))
+        .currentBalance;
     const progressPercentage = Math.min((balance / targetAmount) * 100, 100);
     const remainingAmount = Math.max(0, targetAmount - balance);
 

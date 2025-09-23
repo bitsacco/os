@@ -29,6 +29,8 @@ import {
   CheckOwnership,
   HandleServiceErrors,
   WalletType,
+  DepositFundsRequestDto,
+  WithdrawFundsRequestDto,
 } from '../common';
 import {
   PersonalWalletService,
@@ -224,14 +226,15 @@ export class PersonalController {
   async depositToWallet(
     @Param('userId') userId: string,
     @Param('walletId') walletId: string,
-    @Body() depositDto: any, // Will use existing DepositFundsRequestDto
+    @Body() depositDto: DepositFundsRequestDto, // Will use existing DepositFundsRequestDto
   ): Promise<any> {
     this.logger.log(`Depositing to wallet: ${walletId} for user: ${userId}`);
-    return this.personalWalletService.depositToWallet(
+    return this.personalWalletService.depositToWallet({
+      ...depositDto,
       userId,
       walletId,
-      depositDto,
-    );
+      walletType: WalletType.STANDARD, // TODO: query wallet type from walletId
+    });
   }
 
   @Post('wallets/:userId/:walletId/withdraw')
@@ -250,14 +253,15 @@ export class PersonalController {
   async withdrawFromWallet(
     @Param('userId') userId: string,
     @Param('walletId') walletId: string,
-    @Body() withdrawDto: any, // Will use existing WithdrawFundsRequestDto
+    @Body() withdrawDto: WithdrawFundsRequestDto, // Will use existing WithdrawFundsRequestDto
   ): Promise<any> {
     this.logger.log(`Withdrawing from wallet: ${walletId} for user: ${userId}`);
-    return this.personalWalletService.withdrawFromWallet(
+    return this.personalWalletService.withdrawFromWallet({
+      ...withdrawDto,
       userId,
       walletId,
-      withdrawDto,
-    );
+      walletType: WalletType.STANDARD,
+    });
   }
 
   // ========== TARGET/SAVINGS GOALS ==========
@@ -670,5 +674,196 @@ export class PersonalController {
   async getGoalAchievements(@Param('userId') userId: string): Promise<any> {
     this.logger.log(`Getting goal achievements for user: ${userId}`);
     return this.analyticsService.getGoalForecast(userId);
+  }
+
+  // ========== TRANSACTION HISTORY ==========
+
+  @Get('transactions/:userId')
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiSecurity('resource-owner')
+  @ApiOperation({
+    summary: 'Get transaction history',
+    description:
+      'Get transaction history for all user personal wallets with filtering and pagination',
+  })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiQuery({
+    name: 'walletId',
+    required: false,
+    description: 'Filter by specific wallet ID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (default: 20)',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    description: 'Transaction type filter',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Transaction status filter',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Start date filter (ISO string)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'End date filter (ISO string)',
+  })
+  @HandleServiceErrors()
+  async getTransactionHistory(
+    @Param('userId') userId: string,
+    @Query() query: any,
+  ): Promise<any> {
+    this.logger.log(`Getting transaction history for user: ${userId}`);
+    return this.personalWalletService.getTransactionHistory(userId, query);
+  }
+
+  @Get('wallet-transactions/:walletId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiOperation({
+    summary: 'Get wallet transaction history by wallet ID',
+    description:
+      'Get transaction history for a specific wallet using wallet ID',
+  })
+  @ApiParam({ name: 'walletId', description: 'Wallet ID' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (default: 20)',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    description: 'Transaction type filter',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Transaction status filter',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Start date filter (ISO string)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'End date filter (ISO string)',
+  })
+  @HandleServiceErrors()
+  async getWalletTransactionsByWalletId(
+    @Param('walletId') walletId: string,
+    @Query() query: any,
+  ): Promise<any> {
+    this.logger.log(`Getting transactions for wallet: ${walletId}`);
+    return this.personalWalletService.getWalletTransactionsByWalletId(
+      walletId,
+      query,
+    );
+  }
+
+  @Get('transactions/:userId/:transactionId')
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiSecurity('resource-owner')
+  @ApiOperation({
+    summary: 'Get transaction details',
+    description: 'Get detailed information about a specific transaction',
+  })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiParam({ name: 'transactionId', description: 'Transaction ID' })
+  @HandleServiceErrors()
+  async getTransaction(
+    @Param('userId') userId: string,
+    @Param('transactionId') transactionId: string,
+  ): Promise<any> {
+    this.logger.log(
+      `Getting transaction details: ${transactionId} for user: ${userId}`,
+    );
+    return this.personalWalletService.getTransaction(userId, transactionId);
+  }
+
+  @Get('wallets/:userId/:walletId/transactions')
+  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiSecurity('resource-owner')
+  @ApiOperation({
+    summary: 'Get wallet transaction history',
+    description: 'Get transaction history for a specific wallet',
+  })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiParam({ name: 'walletId', description: 'Wallet ID' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (default: 20)',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    description: 'Transaction type filter',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Transaction status filter',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Start date filter (ISO string)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'End date filter (ISO string)',
+  })
+  @HandleServiceErrors()
+  async getWalletTransactions(
+    @Param('userId') userId: string,
+    @Param('walletId') walletId: string,
+    @Query() query: any,
+  ): Promise<any> {
+    this.logger.log(
+      `Getting wallet transactions: ${walletId} for user: ${userId}`,
+    );
+    return this.personalWalletService.getWalletTransactions(
+      userId,
+      walletId,
+      query,
+    );
   }
 }

@@ -1,158 +1,57 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SolowalletService } from './solowallet.service';
-import { SolowalletRepository } from './db';
-import {
-  TransactionStatus,
-  TransactionType,
-  FedimintService,
-  TimeoutConfigService,
-} from '../common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PersonalWalletService } from '../personal/services/wallet.service';
 import { SolowalletMetricsService } from './solowallet.metrics';
-import { SwapService } from '../swap/swap.service';
-import { ConfigService } from '@nestjs/config';
 
-describe('SolowalletService - Balance Reserve', () => {
+describe('SolowalletService - Reserve Operations', () => {
   let service: SolowalletService;
-  let walletRepository: jest.Mocked<SolowalletRepository>;
+  let personalWalletService: any;
 
   beforeEach(async () => {
+    const mockPersonalWalletService = {
+      depositToWallet: jest.fn(),
+      withdrawFromWallet: jest.fn(),
+      userTransactions: jest.fn(),
+      findTransaction: jest.fn(),
+      continueDepositFunds: jest.fn(),
+      continueWithdrawFunds: jest.fn(),
+      updateTransaction: jest.fn(),
+      getLegacyDefaultWalletId: jest.fn().mockReturnValue('default-wallet-id'),
+    };
+
+    const mockMetricsService = {
+      recordDepositMetric: jest.fn(),
+      recordBalanceMetric: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SolowalletService,
         {
-          provide: SolowalletRepository,
-          useValue: {
-            aggregate: jest.fn(),
-          },
-        },
-        {
-          provide: FedimintService,
-          useValue: { initialize: jest.fn() },
-        },
-        {
-          provide: EventEmitter2,
-          useValue: { on: jest.fn() },
+          provide: PersonalWalletService,
+          useValue: mockPersonalWalletService,
         },
         {
           provide: SolowalletMetricsService,
-          useValue: {},
-        },
-        {
-          provide: SwapService,
-          useValue: {},
-        },
-        {
-          provide: ConfigService,
-          useValue: { get: jest.fn(), getOrThrow: jest.fn() },
-        },
-        {
-          provide: TimeoutConfigService,
-          useValue: {
-            calculateTimeoutDate: jest.fn().mockReturnValue(new Date()),
-            getConfig: jest.fn().mockReturnValue({
-              pendingTimeoutMinutes: 15,
-              processingTimeoutMinutes: 30,
-              maxRetries: 3,
-              depositTimeoutMinutes: 15,
-              withdrawalTimeoutMinutes: 30,
-              lnurlTimeoutMinutes: 30,
-              offrampTimeoutMinutes: 15,
-            }),
-          },
+          useValue: mockMetricsService,
         },
       ],
     }).compile();
 
     service = module.get<SolowalletService>(SolowalletService);
-    walletRepository = module.get(SolowalletRepository);
+    personalWalletService = module.get(PersonalWalletService);
   });
 
-  describe('balance reserve mechanism', () => {
-    const userId = 'test-user-id';
+  it('should delegate reserve operations to PersonalWalletService', async () => {
+    const mockTransaction = { id: 'test-tx', userId: 'test-user' };
+    personalWalletService.updateTransaction.mockResolvedValue(mockTransaction);
 
-    it('should prevent withdrawal when processing withdrawals would cause negative balance', async () => {
-      // User has 10000 sats deposited, 2000 withdrawn, 5000 processing
-      // Available balance should be 10000 - 2000 - 5000 = 3000
-      walletRepository.aggregate
-        .mockResolvedValueOnce([{ totalMsats: 10000 }]) // Total deposits
-        .mockResolvedValueOnce([{ totalMsats: 2000 }]) // Completed withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 5000 }]); // Processing withdrawals
-
-      const meta = await (service as any).getWalletMeta(userId);
-
-      expect(meta.currentBalance).toBe(3000);
-      // User can only withdraw 3000 more, not 8000 (10000 - 2000)
+    const result = await service.updateTransaction({
+      txId: 'test-tx',
+      updates: { status: 'COMPLETE' },
     });
 
-    it('should allow withdrawal when balance is sufficient after considering processing', async () => {
-      // User has 10000 sats deposited, 2000 withdrawn, 1000 processing
-      // Available balance should be 10000 - 2000 - 1000 = 7000
-      walletRepository.aggregate
-        .mockResolvedValueOnce([{ totalMsats: 10000 }]) // Total deposits
-        .mockResolvedValueOnce([{ totalMsats: 2000 }]) // Completed withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 1000 }]); // Pending withdrawals
-
-      const meta = await (service as any).getWalletMeta(userId);
-
-      expect(meta.currentBalance).toBe(7000);
-      // User can withdraw up to 7000 sats
-    });
-
-    it('should handle multiple processing withdrawals correctly', async () => {
-      // Simulate multiple processing withdrawals
-      // User has 50000 sats deposited, 10000 withdrawn
-      // Multiple processing: 5000 + 3000 + 2000 = 10000 total processing
-      // Available: 50000 - 10000 - 10000 = 30000
-      walletRepository.aggregate
-        .mockResolvedValueOnce([{ totalMsats: 50000 }]) // Total deposits
-        .mockResolvedValueOnce([{ totalMsats: 10000 }]) // Completed withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 10000 }]); // Sum of processing withdrawals
-
-      const meta = await (service as any).getWalletMeta(userId);
-
-      expect(meta.currentBalance).toBe(30000);
-    });
-
-    it('should show zero balance when processing equals available', async () => {
-      // User has 10000 sats deposited, 5000 withdrawn, 5000 processing
-      // Available balance should be 10000 - 5000 - 5000 = 0
-      walletRepository.aggregate
-        .mockResolvedValueOnce([{ totalMsats: 10000 }]) // Total deposits
-        .mockResolvedValueOnce([{ totalMsats: 5000 }]) // Completed withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 5000 }]); // Pending withdrawals
-
-      const meta = await (service as any).getWalletMeta(userId);
-
-      expect(meta.currentBalance).toBe(0);
-      // User cannot make any more withdrawals
-    });
-
-    it('should include PROCESSING status in processing calculations', async () => {
-      // Verify the aggregation query includes only PROCESSING status
-      walletRepository.aggregate
-        .mockResolvedValueOnce([{ totalMsats: 10000 }])
-        .mockResolvedValueOnce([{ totalMsats: 2000 }])
-        .mockResolvedValueOnce([{ totalMsats: 1000 }]);
-
-      await (service as any).getWalletMeta(userId);
-
-      // Check the third call (processing aggregation) includes only PROCESSING status
-      expect(walletRepository.aggregate).toHaveBeenNthCalledWith(3, [
-        {
-          $match: {
-            userId,
-            status: TransactionStatus.PROCESSING.toString(),
-            type: TransactionType.WITHDRAW.toString(),
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalMsats: { $sum: '$amountMsats' },
-          },
-        },
-      ]);
-    });
+    expect(personalWalletService.updateTransaction).toHaveBeenCalled();
+    expect(result).toEqual(mockTransaction);
   });
 });

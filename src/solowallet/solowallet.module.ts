@@ -1,30 +1,17 @@
 import { Module } from '@nestjs/common';
 import { SharedModule } from '../common/shared.module';
 import { HttpModule } from '@nestjs/axios';
-import { DatabaseModule, RoleValidationService } from '../common';
+import { RoleValidationService } from '../common';
 import { SolowalletMetricsService } from './solowallet.metrics';
-import {
-  SolowalletDocument,
-  SolowalletRepository,
-  SolowalletSchema,
-} from './db';
 import { SolowalletController } from './solowallet.controller';
 import { SolowalletService } from './solowallet.service';
-import { SwapModule } from '../swap/swap.module';
+import { PersonalModule } from '../personal/personal.module';
 
 @Module({
-  imports: [
-    SharedModule,
-    DatabaseModule.forFeature([
-      { name: SolowalletDocument.name, schema: SolowalletSchema },
-    ]),
-    HttpModule,
-    SwapModule,
-  ],
+  imports: [SharedModule, HttpModule, PersonalModule],
   controllers: [SolowalletController],
   providers: [
     SolowalletService,
-    SolowalletRepository,
     SolowalletMetricsService,
     RoleValidationService,
   ],

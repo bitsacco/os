@@ -1,7 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { WalletType, TransactionType, TransactionStatus } from '../../common';
-import { SolowalletRepository } from '../../solowallet/db';
-import { PersonalWalletService } from './personal-wallet.service';
 import {
   WalletAnalyticsResponseDto,
   WalletBreakdownDto,
@@ -9,6 +7,8 @@ import {
   GoalStatisticsDto,
   AnalyticsQueryDto,
 } from '../dto';
+import { SolowalletRepository } from '../db';
+import { PersonalWalletService } from './wallet.service';
 
 @Injectable()
 export class AnalyticsService {
@@ -170,10 +170,11 @@ export class AnalyticsService {
     for (const wallet of targetWallets) {
       if (!wallet.targetAmountMsats || !wallet.targetDate) continue;
 
-      const balance = await this.personalWalletService.getWalletBalance(
-        userId,
-        wallet.walletId!,
-      );
+      const { currentBalance: balance } =
+        await this.personalWalletService.getWalletMeta(
+          userId,
+          wallet.walletId!,
+        );
       const remainingAmount = Math.max(0, wallet.targetAmountMsats - balance);
       const daysRemaining = Math.max(
         0,
@@ -329,10 +330,11 @@ export class AnalyticsService {
     const breakdown: WalletBreakdownDto[] = [];
 
     for (const wallet of wallets) {
-      const balance = await this.personalWalletService.getWalletBalance(
-        userId,
-        wallet.walletId!,
-      );
+      const { currentBalance: balance } =
+        await this.personalWalletService.getWalletMeta(
+          userId,
+          wallet.walletId!,
+        );
 
       if (balance <= 0) continue; // Skip empty wallets
 
@@ -457,10 +459,11 @@ export class AnalyticsService {
     for (const wallet of targetWallets) {
       if (!wallet.targetAmountMsats) continue;
 
-      const balance = await this.personalWalletService.getWalletBalance(
-        userId,
-        wallet.walletId!,
-      );
+      const { currentBalance: balance } =
+        await this.personalWalletService.getWalletMeta(
+          userId,
+          wallet.walletId!,
+        );
       const progress = Math.min(
         (balance / wallet.targetAmountMsats) * 100,
         100,

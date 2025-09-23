@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { TransactionStatus, ChamaTxStatus } from '../types';
-import { SolowalletRepository } from '../../solowallet/db';
+import { SolowalletRepository } from '../../personal/db';
 import { ChamaWalletRepository } from '../../chamawallet/db';
 import { FedimintService } from '../fedimint';
 import { TimeoutConfig, TimeoutConfigService } from './timeout-config.service';

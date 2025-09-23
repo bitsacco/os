@@ -1,5 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
-import { SolowalletModule } from '../solowallet/solowallet.module';
+import { Module } from '@nestjs/common';
 import { PersonalController } from './personal.controller';
 import {
   PersonalWalletService,
@@ -7,22 +6,35 @@ import {
   LockService,
   AnalyticsService,
 } from './services';
+import { HttpModule } from '@nestjs/axios';
+import {
+  SolowalletDocument,
+  SolowalletRepository,
+  SolowalletSchema,
+} from './db';
+import { SharedModule, DatabaseModule } from '../common';
+import { SwapModule } from '../swap';
 
 @Module({
   imports: [
-    // Import SolowalletModule to access SolowalletService and SolowalletRepository
-    // Use forwardRef to handle potential circular dependencies
-    forwardRef(() => SolowalletModule),
+    SharedModule,
+    DatabaseModule.forFeature([
+      { name: SolowalletDocument.name, schema: SolowalletSchema },
+    ]),
+    HttpModule,
+    SwapModule,
   ],
   controllers: [PersonalController],
   providers: [
     PersonalWalletService,
+    SolowalletRepository,
     TargetService,
     LockService,
     AnalyticsService,
   ],
   exports: [
     PersonalWalletService,
+    SolowalletRepository,
     TargetService,
     LockService,
     AnalyticsService,

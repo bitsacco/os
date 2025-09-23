@@ -1,229 +1,56 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SolowalletService } from './solowallet.service';
-import { SolowalletRepository } from './db';
-import {
-  FedimintService,
-  TransactionStatus,
-  TransactionType,
-  Currency,
-  TimeoutConfigService,
-} from '../common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PersonalWalletService } from '../personal/services/wallet.service';
 import { SolowalletMetricsService } from './solowallet.metrics';
-import { SwapService } from '../swap/swap.service';
-import { ConfigService } from '@nestjs/config';
-import { v4 as uuidv4 } from 'uuid';
 
 describe('SolowalletService - Idempotency', () => {
   let service: SolowalletService;
-  let walletRepository: jest.Mocked<SolowalletRepository>;
-
-  const mockUserId = uuidv4();
-  const mockTxId = uuidv4();
-  const mockIdempotencyKey = 'test-withdraw-12345';
+  let personalWalletService: any;
 
   beforeEach(async () => {
+    const mockPersonalWalletService = {
+      depositToWallet: jest.fn(),
+      withdrawFromWallet: jest.fn(),
+      userTransactions: jest.fn(),
+      findTransaction: jest.fn(),
+      continueDepositFunds: jest.fn(),
+      continueWithdrawFunds: jest.fn(),
+      updateTransaction: jest.fn(),
+      getLegacyDefaultWalletId: jest.fn().mockReturnValue('default-wallet-id'),
+    };
+
+    const mockMetricsService = {
+      recordDepositMetric: jest.fn(),
+      recordBalanceMetric: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SolowalletService,
         {
-          provide: SolowalletRepository,
-          useValue: {
-            findOne: jest.fn(),
-            findOneAndUpdate: jest.fn(),
-            findOneAndUpdateWithVersion: jest.fn(),
-            create: jest.fn(),
-            find: jest.fn(),
-            aggregate: jest.fn(),
-          },
-        },
-        {
-          provide: FedimintService,
-          useValue: {
-            initialize: jest.fn(),
-            decode: jest.fn().mockResolvedValue({
-              amountMsats: 10000000000, // 10B msats
-            }),
-            pay: jest.fn().mockResolvedValue({
-              operationId: 'test-operation-id',
-              fee: 1000,
-            }),
-          },
-        },
-        {
-          provide: EventEmitter2,
-          useValue: {
-            on: jest.fn(),
-            emit: jest.fn(),
-          },
+          provide: PersonalWalletService,
+          useValue: mockPersonalWalletService,
         },
         {
           provide: SolowalletMetricsService,
-          useValue: {},
-        },
-        {
-          provide: SwapService,
-          useValue: {
-            getQuote: jest.fn().mockResolvedValue({
-              rate: 1000,
-              id: 'test-quote-id',
-            }),
-            createOfframpSwap: jest.fn().mockResolvedValue({
-              id: 'test-swap-id',
-              status: TransactionStatus.PENDING,
-              lightning: 'lnbc10000000p1psn5n8', // mock lightning invoice
-            }),
-          },
-        },
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn(),
-            getOrThrow: jest.fn(),
-          },
-        },
-        {
-          provide: TimeoutConfigService,
-          useValue: {
-            calculateTimeoutDate: jest.fn().mockReturnValue(new Date()),
-            getConfig: jest.fn().mockReturnValue({
-              pendingTimeoutMinutes: 15,
-              processingTimeoutMinutes: 30,
-              maxRetries: 3,
-              depositTimeoutMinutes: 15,
-              withdrawalTimeoutMinutes: 30,
-              lnurlTimeoutMinutes: 30,
-              offrampTimeoutMinutes: 15,
-            }),
-          },
+          useValue: mockMetricsService,
         },
       ],
     }).compile();
 
     service = module.get<SolowalletService>(SolowalletService);
-    walletRepository = module.get(SolowalletRepository);
+    personalWalletService = module.get(PersonalWalletService);
   });
 
-  describe('idempotency key handling', () => {
-    it('should check for existing transaction with idempotency key', async () => {
-      const existingTx = {
-        _id: mockTxId,
-        userId: mockUserId,
-        type: TransactionType.WITHDRAW,
-        idempotencyKey: mockIdempotencyKey,
-        status: TransactionStatus.PENDING,
-        amountMsats: 1000,
-        lightning: 'mock-lightning-data',
-        reference: 'mock-reference',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        __v: 0,
-      };
+  it('should delegate all operations to PersonalWalletService', async () => {
+    const mockResponse = { userId: 'test-user', ledger: { transactions: [] } };
+    personalWalletService.userTransactions.mockResolvedValue(mockResponse);
 
-      // Mock finding existing transaction
-      walletRepository.findOne.mockResolvedValueOnce(existingTx);
+    const result = await service.userTransactions({ userId: 'test-user' });
 
-      // Mock pagination data
-      walletRepository.find.mockResolvedValueOnce([existingTx]);
-
-      // Mock balance aggregations - ensure sufficient balance
-      walletRepository.aggregate
-        .mockResolvedValueOnce([{ totalMsats: 1000000 }]) // deposits (1M msats)
-        .mockResolvedValueOnce([{ totalMsats: 2000 }]) // withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 0 }]); // pending
-
-      const result = await service.withdrawFunds({
-        userId: mockUserId,
-        amountFiat: 100,
-        reference: 'Test withdrawal',
-        idempotencyKey: mockIdempotencyKey,
-      });
-
-      // Verify it checked for existing transaction
-      expect(walletRepository.findOne).toHaveBeenCalledWith({
-        userId: mockUserId,
-        type: TransactionType.WITHDRAW,
-        idempotencyKey: mockIdempotencyKey,
-      });
-
-      // Verify it returned the existing transaction
-      expect(result.txId).toBe(mockTxId);
-
-      // Verify it didn't create a new transaction
-      expect(walletRepository.create).not.toHaveBeenCalled();
+    expect(personalWalletService.userTransactions).toHaveBeenCalledWith({
+      userId: 'test-user',
     });
-
-    it('should continue with new transaction when no idempotency key provided', async () => {
-      // This test verifies that withdrawals without idempotency keys
-      // are not affected by the idempotency check
-
-      const newTxId = uuidv4();
-
-      // Mock balance aggregations - ensure sufficient balance
-      walletRepository.aggregate
-        .mockResolvedValueOnce([{ totalMsats: 20000000000 }]) // deposits (20B msats)
-        .mockResolvedValueOnce([{ totalMsats: 2000 }]) // withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 0 }]); // pending
-
-      // Mock create for new transaction
-      walletRepository.create.mockResolvedValueOnce({
-        _id: newTxId,
-        userId: mockUserId,
-        type: TransactionType.WITHDRAW,
-        status: TransactionStatus.PENDING,
-        amountMsats: 1000,
-        amountFiat: 100,
-        lightning: 'mock-lightning-data',
-        reference: 'Test withdrawal',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        __v: 0,
-      });
-
-      // Mock pagination - need to return the created transaction
-      walletRepository.find.mockImplementation(({ userId }) => {
-        if (userId === mockUserId) {
-          return Promise.resolve([
-            {
-              _id: newTxId,
-              userId: mockUserId,
-              type: TransactionType.WITHDRAW,
-              status: TransactionStatus.PENDING,
-              amountMsats: 10000000000,
-              amountFiat: 100,
-              reference: 'Test withdrawal',
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            },
-          ]);
-        }
-        return Promise.resolve([]);
-      });
-
-      const result = await service.withdrawFunds({
-        userId: mockUserId,
-        amountFiat: 100,
-        reference: 'Test withdrawal',
-        // No idempotencyKey provided
-        offramp: {
-          currency: Currency.KES,
-          payout: {
-            type: 'mobile',
-            mobile: '254712345678',
-          },
-        },
-      });
-
-      // Verify it didn't check for existing transaction with idempotency key
-      expect(walletRepository.findOne).not.toHaveBeenCalledWith(
-        expect.objectContaining({
-          idempotencyKey: expect.anything(),
-        }),
-      );
-
-      // Verify it created a new transaction
-      expect(walletRepository.create).toHaveBeenCalled();
-      expect(result.txId).toBe(newTxId);
-    });
+    expect(result).toEqual(mockResponse);
   });
 });

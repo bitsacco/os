@@ -152,4 +152,22 @@ export abstract class AbstractRepository<TDocument extends AbstractDocument> {
   async aggregate(pipeline: PipelineStage[]): Promise<any[]> {
     return this.model.aggregate(pipeline);
   }
+
+  async updateMany(
+    filterQuery: FilterQuery<TDocument>,
+    update: UpdateQuery<TDocument>,
+  ): Promise<{
+    acknowledged: boolean;
+    modifiedCount: number;
+    matchedCount: number;
+  }> {
+    return this.model.updateMany(filterQuery, {
+      ...update,
+      updatedAt: Date.now(),
+    });
+  }
+
+  async countDocuments(filterQuery: FilterQuery<TDocument>): Promise<number> {
+    return this.model.countDocuments(filterQuery);
+  }
 }

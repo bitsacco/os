@@ -1,210 +1,186 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SolowalletService } from './solowallet.service';
-import { SolowalletRepository } from './db';
-import {
-  FedimintService,
-  TransactionStatus,
-  TransactionType,
-  TimeoutConfigService,
-} from '../common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PersonalWalletService } from '../personal/services/wallet.service';
 import { SolowalletMetricsService } from './solowallet.metrics';
-import { SwapService } from '../swap/swap.service';
-import { ConfigService } from '@nestjs/config';
+import { DepositFundsRequestDto, UserTxsResponse, WalletMeta } from '../common';
 
 describe('SolowalletService - Balance Calculations', () => {
   let service: SolowalletService;
-  let walletRepository: jest.Mocked<SolowalletRepository>;
+  let personalWalletService: any;
+  let metricsService: any;
 
   beforeEach(async () => {
+    const mockPersonalWalletService = {
+      depositToWallet: jest.fn(),
+      withdrawFromWallet: jest.fn(),
+      userTransactions: jest.fn(),
+      findTransaction: jest.fn(),
+      continueDepositFunds: jest.fn(),
+      continueWithdrawFunds: jest.fn(),
+      updateTransaction: jest.fn(),
+      getLegacyDefaultWalletId: jest.fn().mockReturnValue('default-wallet-id'),
+    };
+
+    const mockMetricsService = {
+      recordDepositMetric: jest.fn(),
+      recordBalanceMetric: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SolowalletService,
         {
-          provide: SolowalletRepository,
-          useValue: {
-            findOne: jest.fn(),
-            findOneAndUpdate: jest.fn(),
-            findOneAndUpdateWithVersion: jest.fn(),
-            create: jest.fn(),
-            find: jest.fn(),
-            aggregate: jest.fn(),
-          },
-        },
-        {
-          provide: FedimintService,
-          useValue: {
-            initialize: jest.fn(),
-            invoice: jest.fn(),
-            decode: jest.fn(),
-            pay: jest.fn(),
-            receive: jest.fn(),
-          },
-        },
-        {
-          provide: EventEmitter2,
-          useValue: {
-            on: jest.fn(),
-            emit: jest.fn(),
-          },
+          provide: PersonalWalletService,
+          useValue: mockPersonalWalletService,
         },
         {
           provide: SolowalletMetricsService,
-          useValue: {
-            recordDepositMetric: jest.fn(),
-            recordWithdrawalMetric: jest.fn(),
-            recordBalanceMetric: jest.fn(),
-          },
-        },
-        {
-          provide: SwapService,
-          useValue: {
-            getQuote: jest.fn(),
-            createOnrampSwap: jest.fn(),
-            createOfframpSwap: jest.fn(),
-          },
-        },
-        {
-          provide: ConfigService,
-          useValue: {
-            get: jest.fn(),
-            getOrThrow: jest.fn(),
-          },
-        },
-        {
-          provide: TimeoutConfigService,
-          useValue: {
-            calculateTimeoutDate: jest.fn().mockReturnValue(new Date()),
-            getConfig: jest.fn().mockReturnValue({
-              pendingTimeoutMinutes: 15,
-              processingTimeoutMinutes: 30,
-              maxRetries: 3,
-              depositTimeoutMinutes: 15,
-              withdrawalTimeoutMinutes: 30,
-              lnurlTimeoutMinutes: 30,
-              offrampTimeoutMinutes: 15,
-            }),
-          },
+          useValue: mockMetricsService,
         },
       ],
     }).compile();
 
     service = module.get<SolowalletService>(SolowalletService);
-    walletRepository = module.get(SolowalletRepository);
+    personalWalletService = module.get(PersonalWalletService);
+    metricsService = module.get(SolowalletMetricsService);
   });
 
-  describe('getWalletMeta', () => {
+  describe('userTransactions', () => {
     const userId = 'test-user-id';
 
-    it('should calculate balance excluding processing withdrawals', async () => {
-      // Mock completed transactions
-      walletRepository.aggregate
-        .mockResolvedValueOnce([{ totalMsats: 10000 }]) // Total deposits
-        .mockResolvedValueOnce([{ totalMsats: 3000 }]) // Total completed withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 2000 }]); // Processing withdrawals
+    it('should delegate to PersonalWalletService and record metrics', async () => {
+      const mockResponse: UserTxsResponse = {
+        userId,
+        ledger: {
+          transactions: [],
+          page: 0,
+          size: 20,
+          pages: 0,
+        },
+        meta: {
+          totalDeposits: 10000,
+          totalWithdrawals: 3000,
+          currentBalance: 7000,
+        },
+      };
 
-      const meta = await (service as any).getWalletMeta(userId);
+      personalWalletService.userTransactions.mockResolvedValue(mockResponse);
 
-      expect(meta).toEqual({
-        totalDeposits: 10000,
-        totalWithdrawals: 3000,
-        currentBalance: 5000, // 10000 - 3000 - 2000
+      const result = await service.userTransactions({ userId });
+
+      expect(personalWalletService.userTransactions).toHaveBeenCalledWith({
+        userId,
       });
-
-      // Verify aggregation queries
-      expect(walletRepository.aggregate).toHaveBeenCalledTimes(3);
-
-      // Check deposit aggregation
-      expect(walletRepository.aggregate).toHaveBeenNthCalledWith(1, [
-        {
-          $match: {
-            userId,
-            status: TransactionStatus.COMPLETE.toString(),
-            type: TransactionType.DEPOSIT.toString(),
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalMsats: { $sum: '$amountMsats' },
-          },
-        },
-      ]);
-
-      // Check completed withdrawal aggregation
-      expect(walletRepository.aggregate).toHaveBeenNthCalledWith(2, [
-        {
-          $match: {
-            userId,
-            status: TransactionStatus.COMPLETE.toString(),
-            type: TransactionType.WITHDRAW.toString(),
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalMsats: { $sum: '$amountMsats' },
-          },
-        },
-      ]);
-
-      // Check processing withdrawal aggregation
-      expect(walletRepository.aggregate).toHaveBeenNthCalledWith(3, [
-        {
-          $match: {
-            userId,
-            status: TransactionStatus.PROCESSING.toString(),
-            type: TransactionType.WITHDRAW.toString(),
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalMsats: { $sum: '$amountMsats' },
-          },
-        },
-      ]);
+      expect(metricsService.recordBalanceMetric).toHaveBeenCalledWith({
+        userId,
+        balanceMsats: 7000,
+        activity: 'query',
+      });
+      expect(result).toEqual(mockResponse);
     });
 
-    it('should handle zero processing withdrawals', async () => {
-      walletRepository.aggregate
-        .mockResolvedValueOnce([{ totalMsats: 10000 }]) // Total deposits
-        .mockResolvedValueOnce([{ totalMsats: 3000 }]) // Total completed withdrawals
-        .mockResolvedValueOnce([]); // No processing withdrawals
+    it('should handle missing balance metadata', async () => {
+      const mockResponse: UserTxsResponse = {
+        userId,
+        ledger: {
+          transactions: [],
+          page: 0,
+          size: 20,
+          pages: 0,
+        },
+        meta: undefined,
+      };
 
-      const meta = await (service as any).getWalletMeta(userId);
+      personalWalletService.userTransactions.mockResolvedValue(mockResponse);
 
-      expect(meta).toEqual({
-        totalDeposits: 10000,
-        totalWithdrawals: 3000,
-        currentBalance: 7000, // 10000 - 3000 - 0
+      const result = await service.userTransactions({ userId });
+
+      expect(metricsService.recordBalanceMetric).toHaveBeenCalledWith({
+        userId,
+        balanceMsats: 0,
+        activity: 'query',
       });
+      expect(result).toEqual(mockResponse);
+    });
+  });
+
+  describe('depositFunds', () => {
+    const userId = 'test-user-id';
+
+    it('should delegate to PersonalWalletService and record success metrics', async () => {
+      const depositRequest: DepositFundsRequestDto = {
+        userId,
+        amountFiat: 1000,
+        reference: 'test-deposit',
+      };
+
+      const mockResponse: UserTxsResponse = {
+        userId,
+        ledger: {
+          transactions: [],
+          page: 0,
+          size: 20,
+          pages: 0,
+        },
+        meta: {
+          totalDeposits: 11000,
+          totalWithdrawals: 3000,
+          currentBalance: 8000,
+        },
+      };
+
+      personalWalletService.depositToWallet.mockResolvedValue(mockResponse);
+
+      const result = await service.depositFunds(depositRequest);
+
+      expect(
+        personalWalletService.getLegacyDefaultWalletId,
+      ).toHaveBeenCalledWith('test-user-id');
+      expect(personalWalletService.depositToWallet).toHaveBeenCalledWith({
+        ...depositRequest,
+        walletId: 'default-wallet-id',
+        walletType: expect.any(String),
+      });
+      expect(metricsService.recordDepositMetric).toHaveBeenCalledWith({
+        userId,
+        amountMsats: 0,
+        amountFiat: 1000,
+        method: 'lightning',
+        success: true,
+        duration: expect.any(Number),
+      });
+      expect(metricsService.recordBalanceMetric).toHaveBeenCalledWith({
+        userId,
+        balanceMsats: 8000,
+        activity: 'deposit',
+      });
+      expect(result).toEqual(mockResponse);
     });
 
-    it('should handle empty aggregation results', async () => {
-      walletRepository.aggregate
-        .mockResolvedValueOnce([]) // No deposits
-        .mockResolvedValueOnce([]) // No withdrawals
-        .mockResolvedValueOnce([]); // No pending
+    it('should record failure metrics when deposit fails', async () => {
+      const depositRequest: DepositFundsRequestDto = {
+        userId,
+        amountFiat: 1000,
+        reference: 'test-deposit',
+      };
 
-      const meta = await (service as any).getWalletMeta(userId);
+      const error = new Error('Deposit failed');
+      personalWalletService.depositToWallet.mockRejectedValue(error);
 
-      expect(meta).toEqual({
-        totalDeposits: 0,
-        totalWithdrawals: 0,
-        currentBalance: 0,
+      await expect(service.depositFunds(depositRequest)).rejects.toThrow(
+        'Deposit failed',
+      );
+
+      expect(metricsService.recordDepositMetric).toHaveBeenCalledWith({
+        userId,
+        amountMsats: 0,
+        amountFiat: 1000,
+        method: 'lightning',
+        success: false,
+        duration: expect.any(Number),
+        errorType: 'Deposit failed',
       });
-    });
-
-    it('should prevent withdrawal when processing withdrawals would exceed balance', async () => {
-      walletRepository.aggregate
-        .mockResolvedValueOnce([{ totalMsats: 10000 }]) // Total deposits
-        .mockResolvedValueOnce([{ totalMsats: 3000 }]) // Total completed withdrawals
-        .mockResolvedValueOnce([{ totalMsats: 6000 }]); // Large processing withdrawal
-
-      const meta = await (service as any).getWalletMeta(userId);
-
-      expect(meta.currentBalance).toBe(1000); // Only 1000 sats available
+      expect(metricsService.recordBalanceMetric).not.toHaveBeenCalled();
     });
   });
 });

@@ -13,8 +13,6 @@ import {
   TransactionType,
   TransactionStatus,
 } from '../../common';
-import { SolowalletRepository, SolowalletDocument } from '../../solowallet/db';
-import { PersonalWalletService } from './personal-wallet.service';
 import {
   CreateLockDto,
   UpdateLockDto,
@@ -22,6 +20,8 @@ import {
   LockStatusResponseDto,
   EarlyWithdrawResponseDto,
 } from '../dto';
+import { SolowalletRepository, SolowalletDocument } from '../db';
+import { PersonalWalletService } from './wallet.service';
 
 @Injectable()
 export class LockService {
@@ -53,10 +53,8 @@ export class LockService {
       throw new ConflictException('Wallet is already locked');
     }
 
-    const balance = await this.personalWalletService.getWalletBalance(
-      userId,
-      walletId,
-    );
+    const { currentBalance: balance } =
+      await this.personalWalletService.getWalletMeta(userId, walletId);
 
     if (balance === 0) {
       throw new BadRequestException('Cannot lock wallet with zero balance');
@@ -125,10 +123,8 @@ export class LockService {
       updateData,
     );
 
-    const balance = await this.personalWalletService.getWalletBalance(
-      userId,
-      walletId,
-    );
+    const { currentBalance: balance } =
+      await this.personalWalletService.getWalletMeta(userId, walletId);
 
     this.logger.log(`Updated lock settings for wallet ${walletId}`);
 
@@ -157,10 +153,8 @@ export class LockService {
       throw new BadRequestException('Must accept penalty for early withdrawal');
     }
 
-    const balance = await this.personalWalletService.getWalletBalance(
-      userId,
-      walletId,
-    );
+    const { currentBalance: balance } =
+      await this.personalWalletService.getWalletMeta(userId, walletId);
 
     if (earlyWithdrawDto.amount > balance) {
       throw new BadRequestException('Insufficient balance for withdrawal');
@@ -305,10 +299,8 @@ export class LockService {
       throw new BadRequestException('Wallet is not locked');
     }
 
-    const balance = await this.personalWalletService.getWalletBalance(
-      userId,
-      walletId,
-    );
+    const { currentBalance: balance } =
+      await this.personalWalletService.getWalletMeta(userId, walletId);
 
     return this.buildLockStatusResponse(userId, walletId, balance);
   }
@@ -325,10 +317,11 @@ export class LockService {
 
     const lockStatuses = await Promise.all(
       lockedWallets.map(async (wallet) => {
-        const balance = await this.personalWalletService.getWalletBalance(
-          userId,
-          wallet.walletId!,
-        );
+        const { currentBalance: balance } =
+          await this.personalWalletService.getWalletMeta(
+            userId,
+            wallet.walletId!,
+          );
         return this.buildLockStatusResponse(userId, wallet.walletId!, balance);
       }),
     );
