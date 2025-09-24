@@ -139,7 +139,6 @@ describe('SolowalletService - Balance Calculations', () => {
       expect(personalWalletService.depositToWallet).toHaveBeenCalledWith({
         ...depositRequest,
         walletId: 'default-wallet-id',
-        walletType: expect.any(String),
       });
       expect(metricsService.recordDepositMetric).toHaveBeenCalledWith({
         userId,

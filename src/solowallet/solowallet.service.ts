@@ -38,7 +38,6 @@ export class SolowalletService {
       const result = await this.personalWalletService.depositToWallet({
         ...req,
         walletId,
-        walletType: WalletType.STANDARD,
       });
 
       // Record successful deposit metrics
@@ -109,7 +108,6 @@ export class SolowalletService {
     return await this.personalWalletService.withdrawFromWallet({
       ...req,
       walletId,
-      walletType: WalletType.STANDARD,
     });
   }
 

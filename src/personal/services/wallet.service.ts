@@ -227,6 +227,14 @@ export class PersonalWalletService {
           },
         },
       },
+      // Add a stage to set default walletId for transactions without one
+      {
+        $addFields: {
+          walletId: {
+            $ifNull: ['$walletId', DEFAULT_STANDARD_WALLET_ID],
+          },
+        },
+      },
       { $sort: { createdAt: -1 as -1 } },
       {
         $group: {
@@ -593,15 +601,28 @@ export class PersonalWalletService {
         ? { $in: status.map((s) => s.toString()) }
         : status.toString();
 
-      // Use the exact same aggregation pattern as SolowalletService but with walletId filter
+      const DEFAULT_STANDARD_WALLET_ID = this.getLegacyDefaultWalletId(userId);
+
       transactions = await this.wallet
         .aggregate([
           {
             $match: {
               userId: userId,
-              walletId: walletId,
               status: statusFilter,
               type: type.toString(),
+            },
+          },
+          // Add a stage to set default walletId for transactions without one
+          {
+            $addFields: {
+              walletId: {
+                $ifNull: ['$walletId', DEFAULT_STANDARD_WALLET_ID],
+              },
+            },
+          },
+          {
+            $match: {
+              walletId: walletId,
             },
           },
           {
@@ -629,12 +650,10 @@ export class PersonalWalletService {
     walletId: string,
     type: TransactionType,
   ): Promise<number> {
-    return this.aggregateTransactionsByStatus(
-      userId,
-      walletId,
-      type,
+    return this.aggregateTransactionsByStatus(userId, walletId, type, [
       TransactionStatus.COMPLETE,
-    );
+      TransactionStatus.MANUAL_REVIEW,
+    ]);
   }
 
   private async aggregateProcessingTransactions(
@@ -706,11 +725,26 @@ export class PersonalWalletService {
       TransactionType.WITHDRAW,
     );
 
+    const currentBalance =
+      totalDeposits - totalWithdrawals - processingWithdrawals;
+
     return {
       totalDeposits,
       totalWithdrawals,
-      currentBalance: totalDeposits - totalWithdrawals - processingWithdrawals,
+      currentBalance,
     };
+  }
+
+  private async checkWalletType(userId: string, walletId: string) {
+    try {
+      const wallet = await this.findWalletByUserAndId(userId, walletId);
+      return wallet.walletType || WalletType.STANDARD;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new BadRequestException(`Invalid wallet ID: ${walletId}`);
+      }
+      throw error;
+    }
   }
 
   async depositToWallet({
@@ -721,15 +755,15 @@ export class PersonalWalletService {
     onramp,
     pagination,
     walletId,
-    walletType,
   }: DepositFundsRequestDto & {
     walletId: string;
-    walletType: WalletType;
   }): Promise<UserTxsResponse> {
     // const startTime = Date.now();  // Uncomment if timing metrics needed
     let errorType: string | undefined;
 
     try {
+      let walletType = await this.checkWalletType(userId, walletId);
+
       // Validate that either amountFiat or amountMsats is provided
       if (!amountFiat && !requestedAmountMsats) {
         throw new BadRequestException(
@@ -1183,11 +1217,11 @@ export class PersonalWalletService {
     pagination,
     idempotencyKey,
     walletId,
-    walletType,
   }: WithdrawFundsRequestDto & {
     walletId: string;
-    walletType: WalletType;
   }): Promise<UserTxsResponse> {
+    let walletType = await this.checkWalletType(userId, walletId);
+
     // Check for existing transaction with same idempotency key
     if (idempotencyKey) {
       try {
@@ -1367,7 +1401,7 @@ export class PersonalWalletService {
           maxRetries: 3,
           __v: 0,
           // Add wallet context for personal savings features (backward compatible)
-          walletId: walletId || undefined,
+          walletId: walletId || this.getLegacyDefaultWalletId(userId),
           walletType: (walletType as WalletType) || WalletType.STANDARD,
         });
 
@@ -1451,7 +1485,7 @@ export class PersonalWalletService {
           maxRetries: 3,
           __v: 0,
           // Add wallet context for personal savings features (backward compatible)
-          walletId: walletId || undefined,
+          walletId: walletId || this.getLegacyDefaultWalletId(userId),
           walletType: (walletType as WalletType) || WalletType.STANDARD,
         });
 

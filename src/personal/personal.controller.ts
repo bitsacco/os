@@ -233,7 +233,6 @@ export class PersonalController {
       ...depositDto,
       userId,
       walletId,
-      walletType: WalletType.STANDARD, // TODO: query wallet type from walletId
     });
   }
 
@@ -260,7 +259,6 @@ export class PersonalController {
       ...withdrawDto,
       userId,
       walletId,
-      walletType: WalletType.STANDARD,
     });
   }
 
