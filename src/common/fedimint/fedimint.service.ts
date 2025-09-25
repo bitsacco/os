@@ -17,6 +17,8 @@ import {
   LnUrlWithdrawPoint,
   WithFederationId,
   WithGatewayId,
+  TransactionStatus,
+  ChamaTxStatus,
 } from '../types';
 
 @Injectable()
@@ -366,18 +368,21 @@ export class FedimintService {
   /**
    * Check the status of a transaction using its payment tracker
    * @param paymentTracker The operation ID or payment tracker
-   * @returns The transaction status: 'completed', 'failed', 'pending', 'processing', or 'unknown'
+   * @returns The transaction status as a TransactionStatus enum value
    */
-  async checkTransactionStatus(paymentTracker: string): Promise<string> {
+  async checkTransactionStatus(
+    paymentTracker: string,
+  ): Promise<TransactionStatus> {
     try {
       if (!paymentTracker) {
-        return 'unknown';
+        this.logger.warn('No payment tracker provided');
+        return TransactionStatus.UNRECOGNIZED;
       }
 
       // Ensure service is initialized
       if (!this.baseUrl || !this.federationId) {
         this.logger.warn('FedimintService not properly initialized');
-        return 'unknown';
+        return TransactionStatus.UNRECOGNIZED;
       }
 
       // Try to list operations and find the one with matching ID
@@ -438,61 +443,107 @@ export class FedimintService {
         this.logger.debug(`Lightning status check failed: ${lnError}`);
       }
 
-      return 'unknown';
+      return TransactionStatus.UNRECOGNIZED;
     } catch (error) {
       this.logger.error(
         `Failed to check transaction status for ${paymentTracker}:`,
         error,
       );
-      return 'unknown';
+      return TransactionStatus.UNRECOGNIZED;
     }
   }
 
   /**
-   * Map Fedimint operation status to our simplified status
+   * Map Fedimint operation status to TransactionStatus enum
    */
-  private mapOperationStatus(status: string | undefined): string {
-    if (!status) return 'unknown';
+  private mapOperationStatus(status: string | undefined): TransactionStatus {
+    if (!status) {
+      this.logger.debug('No status provided to map');
+      return TransactionStatus.UNRECOGNIZED;
+    }
 
     const normalizedStatus = status.toLowerCase();
 
-    // Map various possible statuses
+    // Map various possible statuses to TransactionStatus enum
     if (
       normalizedStatus.includes('complete') ||
       normalizedStatus.includes('success') ||
       normalizedStatus === 'done' ||
-      normalizedStatus === 'finished'
+      normalizedStatus === 'finished' ||
+      normalizedStatus === 'claimed' ||
+      normalizedStatus === 'funded'
     ) {
-      return 'completed';
+      this.logger.debug(`Mapping status '${status}' to COMPLETE`);
+      return TransactionStatus.COMPLETE;
     }
 
     if (
       normalizedStatus.includes('fail') ||
       normalizedStatus.includes('error') ||
       normalizedStatus === 'cancelled' ||
-      normalizedStatus === 'rejected'
+      normalizedStatus === 'rejected' ||
+      normalizedStatus === 'timeout'
     ) {
-      return 'failed';
+      this.logger.debug(`Mapping status '${status}' to FAILED`);
+      return TransactionStatus.FAILED;
     }
 
     if (
       normalizedStatus === 'pending' ||
       normalizedStatus === 'waiting' ||
-      normalizedStatus === 'queued'
+      normalizedStatus === 'queued' ||
+      normalizedStatus === 'created' ||
+      normalizedStatus === 'waiting-for-payment'
     ) {
-      return 'pending';
+      this.logger.debug(`Mapping status '${status}' to PENDING`);
+      return TransactionStatus.PENDING;
     }
 
     if (
       normalizedStatus.includes('process') ||
       normalizedStatus === 'in_progress' ||
       normalizedStatus === 'active' ||
-      normalizedStatus === 'running'
+      normalizedStatus === 'running' ||
+      normalizedStatus === 'awaiting-funds'
     ) {
-      return 'processing';
+      this.logger.debug(`Mapping status '${status}' to PROCESSING`);
+      return TransactionStatus.PROCESSING;
     }
 
-    return 'unknown';
+    this.logger.warn(
+      `Unknown fedimint status '${status}', mapping to UNRECOGNIZED`,
+    );
+    return TransactionStatus.UNRECOGNIZED;
+  }
+
+  /**
+   * Check the status of a chama transaction using its payment tracker
+   * @param paymentTracker The operation ID or payment tracker
+   * @returns The transaction status as a ChamaTxStatus enum value
+   */
+  async checkChamaTransactionStatus(
+    paymentTracker: string,
+  ): Promise<ChamaTxStatus> {
+    const status = await this.checkTransactionStatus(paymentTracker);
+
+    // Map TransactionStatus to ChamaTxStatus
+    switch (status) {
+      case TransactionStatus.COMPLETE:
+        return ChamaTxStatus.COMPLETE;
+      case TransactionStatus.FAILED:
+        return ChamaTxStatus.FAILED;
+      case TransactionStatus.PENDING:
+        return ChamaTxStatus.PENDING;
+      case TransactionStatus.PROCESSING:
+        return ChamaTxStatus.PROCESSING;
+      case TransactionStatus.UNRECOGNIZED:
+        return ChamaTxStatus.UNRECOGNIZED;
+      default:
+        this.logger.warn(
+          `Unmapped TransactionStatus ${status}, returning UNRECOGNIZED`,
+        );
+        return ChamaTxStatus.UNRECOGNIZED;
+    }
   }
 }
 

@@ -12,12 +12,14 @@ export const SOLO_WALLET_STATE_TRANSITIONS: Record<
     TransactionStatus.COMPLETE,
     TransactionStatus.FAILED,
     TransactionStatus.MANUAL_REVIEW,
+    TransactionStatus.UNRECOGNIZED, // Allow for unknown fedimint statuses
   ],
   [TransactionStatus.PROCESSING]: [
     TransactionStatus.COMPLETE,
     TransactionStatus.FAILED,
     TransactionStatus.PENDING, // Allow reverting to pending on payment failure
     TransactionStatus.MANUAL_REVIEW,
+    TransactionStatus.UNRECOGNIZED, // Allow for unknown fedimint statuses
   ],
   [TransactionStatus.MANUAL_REVIEW]: [TransactionStatus.UNRECOGNIZED],
   [TransactionStatus.COMPLETE]: [], // Final state - no transitions allowed
@@ -37,6 +39,7 @@ export const CHAMA_WALLET_STATE_TRANSITIONS: Record<
     ChamaTxStatus.REJECTED,
     ChamaTxStatus.FAILED,
     ChamaTxStatus.MANUAL_REVIEW,
+    ChamaTxStatus.UNRECOGNIZED, // Allow for unknown fedimint statuses
   ],
   [ChamaTxStatus.APPROVED]: [
     ChamaTxStatus.PROCESSING,
@@ -49,6 +52,7 @@ export const CHAMA_WALLET_STATE_TRANSITIONS: Record<
     ChamaTxStatus.FAILED,
     ChamaTxStatus.APPROVED, // Allow reverting to approved on payment failure
     ChamaTxStatus.MANUAL_REVIEW,
+    ChamaTxStatus.UNRECOGNIZED, // Allow for unknown fedimint statuses
   ],
   [ChamaTxStatus.MANUAL_REVIEW]: [ChamaTxStatus.UNRECOGNIZED],
   [ChamaTxStatus.COMPLETE]: [], // Final state - no transitions allowed

@@ -762,7 +762,7 @@ export class PersonalWalletService {
     let errorType: string | undefined;
 
     try {
-      let walletType = await this.checkWalletType(userId, walletId);
+      const walletType = await this.checkWalletType(userId, walletId);
 
       // Validate that either amountFiat or amountMsats is provided
       if (!amountFiat && !requestedAmountMsats) {
@@ -1220,7 +1220,7 @@ export class PersonalWalletService {
   }: WithdrawFundsRequestDto & {
     walletId: string;
   }): Promise<UserTxsResponse> {
-    let walletType = await this.checkWalletType(userId, walletId);
+    const walletType = await this.checkWalletType(userId, walletId);
 
     // Check for existing transaction with same idempotency key
     if (idempotencyKey) {

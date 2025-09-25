@@ -209,7 +209,8 @@ describe('Transaction State Machine', () => {
       expect(allowed).toContain(TransactionStatus.COMPLETE);
       expect(allowed).toContain(TransactionStatus.FAILED);
       expect(allowed).toContain(TransactionStatus.MANUAL_REVIEW);
-      expect(allowed).toHaveLength(4);
+      expect(allowed).toContain(TransactionStatus.UNRECOGNIZED);
+      expect(allowed).toHaveLength(5);
     });
 
     it('should return empty array for final states', () => {

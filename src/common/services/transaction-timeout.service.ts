@@ -110,8 +110,8 @@ export class TransactionTimeoutService implements OnModuleInit {
   private async handleSolowalletTimeout(tx: any) {
     this.logger.log(`Handling timeout for solo wallet transaction ${tx._id}`);
 
-    // Check actual status with Fedimint
-    let actualStatus: string;
+    // Check actual status with Fedimint - returns TransactionStatus enum
+    let actualStatus: TransactionStatus;
     try {
       actualStatus = await this.fedimintService.checkTransactionStatus(
         tx.paymentTracker,
@@ -121,14 +121,14 @@ export class TransactionTimeoutService implements OnModuleInit {
         `Failed to check status for ${tx.paymentTracker}:`,
         error,
       );
-      actualStatus = 'unknown';
+      actualStatus = TransactionStatus.UNRECOGNIZED;
     }
 
     const currentRetryCount = tx.retryCount || 0;
     const maxRetries = tx.maxRetries || this.config.maxRetries;
 
     switch (actualStatus) {
-      case 'completed':
+      case TransactionStatus.COMPLETE:
         // Transaction actually completed, update status
         await this.solowalletRepository.findOneAndUpdateWithVersion(
           { _id: tx._id },
@@ -142,7 +142,7 @@ export class TransactionTimeoutService implements OnModuleInit {
         this.logger.log(`Transaction ${tx._id} marked as COMPLETE`);
         break;
 
-      case 'failed':
+      case TransactionStatus.FAILED:
         // Transaction failed, update status
         await this.solowalletRepository.findOneAndUpdateWithVersion(
           { _id: tx._id },
@@ -156,15 +156,15 @@ export class TransactionTimeoutService implements OnModuleInit {
         this.logger.log(`Transaction ${tx._id} marked as FAILED`);
         break;
 
-      case 'pending':
-      case 'processing':
+      case TransactionStatus.PENDING:
+      case TransactionStatus.PROCESSING:
         // Still in progress, check if we should retry
         if (currentRetryCount < maxRetries) {
           // Extend timeout and increment retry count
           const newTimeout = new Date();
           newTimeout.setMinutes(
             newTimeout.getMinutes() +
-              (actualStatus === 'pending'
+              (actualStatus === TransactionStatus.PENDING
                 ? this.config.pendingTimeoutMinutes
                 : this.config.processingTimeoutMinutes),
           );
@@ -198,18 +198,18 @@ export class TransactionTimeoutService implements OnModuleInit {
         break;
 
       default:
-        // Unknown status, mark for manual review
+        // Unknown or unrecognized status, mark as UNRECOGNIZED
         await this.solowalletRepository.findOneAndUpdateWithVersion(
           { _id: tx._id },
           {
-            status: TransactionStatus.MANUAL_REVIEW,
+            status: TransactionStatus.UNRECOGNIZED,
             stateChangedAt: new Date(),
             timeoutAt: null,
           },
           tx.__v,
         );
         this.logger.warn(
-          `Transaction ${tx._id} marked for MANUAL_REVIEW due to unknown status: ${actualStatus}`,
+          `Transaction ${tx._id} marked as UNRECOGNIZED due to unknown fedimint status: ${actualStatus}`,
         );
     }
   }
@@ -221,9 +221,9 @@ export class TransactionTimeoutService implements OnModuleInit {
 
     // Check if this is a withdrawal with a payment tracker that we can verify with Fedimint
     if (tx.type === 'WITHDRAWAL' && tx.paymentTracker) {
-      let actualStatus: string;
+      let actualStatus: ChamaTxStatus;
       try {
-        actualStatus = await this.fedimintService.checkTransactionStatus(
+        actualStatus = await this.fedimintService.checkChamaTransactionStatus(
           tx.paymentTracker,
         );
       } catch (error) {
@@ -231,14 +231,14 @@ export class TransactionTimeoutService implements OnModuleInit {
           `Failed to check status for ${tx.paymentTracker}:`,
           error,
         );
-        actualStatus = 'unknown';
+        actualStatus = ChamaTxStatus.UNRECOGNIZED;
       }
 
       const currentRetryCount = tx.retryCount || 0;
       const maxRetries = tx.maxRetries || this.config.maxRetries;
 
       switch (actualStatus) {
-        case 'completed':
+        case ChamaTxStatus.COMPLETE:
           // Transaction actually completed, update status
           await this.chamaWalletRepository.findOneAndUpdateWithVersion(
             { _id: tx._id },
@@ -252,7 +252,7 @@ export class TransactionTimeoutService implements OnModuleInit {
           this.logger.log(`Chama transaction ${tx._id} marked as COMPLETE`);
           break;
 
-        case 'failed':
+        case ChamaTxStatus.FAILED:
           // Transaction failed, update status
           await this.chamaWalletRepository.findOneAndUpdateWithVersion(
             { _id: tx._id },
@@ -266,15 +266,15 @@ export class TransactionTimeoutService implements OnModuleInit {
           this.logger.log(`Chama transaction ${tx._id} marked as FAILED`);
           break;
 
-        case 'pending':
-        case 'processing':
+        case ChamaTxStatus.PENDING:
+        case ChamaTxStatus.PROCESSING:
           // Still in progress, check if we should retry
           if (currentRetryCount < maxRetries) {
             // Extend timeout and increment retry count
             const newTimeout = new Date();
             newTimeout.setMinutes(
               newTimeout.getMinutes() +
-                (actualStatus === 'pending'
+                (actualStatus === ChamaTxStatus.PENDING
                   ? this.config.pendingTimeoutMinutes
                   : this.config.processingTimeoutMinutes),
             );
@@ -308,18 +308,18 @@ export class TransactionTimeoutService implements OnModuleInit {
           break;
 
         default:
-          // Unknown status, mark for manual review
+          // Unknown or unrecognized status, mark as UNRECOGNIZED
           await this.chamaWalletRepository.findOneAndUpdateWithVersion(
             { _id: tx._id },
             {
-              status: ChamaTxStatus.MANUAL_REVIEW,
+              status: ChamaTxStatus.UNRECOGNIZED,
               stateChangedAt: new Date(),
               timeoutAt: null,
             },
             tx.__v,
           );
           this.logger.warn(
-            `Chama transaction ${tx._id} marked for MANUAL_REVIEW due to unknown status: ${actualStatus}`,
+            `Chama transaction ${tx._id} marked as UNRECOGNIZED due to unknown fedimint status: ${actualStatus}`,
           );
       }
     } else {
