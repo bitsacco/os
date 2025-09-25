@@ -143,13 +143,6 @@ export class SolowalletController {
   @ApiParam({ name: 'id', description: 'Transaction ID' })
   @HandleServiceErrors()
   async findTransaction(@Param('id') id: string, @Req() req: any) {
-    // Check if the request has user data
-    if (req.user) {
-      // Extract user ID from the user object
-      const userRecord = req.user as any;
-      const userId = userRecord.id;
-      return await this.solowalletService.findTransaction({ txId: id, userId });
-    }
     return await this.solowalletService.findTransaction({ txId: id });
   }
 }
