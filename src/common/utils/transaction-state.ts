@@ -19,10 +19,10 @@ export const SOLO_WALLET_STATE_TRANSITIONS: Record<
     TransactionStatus.PENDING, // Allow reverting to pending on payment failure
     TransactionStatus.MANUAL_REVIEW,
   ],
+  [TransactionStatus.MANUAL_REVIEW]: [TransactionStatus.UNRECOGNIZED],
   [TransactionStatus.COMPLETE]: [], // Final state - no transitions allowed
   [TransactionStatus.FAILED]: [], // Final state - no transitions allowed
-  [TransactionStatus.MANUAL_REVIEW]: [], // Final state - requires manual intervention
-  [TransactionStatus.UNRECOGNIZED]: [],
+  [TransactionStatus.UNRECOGNIZED]: [], // Final state - no transitions allowed
 };
 
 /**
@@ -50,11 +50,11 @@ export const CHAMA_WALLET_STATE_TRANSITIONS: Record<
     ChamaTxStatus.APPROVED, // Allow reverting to approved on payment failure
     ChamaTxStatus.MANUAL_REVIEW,
   ],
+  [ChamaTxStatus.MANUAL_REVIEW]: [ChamaTxStatus.UNRECOGNIZED],
   [ChamaTxStatus.COMPLETE]: [], // Final state - no transitions allowed
   [ChamaTxStatus.REJECTED]: [], // Final state - no transitions allowed
   [ChamaTxStatus.FAILED]: [], // Final state - no transitions allowed
-  [ChamaTxStatus.MANUAL_REVIEW]: [], // Final state - requires manual intervention
-  [ChamaTxStatus.UNRECOGNIZED]: [],
+  [ChamaTxStatus.UNRECOGNIZED]: [], // Final state - no transitions allowed
 };
 
 /**
