@@ -41,6 +41,7 @@ import { SolowalletModule } from '../solowallet/solowallet.module';
 import { ChamaModule } from '../chamas/chama.module';
 import { NotificationModule } from '../notifications/notification.module';
 import { SwapModule } from '../swap';
+import { PersonalModule } from '../personal/personal.module';
 import { UsersService } from '../common/users/users.service';
 import { UsersRepository } from '../common/users/users.repository';
 import { RoleValidationService } from '../common/auth/role-validation.service';
@@ -59,6 +60,7 @@ import { RoleValidationService } from '../common/auth/role-validation.service';
     ChamaModule,
     NotificationModule,
     SwapModule,
+    PersonalModule,
   ],
   controllers: [
     LightningAddressController,

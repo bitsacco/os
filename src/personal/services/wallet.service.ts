@@ -58,6 +58,9 @@ import {
   WalletListResponseDto,
   WalletQueryDto,
 } from '../dto';
+import { AtomicWithdrawalService } from './atomic-withdrawal.service';
+import { DistributedLockService } from './distributed-lock.service';
+import { WithdrawalMonitorService } from './withdrawal-monitor.service';
 
 @Injectable()
 export class PersonalWalletService {
@@ -69,6 +72,9 @@ export class PersonalWalletService {
     private readonly eventEmitter: EventEmitter2,
     private readonly swapService: SwapService,
     private readonly timeoutConfigService: TimeoutConfigService,
+    private readonly atomicWithdrawalService: AtomicWithdrawalService,
+    private readonly distributedLockService: DistributedLockService,
+    private readonly withdrawalMonitorService: WithdrawalMonitorService,
   ) {
     this.logger.log('SolowalletService created');
     this.eventEmitter.on(
@@ -1271,59 +1277,119 @@ export class PersonalWalletService {
       this.logger.log(`Invoice amount: ${invoiceMsats} msats`);
       this.logger.log(`Current balance: ${currentBalance} msats`);
 
-      // Check if user has enough balance to pay the invoice
-      // Note: currentBalance already accounts for processing withdrawals
-      if (invoiceMsats > currentBalance) {
-        throw new Error(
-          'Invoice amount exceeds available balance (including processing withdrawals)',
+      // Security check before processing
+      const securityCheck =
+        await this.withdrawalMonitorService.checkWithdrawalSecurity(
+          userId,
+          invoiceMsats,
+          resolvedWalletId,
+        );
+
+      if (!securityCheck.allowed) {
+        this.logger.error(
+          `Withdrawal blocked for user ${userId}: ${securityCheck.reason}`,
+        );
+        throw new BadRequestException(securityCheck.reason);
+      }
+
+      if (securityCheck.alerts.length > 0) {
+        this.logger.warn(
+          `Security alerts for withdrawal - User: ${userId}, Alerts: ${securityCheck.alerts.join('; ')}`,
+        );
+      }
+
+      // Acquire distributed lock for this user's withdrawals
+      const lockKey =
+        this.distributedLockService.getUserWithdrawalLockKey(userId);
+      const lockToken = await this.distributedLockService.acquireLockWithRetry(
+        lockKey,
+        {
+          ttl: 60000, // 60 seconds for withdrawal operation
+          maxRetries: 5,
+          retryDelay: 200,
+        },
+      );
+
+      if (!lockToken) {
+        throw new BadRequestException(
+          'Another withdrawal is currently being processed for this user',
         );
       }
 
       try {
-        // Pay the lightning invoice using fedimint
-        const { operationId, fee } = await this.fedimintService.pay(
-          lightning.invoice,
-        );
-
-        this.logger.log(
-          `Lightning invoice paid successfully. Operation ID: ${operationId}, Fee: ${fee} msats`,
-        );
-
-        // Calculate total amount withdrawn (invoice amount + fee)
-        const totalWithdrawnMsats = invoiceMsats + fee;
-
-        // Create withdrawal record
-        const now = new Date();
-
-        withdrawal = await this.wallet.create({
+        // Create withdrawal with atomic balance validation
+        withdrawal = await this.atomicWithdrawalService.createWithdrawalAtomic({
           userId,
-          amountMsats: totalWithdrawnMsats,
+          walletId: resolvedWalletId,
+          amountMsats: invoiceMsats, // Use invoice amount for validation
           amountFiat,
-          lightning: JSON.stringify(lightning),
-          paymentTracker: operationId,
-          type: TransactionType.WITHDRAW,
-          status: TransactionStatus.COMPLETE,
           reference:
             reference ||
             inv.description ||
             `withdraw ${amountFiat} KES via Lightning`,
+          lightning: JSON.stringify(lightning),
           idempotencyKey,
-          stateChangedAt: now,
-          timeoutAt: undefined, // Complete transactions don't need timeout
-          retryCount: 0,
-          maxRetries: 3,
-          __v: 0,
-          // Add wallet context for personal savings features (backward compatible)
-          walletId,
-          walletType,
         });
 
-        this.logger.log(`Withdrawal record created with ID: ${withdrawal._id}`);
-      } catch (error) {
-        this.logger.error('Failed to pay lightning invoice', error);
-        throw new Error(
-          `Failed to process lightning payment: ${error.message}`,
-        );
+        if (!withdrawal) {
+          throw new BadRequestException(
+            'Failed to create withdrawal - insufficient balance or concurrent operation',
+          );
+        }
+
+        try {
+          // Pay the lightning invoice using fedimint
+          const { operationId, fee } = await this.fedimintService.pay(
+            lightning.invoice,
+          );
+
+          this.logger.log(
+            `Lightning invoice paid successfully. Operation ID: ${operationId}, Fee: ${fee} msats`,
+          );
+
+          // Calculate total amount withdrawn (invoice amount + fee)
+          const totalWithdrawnMsats = invoiceMsats + fee;
+
+          // Update withdrawal to COMPLETE status with actual amount including fee
+          withdrawal =
+            await this.atomicWithdrawalService.updateWithdrawalStatus(
+              withdrawal._id,
+              TransactionStatus.COMPLETE,
+              {
+                amountMsats: totalWithdrawnMsats,
+                paymentTracker: operationId,
+                walletType,
+              },
+            );
+
+          this.logger.log(
+            `Withdrawal ${withdrawal._id} completed successfully`,
+          );
+
+          // Record successful withdrawal for monitoring
+          await this.withdrawalMonitorService.recordSuccessfulWithdrawal(
+            userId,
+            withdrawal.amountMsats,
+          );
+        } catch (paymentError) {
+          // Payment failed, rollback the withdrawal
+          await this.atomicWithdrawalService.rollbackWithdrawal(
+            withdrawal._id,
+            `Lightning payment failed: ${paymentError.message}`,
+          );
+
+          // Record failed attempt for monitoring
+          await this.withdrawalMonitorService.recordFailedWithdrawal(
+            userId,
+            Math.ceil(withdrawal.amountMsats / 1000), // Convert to sats
+            `Lightning payment failed: ${paymentError.message}`,
+          );
+
+          throw paymentError;
+        }
+      } finally {
+        // Always release the lock
+        await this.distributedLockService.releaseLock(lockKey, lockToken);
       }
     } else if (lnurlRequest) {
       // 2. Execute LNURL withdrawal flow

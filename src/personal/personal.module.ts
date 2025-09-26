@@ -5,12 +5,19 @@ import {
   TargetService,
   LockService,
   AnalyticsService,
+  AtomicWithdrawalService,
+  DistributedLockService,
+  WithdrawalMonitorService,
+  WithdrawalRateLimitService,
 } from './services';
 import { HttpModule } from '@nestjs/axios';
 import {
   SolowalletDocument,
   SolowalletRepository,
   SolowalletSchema,
+  WithdrawalRateLimit,
+  WithdrawalRateLimitSchema,
+  WithdrawalRateLimitRepository,
 } from './db';
 import { SharedModule, DatabaseModule } from '../common';
 import { SwapModule } from '../swap';
@@ -20,6 +27,7 @@ import { SwapModule } from '../swap';
     SharedModule,
     DatabaseModule.forFeature([
       { name: SolowalletDocument.name, schema: SolowalletSchema },
+      { name: WithdrawalRateLimit.name, schema: WithdrawalRateLimitSchema },
     ]),
     HttpModule,
     SwapModule,
@@ -31,6 +39,11 @@ import { SwapModule } from '../swap';
     TargetService,
     LockService,
     AnalyticsService,
+    AtomicWithdrawalService,
+    DistributedLockService,
+    WithdrawalMonitorService,
+    WithdrawalRateLimitService,
+    WithdrawalRateLimitRepository,
   ],
   exports: [
     PersonalWalletService,
@@ -38,6 +51,11 @@ import { SwapModule } from '../swap';
     TargetService,
     LockService,
     AnalyticsService,
+    AtomicWithdrawalService,
+    DistributedLockService,
+    WithdrawalMonitorService,
+    WithdrawalRateLimitService,
+    WithdrawalRateLimitRepository,
   ],
 })
 export class PersonalModule {

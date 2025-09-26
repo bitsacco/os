@@ -8,9 +8,12 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { LnurlPaymentService } from '../services/lnurl-payment.service';
+import { WithdrawalMonitorService } from '../../personal/services/withdrawal-monitor.service';
+import { AtomicWithdrawalService } from '../../personal/services/atomic-withdrawal.service';
 import {
   ExternalPaymentDto,
   PaginationDto,
@@ -25,7 +28,11 @@ import type { User } from '../../common/types';
 export class LnurlPaymentController {
   private readonly logger = new Logger(LnurlPaymentController.name);
 
-  constructor(private readonly lnurlPaymentService: LnurlPaymentService) {}
+  constructor(
+    private readonly lnurlPaymentService: LnurlPaymentService,
+    private readonly monitorService: WithdrawalMonitorService,
+    private readonly atomicWithdrawalService: AtomicWithdrawalService,
+  ) {}
 
   @Post('external')
   @HttpCode(HttpStatus.OK)
@@ -34,7 +41,8 @@ export class LnurlPaymentController {
     description:
       'Send a payment to an external Lightning Address (e.g., alice@wallet.com) or LNURL. ' +
       'This endpoint resolves the Lightning address, fetches the invoice, ' +
-      'and delegates the payment to the appropriate wallet service.',
+      'and delegates the payment to the appropriate wallet service. ' +
+      'Protected by multi-layer rate limiting and security monitoring.',
   })
   @ApiResponse({
     status: 200,
@@ -43,6 +51,10 @@ export class LnurlPaymentController {
   })
   @ApiResponse({ status: 400, description: 'Invalid payment request' })
   @ApiResponse({ status: 403, description: 'Payment limit exceeded' })
+  @ApiResponse({
+    status: 429,
+    description: 'Too many requests - rate limit exceeded',
+  })
   @ApiResponse({ status: 503, description: 'External service unavailable' })
   async payExternal(
     @Body() dto: ExternalPaymentDto,
@@ -51,18 +63,64 @@ export class LnurlPaymentController {
       `External payment request from user ${dto.userId} to ${dto.target}`,
     );
 
-    const result = await this.lnurlPaymentService.payExternal({
-      userId: dto.userId,
-      walletType: dto.walletType,
-      chamaId: dto.chamaId,
-      lightningAddress: dto.target,
-      amountSats: dto.amountSats,
-      comment: dto.comment,
-      reference: dto.reference,
-      txId: dto.txId,
-    });
+    // Step 1: Security monitoring check
+    const securityCheck = await this.monitorService.checkWithdrawalSecurity(
+      dto.userId,
+      dto.amountSats * 1000, // Convert to millisats
+      dto.walletType === 'chama' ? dto.chamaId : dto.userId,
+    );
 
-    return result;
+    if (!securityCheck.allowed) {
+      this.logger.error(
+        `Security check failed for user ${dto.userId}: ${securityCheck.reason}`,
+      );
+
+      // Log critical risk level for monitoring
+      if (securityCheck.riskLevel === 'CRITICAL') {
+        this.logger.error(
+          `Critical security risk detected for user ${dto.userId}: ${securityCheck.reason}`,
+        );
+      }
+
+      throw new BadRequestException(
+        securityCheck.reason ||
+          'Withdrawal not allowed due to security restrictions',
+      );
+    }
+
+    try {
+      // Step 2: Process the withdrawal with atomic operations
+      const result = await this.lnurlPaymentService.payExternal({
+        userId: dto.userId,
+        walletType: dto.walletType,
+        chamaId: dto.chamaId,
+        lightningAddress: dto.target,
+        amountSats: dto.amountSats,
+        comment: dto.comment,
+        reference: dto.reference,
+        txId: dto.txId,
+      });
+
+      // Step 3: Record successful withdrawal for monitoring
+      if (result.success) {
+        // Record in monitoring service
+        await this.monitorService.recordSuccessfulWithdrawal(
+          dto.userId,
+          dto.amountSats * 1000, // Convert to millisats
+        );
+      }
+
+      return result;
+    } catch (error) {
+      // Record failed attempt
+      await this.monitorService.recordFailedWithdrawal(
+        dto.userId,
+        dto.amountSats,
+        error.message,
+      );
+
+      throw error;
+    }
   }
 
   @Get('history')
