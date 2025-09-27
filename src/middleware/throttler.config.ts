@@ -110,7 +110,7 @@ export class ThrottlerConfigService implements ThrottlerOptionsFactory {
       throttlers: [
         {
           ttl: this.configService.get<number>('THROTTLE_TTL', 60),
-          limit: this.configService.get<number>('THROTTLE_LIMIT', 120),
+          limit: this.configService.get<number>('THROTTLE_LIMIT', 1000),
         },
       ],
       storage: new InMemoryThrottlerStorage(),

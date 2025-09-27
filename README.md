@@ -1,6 +1,6 @@
 # Bitsacco Open Source
 
-This projeNANCE only. We are in the process of a reimplmentation at [github.com/bitsacco/server](https://github.com/bitsacco/server)
+This project is under MAINTENANCE only. We are in the process of a reimplmentation at [github.com/bitsacco/server](https://github.com/bitsacco/server)
 
 ## License
 
