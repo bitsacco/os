@@ -65,7 +65,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION: Joi.string().required(),
         THROTTLE_TTL: Joi.number().optional().default(60),
-        THROTTLE_LIMIT: Joi.number().optional().default(1000),
+        THROTTLE_LIMIT: Joi.number().optional().default(10000),
         IP_RATE_LIMIT_ENABLED: Joi.boolean().optional().default(true),
         IP_RATE_LIMIT: Joi.number().optional().default(30),
         IP_RATE_LIMIT_WINDOW: Joi.number().optional().default(60),
