@@ -1,10 +1,9 @@
 import * as Joi from 'joi';
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { APP_GUARD, APP_FILTER } from '@nestjs/core';
+import { APP_FILTER } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import {
   DatabaseModule,
@@ -31,8 +30,6 @@ import {
 import { TimeoutModule } from './common/timeout/timeout.module';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
-import { IpRateLimitMiddleware } from './middleware/ip-rate-limit.middleware';
-import { ThrottlerConfigService } from './middleware/throttler.config';
 import { CombinedAuthGuard } from './auth/combined-auth.guard';
 import { SolowalletModule } from './solowallet/solowallet.module';
 import { UsersController } from './users/users.controller';
@@ -64,13 +61,6 @@ import { DashboardModule } from './dashboard/dashboard.module';
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRATION: Joi.string().required(),
-        THROTTLE_TTL: Joi.number().optional().default(60),
-        THROTTLE_LIMIT: Joi.number().optional().default(10000),
-        IP_RATE_LIMIT_ENABLED: Joi.boolean().optional().default(true),
-        IP_RATE_LIMIT: Joi.number().optional().default(30),
-        IP_RATE_LIMIT_WINDOW: Joi.number().optional().default(60),
-        IP_RATE_LIMIT_BURST: Joi.number().optional().default(10),
-        IP_RATE_LIMIT_TRUSTED: Joi.string().optional().default(''),
         CSP_REPORT_URI: Joi.string().optional(),
         DOCS_API_KEY: Joi.when('NODE_ENV', {
           is: 'production',
@@ -216,10 +206,6 @@ import { DashboardModule } from './dashboard/dashboard.module';
     PersonalModule,
     ChamaModule,
     LnurlModule,
-    ThrottlerModule.forRootAsync({
-      imports: [ConfigModule],
-      useClass: ThrottlerConfigService,
-    }),
     DatabaseModule.forFeature([
       { name: UsersDocument.name, schema: UsersSchema },
       { name: ApiKeyDocument.name, schema: ApiKeySchema },
@@ -227,11 +213,6 @@ import { DashboardModule } from './dashboard/dashboard.module';
   ],
   controllers: [UsersController, ChamasController, HealthController],
   providers: [
-    // Global rate limiting guard
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
-    },
     // Global exception filter
     {
       provide: APP_FILTER,
@@ -261,10 +242,7 @@ export class ApiModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     // Apply global middlewares in order:
     // 1. Security headers - sets secure headers for all responses
-    // 2. IP rate limiting - protects against DDoS and brute force from anonymous clients
-    // 3. API key middleware - validates API keys in requests
-    consumer
-      .apply(SecurityHeadersMiddleware, IpRateLimitMiddleware, ApiKeyMiddleware)
-      .forRoutes('*');
+    // 2. API key middleware - validates API keys in requests
+    consumer.apply(SecurityHeadersMiddleware, ApiKeyMiddleware).forRoutes('*');
   }
 }
