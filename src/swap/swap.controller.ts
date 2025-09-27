@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { object } from 'joi';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
@@ -36,7 +35,10 @@ import {
 import { SwapService } from './swap.service';
 
 @Controller('swap')
+<<<<<<< Updated upstream
 @Throttle({ default: { limit: 300, ttl: 60 } }) // 300 requests per minute for all swap endpoints
+=======
+>>>>>>> Stashed changes
 export class SwapController {
   private readonly logger = new Logger(SwapController.name);
 
@@ -48,7 +50,10 @@ export class SwapController {
   }
 
   @Get('onramp/quote')
+<<<<<<< Updated upstream
   @Throttle({ default: { limit: 500, ttl: 60 } }) // 500 requests per minute for quote endpoint
+=======
+>>>>>>> Stashed changes
   @ApiOperation({ summary: 'Get onramp quote' })
   @ApiQuery({ name: 'currency', enum: SupportedCurrencies, required: true })
   @ApiQuery({ name: 'amount', type: Number, required: false })
@@ -72,7 +77,10 @@ export class SwapController {
   }
 
   @Post('onramp')
+<<<<<<< Updated upstream
   @Throttle({ default: { limit: 100, ttl: 60 } }) // 100 requests per minute for transaction creation
+=======
+>>>>>>> Stashed changes
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
@@ -125,7 +133,10 @@ export class SwapController {
   }
 
   @Get('offramp/quote')
+<<<<<<< Updated upstream
   @Throttle({ default: { limit: 500, ttl: 60 } }) // 500 requests per minute for quote endpoint
+=======
+>>>>>>> Stashed changes
   @ApiOperation({ summary: 'Get offramp quote' })
   @ApiQuery({ name: 'currency', enum: SupportedCurrencies, required: true })
   @ApiQuery({ name: 'amount', type: Number, required: false })
@@ -149,7 +160,10 @@ export class SwapController {
   }
 
   @Post('offramp')
+<<<<<<< Updated upstream
   @Throttle({ default: { limit: 100, ttl: 60 } }) // 100 requests per minute for transaction creation
+=======
+>>>>>>> Stashed changes
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()

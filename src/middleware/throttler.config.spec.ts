@@ -75,7 +75,11 @@ describe('ThrottlerConfig', () => {
       const options = service.createThrottlerOptions();
 
       expect(options.throttlers[0].ttl).toBe(60);
+<<<<<<< Updated upstream
       expect(options.throttlers[0].limit).toBe(120);
+=======
+      expect(options.throttlers[0].limit).toBe(10000);
+>>>>>>> Stashed changes
       expect(options.storage).toBeInstanceOf(InMemoryThrottlerStorage);
     });
   });
