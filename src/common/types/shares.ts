@@ -79,6 +79,18 @@ export interface UpdateSharesRequest {
   updates: SharesTxUpdates | undefined;
 }
 
+export interface UpdateShareOfferRequest {
+  offerId: string;
+  updates: ShareOfferUpdates | undefined;
+}
+
+export interface ShareOfferUpdates {
+  quantity?: number | undefined;
+  subscribedQuantity?: number | undefined;
+  availableFrom?: string | undefined;
+  availableTo?: string | undefined;
+}
+
 export interface SharesTxUpdates {
   quantity?: number | undefined;
   status?: SharesTxStatus | undefined;

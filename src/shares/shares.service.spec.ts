@@ -726,4 +726,156 @@ describe('SharesService', () => {
       expect(sharesOfferRepository.findOneAndUpdate).not.toHaveBeenCalled();
     });
   });
+
+  describe('updateShareOffer', () => {
+    it('should successfully update offer quantity', async () => {
+      // Arrange
+      const updatedOffer = {
+        ...mockSharesOffer,
+        quantity: 150,
+      };
+
+      jest
+        .spyOn(sharesOfferRepository, 'findOne')
+        .mockResolvedValue(mockSharesOffer);
+      jest
+        .spyOn(sharesOfferRepository, 'findOneAndUpdate')
+        .mockResolvedValue(updatedOffer);
+      jest.spyOn(service, 'getSharesOffers').mockResolvedValue({
+        offers: [updatedOffer],
+        totalOfferQuantity: 150,
+        totalSubscribedQuantity: 20,
+      });
+
+      // Act
+      const result = await service.updateShareOffer({
+        offerId: 'offer123',
+        updates: { quantity: 150 },
+      });
+
+      // Assert
+      expect(sharesOfferRepository.findOne).toHaveBeenCalledWith({
+        _id: 'offer123',
+      });
+      expect(sharesOfferRepository.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: 'offer123' },
+        { quantity: 150 },
+      );
+      expect(result.totalOfferQuantity).toBe(150);
+    });
+
+    it('should successfully update subscribedQuantity', async () => {
+      // Arrange
+      const updatedOffer = {
+        ...mockSharesOffer,
+        subscribedQuantity: 30,
+      };
+
+      jest
+        .spyOn(sharesOfferRepository, 'findOne')
+        .mockResolvedValue(mockSharesOffer);
+      jest
+        .spyOn(sharesOfferRepository, 'findOneAndUpdate')
+        .mockResolvedValue(updatedOffer);
+      jest.spyOn(service, 'getSharesOffers').mockResolvedValue({
+        offers: [updatedOffer],
+        totalOfferQuantity: 100,
+        totalSubscribedQuantity: 30,
+      });
+
+      // Act
+      const result = await service.updateShareOffer({
+        offerId: 'offer123',
+        updates: { subscribedQuantity: 30 },
+      });
+
+      // Assert
+      expect(sharesOfferRepository.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: 'offer123' },
+        { subscribedQuantity: 30 },
+      );
+      expect(result.totalSubscribedQuantity).toBe(30);
+    });
+
+    it('should successfully update availability dates', async () => {
+      // Arrange
+      const newFromDate = '2024-01-01T00:00:00.000Z';
+      const newToDate = '2024-12-31T00:00:00.000Z';
+
+      jest
+        .spyOn(sharesOfferRepository, 'findOne')
+        .mockResolvedValue(mockSharesOffer);
+      jest
+        .spyOn(sharesOfferRepository, 'findOneAndUpdate')
+        .mockResolvedValue(mockSharesOffer);
+      jest.spyOn(service, 'getSharesOffers').mockResolvedValue({
+        offers: [mockSharesOffer],
+        totalOfferQuantity: 100,
+        totalSubscribedQuantity: 20,
+      });
+
+      // Act
+      await service.updateShareOffer({
+        offerId: 'offer123',
+        updates: {
+          availableFrom: newFromDate,
+          availableTo: newToDate,
+        },
+      });
+
+      // Assert
+      expect(sharesOfferRepository.findOneAndUpdate).toHaveBeenCalledWith(
+        { _id: 'offer123' },
+        {
+          availableFrom: new Date(newFromDate),
+          availableTo: new Date(newToDate),
+        },
+      );
+    });
+
+    it('should throw error if offer is not found', async () => {
+      // Arrange
+      jest.spyOn(sharesOfferRepository, 'findOne').mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        service.updateShareOffer({
+          offerId: 'nonexistent',
+          updates: { quantity: 150 },
+        }),
+      ).rejects.toThrow('Share offer with ID nonexistent not found');
+    });
+
+    it('should throw error if reducing quantity below subscribed amount', async () => {
+      // Arrange
+      jest
+        .spyOn(sharesOfferRepository, 'findOne')
+        .mockResolvedValue(mockSharesOffer);
+
+      // Act & Assert
+      await expect(
+        service.updateShareOffer({
+          offerId: 'offer123',
+          updates: { quantity: 10 }, // Less than subscribed quantity (20)
+        }),
+      ).rejects.toThrow('Cannot reduce offer quantity below subscribed amount');
+    });
+
+    it('should throw error if subscribed quantity exceeds total quantity', async () => {
+      // Arrange
+      jest
+        .spyOn(sharesOfferRepository, 'findOne')
+        .mockResolvedValue(mockSharesOffer);
+
+      // Act & Assert
+      await expect(
+        service.updateShareOffer({
+          offerId: 'offer123',
+          updates: { subscribedQuantity: 150 }, // More than total quantity (100)
+        }),
+      ).rejects.toThrow(
+        'Subscribed quantity cannot exceed total offer quantity',
+      );
+    });
+  });
 });

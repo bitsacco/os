@@ -13,11 +13,13 @@ import {
 import {
   FindShareTxRequest,
   OfferSharesRequest,
+  ShareOfferUpdates,
   SharesTxStatus,
   type SharesTxTransferMeta,
   SharesTxUpdates,
   SubscribeSharesRequest,
   TransferSharesRequest,
+  UpdateShareOfferRequest,
   UpdateSharesRequest,
   UserSharesTxsRequest,
 } from '../types/shares';
@@ -175,4 +177,57 @@ export class FindSharesTxDto implements FindShareTxRequest {
   @Type(() => String)
   @ApiProperty({ example: '3e158dfd-cb98-40b1-9ed2-a13006a9f430' })
   sharesId: string;
+}
+
+class ShareOfferUpdatesDto implements ShareOfferUpdates {
+  @IsOptional()
+  @IsPositive()
+  @IsNumber()
+  @Type(() => Number)
+  @ApiProperty({
+    description: 'Total quantity of shares in the offer',
+    example: 1500,
+  })
+  quantity?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @ApiProperty({
+    description: 'Number of shares already subscribed',
+    example: 300,
+  })
+  subscribedQuantity?: number;
+
+  @IsOptional()
+  @IsDateString()
+  @Type(() => String)
+  @ApiProperty({
+    description: 'Updated start date of availability (ISO 8601 format)',
+    example: '2024-12-30T12:19:04.077Z',
+  })
+  availableFrom?: string;
+
+  @IsOptional()
+  @IsDateString()
+  @Type(() => String)
+  @ApiProperty({
+    description: 'Updated end date of availability (ISO 8601 format)',
+    example: '2025-12-30T12:19:04.077Z',
+  })
+  availableTo?: string;
+}
+
+export class UpdateShareOfferDto implements UpdateShareOfferRequest {
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ example: '3e158dfd-cb98-40b1-9ed2-a13006a9f430' })
+  offerId: string;
+
+  @IsNotEmptyObject()
+  @ValidateNested()
+  @Type(() => ShareOfferUpdatesDto)
+  @ApiProperty({ type: ShareOfferUpdatesDto })
+  updates: ShareOfferUpdatesDto;
 }

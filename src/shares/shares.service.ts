@@ -17,6 +17,7 @@ import {
   SubscribeSharesDto,
   TransactionStatus,
   TransferSharesDto,
+  UpdateShareOfferDto,
   UpdateSharesDto,
   UserSharesDto,
   UserShareTxsResponse,
@@ -93,6 +94,64 @@ export class SharesService {
     };
 
     return Promise.resolve(res);
+  }
+
+  async updateShareOffer({
+    offerId,
+    updates,
+  }: UpdateShareOfferDto): Promise<AllSharesOffers> {
+    const offer = await this.shareOffers.findOne({ _id: offerId });
+
+    if (!offer) {
+      throw new Error(`Share offer with ID ${offerId} not found`);
+    }
+
+    const { quantity, subscribedQuantity, availableFrom, availableTo } =
+      updates;
+
+    // Validation: ensure quantity is not less than already subscribed quantity
+    if (quantity !== undefined && quantity < offer.subscribedQuantity) {
+      throw new Error(
+        `Cannot reduce offer quantity below subscribed amount. Current subscribed: ${offer.subscribedQuantity}, Attempted new quantity: ${quantity}`,
+      );
+    }
+
+    // Validation: ensure subscribedQuantity is not greater than total quantity
+    if (subscribedQuantity !== undefined) {
+      const newQuantity = quantity !== undefined ? quantity : offer.quantity;
+      if (subscribedQuantity > newQuantity) {
+        throw new Error(
+          `Subscribed quantity cannot exceed total offer quantity. Total: ${newQuantity}, Attempted subscribed: ${subscribedQuantity}`,
+        );
+      }
+    }
+
+    // Build update object with only provided fields
+    const updateFields: any = {};
+
+    if (quantity !== undefined) {
+      updateFields.quantity = quantity;
+    }
+
+    if (subscribedQuantity !== undefined) {
+      updateFields.subscribedQuantity = subscribedQuantity;
+    }
+
+    if (availableFrom !== undefined) {
+      updateFields.availableFrom = new Date(availableFrom);
+    }
+
+    if (availableTo !== undefined) {
+      updateFields.availableTo = new Date(availableTo);
+    }
+
+    await this.shareOffers.findOneAndUpdate({ _id: offerId }, updateFields);
+
+    this.logger.log(
+      `Updated share offer ${offerId} with fields: ${Object.keys(updateFields).join(', ')}`,
+    );
+
+    return this.getSharesOffers();
   }
 
   async subscribeShares({

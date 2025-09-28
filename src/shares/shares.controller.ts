@@ -6,6 +6,7 @@ import {
   PaginatedRequestDto,
   SubscribeSharesDto,
   TransferSharesDto,
+  UpdateShareOfferDto,
   UpdateSharesDto,
   ResourceOwnerGuard,
   CheckOwnership,
@@ -22,6 +23,7 @@ import {
   Logger,
   Param,
   Post,
+  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -67,6 +69,22 @@ export class SharesController {
   @HandleServiceErrors()
   async getShareOffers(): Promise<AllSharesOffers> {
     return await this.sharesService.getSharesOffers();
+  }
+
+  @Put('offers/update')
+  @UseGuards(ResourceOwnerGuard)
+  @CheckOwnership({ paramName: 'userId', idField: 'id' })
+  @ApiBearerAuth()
+  @ApiCookieAuth()
+  @ApiOperation({ summary: 'Update an existing share offer' })
+  @ApiBody({
+    type: UpdateShareOfferDto,
+  })
+  @HandleServiceErrors()
+  async updateShareOffer(
+    @Body() req: UpdateShareOfferDto,
+  ): Promise<AllSharesOffers> {
+    return await this.sharesService.updateShareOffer(req);
   }
 
   @Post('subscribe')
