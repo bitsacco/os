@@ -633,5 +633,5 @@ export class SharesService {
 }
 
 const STATUS_FILTER = {
-  status: { $ne: SharesTxStatus.UNRECOGNIZED },
+  // status: { $ne: SharesTxStatus.UNRECOGNIZED },
 };
