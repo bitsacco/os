@@ -1290,6 +1290,32 @@ export class ChamaWalletService {
       this.logger.log(
         `Updated chamawallet transaction ${txd._id} to status: ${swapStatus}`,
       );
+
+      // Check if this is a completed share purchase transaction
+      if (swapStatus === TransactionStatus.COMPLETE) {
+        try {
+          const txContext = txd.context ? JSON.parse(txd.context) : null;
+
+          if (txContext && txContext.sharesSubscriptionTracker) {
+            const collectionEvent: WalletTxEvent = {
+              context: WalletTxContext.COLLECTION_FOR_SHARES,
+              payload: {
+                paymentTracker: txContext.sharesSubscriptionTracker,
+                paymentStatus: TransactionStatus.COMPLETE,
+              },
+            };
+
+            this.logger.log(
+              `Emitting collection_for_shares event for swap completion: ${JSON.stringify(collectionEvent)}`,
+            );
+            this.eventEmitter.emit(collection_for_shares, collectionEvent);
+          }
+        } catch (contextError) {
+          this.logger.error(
+            `Error processing transaction context for swap: ${contextError.message}`,
+          );
+        }
+      }
     } catch (error) {
       this.logger.error(
         `Error updating chamawallet transaction for swap: ${payload.swapTracker}`,
