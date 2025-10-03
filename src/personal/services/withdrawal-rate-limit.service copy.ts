@@ -126,7 +126,7 @@ export class WithdrawalRateLimitService {
   ): Promise<RateLimitResult> {
     try {
       // Get or initialize user limits
-      let userLimits = await this.getUserLimits(userId);
+      const userLimits = await this.getUserLimits(userId);
 
       // Check if user is blocked
       if (userLimits.blockedUntil && userLimits.blockedUntil > new Date()) {

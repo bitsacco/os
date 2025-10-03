@@ -4,6 +4,7 @@ import {
   collection_for_shares,
   FedimintContext,
   type FedimintReceiveSuccessEvent,
+  type SwapStatusChangeEvent,
   FedimintService,
   TimeoutConfigService,
   TransactionStatus,
@@ -248,6 +249,161 @@ describe('ChamaWalletService', () => {
       // Assert
       expect(mockWalletRepository.findOneAndUpdate).toHaveBeenCalledWith(
         { paymentTracker: operationId },
+        { status: TransactionStatus.COMPLETE },
+      );
+
+      // Event should not be emitted due to invalid context
+      expect(eventsEmitSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleSwapStatusChange', () => {
+    it('should emit collection_for_shares event when swap completes for share purchase', async () => {
+      // Arrange
+      const swapTracker = 'swap-tracker-id';
+      const sharesId = 'shares-subscription-id';
+      const mockTx = {
+        _id: 'tx123',
+        status: TransactionStatus.PENDING,
+        context: JSON.stringify({
+          sharesSubscriptionTracker: sharesId,
+        }),
+      };
+
+      mockWalletRepository.findOneAndUpdate.mockResolvedValue(mockTx);
+
+      const event: SwapStatusChangeEvent = {
+        context: 'test-context',
+        payload: {
+          swapTracker,
+          swapStatus: TransactionStatus.COMPLETE,
+          refundable: false,
+        },
+      };
+
+      const eventsEmitSpy = jest.spyOn(eventEmitter, 'emit');
+
+      // Act
+      await service.handleSwapStatusChange(event);
+
+      // Assert
+      expect(mockWalletRepository.findOneAndUpdate).toHaveBeenCalledWith(
+        { paymentTracker: swapTracker },
+        { status: TransactionStatus.COMPLETE },
+      );
+
+      expect(eventsEmitSpy).toHaveBeenCalledWith(collection_for_shares, {
+        context: WalletTxContext.COLLECTION_FOR_SHARES,
+        payload: {
+          paymentTracker: sharesId,
+          paymentStatus: TransactionStatus.COMPLETE,
+        },
+      });
+    });
+
+    it('should not emit collection_for_shares event when swap status is not COMPLETE', async () => {
+      // Arrange
+      const swapTracker = 'swap-tracker-id';
+      const sharesId = 'shares-subscription-id';
+      const mockTx = {
+        _id: 'tx123',
+        status: TransactionStatus.PROCESSING,
+        context: JSON.stringify({
+          sharesSubscriptionTracker: sharesId,
+        }),
+      };
+
+      mockWalletRepository.findOneAndUpdate.mockResolvedValue(mockTx);
+
+      const event: SwapStatusChangeEvent = {
+        context: 'test-context',
+        payload: {
+          swapTracker,
+          swapStatus: TransactionStatus.PROCESSING,
+          refundable: false,
+        },
+      };
+
+      const eventsEmitSpy = jest.spyOn(eventEmitter, 'emit');
+
+      // Act
+      await service.handleSwapStatusChange(event);
+
+      // Assert
+      expect(mockWalletRepository.findOneAndUpdate).toHaveBeenCalledWith(
+        { paymentTracker: swapTracker },
+        { status: TransactionStatus.PROCESSING },
+      );
+
+      // Event should not be emitted since status is not COMPLETE
+      expect(eventsEmitSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle missing sharesSubscriptionTracker gracefully', async () => {
+      // Arrange
+      const swapTracker = 'swap-tracker-id';
+      const mockTx = {
+        _id: 'tx123',
+        status: TransactionStatus.PENDING,
+        context: JSON.stringify({
+          someOtherField: 'value',
+        }),
+      };
+
+      mockWalletRepository.findOneAndUpdate.mockResolvedValue(mockTx);
+
+      const event: SwapStatusChangeEvent = {
+        context: 'test-context',
+        payload: {
+          swapTracker,
+          swapStatus: TransactionStatus.COMPLETE,
+          refundable: false,
+        },
+      };
+
+      const eventsEmitSpy = jest.spyOn(eventEmitter, 'emit');
+
+      // Act
+      await service.handleSwapStatusChange(event);
+
+      // Assert
+      expect(mockWalletRepository.findOneAndUpdate).toHaveBeenCalledWith(
+        { paymentTracker: swapTracker },
+        { status: TransactionStatus.COMPLETE },
+      );
+
+      // Event should not be emitted since no sharesSubscriptionTracker
+      expect(eventsEmitSpy).not.toHaveBeenCalled();
+    });
+
+    it('should handle invalid JSON context gracefully', async () => {
+      // Arrange
+      const swapTracker = 'swap-tracker-id';
+      const mockTx = {
+        _id: 'tx123',
+        status: TransactionStatus.PENDING,
+        context: 'invalid-json',
+      };
+
+      mockWalletRepository.findOneAndUpdate.mockResolvedValue(mockTx);
+
+      const event: SwapStatusChangeEvent = {
+        context: 'test-context',
+        payload: {
+          swapTracker,
+          swapStatus: TransactionStatus.COMPLETE,
+          refundable: false,
+        },
+      };
+
+      const eventsEmitSpy = jest.spyOn(eventEmitter, 'emit');
+
+      // Act - this should not throw an error
+      await service.handleSwapStatusChange(event);
+
+      // Assert
+      expect(mockWalletRepository.findOneAndUpdate).toHaveBeenCalledWith(
+        { paymentTracker: swapTracker },
         { status: TransactionStatus.COMPLETE },
       );
 
