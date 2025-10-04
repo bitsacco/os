@@ -21,7 +21,7 @@ export class AtomicWithdrawalService {
    * Creates a withdrawal with atomic balance validation.
    * Uses MongoDB's atomic findOneAndUpdate to ensure no race conditions.
    *
-   * @param params Withdrawal parameters
+   * @param params Withdrawal parameters including current balance
    * @returns The created withdrawal document or null if insufficient balance
    */
   async createWithdrawalAtomic(params: {
@@ -33,6 +33,7 @@ export class AtomicWithdrawalService {
     lightning: string;
     paymentTracker?: string;
     idempotencyKey?: string;
+    currentBalance: number; // Balance provided by calling service
   }): Promise<SolowalletDocument | null> {
     const {
       userId,
@@ -43,6 +44,7 @@ export class AtomicWithdrawalService {
       lightning,
       paymentTracker,
       idempotencyKey,
+      currentBalance,
     } = params;
 
     // Step 1: Acquire distributed lock to prevent race conditions
@@ -78,13 +80,11 @@ export class AtomicWithdrawalService {
         }
       }
 
-      // Step 2: Calculate current balance atomically
-      const balanceResult = await this.calculateBalanceAtomic(userId, walletId);
-
-      if (balanceResult.currentBalance < amountMsats) {
+      // Step 2: Validate balance (balance provided by calling service)
+      if (currentBalance < amountMsats) {
         this.logger.warn(
           `Insufficient balance for user ${userId}. ` +
-            `Available: ${balanceResult.currentBalance} msats, ` +
+            `Available: ${currentBalance} msats, ` +
             `Requested: ${amountMsats} msats`,
         );
         throw new BadRequestException('Insufficient balance for withdrawal');
@@ -157,161 +157,31 @@ export class AtomicWithdrawalService {
   }
 
   /**
-   * Calculates balance atomically, including PROCESSING withdrawals.
-   * This prevents race conditions in balance calculations.
-   *
-   * @param userId User ID
-   * @param walletId Wallet ID
-   * @returns Current balance and pending amounts
-   */
-  async calculateBalanceAtomic(
-    userId: string,
-    walletId: string,
-  ): Promise<{
-    currentBalance: number;
-    pendingDeposits: number;
-    pendingWithdrawals: number;
-    processingWithdrawals: number;
-  }> {
-    const pipeline = [
-      {
-        $match: {
-          userId,
-          walletId,
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          // Completed transactions
-          completedDeposits: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$type', TransactionType.DEPOSIT] },
-                    { $eq: ['$status', TransactionStatus.COMPLETE] },
-                  ],
-                },
-                '$amountMsats',
-                0,
-              ],
-            },
-          },
-          completedWithdrawals: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$type', TransactionType.WITHDRAW] },
-                    { $eq: ['$status', TransactionStatus.COMPLETE] },
-                  ],
-                },
-                '$amountMsats',
-                0,
-              ],
-            },
-          },
-          // Pending transactions
-          pendingDeposits: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$type', TransactionType.DEPOSIT] },
-                    { $eq: ['$status', TransactionStatus.PENDING] },
-                  ],
-                },
-                '$amountMsats',
-                0,
-              ],
-            },
-          },
-          pendingWithdrawals: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$type', TransactionType.WITHDRAW] },
-                    { $eq: ['$status', TransactionStatus.PENDING] },
-                  ],
-                },
-                '$amountMsats',
-                0,
-              ],
-            },
-          },
-          // Processing withdrawals (counts against balance)
-          processingWithdrawals: {
-            $sum: {
-              $cond: [
-                {
-                  $and: [
-                    { $eq: ['$type', TransactionType.WITHDRAW] },
-                    { $eq: ['$status', TransactionStatus.PROCESSING] },
-                  ],
-                },
-                '$amountMsats',
-                0,
-              ],
-            },
-          },
-        },
-      },
-    ];
-
-    const result = await this.walletRepository.aggregate(pipeline);
-
-    if (!result || result.length === 0) {
-      return {
-        currentBalance: 0,
-        pendingDeposits: 0,
-        pendingWithdrawals: 0,
-        processingWithdrawals: 0,
-      };
-    }
-
-    const data = result[0];
-
-    // Calculate current balance including PROCESSING withdrawals
-    const currentBalance =
-      data.completedDeposits -
-      data.completedWithdrawals -
-      data.processingWithdrawals; // Subtract processing withdrawals
-
-    return {
-      currentBalance: Math.max(0, currentBalance),
-      pendingDeposits: data.pendingDeposits || 0,
-      pendingWithdrawals: data.pendingWithdrawals || 0,
-      processingWithdrawals: data.processingWithdrawals || 0,
-    };
-  }
-
-  /**
    * Attempts to reserve funds for a withdrawal using optimistic locking.
    * This method uses document versioning to prevent concurrent modifications.
    *
-   * @param params Withdrawal parameters
+   * @param params Withdrawal parameters including current balance
    * @returns The withdrawal document if successful, null if concurrent modification detected
    */
   async reserveFundsWithOptimisticLock(params: {
     userId: string;
     walletId: string;
     amountMsats: number;
+    currentBalance: number;
     maxRetries?: number;
   }): Promise<boolean> {
-    const { userId, walletId, amountMsats, maxRetries = 3 } = params;
+    const { amountMsats, currentBalance, maxRetries = 3 } = params;
     let attempts = 0;
 
     while (attempts < maxRetries) {
       attempts++;
 
       try {
-        // Get current balance state with version
-        const balanceState = await this.getBalanceStateWithVersion(
-          userId,
-          walletId,
-        );
+        // Use balance provided by calling service
+        const balanceState = {
+          availableBalance: currentBalance,
+          version: Date.now(), // Placeholder for version
+        };
 
         if (balanceState.availableBalance < amountMsats) {
           this.logger.warn(
@@ -343,30 +213,6 @@ export class AtomicWithdrawalService {
     }
 
     return false;
-  }
-
-  /**
-   * Gets the balance state with version information for optimistic locking.
-   *
-   * @param userId User ID
-   * @param walletId Wallet ID
-   * @returns Balance state with version
-   */
-  private async getBalanceStateWithVersion(
-    userId: string,
-    walletId: string,
-  ): Promise<{
-    availableBalance: number;
-    version: number;
-  }> {
-    const balance = await this.calculateBalanceAtomic(userId, walletId);
-
-    // In a real implementation, this would include a version number
-    // from the wallet document for optimistic locking
-    return {
-      availableBalance: balance.currentBalance,
-      version: Date.now(), // Placeholder for version
-    };
   }
 
   /**

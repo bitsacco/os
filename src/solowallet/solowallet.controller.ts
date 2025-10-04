@@ -5,7 +5,6 @@ import {
   Logger,
   Param,
   Post,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -142,7 +141,7 @@ export class SolowalletController {
   @ApiOperation({ summary: 'Get transaction by ID (with ownership check)' })
   @ApiParam({ name: 'id', description: 'Transaction ID' })
   @HandleServiceErrors()
-  async findTransaction(@Param('id') id: string, @Req() req: any) {
+  async findTransaction(@Param('id') id: string) {
     return await this.solowalletService.findTransaction({ txId: id });
   }
 }

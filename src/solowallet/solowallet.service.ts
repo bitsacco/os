@@ -9,7 +9,6 @@ import {
   UpdateTxDto,
   ContinueDepositFundsRequestDto,
   ContinueWithdrawFundsRequestDto,
-  WalletType,
 } from '../common';
 import { PersonalWalletService } from '../personal/services/wallet.service';
 import { SolowalletMetricsService } from './solowallet.metrics';

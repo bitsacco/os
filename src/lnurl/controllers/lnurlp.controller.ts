@@ -13,7 +13,6 @@ import {
 import { ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { LnurlPaymentService } from '../services/lnurl-payment.service';
 import { WithdrawalMonitorService } from '../../personal/services/withdrawal-monitor.service';
-import { AtomicWithdrawalService } from '../../personal/services/atomic-withdrawal.service';
 import {
   ExternalPaymentDto,
   PaginationDto,
@@ -31,7 +30,6 @@ export class LnurlPaymentController {
   constructor(
     private readonly lnurlPaymentService: LnurlPaymentService,
     private readonly monitorService: WithdrawalMonitorService,
-    private readonly atomicWithdrawalService: AtomicWithdrawalService,
   ) {}
 
   @Post('external')

@@ -7,6 +7,7 @@ import {
   TransactionStatus,
   TransactionType,
 } from './lib';
+import { WalletMeta } from './wallet';
 
 export interface DepositFundsRequest {
   userId: string;
@@ -82,12 +83,6 @@ export interface PaginatedSolowalletTxsResponse {
   size: number;
   /** Number of pages given the current page size */
   pages: number;
-}
-
-export interface WalletMeta {
-  totalDeposits: number;
-  totalWithdrawals: number;
-  currentBalance: number;
 }
 
 export interface UpdateTxRequest {

@@ -46,6 +46,7 @@ import {
   btcToFiat,
   TimeoutConfigService,
   TimeoutTransactionType,
+  WalletMeta,
 } from '../common';
 import {
   ChamaMemberContact,
@@ -235,7 +236,7 @@ export class ChamaWalletService {
       priority: deposit._id,
     });
 
-    const { groupMeta, memberMeta } = await this.getWalletMeta(
+    const { groupMeta, memberMeta } = await this.getChamaWalletMeta(
       chamaId,
       memberId,
     );
@@ -329,9 +330,9 @@ export class ChamaWalletService {
       priority: deposit._id,
     });
 
-    const { groupMeta, memberMeta } = await this.getWalletMeta(
-      txd.memberId,
+    const { groupMeta, memberMeta } = await this.getChamaWalletMeta(
       txd.chamaId,
+      txd.memberId,
     );
 
     return {
@@ -368,7 +369,7 @@ export class ChamaWalletService {
             priority: existing._id,
           });
           const { groupMeta: gMeta, memberMeta: mMeta } =
-            await this.getWalletMeta(chamaId, memberId);
+            await this.getChamaWalletMeta(chamaId, memberId);
           return {
             txId: existing._id,
             ledger,
@@ -381,7 +382,7 @@ export class ChamaWalletService {
       }
     }
 
-    const { memberMeta, groupMeta } = await this.getWalletMeta(
+    const { memberMeta, groupMeta } = await this.getChamaWalletMeta(
       chamaId,
       memberId,
     );
@@ -566,7 +567,7 @@ export class ChamaWalletService {
     }
 
     // Get the wallet balances
-    const { groupMeta } = await this.getWalletMeta(chamaId, memberId);
+    const { groupMeta } = await this.getChamaWalletMeta(chamaId, memberId);
     let withdrawal: ChamaWalletDocument;
 
     if (lightning) {
@@ -760,7 +761,7 @@ export class ChamaWalletService {
     });
 
     // Get updated wallet balance
-    const updateMeta = await this.getWalletMeta(chamaId, memberId);
+    const updateMeta = await this.getChamaWalletMeta(chamaId, memberId);
 
     return {
       txId: withdrawal._id,
@@ -822,9 +823,9 @@ export class ChamaWalletService {
       priority: txId,
     });
 
-    const { groupMeta, memberMeta } = await this.getWalletMeta(
-      txd.memberId,
+    const { groupMeta, memberMeta } = await this.getChamaWalletMeta(
       txd.chamaId,
+      txd.memberId,
     );
 
     return {
@@ -1021,7 +1022,29 @@ export class ChamaWalletService {
     };
   }
 
-  private async getWalletMeta(
+  // Get wallet metadata for group balance
+  async getWalletMeta(_userId: string, walletId: string): Promise<WalletMeta> {
+    // For ChamaWallet, walletId is the chamaId
+    // userId is not used for chama wallets since we use group-level aggregation
+    const groupMeta = await this.getGroupWalletMeta(walletId);
+    return {
+      totalDeposits: groupMeta.groupDeposits,
+      totalWithdrawals: groupMeta.groupWithdrawals,
+      currentBalance: groupMeta.groupBalance,
+    };
+  }
+
+  // Aggregate user transactions at group level
+  async aggregateUserTransactions(
+    _userId: string,
+    walletId: string,
+    type: TransactionType,
+  ): Promise<number> {
+    // For ChamaWallet, we aggregate at the group level
+    return this.aggregateTransactions(type, walletId);
+  }
+
+  private async getChamaWalletMeta(
     chamaId?: string,
     memberId?: string,
   ): Promise<{
@@ -1168,7 +1191,7 @@ export class ChamaWalletService {
     return transactions;
   }
 
-  private async aggregateTransactions(
+  async aggregateTransactions(
     type: TransactionType,
     chamaId?: string,
     memberId?: string,
