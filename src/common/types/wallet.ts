@@ -4,6 +4,12 @@ export enum WalletType {
   LOCKED = 'LOCKED', // Time-locked savings
 }
 
+export interface WalletMeta {
+  totalDeposits: number;
+  totalWithdrawals: number;
+  currentBalance: number;
+}
+
 export enum LockPeriod {
   ONE_MONTH = 'ONE_MONTH',
   THREE_MONTHS = 'THREE_MONTHS',

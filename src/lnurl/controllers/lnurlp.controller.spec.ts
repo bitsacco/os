@@ -5,7 +5,6 @@ import { JwtService } from '@nestjs/jwt';
 import { LnurlPaymentController } from './lnurlp.controller';
 import { LnurlPaymentService } from '../services/lnurl-payment.service';
 import { WithdrawalMonitorService } from '../../personal/services/withdrawal-monitor.service';
-import { AtomicWithdrawalService } from '../../personal/services/atomic-withdrawal.service';
 import { JwtAuthGuard } from '../../common/auth/jwt.auth';
 import { WalletType } from '../dto';
 import {
@@ -19,7 +18,6 @@ describe('LnurlPaymentController', () => {
   let controller: LnurlPaymentController;
   let paymentService: any;
   let monitorService: any;
-  let atomicWithdrawalService: any;
 
   beforeEach(async () => {
     const { reflector, jwtService } = createCommonMocks();
@@ -39,18 +37,11 @@ describe('LnurlPaymentController', () => {
       recordFailedWithdrawal: createMockFunction(),
     };
 
-    atomicWithdrawalService = {
-      createWithdrawalAtomic: createMockFunction(),
-      updateWithdrawalStatus: createMockFunction(),
-      calculateBalanceAtomic: createMockFunction(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       controllers: [LnurlPaymentController],
       providers: [
         { provide: LnurlPaymentService, useValue: paymentService },
         { provide: WithdrawalMonitorService, useValue: monitorService },
-        { provide: AtomicWithdrawalService, useValue: atomicWithdrawalService },
         { provide: Reflector, useValue: reflector },
         { provide: JwtService, useValue: jwtService },
         JwtAuthGuard,

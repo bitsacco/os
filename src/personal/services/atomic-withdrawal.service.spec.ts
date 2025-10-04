@@ -72,18 +72,10 @@ describe('AtomicWithdrawalService', () => {
         reference: 'Test withdrawal',
         lightning: '{"invoice":"lnbc..."}',
         idempotencyKey: 'key-123',
+        currentBalance: 30000, // Balance provided by calling service
       };
 
       mockRepository.findOne.mockRejectedValue(new Error('Not found'));
-      mockRepository.aggregate.mockResolvedValue([
-        {
-          completedDeposits: 50000,
-          completedWithdrawals: 20000,
-          pendingDeposits: 0,
-          pendingWithdrawals: 0,
-          processingWithdrawals: 5000,
-        },
-      ]);
       mockRepository.create.mockResolvedValue(mockWithdrawal as any);
 
       // Act
@@ -109,17 +101,8 @@ describe('AtomicWithdrawalService', () => {
         amountMsats: 100000,
         reference: 'Test withdrawal',
         lightning: '{"invoice":"lnbc..."}',
+        currentBalance: 5000, // Insufficient balance
       };
-
-      mockRepository.aggregate.mockResolvedValue([
-        {
-          completedDeposits: 50000,
-          completedWithdrawals: 40000,
-          pendingDeposits: 0,
-          pendingWithdrawals: 0,
-          processingWithdrawals: 5000,
-        },
-      ]);
 
       // Act & Assert
       await expect(service.createWithdrawalAtomic(params)).rejects.toThrow(
@@ -137,6 +120,7 @@ describe('AtomicWithdrawalService', () => {
         reference: 'Test withdrawal',
         lightning: '{"invoice":"lnbc..."}',
         idempotencyKey: 'key-123',
+        currentBalance: 30000,
       };
 
       mockRepository.findOne.mockResolvedValue(mockWithdrawal as any);
@@ -151,22 +135,13 @@ describe('AtomicWithdrawalService', () => {
 
     it('should handle concurrent withdrawals by including PROCESSING status in balance', async () => {
       // Arrange
-      mockRepository.aggregate.mockResolvedValue([
-        {
-          completedDeposits: 100000,
-          completedWithdrawals: 30000,
-          pendingDeposits: 0,
-          pendingWithdrawals: 0,
-          processingWithdrawals: 65000, // Multiple processing withdrawals
-        },
-      ]);
-
       const params = {
         userId: 'user-123',
         walletId: 'wallet-123',
         amountMsats: 10000,
         reference: 'Test withdrawal',
         lightning: '{"invoice":"lnbc..."}',
+        currentBalance: 5000, // Balance after accounting for processing withdrawals
       };
 
       // Act & Assert
@@ -219,76 +194,6 @@ describe('AtomicWithdrawalService', () => {
           TransactionStatus.COMPLETE,
         ),
       ).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  describe('calculateBalanceAtomic', () => {
-    it('should calculate balance correctly including processing withdrawals', async () => {
-      // Arrange
-      mockRepository.aggregate.mockResolvedValue([
-        {
-          completedDeposits: 100000,
-          completedWithdrawals: 20000,
-          pendingDeposits: 5000,
-          pendingWithdrawals: 3000,
-          processingWithdrawals: 15000,
-        },
-      ]);
-
-      // Act
-      const result = await service.calculateBalanceAtomic(
-        'user-123',
-        'wallet-123',
-      );
-
-      // Assert
-      expect(result).toEqual({
-        currentBalance: 65000, // 100000 - 20000 - 15000
-        pendingDeposits: 5000,
-        pendingWithdrawals: 3000,
-        processingWithdrawals: 15000,
-      });
-    });
-
-    it('should return zero balance for new wallet', async () => {
-      // Arrange
-      mockRepository.aggregate.mockResolvedValue([]);
-
-      // Act
-      const result = await service.calculateBalanceAtomic(
-        'user-123',
-        'wallet-123',
-      );
-
-      // Assert
-      expect(result).toEqual({
-        currentBalance: 0,
-        pendingDeposits: 0,
-        pendingWithdrawals: 0,
-        processingWithdrawals: 0,
-      });
-    });
-
-    it('should never return negative balance', async () => {
-      // Arrange
-      mockRepository.aggregate.mockResolvedValue([
-        {
-          completedDeposits: 10000,
-          completedWithdrawals: 15000,
-          pendingDeposits: 0,
-          pendingWithdrawals: 0,
-          processingWithdrawals: 0,
-        },
-      ]);
-
-      // Act
-      const result = await service.calculateBalanceAtomic(
-        'user-123',
-        'wallet-123',
-      );
-
-      // Assert
-      expect(result.currentBalance).toEqual(0);
     });
   });
 

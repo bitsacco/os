@@ -249,7 +249,8 @@ export class WithdrawalMonitorService {
    */
   async recordSuccessfulWithdrawal(
     userId: string,
-    amountMsats: number,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _amountMsats: number,
   ): Promise<void> {
     // Track for rapid withdrawal detection
     const attempts = this.withdrawalAttempts.get(userId) || [];
@@ -334,7 +335,8 @@ export class WithdrawalMonitorService {
   private async checkWithdrawalPatternAnomalies(
     userId: string,
     amountMsats: number,
-    walletId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _walletId: string,
   ): Promise<{
     suspicious: boolean;
     reason?: string;

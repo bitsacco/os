@@ -58,9 +58,8 @@ import {
   WalletListResponseDto,
   WalletQueryDto,
 } from '../dto';
-import { AtomicWithdrawalService } from './atomic-withdrawal.service';
-import { DistributedLockService } from './distributed-lock.service';
 import { WithdrawalMonitorService } from './withdrawal-monitor.service';
+import { AtomicWithdrawalService } from './atomic-withdrawal.service';
 
 @Injectable()
 export class PersonalWalletService {
@@ -72,9 +71,8 @@ export class PersonalWalletService {
     private readonly eventEmitter: EventEmitter2,
     private readonly swapService: SwapService,
     private readonly timeoutConfigService: TimeoutConfigService,
-    private readonly atomicWithdrawalService: AtomicWithdrawalService,
-    private readonly distributedLockService: DistributedLockService,
     private readonly withdrawalMonitorService: WithdrawalMonitorService,
+    private readonly atomicWithdrawalService: AtomicWithdrawalService,
   ) {
     this.logger.log('SolowalletService created');
     this.eventEmitter.on(
@@ -651,7 +649,7 @@ export class PersonalWalletService {
     return transactions;
   }
 
-  private async aggregateUserTransactions(
+  async aggregateUserTransactions(
     userId: string,
     walletId: string,
     type: TransactionType,
@@ -1298,45 +1296,27 @@ export class PersonalWalletService {
         );
       }
 
-      // Acquire distributed lock for this user's withdrawals
-      const lockKey =
-        this.distributedLockService.getUserWithdrawalLockKey(userId);
-      const lockToken = await this.distributedLockService.acquireLockWithRetry(
-        lockKey,
-        {
-          ttl: 60000, // 60 seconds for withdrawal operation
-          maxRetries: 5,
-          retryDelay: 200,
-        },
-      );
+      // Use AtomicWithdrawalService to create withdrawal with atomic balance check
+      withdrawal = await this.atomicWithdrawalService.createWithdrawalAtomic({
+        userId,
+        walletId: resolvedWalletId,
+        amountMsats: invoiceMsats,
+        amountFiat,
+        reference:
+          reference ||
+          inv.description ||
+          `withdraw ${amountFiat} KES via Lightning`,
+        lightning: JSON.stringify(lightning),
+        paymentTracker: '',
+        idempotencyKey,
+        currentBalance, // Pass the current balance we already fetched
+      });
 
-      if (!lockToken) {
-        throw new BadRequestException(
-          'Another withdrawal is currently being processed for this user',
-        );
+      if (!withdrawal) {
+        throw new BadRequestException('Failed to create withdrawal');
       }
 
       try {
-        // Create withdrawal with atomic balance validation
-        withdrawal = await this.atomicWithdrawalService.createWithdrawalAtomic({
-          userId,
-          walletId: resolvedWalletId,
-          amountMsats: invoiceMsats, // Use invoice amount for validation
-          amountFiat,
-          reference:
-            reference ||
-            inv.description ||
-            `withdraw ${amountFiat} KES via Lightning`,
-          lightning: JSON.stringify(lightning),
-          idempotencyKey,
-        });
-
-        if (!withdrawal) {
-          throw new BadRequestException(
-            'Failed to create withdrawal - insufficient balance or concurrent operation',
-          );
-        }
-
         try {
           // Pay the lightning invoice using fedimint
           const { operationId, fee } = await this.fedimintService.pay(
@@ -1351,16 +1331,25 @@ export class PersonalWalletService {
           const totalWithdrawnMsats = invoiceMsats + fee;
 
           // Update withdrawal to COMPLETE status with actual amount including fee
-          withdrawal =
-            await this.atomicWithdrawalService.updateWithdrawalStatus(
-              withdrawal._id,
-              TransactionStatus.COMPLETE,
-              {
-                amountMsats: totalWithdrawnMsats,
-                paymentTracker: operationId,
-                walletType,
-              },
+          withdrawal = await this.wallet.findOneAndUpdate(
+            {
+              _id: withdrawal._id,
+              status: TransactionStatus.PROCESSING, // Only update if still processing
+            },
+            {
+              status: TransactionStatus.COMPLETE,
+              amountMsats: totalWithdrawnMsats,
+              paymentTracker: operationId,
+              stateChangedAt: new Date(),
+              walletType,
+            },
+          );
+
+          if (!withdrawal) {
+            throw new BadRequestException(
+              'Withdrawal not found or already processed',
             );
+          }
 
           this.logger.log(
             `Withdrawal ${withdrawal._id} completed successfully`,
@@ -1372,7 +1361,7 @@ export class PersonalWalletService {
             withdrawal.amountMsats,
           );
         } catch (paymentError) {
-          // Payment failed, rollback the withdrawal
+          // Use AtomicWithdrawalService to rollback
           await this.atomicWithdrawalService.rollbackWithdrawal(
             withdrawal._id,
             `Lightning payment failed: ${paymentError.message}`,
@@ -1387,9 +1376,8 @@ export class PersonalWalletService {
 
           throw paymentError;
         }
-      } finally {
-        // Always release the lock
-        await this.distributedLockService.releaseLock(lockKey, lockToken);
+      } catch (error) {
+        throw error;
       }
     } else if (lnurlRequest) {
       // 2. Execute LNURL withdrawal flow

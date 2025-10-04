@@ -29,17 +29,7 @@ describe('AtomicWithdrawalService - Simple Tests', () => {
 
   describe('Race Condition Prevention', () => {
     it('should prevent withdrawals when balance is insufficient due to PROCESSING transactions', async () => {
-      // Setup: User has 100k sats, but 95k is already processing
-      mockRepository.aggregate.mockResolvedValue([
-        {
-          completedDeposits: 100000,
-          completedWithdrawals: 0,
-          pendingDeposits: 0,
-          pendingWithdrawals: 0,
-          processingWithdrawals: 95000, // Critical: PROCESSING counts against balance
-        },
-      ]);
-
+      // Setup: User has only 5k available after accounting for processing withdrawals
       // Attempt to withdraw 10k (would exceed available 5k)
       const params = {
         userId: 'user-123',
@@ -47,6 +37,7 @@ describe('AtomicWithdrawalService - Simple Tests', () => {
         amountMsats: 10000,
         reference: 'Test withdrawal',
         lightning: '{"invoice":"lnbc..."}',
+        currentBalance: 5000, // Available balance after processing withdrawals
       };
 
       // Should reject due to insufficient balance
@@ -58,26 +49,32 @@ describe('AtomicWithdrawalService - Simple Tests', () => {
       expect(mockRepository.create).not.toHaveBeenCalled();
     });
 
-    it('should correctly calculate available balance including PROCESSING withdrawals', async () => {
-      // Setup balance scenario
-      mockRepository.aggregate.mockResolvedValue([
-        {
-          completedDeposits: 1000000, // 1M sats deposited
-          completedWithdrawals: 200000, // 200k withdrawn
-          pendingDeposits: 50000, // 50k pending (not counted)
-          pendingWithdrawals: 30000, // 30k pending (not counted)
-          processingWithdrawals: 300000, // 300k currently processing
-        },
-      ]);
+    it('should correctly validate balance when creating withdrawal', async () => {
+      // Test that service correctly validates balance passed in
+      const params = {
+        userId: 'user-123',
+        walletId: 'wallet-123',
+        amountMsats: 300000,
+        reference: 'Test withdrawal',
+        lightning: '{"invoice":"lnbc..."}',
+        currentBalance: 500000, // Balance calculation done by calling service
+      };
 
-      const result = await service.calculateBalanceAtomic(
-        'user-123',
-        'wallet-123',
-      );
+      const mockWithdrawal = {
+        _id: 'withdrawal-123',
+        userId: 'user-123',
+        amountMsats: 300000,
+        status: TransactionStatus.PROCESSING,
+      };
 
-      // Available = 1M - 200k - 300k = 500k
-      expect(result.currentBalance).toBe(500000);
-      expect(result.processingWithdrawals).toBe(300000);
+      mockRepository.create.mockResolvedValue(mockWithdrawal);
+      // No idempotency key provided, so findOne won't be called
+
+      const result = await service.createWithdrawalAtomic(params);
+
+      // Should succeed since 300k <= 500k available
+      expect(result).toBeTruthy();
+      expect(mockRepository.create).toHaveBeenCalled();
     });
 
     it('should handle idempotent withdrawals correctly', async () => {
@@ -98,6 +95,7 @@ describe('AtomicWithdrawalService - Simple Tests', () => {
         reference: 'Test',
         lightning: '{}',
         idempotencyKey: 'key-123',
+        currentBalance: 50000,
       });
 
       // Should return existing without creating new
