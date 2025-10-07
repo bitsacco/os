@@ -138,8 +138,7 @@ export class ChamasController {
   }
 
   @Patch(':chamaId')
-  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
-  @CheckChamaMembership({ chamaIdField: 'chamaId' })
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Update existing Chama' })
