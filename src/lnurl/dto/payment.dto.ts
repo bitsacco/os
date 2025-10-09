@@ -10,7 +10,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum WalletType {
-  SOLO = 'solo',
+  PERSONAL = 'personal',
   CHAMA = 'chama',
 }
 
@@ -26,7 +26,7 @@ export class ExternalPaymentDto {
   @ApiProperty({
     description: 'Wallet type marker',
     enum: WalletType,
-    example: WalletType.SOLO,
+    example: WalletType.PERSONAL,
   })
   @IsNotEmpty()
   @IsEnum(WalletType)

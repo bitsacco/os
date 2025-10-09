@@ -6,19 +6,13 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { LightningAddressDocument, LightningAddressRepository } from '../db';
-import { LnurlMetricsService } from '../lnurl.metrics';
-import { SolowalletService } from '../../solowallet/solowallet.service';
 import { ChamaWalletService } from '../../chamawallet/wallet.service';
 import { ChamasService } from '../../chamas/chamas.service';
-import { LnurlCommonService } from './lnurl-common.service';
-import { LnurlResolverService } from './lnurl-resolver.service';
 import { LnurlTransactionService } from './lnurl-transaction.service';
 import { UsersService } from '../../common/users/users.service';
-import { SwapService } from '../../swap/swap.service';
 import { FedimintService } from '../../common/fedimint/fedimint.service';
+import { PersonalWalletService } from '../../personal/services/wallet.service';
 import {
   AddressType,
   LightningAddressMetadata,
@@ -32,6 +26,9 @@ import {
   LnurlTransactionDocument,
   LnurlType,
 } from '../../common';
+import { LightningAddressDocument, LightningAddressRepository } from '../db';
+import { LnurlMetricsService } from '../lnurl.metrics';
+import { LnurlCommonService } from './lnurl-common.service';
 
 @Injectable()
 export class LightningAddressService {
@@ -41,16 +38,13 @@ export class LightningAddressService {
     private readonly lightningAddressRepository: LightningAddressRepository,
     private readonly lnurlCommonService: LnurlCommonService,
     private readonly lnurlMetricsService: LnurlMetricsService,
-    private readonly lnurlResolverService: LnurlResolverService,
     private readonly lnurlTransactionService: LnurlTransactionService,
-    private readonly solowalletService: SolowalletService,
     private readonly chamaWalletService: ChamaWalletService,
     private readonly chamasService: ChamasService,
     private readonly usersService: UsersService,
-    private readonly httpService: HttpService,
-    private readonly swapService: SwapService,
     private readonly configService: ConfigService,
     private readonly fedimintService: FedimintService,
+    private readonly personalWalletService: PersonalWalletService,
   ) {}
 
   /**
@@ -361,12 +355,16 @@ export class LightningAddressService {
       // Pass msats directly to avoid precision loss from fiat conversion
       switch (resolved.addressType) {
         case AddressType.PERSONAL:
-          // Use the existing depositFunds method with direct msats
-          userTxsResponse = await this.solowalletService.depositFunds({
+          // Use the personal wallet service for deposits
+          const walletId = this.personalWalletService.getLegacyDefaultWalletId(
+            resolved.ownerId!,
+          );
+          userTxsResponse = await this.personalWalletService.depositToWallet({
             userId: resolved.ownerId!,
             amountMsats,
             reference: description,
             pagination: { page: 0, size: 1 }, // We only need the first transaction
+            walletId,
           });
           break;
 

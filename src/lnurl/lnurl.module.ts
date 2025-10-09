@@ -37,7 +37,6 @@ import { UsersDocument, UsersSchema } from '../common/database';
 import { LightningAddressRepository } from './db/lightning-address.repository';
 
 // External dependencies
-import { SolowalletModule } from '../solowallet/solowallet.module';
 import { ChamaModule } from '../chamas/chama.module';
 import { NotificationModule } from '../notifications/notification.module';
 import { SwapModule } from '../swap';
@@ -56,7 +55,6 @@ import { RoleValidationService } from '../common/auth/role-validation.service';
       { name: ExternalLnurlTarget.name, schema: ExternalLnurlTargetSchema },
       { name: UsersDocument.name, schema: UsersSchema },
     ]),
-    SolowalletModule,
     ChamaModule,
     NotificationModule,
     SwapModule,
@@ -81,7 +79,7 @@ import { RoleValidationService } from '../common/auth/role-validation.service';
     UsersRepository,
     RoleValidationService,
     // Services from imported modules are already available
-    // SolowalletService - from SolowalletModule
+    // PersonalWalletService - from PersonalModule
     // ChamasService - from ChamaModule
     // ChamaWalletService - from ChamaModule
     // FxService - from SwapModule

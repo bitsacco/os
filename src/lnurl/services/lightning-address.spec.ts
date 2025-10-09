@@ -133,14 +133,14 @@ describe('External Payment Delegation', () => {
   it('should validate external payment options', () => {
     const validOptions = {
       userId: 'user123',
-      walletType: 'SOLO',
+      walletType: 'PERSONAL',
       lightningAddress: 'alice@wallet.com',
       amountSats: 1000,
       reference: 'Payment to Alice',
     };
 
     expect(validOptions.userId).toBeDefined();
-    expect(validOptions.walletType).toBe('SOLO');
+    expect(validOptions.walletType).toBe('PERSONAL');
     expect(validOptions.lightningAddress).toMatch(
       /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/,
     );

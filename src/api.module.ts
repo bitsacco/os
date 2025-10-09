@@ -31,7 +31,6 @@ import { TimeoutModule } from './common/timeout/timeout.module';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
 import { CombinedAuthGuard } from './auth/combined-auth.guard';
-import { SolowalletModule } from './solowallet/solowallet.module';
 import { UsersController } from './users/users.controller';
 import { ChamasController } from './chamas/chamas.controller';
 import { HealthController } from './health/health.controller';
@@ -202,7 +201,6 @@ import { DashboardModule } from './dashboard/dashboard.module';
     NotificationModule,
     AuthModule,
     SwapModule,
-    SolowalletModule,
     PersonalModule,
     ChamaModule,
     LnurlModule,

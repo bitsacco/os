@@ -6,7 +6,7 @@ import { SharesMetricsService } from '../shares/shares.metrics';
 import { ChamaMetricsService } from '../chamas/chama.metrics';
 import { TransactionMetricsService } from '../common/monitoring/transaction.metrics';
 import { SwapMetricsService } from '../swap/metrics/swap.metrics';
-import { SolowalletMetricsService } from '../solowallet/solowallet.metrics';
+import { PersonalMetricsService } from '../personal/services/personal.metrics';
 import { NotificationMetrics } from '../notifications/notification.metrics';
 import { NostrMetricsService } from '../nostr/nostr.metrics';
 import { LnurlMetricsService } from '../lnurl/lnurl.metrics';
@@ -105,7 +105,7 @@ describe('DashboardService', () => {
           useValue: {},
         },
         {
-          provide: SolowalletMetricsService,
+          provide: PersonalMetricsService,
           useValue: {},
         },
         {

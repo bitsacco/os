@@ -7,7 +7,7 @@ import {
   HttpException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { SolowalletService } from '../../solowallet/solowallet.service';
+import { PersonalWalletService } from '../../personal/services/wallet.service';
 import { ChamaWalletService } from '../../chamawallet/wallet.service';
 import {
   LnurlType,
@@ -62,7 +62,7 @@ export class LnurlPaymentService {
     private readonly lnurlResolverService: LnurlResolverService,
     private readonly lnurlCommonService: LnurlCommonService,
     private readonly lnurlTransactionService: LnurlTransactionService,
-    private readonly solowalletService: SolowalletService,
+    private readonly personalWalletService: PersonalWalletService,
     private readonly chamaWalletService: ChamaWalletService,
     private readonly httpService: HttpService,
   ) {}
@@ -95,7 +95,7 @@ export class LnurlPaymentService {
             'Transaction ID is required for chama withdrawals',
           );
         }
-      } else if (options.walletType !== WalletType.SOLO) {
+      } else if (options.walletType !== WalletType.PERSONAL) {
         throw new BadRequestException('Unsupported wallet type');
       }
 
@@ -130,10 +130,10 @@ export class LnurlPaymentService {
           lightning: { invoice },
         });
       } else {
-        // Handle solowallet withdrawals
+        // Handle personal wallet withdrawals
         if (options.txId) {
           // Continue existing transaction
-          result = await this.solowalletService.continueWithdrawFunds({
+          result = await this.personalWalletService.continueWithdrawFunds({
             userId: options.userId,
             txId: options.txId,
             amountFiat,
@@ -143,12 +143,16 @@ export class LnurlPaymentService {
         } else {
           // Create new transaction with server-generated idempotency key
           const idempotencyKey = `lnurl-pay-${randomUUID()}`;
-          result = await this.solowalletService.withdrawFunds({
+          const walletId = this.personalWalletService.getLegacyDefaultWalletId(
+            options.userId,
+          );
+          result = await this.personalWalletService.withdrawFromWallet({
             userId: options.userId,
             amountFiat,
             reference,
             lightning: { invoice },
             idempotencyKey,
+            walletId,
           });
         }
       }

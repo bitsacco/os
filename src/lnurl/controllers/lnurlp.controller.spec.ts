@@ -55,7 +55,7 @@ describe('LnurlPaymentController', () => {
     it('should initiate external payment successfully', async () => {
       const dto = {
         userId: 'test-user-id',
-        walletType: WalletType.SOLO,
+        walletType: WalletType.PERSONAL,
         target: 'alice@wallet.com',
         amountSats: 1000,
         reference: 'Test payment',
@@ -114,7 +114,7 @@ describe('LnurlPaymentController', () => {
     it('should handle payment with comment', async () => {
       const dto = {
         userId: 'test-user-id',
-        walletType: WalletType.SOLO,
+        walletType: WalletType.PERSONAL,
         target: 'charlie@node.com',
         amountSats: 500,
         reference: 'Coffee payment',
@@ -138,7 +138,7 @@ describe('LnurlPaymentController', () => {
     it('should handle payment failure', async () => {
       const dto = {
         userId: 'test-user-id',
-        walletType: WalletType.SOLO,
+        walletType: WalletType.PERSONAL,
         target: 'invalid@wallet.com',
         amountSats: 1000,
         reference: 'Test payment',
