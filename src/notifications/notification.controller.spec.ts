@@ -83,8 +83,8 @@ describe('NotificationController', () => {
 
   describe('getNotifications', () => {
     it('should call service.getNotifications with correct parameters', async () => {
-      const result = await controller.getNotifications(
-        mockUser,
+      const result = await controller.getUserNotifications(
+        'user123',
         'true',
         0,
         10,
@@ -110,7 +110,7 @@ describe('NotificationController', () => {
     });
 
     it('should handle default parameters correctly', async () => {
-      const result = await controller.getNotifications(mockUser);
+      const result = await controller.getUserNotifications('user123');
 
       expect(mockNotificationService.getNotifications).toHaveBeenCalledWith(
         'user123',
@@ -133,7 +133,7 @@ describe('NotificationController', () => {
 
   describe('markAsRead', () => {
     it('should call service.markAsRead with correct parameters', async () => {
-      const result = await controller.markAsRead(mockUser, {
+      const result = await controller.markAsRead('user123', {
         notificationIds: ['notification1', 'notification2'],
       });
 
@@ -146,7 +146,7 @@ describe('NotificationController', () => {
     });
 
     it('should mark all notifications as read when no IDs are provided', async () => {
-      const result = await controller.markAsRead(mockUser, {
+      const result = await controller.markAsRead('user123', {
         notificationIds: [],
       });
 
@@ -161,7 +161,7 @@ describe('NotificationController', () => {
 
   describe('getPreferences', () => {
     it('should call service.getPreferences with correct userId', async () => {
-      const result = await controller.getPreferences(mockUser);
+      const result = await controller.getPreferences('user123');
 
       expect(mockNotificationService.getPreferences).toHaveBeenCalledWith(
         'user123',
@@ -198,21 +198,21 @@ describe('NotificationController', () => {
       };
 
       const result = await controller.updatePreferences(
-        mockUser,
+        'user123',
         preferenceData,
       );
 
       expect(mockNotificationService.updatePreferences).toHaveBeenCalledWith(
         'user123',
-        preferenceData.channels,
-        preferenceData.topics,
+        [NotificationChannel.IN_APP, NotificationChannel.SMS],
+        [NotificationTopic.TRANSACTION],
       );
 
       expect(result).toEqual({ success: true });
     });
 
     it('should handle empty arrays correctly', async () => {
-      const result = await controller.updatePreferences(mockUser, {});
+      const result = await controller.updatePreferences('user123', {});
 
       expect(mockNotificationService.updatePreferences).toHaveBeenCalledWith(
         'user123',

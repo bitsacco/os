@@ -7,3 +7,4 @@ export * from './shares.dto';
 export * from './solowallet.dto';
 export * from './chama.dto';
 export * from './chamawallet.dto';
+export * from './notification.dto';

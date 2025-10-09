@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   UseGuards,
+  Version,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -30,7 +31,10 @@ import {
 import { SolowalletService } from './solowallet.service';
 import { ConfigService } from '@nestjs/config';
 
-@Controller('solowallet')
+@Controller({
+  path: 'solowallet',
+  version: '2',
+})
 export class SolowalletController {
   private readonly logger = new Logger(SolowalletController.name);
 

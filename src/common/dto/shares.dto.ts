@@ -11,22 +11,29 @@ import {
   IsNotEmptyObject,
 } from 'class-validator';
 import {
-  FindShareTxRequest,
-  OfferSharesRequest,
   ShareOfferUpdates,
   SharesTxStatus,
   type SharesTxTransferMeta,
-  SharesTxUpdates,
-  SubscribeSharesRequest,
-  TransferSharesRequest,
-  UpdateShareOfferRequest,
-  UpdateSharesRequest,
-  UserSharesTxsRequest,
 } from '../types/shares';
-import { PaginatedRequestDto } from './lib.dto';
 import { ApiProperty } from '@nestjs/swagger';
+import { PaginatedRequestDto } from './lib.dto';
 
-export class OfferSharesDto implements OfferSharesRequest {
+/**
+ * DTOs for Shares Module - REST Compliant
+ *
+ * These DTOs follow REST principles where resource identifiers
+ * are provided via URL path parameters.
+ *
+ * - Resource IDs (userId, shareId, offerId) are in URL paths
+ * - Request bodies only contain data to be created/updated
+ * - Follows proper REST resource hierarchy
+ */
+
+/**
+ * DTO for offering shares
+ * Used with: POST /api/shares/offers
+ */
+export class OfferSharesDto {
   @IsPositive()
   @IsNumber()
   @Type(() => Number)
@@ -52,19 +59,11 @@ export class OfferSharesDto implements OfferSharesRequest {
   availableTo?: string;
 }
 
-export class SubscribeSharesDto implements SubscribeSharesRequest {
-  @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
-  userId: string;
-
-  @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty({ example: '3e158dfd-cb98-40b1-9ed2-a13006a9f430' })
-  offerId: string;
-
+/**
+ * DTO for subscribing to shares
+ * Used with: POST /api/users/:userId/offers/:offerId/subscribe
+ */
+export class SubscribeSharesDto {
   @IsPositive()
   @IsNumber()
   @Type(() => Number)
@@ -72,24 +71,20 @@ export class SubscribeSharesDto implements SubscribeSharesRequest {
   quantity: number;
 }
 
-export class TransferSharesDto implements TransferSharesRequest {
+/**
+ * DTO for transferring shares
+ * Used with: POST /api/shares/:shareId/transfer
+ * Note: fromUserId can be derived from authenticated user context
+ */
+export class TransferSharesDto {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
-  fromUserId: string;
-
-  @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty({ example: '8b158dfd-cb98-40b1-9ed2-a13006a9f671' })
+  @ApiProperty({
+    example: '8b158dfd-cb98-40b1-9ed2-a13006a9f671',
+    description: 'ID of the user receiving the shares',
+  })
   toUserId: string;
-
-  @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty({ example: '3e158dfd-cb98-40b1-9ed2-a13006a9f430' })
-  sharesId: string;
 
   @IsPositive()
   @IsNumber()
@@ -98,11 +93,16 @@ export class TransferSharesDto implements TransferSharesRequest {
   quantity: number;
 }
 
+/**
+ * DTO for transfer metadata
+ * Internal use only, not for API requests
+ * Note: fromUserId is added by the controller from auth context
+ */
 class SharesTxTransferMetaDto implements SharesTxTransferMeta {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
+  @ApiProperty({ example: '8b158dfd-cb98-40b1-9ed2-a13006a9f671' })
   fromUserId: string;
 
   @IsNotEmpty()
@@ -118,7 +118,10 @@ class SharesTxTransferMetaDto implements SharesTxTransferMeta {
   quantity: number;
 }
 
-class SharesTxUpdatesDto implements SharesTxUpdates {
+/**
+ * DTO for share transaction updates
+ */
+class SharesTxUpdatesDto {
   @IsOptional()
   @IsPositive()
   @IsNumber()
@@ -135,22 +138,14 @@ class SharesTxUpdatesDto implements SharesTxUpdates {
   @ValidateNested()
   @Type(() => SharesTxTransferMetaDto)
   @ApiProperty({ type: SharesTxTransferMetaDto })
-  transfer?: SharesTxTransferMeta;
-
-  @IsOptional()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty({ example: '3e158dfd-cb98-40b1-9ed2-a13006a9f430' })
-  offerId?: string;
+  transfer?: SharesTxTransferMetaDto;
 }
 
-export class UpdateSharesDto implements UpdateSharesRequest {
-  @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty({ example: '3e158dfd-cb98-40b1-9ed2-a13006a9f430' })
-  sharesId: string;
-
+/**
+ * DTO for updating shares
+ * Used with: PATCH /api/shares/:shareId
+ */
+export class UpdateSharesDto {
   @IsNotEmptyObject()
   @ValidateNested()
   @Type(() => SharesTxUpdatesDto)
@@ -158,27 +153,9 @@ export class UpdateSharesDto implements UpdateSharesRequest {
   updates: SharesTxUpdatesDto;
 }
 
-export class UserSharesDto implements UserSharesTxsRequest {
-  @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
-  userId: string;
-
-  @ValidateNested()
-  @Type(() => PaginatedRequestDto)
-  @ApiProperty({ type: PaginatedRequestDto })
-  pagination: PaginatedRequestDto;
-}
-
-export class FindSharesTxDto implements FindShareTxRequest {
-  @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty({ example: '3e158dfd-cb98-40b1-9ed2-a13006a9f430' })
-  sharesId: string;
-}
-
+/**
+ * DTO for share offer updates
+ */
 class ShareOfferUpdatesDto implements ShareOfferUpdates {
   @IsOptional()
   @IsPositive()
@@ -218,16 +195,41 @@ class ShareOfferUpdatesDto implements ShareOfferUpdates {
   availableTo?: string;
 }
 
-export class UpdateShareOfferDto implements UpdateShareOfferRequest {
-  @IsNotEmpty()
-  @IsString()
-  @Type(() => String)
-  @ApiProperty({ example: '3e158dfd-cb98-40b1-9ed2-a13006a9f430' })
-  offerId: string;
-
+/**
+ * DTO for updating share offers
+ * Used with: PATCH /api/shares/offers/:offerId
+ */
+export class UpdateShareOfferDto {
   @IsNotEmptyObject()
   @ValidateNested()
   @Type(() => ShareOfferUpdatesDto)
   @ApiProperty({ type: ShareOfferUpdatesDto })
   updates: ShareOfferUpdatesDto;
+}
+
+/**
+ * DTO for finding a share transaction
+ */
+export class FindSharesTxDto {
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ example: '3e158dfd-cb98-40b1-9ed2-a13006a9f430' })
+  sharesId: string;
+}
+
+/**
+ * DTO for getting user shares with pagination
+ */
+export class UserSharesDto {
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
+  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
+  userId: string;
+
+  @ValidateNested()
+  @Type(() => PaginatedRequestDto)
+  @ApiProperty({ type: PaginatedRequestDto })
+  pagination: PaginatedRequestDto;
 }

@@ -13,7 +13,10 @@ import {
 } from '../common';
 import { SmsService } from './sms.service';
 
-@Controller('sms')
+@Controller({
+  path: 'sms',
+  version: '2',
+})
 @UseGuards(JwtAuthGuard)
 export class SmsController {
   private readonly logger = new Logger(SmsController.name);

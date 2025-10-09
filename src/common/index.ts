@@ -12,3 +12,4 @@ export * from './monitoring';
 export * from './exceptions';
 export * from './shared.module';
 export * from './services';
+export * from './versioning';

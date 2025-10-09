@@ -1,16 +1,21 @@
 import { Logger } from 'nestjs-pino';
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  INestApplication,
+  ValidationPipe,
+  VersioningType,
+} from '@nestjs/common';
 import {
   HttpLoggingInterceptor,
   initializeOpenTelemetry,
   getGlobalTelemetryProvider,
+  API_VERSIONING_CONFIG,
+  VERSION_EXCLUDED_ROUTES,
+  API_PREFIX,
 } from './common';
 import { ApiModule } from './api.module';
 import { setupDocs } from './docs.plugin';
-
-const API_VERSION = 'v1';
 
 async function bootstrap() {
   // Initialize OpenTelemetry for the monolith
@@ -34,7 +39,15 @@ async function bootstrap() {
     }),
   );
 
-  // Set global prefix for all routes except .well-known
+  // Set global prefix for API routes
+  // This adds /api prefix to all routes except excluded ones
+  app.setGlobalPrefix(API_PREFIX, {
+    exclude: [...VERSION_EXCLUDED_ROUTES],
+  });
+
+  // Enable URI-based versioning
+  // This adds version prefixes (/v1, /v2) after the global prefix
+  // Results in: /api/v1/*, /api/v2/* for versioned endpoints
   //
   // IMPORTANT: Why .well-known is excluded from versioning:
   //
@@ -45,19 +58,12 @@ async function bootstrap() {
   // External Lightning wallets expect this endpoint to be available at the root
   // domain without any version prefix. For example:
   // - Correct: https://bitsacco.com/.well-known/lnurlp/alice
-  // - Wrong: https://bitsacco.com/v1/.well-known/lnurlp/alice
+  // - Wrong: https://bitsacco.com/api/v1/.well-known/lnurlp/alice
   //
-  // All other API routes (including the LNURL callback) should maintain the /v1/
+  // All other API routes (including the LNURL callback) should maintain the /api/v{n}/
   // prefix for proper API versioning. The callback URL in the LNURL response
   // correctly includes the version prefix.
-  app.setGlobalPrefix(API_VERSION, {
-    exclude: ['.well-known/lnurlp/(.*)'],
-  });
-
-  // app.enableVersioning({
-  //   type: VersioningType.URI,
-  //   defaultVersion: API_VERSION,
-  // });
+  app.enableVersioning(API_VERSIONING_CONFIG);
 
   // Add URL normalization middleware to remove trailing slashes
   app.use((req, res, next) => {
@@ -118,7 +124,10 @@ async function bootstrap() {
   await app.listen(port);
   console.log(`🚀 Application running on port ${port}`);
   console.log(
-    `📊 Dashboard API available at http://localhost:${port}/v1/dashboard`,
+    `📊 Dashboard API available at http://localhost:${port}/api/v1/dashboard`,
+  );
+  console.log(
+    `🔄 API Versioning enabled: v1 (current), v2 (REST-compliant - in migration)`,
   );
 }
 

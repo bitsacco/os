@@ -11,7 +11,10 @@ import {
 import { ApiKeyService, JwtAuthGuard } from '../../common';
 import { ApiKeyResponseDto, CreateApiKeyDto } from './apikey.dto';
 
-@Controller('api-keys')
+@Controller({
+  path: 'api-keys',
+  version: '2',
+})
 @UseGuards(JwtAuthGuard)
 export class ApiKeyController {
   constructor(private readonly apiKeyService: ApiKeyService) {}

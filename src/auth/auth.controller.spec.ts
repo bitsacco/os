@@ -155,7 +155,7 @@ describe('AuthController', () => {
           httpOnly: true,
           secure: true,
           sameSite: 'none',
-          path: '/auth/refresh',
+          path: '/api/v2/auth/refresh',
         }),
       );
     });
@@ -170,7 +170,7 @@ describe('AuthController', () => {
         roles: [Role.Member],
       };
 
-      const result = await controller.register({} as any, registerRequest);
+      const result = await controller.register(registerRequest);
 
       expect(result).toEqual({
         user: mockUser,

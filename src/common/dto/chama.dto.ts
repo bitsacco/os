@@ -17,15 +17,24 @@ import {
   type ChamaInvite,
   type ChamaMember,
   type ChamaUpdates,
-  type InviteMembersRequest,
-  type CreateChamaRequest,
-  type FilterChamasRequest,
-  type FindChamaRequest,
   type PaginatedRequest,
 } from '../types';
-import { NpubDecorators, PhoneDecorators } from './decorators';
-import { IsOptionalUUID, IsRequiredUUID, PaginatedRequestDto } from './lib.dto';
+import { IsOptionalUUID, PaginatedRequestDto } from './lib.dto';
 
+/**
+ * DTOs for Chamas Module - REST Compliant
+ *
+ * These DTOs follow REST principles where resource identifiers
+ * are provided via URL path parameters.
+ *
+ * - Chama ID and member IDs in URL paths for resource operations
+ * - Request bodies only contain data to be created/updated
+ * - Follows proper REST resource hierarchy
+ */
+
+/**
+ * Helper decorators
+ */
 const IsChamaName = (isOptional = false) => {
   return (target: any, propertyKey: string) => {
     IsString()(target, propertyKey);
@@ -59,8 +68,12 @@ const IsInvites = (minSize: number, maxSize: number, isOptional = false) => {
   };
 };
 
+/**
+ * Chama member DTO
+ */
 export class ChamaMemberDto implements ChamaMember {
-  @IsRequiredUUID()
+  @IsString()
+  @IsNotEmpty()
   @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
   userId: string;
 
@@ -76,11 +89,18 @@ export class ChamaMemberDto implements ChamaMember {
   roles: ChamaMemberRole[];
 }
 
+/**
+ * Chama invite DTO
+ */
 export class ChamaInviteDto implements ChamaInvite {
-  @PhoneDecorators()
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ example: '+254712345678', required: false })
   phoneNumber?: string;
 
-  @NpubDecorators()
+  @IsOptional()
+  @IsString()
+  @ApiProperty({ example: 'npub1...', required: false })
   nostrNpub?: string;
 
   @IsArray()
@@ -95,16 +115,21 @@ export class ChamaInviteDto implements ChamaInvite {
   roles: ChamaMemberRole[];
 }
 
-export class CreateChamaDto implements CreateChamaRequest {
+/**
+ * DTO for creating a chama
+ * Used with: POST /api/chamas
+ * Note: createdBy can be derived from authenticated user context
+ */
+export class CreateChamaDto {
   @IsChamaName()
   @ApiProperty({ example: 'Kenya Bitcoiners' })
   name: string;
 
-  @IsChamaName()
-  @ApiProperty({ example: 'Kenya Bitcoiners' })
+  @IsChamaName(true)
+  @ApiProperty({ example: 'We stack and buidl in Bitcoin', required: false })
   description?: string;
 
-  @IsMembers(1, 100)
+  @IsMembers(0, 100, true)
   @ApiProperty({
     type: [ChamaMemberDto],
     example: [
@@ -113,21 +138,25 @@ export class CreateChamaDto implements CreateChamaRequest {
         roles: [ChamaMemberRole.Member, ChamaMemberRole.Admin],
       },
     ],
+    description: 'Initial members to add to the chama',
+    required: false,
   })
-  members: ChamaMember[];
+  members?: ChamaMember[];
 
-  @IsInvites(0, 100)
+  @IsInvites(0, 100, true)
   @ApiProperty({
     type: [ChamaInviteDto],
+    description: 'Initial invitations to send',
+    required: false,
   })
-  invites: ChamaInvite[];
-
-  @IsRequiredUUID()
-  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
-  createdBy: string;
+  invites?: ChamaInvite[];
 }
 
-export class ChamaUpdatesDto implements ChamaUpdates {
+/**
+ * DTO for updating a chama
+ * Used with: PATCH /api/chamas/:chamaId
+ */
+export class UpdateChamaDto {
   @IsChamaName(true)
   @ApiProperty({ example: 'Kenya Bitcoiners', required: false })
   name?: string;
@@ -147,8 +176,10 @@ export class ChamaUpdatesDto implements ChamaUpdates {
         roles: [ChamaMemberRole.Member],
       },
     ],
+    description: 'Members to add to the chama',
+    required: false,
   })
-  addMembers: ChamaMember[];
+  addMembers?: ChamaMember[];
 
   @IsMembers(0, 100, true)
   @ApiProperty({
@@ -160,21 +191,35 @@ export class ChamaUpdatesDto implements ChamaUpdates {
       },
     ],
     description: 'Update roles for existing members',
+    required: false,
   })
-  updateMembers: ChamaMember[];
+  updateMembers?: ChamaMember[];
 }
 
-export class FindChamaDto implements FindChamaRequest {
-  @IsRequiredUUID()
-  @ApiProperty({ example: '43040650-5090-4dd4-8e93-8fd342533e7c' })
+/**
+ * DTO for finding a single chama
+ * Used by services to locate a chama by ID
+ */
+export class FindChamaDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+    description: 'Chama ID',
+  })
   chamaId: string;
 }
 
-export class FilterChamasDto implements FilterChamasRequest {
+/**
+ * DTO for filtering chamas (query parameters)
+ * Used with: GET /api/chamas
+ */
+export class FilterChamasQueryDto {
   @IsOptionalUUID()
   @ApiProperty({
     example: '43040650-5090-4dd4-8e93-8fd342533e7c',
     required: false,
+    description: 'Filter by creator user ID',
   })
   createdBy?: string;
 
@@ -182,20 +227,89 @@ export class FilterChamasDto implements FilterChamasRequest {
   @ApiProperty({
     example: '43040650-5090-4dd4-8e93-8fd342533e7c',
     required: false,
+    description: 'Filter by member user ID',
   })
+  memberId?: string;
+
+  @IsOptional()
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'Page number for pagination',
+    example: 0,
+  })
+  page?: number;
+
+  @IsOptional()
+  @ApiProperty({
+    type: Number,
+    required: false,
+    description: 'Number of items per page',
+    example: 10,
+  })
+  size?: number;
+}
+
+/**
+ * DTO for filtering chamas (internal service use)
+ * Includes pagination object for service layer
+ */
+export class FilterChamasDto {
+  @IsOptional()
+  @IsString()
+  createdBy?: string;
+
+  @IsOptional()
+  @IsString()
   memberId?: string;
 
   @IsOptional()
   @ValidateNested()
   @Type(() => PaginatedRequestDto)
-  @ApiProperty({ type: PaginatedRequestDto })
-  pagination?: PaginatedRequest;
+  pagination?: PaginatedRequestDto;
 }
 
-export class MemberInvitesDto implements Pick<InviteMembersRequest, 'invites'> {
-  @IsInvites(1, 100, true)
+/**
+ * DTO for inviting members
+ * Used with: POST /api/chamas/:chamaId/invites
+ */
+export class InviteMembersDto {
+  @IsInvites(1, 100)
   @ApiProperty({
     type: [ChamaInviteDto],
+    description: 'Members to invite to the chama',
   })
   invites: ChamaInvite[];
+}
+
+/**
+ * DTO for adding members
+ * Used with: POST /api/chamas/:chamaId/members
+ * For directly adding members (not through invites)
+ */
+export class AddMembersDto {
+  @IsMembers(1, 100)
+  @ApiProperty({
+    type: [ChamaMemberDto],
+    description: 'Members to add to the chama',
+  })
+  members: ChamaMember[];
+}
+
+/**
+ * DTO for updating a member's roles
+ * Used with: PATCH /api/chamas/:chamaId/members/:memberId
+ */
+export class UpdateMemberRolesDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsEnum(ChamaMemberRole, { each: true })
+  @Transform(({ value }) => [...new Set(value)])
+  @ApiProperty({
+    example: [ChamaMemberRole.Member, ChamaMemberRole.Admin],
+    enum: ChamaMemberRole,
+    isArray: true,
+    description: 'New roles for the member',
+  })
+  roles: ChamaMemberRole[];
 }

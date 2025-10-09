@@ -211,7 +211,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
       { name: ApiKeyDocument.name, schema: ApiKeySchema },
     ]),
   ],
-  controllers: [UsersController, ChamasController, HealthController],
+  controllers: [UsersController, HealthController],
   providers: [
     // Global exception filter
     {

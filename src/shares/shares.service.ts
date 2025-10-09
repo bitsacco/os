@@ -1,5 +1,5 @@
 import { performance } from 'perf_hooks';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { EventEmitter2, OnEvent } from '@nestjs/event-emitter';
 import {
   AllSharesOffers,
@@ -96,10 +96,10 @@ export class SharesService {
     return Promise.resolve(res);
   }
 
-  async updateShareOffer({
-    offerId,
-    updates,
-  }: UpdateShareOfferDto): Promise<AllSharesOffers> {
+  async updateShareOffer(
+    dto: UpdateShareOfferDto & { offerId: string },
+  ): Promise<AllSharesOffers> {
+    const { offerId, updates } = dto;
     const offer = await this.shareOffers.findOne({ _id: offerId });
 
     if (!offer) {
@@ -154,11 +154,10 @@ export class SharesService {
     return this.getSharesOffers();
   }
 
-  async subscribeShares({
-    userId,
-    offerId,
-    quantity,
-  }: SubscribeSharesDto): Promise<UserShareTxsResponse> {
+  async subscribeShares(
+    dto: SubscribeSharesDto & { userId: string; offerId: string },
+  ): Promise<UserShareTxsResponse> {
+    const { userId, offerId, quantity } = dto;
     this.logger.debug(`Subscribing ${quantity} Bitsacco shares for ${userId}`);
 
     // Start performance measurement
@@ -258,10 +257,11 @@ export class SharesService {
     }
   }
 
-  async transferShares({
-    sharesId,
-    ...transfer
-  }: TransferSharesDto): Promise<UserShareTxsResponse> {
+  async transferShares(
+    dto: TransferSharesDto & { sharesId: string; fromUserId: string },
+  ): Promise<UserShareTxsResponse> {
+    const { sharesId, fromUserId, toUserId, quantity } = dto;
+    const transfer = { fromUserId, toUserId, quantity };
     // Start performance measurement
     const startTime = performance.now();
     let success = false;
@@ -365,12 +365,12 @@ export class SharesService {
     }
   }
 
-  async updateShares({
-    sharesId,
-    updates,
-  }: UpdateSharesDto): Promise<UserShareTxsResponse> {
+  async updateShares(
+    dto: UpdateSharesDto & { sharesId: string },
+  ): Promise<UserShareTxsResponse> {
+    const { sharesId, updates } = dto;
     const originShares = await this.shares.findOne({ _id: sharesId });
-    const { quantity, status, transfer, offerId } = updates;
+    const { quantity, status, transfer } = updates;
 
     this.logger.log(`Updates : ${JSON.stringify(updates)}`);
 
@@ -380,7 +380,6 @@ export class SharesService {
         quantity: quantity !== undefined ? quantity : originShares.quantity,
         status: status !== undefined ? status : originShares.status,
         transfer: transfer ?? originShares.transfer,
-        offerId: offerId ?? originShares.offerId,
       },
     );
 
@@ -476,6 +475,51 @@ export class SharesService {
     }
 
     return shares;
+  }
+
+  /**
+   * Get details of a specific share (for v2 REST API)
+   * @param shareId The ID of the share to retrieve
+   * @returns Share details
+   */
+  async getShareDetails(shareId: string): Promise<SharesTx> {
+    this.logger.log(`Fetching details for share ${shareId}`);
+
+    const share = await this.shares.findOne({ _id: shareId });
+
+    if (!share) {
+      this.logger.error(`Share ${shareId} not found`);
+      throw new NotFoundException(`Share with ID ${shareId} not found`);
+    }
+
+    return toSharesTx(share);
+  }
+
+  /**
+   * Get shares for a specific user (for v2 REST API)
+   * @param userId The ID of the user
+   * @param page Page number for pagination
+   * @param size Number of items per page
+   * @returns Paginated user shares
+   */
+  async getUserSharesTxs(
+    userId: string,
+    page: number = 1,
+    size: number = 10,
+  ): Promise<UserShareTxsResponse> {
+    this.logger.log(
+      `Fetching shares for user ${userId}, page: ${page}, size: ${size}`,
+    );
+
+    const result = await this.userSharesTransactions({
+      userId,
+      pagination: {
+        page: page - 1, // Convert to 0-based indexing
+        size,
+      },
+    });
+
+    return result;
   }
 
   private async getPaginatedShareTx(

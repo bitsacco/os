@@ -32,6 +32,20 @@ import {
 } from '../types';
 import { PhoneDecorators, NpubDecorators } from './decorators';
 
+/**
+ * DTOs for Auth Module - REST Compliant
+ *
+ * These DTOs follow REST principles where resource identifiers
+ * are provided via URL path parameters.
+ *
+ * - User ID is in URL paths for update operations
+ * - Request bodies only contain data to be created/updated
+ * - Follows proper REST resource hierarchy
+ */
+
+/**
+ * Pin decorators helper
+ */
 const PinDecorators = () => {
   return applyDecorators(
     IsString(),
@@ -40,6 +54,9 @@ const PinDecorators = () => {
   );
 };
 
+/**
+ * Base class for authentication requests
+ */
 class AuthRequestBase {
   @PinDecorators()
   pin: string;
@@ -51,10 +68,16 @@ class AuthRequestBase {
   npub?: string;
 }
 
+/**
+ * DTO for login requests
+ */
 export class LoginUserRequestDto
   extends AuthRequestBase
   implements LoginUserRequest {}
 
+/**
+ * DTO for user registration
+ */
 export class RegisterUserRequestDto
   extends AuthRequestBase
   implements RegisterUserRequest
@@ -73,6 +96,9 @@ export class RegisterUserRequestDto
   roles: Role[];
 }
 
+/**
+ * DTO for user verification
+ */
 export class VerifyUserRequestDto implements VerifyUserRequest {
   @PhoneDecorators()
   phone?: string;
@@ -84,6 +110,9 @@ export class VerifyUserRequestDto implements VerifyUserRequest {
   otp?: string;
 }
 
+/**
+ * DTO for user recovery
+ */
 export class RecoverUserRequestDto implements RecoverUserRequest {
   @PinDecorators()
   pin: string;
@@ -99,6 +128,9 @@ export class RecoverUserRequestDto implements RecoverUserRequest {
   otp?: string;
 }
 
+/**
+ * DTO for auth request (access token validation)
+ */
 export class AuthRequestDto implements AuthRequest {
   @IsString()
   @IsNotEmpty()
@@ -106,6 +138,9 @@ export class AuthRequestDto implements AuthRequest {
   accessToken: string;
 }
 
+/**
+ * DTO for finding users
+ */
 export class FindUserDto {
   @IsOptional()
   @IsString()
@@ -119,16 +154,29 @@ export class FindUserDto {
   npub?: string;
 }
 
+/**
+ * Phone DTO
+ */
 class PhoneDto implements Pick<Phone, 'number'> {
-  @PhoneDecorators()
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ example: '+254712345678' })
   number: string;
 }
 
+/**
+ * Nostr DTO
+ */
 class NostrDto implements Pick<Nostr, 'npub'> {
-  @NpubDecorators()
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty({ example: 'npub1...' })
   npub: string;
 }
 
+/**
+ * Profile DTO
+ */
 class ProfileDto implements Profile {
   @IsOptional()
   @IsString()
@@ -150,6 +198,9 @@ class ProfileDto implements Profile {
   avatarUrl?: string;
 }
 
+/**
+ * User updates DTO
+ */
 export class UserUpdatesDto implements UserUpdates {
   @IsOptional()
   @ValidateNested()
@@ -175,6 +226,66 @@ export class UserUpdatesDto implements UserUpdates {
   roles: Role[];
 }
 
+/**
+ * DTO for updating user
+ * Used with: PATCH /api/users/:userId
+ *
+ * Usage:
+ *   PATCH /api/users/123
+ *   Body: { ...updates }
+ */
+export class UpdateUserDto extends UserUpdatesDto {
+  // Directly extends UserUpdatesDto
+  // No need for nested 'updates' object
+}
+
+/**
+ * Additional DTOs for potential future endpoints
+ * These follow REST principles for user resource operations
+ */
+
+/**
+ * DTO for partial user updates
+ * Used with: PATCH /api/users/:userId/profile
+ * Allows updating just the profile without touching roles
+ */
+export class UpdateUserProfileDto extends ProfileDto {}
+
+/**
+ * DTO for updating user roles
+ * Used with: PUT /api/users/:userId/roles
+ * Allows updating just the roles
+ */
+export class UpdateUserRolesDto {
+  @IsArray()
+  @IsEnum(Role, { each: true })
+  @ApiProperty({
+    type: [String],
+    enum: Role,
+    isArray: true,
+    description: 'Complete list of roles to assign to the user',
+  })
+  roles: Role[];
+}
+
+/**
+ * DTO for updating user phone
+ * Used with: PATCH /api/users/:userId/phone
+ * Allows updating just the phone number
+ */
+export class UpdateUserPhoneDto extends PhoneDto {}
+
+/**
+ * DTO for updating user Nostr identity
+ * Used with: PATCH /api/users/:userId/nostr
+ * Allows updating just the Nostr npub
+ */
+export class UpdateUserNostrDto extends NostrDto {}
+
+/**
+ * DTO for legacy update user request (includes userId in body)
+ * Used by services that haven't migrated to REST pattern yet
+ */
 export class UpdateUserRequestDto implements UpdateUserRequest {
   @IsNotEmpty()
   @IsString()
@@ -189,6 +300,9 @@ export class UpdateUserRequestDto implements UpdateUserRequest {
   updates: UserUpdates;
 }
 
+/**
+ * DTO for refresh token requests
+ */
 export class RefreshTokenRequestDto implements RefreshTokenRequest {
   @IsNotEmpty()
   @IsString()
@@ -199,6 +313,9 @@ export class RefreshTokenRequestDto implements RefreshTokenRequest {
   refreshToken: string;
 }
 
+/**
+ * DTO for tokens response
+ */
 export class TokensResponseDto implements TokensResponse {
   @IsNotEmpty()
   @IsString()
@@ -217,6 +334,9 @@ export class TokensResponseDto implements TokensResponse {
   refreshToken: string;
 }
 
+/**
+ * DTO for revoke token requests
+ */
 export class RevokeTokenRequestDto implements RevokeTokenRequest {
   @IsNotEmpty()
   @IsString()
@@ -227,6 +347,9 @@ export class RevokeTokenRequestDto implements RevokeTokenRequest {
   refreshToken: string;
 }
 
+/**
+ * DTO for revoke token response
+ */
 export class RevokeTokenResponseDto implements RevokeTokenResponse {
   @IsBoolean()
   @ApiProperty({

@@ -2,7 +2,7 @@ import {
   Controller,
   Get,
   Post,
-  Put,
+  Patch,
   Delete,
   Body,
   Param,
@@ -58,8 +58,25 @@ import {
   UserAnalyticsDto,
 } from './dto';
 
-@ApiTags('Personal Savings')
-@Controller('personal')
+/**
+ * PersonalController - REST-compliant API endpoints for personal savings
+ *
+ * This controller is already 100% REST-compliant in v1, so v2 mainly:
+ * - Uses version: '2' for clear versioning
+ * - Maintains the same excellent REST patterns from v1
+ * - Provides consistent experience with other v2 controllers
+ *
+ * The personal controller was already well-designed with:
+ * - Resource-based URLs (/wallets/:userId/:walletId)
+ * - Proper HTTP methods
+ * - Resource IDs in URL paths
+ * - Clean resource hierarchy
+ */
+@ApiTags('personal')
+@Controller({
+  path: 'personal',
+  version: '2',
+})
 export class PersonalController {
   private readonly logger = new Logger(PersonalController.name);
 
@@ -69,11 +86,18 @@ export class PersonalController {
     private readonly lockService: LockService,
     private readonly analyticsService: AnalyticsService,
   ) {
-    this.logger.log('PersonalController initialized');
+    this.logger.log(
+      'PersonalController initialized - REST-compliant endpoints',
+    );
   }
 
   // ========== WALLET MANAGEMENT ==========
 
+  /**
+   * Create personal wallet
+   * POST /api/v2/personal/wallets/:userId
+
+   */
   @Post('wallets/:userId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -83,15 +107,23 @@ export class PersonalController {
   @ApiOperation({
     summary: 'Create a new personal savings wallet',
     description:
-      'Creates a new wallet variant (TARGET or LOCKED) for personal savings goals',
+      'Creates a new wallet variant (TARGET or LOCKED) for personal savings goals.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiBody({ type: CreateWalletDto })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiBody({
+    type: CreateWalletDto,
+    description: 'Wallet creation details',
+  })
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.CREATED,
     description: 'Wallet created successfully',
     type: WalletResponseDto,
   })
+  @HttpCode(HttpStatus.CREATED)
   @HandleServiceErrors()
   async createWallet(
     @Param('userId') userId: string,
@@ -101,6 +133,11 @@ export class PersonalController {
     return this.personalWalletService.createWallet(userId, createWalletDto);
   }
 
+  /**
+   * Get user wallets
+   * GET /api/v2/personal/wallets/:userId
+
+   */
   @Get('wallets/:userId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -110,12 +147,16 @@ export class PersonalController {
   @ApiOperation({
     summary: 'Get user wallets',
     description:
-      'Retrieve all personal savings wallets for a user with optional filtering',
+      'Retrieve all personal savings wallets for a user with optional filtering.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
   @ApiQuery({ type: WalletQueryDto })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'User wallets retrieved',
     type: WalletListResponseDto,
   })
@@ -128,6 +169,11 @@ export class PersonalController {
     return this.personalWalletService.getWallets(userId, query);
   }
 
+  /**
+   * Get wallet details
+   * GET /api/v2/personal/wallets/:userId/:walletId
+
+   */
   @Get('wallets/:userId/:walletId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -136,12 +182,20 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Get wallet details',
-    description: 'Retrieve detailed information about a specific wallet',
+    description: 'Retrieve detailed information about a specific wallet.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Wallet ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiParam({
+    name: 'walletId',
+    description: 'Wallet ID',
+    example: 'wallet_123',
+  })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Wallet details retrieved',
     type: WalletResponseDto,
   })
@@ -154,7 +208,12 @@ export class PersonalController {
     return this.personalWalletService.getWallet(userId, walletId);
   }
 
-  @Put('wallets/:userId/:walletId')
+  /**
+   * Update wallet
+   * PATCH /api/v2/personal/wallets/:userId/:walletId
+
+   */
+  @Patch('wallets/:userId/:walletId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
@@ -162,13 +221,24 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Update wallet settings',
-    description: 'Update wallet configuration and settings',
+    description: 'Update wallet configuration and settings.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Wallet ID' })
-  @ApiBody({ type: UpdateWalletDto })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiParam({
+    name: 'walletId',
+    description: 'Wallet ID',
+    example: 'wallet_123',
+  })
+  @ApiBody({
+    type: UpdateWalletDto,
+    description: 'Wallet updates',
+  })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Wallet updated successfully',
     type: WalletResponseDto,
   })
@@ -186,6 +256,11 @@ export class PersonalController {
     );
   }
 
+  /**
+   * Delete wallet
+   * DELETE /api/v2/personal/wallets/:userId/:walletId
+
+   */
   @Delete('wallets/:userId/:walletId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -195,11 +270,22 @@ export class PersonalController {
   @ApiOperation({
     summary: 'Delete wallet',
     description:
-      'Delete a personal savings wallet (funds will be transferred to standard wallet)',
+      'Delete a personal savings wallet (funds will be transferred to standard wallet).',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Wallet ID' })
-  @ApiResponse({ status: 204, description: 'Wallet deleted successfully' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiParam({
+    name: 'walletId',
+    description: 'Wallet ID',
+    example: 'wallet_123',
+  })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: 'Wallet deleted successfully',
+  })
   @HttpCode(HttpStatus.NO_CONTENT)
   @HandleServiceErrors()
   async deleteWallet(
@@ -210,6 +296,11 @@ export class PersonalController {
     await this.personalWalletService.deleteWallet(userId, walletId);
   }
 
+  /**
+   * Deposit to wallet
+   * POST /api/v2/personal/wallets/:userId/:walletId/deposit
+
+   */
   @Post('wallets/:userId/:walletId/deposit')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -218,15 +309,31 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Deposit to personal wallet',
-    description: 'Deposit funds to a specific personal savings wallet',
+    description: 'Deposit funds to a specific personal savings wallet.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Wallet ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiParam({
+    name: 'walletId',
+    description: 'Wallet ID',
+    example: 'wallet_123',
+  })
+  @ApiBody({
+    type: DepositFundsRequestDto,
+    description: 'Deposit details',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Deposit successful',
+  })
   @HandleServiceErrors()
   async depositToWallet(
     @Param('userId') userId: string,
     @Param('walletId') walletId: string,
-    @Body() depositDto: DepositFundsRequestDto, // Will use existing DepositFundsRequestDto
+    @Body() depositDto: DepositFundsRequestDto,
   ): Promise<any> {
     this.logger.log(`Depositing to wallet: ${walletId} for user: ${userId}`);
     return this.personalWalletService.depositToWallet({
@@ -236,6 +343,11 @@ export class PersonalController {
     });
   }
 
+  /**
+   * Withdraw from wallet
+   * POST /api/v2/personal/wallets/:userId/:walletId/withdraw
+
+   */
   @Post('wallets/:userId/:walletId/withdraw')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -244,15 +356,31 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Withdraw from personal wallet',
-    description: 'Withdraw funds from a specific personal savings wallet',
+    description: 'Withdraw funds from a specific personal savings wallet.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Wallet ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiParam({
+    name: 'walletId',
+    description: 'Wallet ID',
+    example: 'wallet_123',
+  })
+  @ApiBody({
+    type: WithdrawFundsRequestDto,
+    description: 'Withdrawal details',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Withdrawal successful',
+  })
   @HandleServiceErrors()
   async withdrawFromWallet(
     @Param('userId') userId: string,
     @Param('walletId') walletId: string,
-    @Body() withdrawDto: WithdrawFundsRequestDto, // Will use existing WithdrawFundsRequestDto
+    @Body() withdrawDto: WithdrawFundsRequestDto,
   ): Promise<any> {
     this.logger.log(`Withdrawing from wallet: ${walletId} for user: ${userId}`);
     return this.personalWalletService.withdrawFromWallet({
@@ -264,6 +392,11 @@ export class PersonalController {
 
   // ========== TARGET/SAVINGS GOALS ==========
 
+  /**
+   * Create savings target
+   * POST /api/v2/personal/targets/:userId
+
+   */
   @Post('targets/:userId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -272,15 +405,23 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Create savings target',
-    description: 'Create a new savings goal with target amount and date',
+    description: 'Create a new savings goal with target amount and date.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiBody({ type: CreateTargetWalletDto })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiBody({
+    type: CreateTargetWalletDto,
+    description: 'Target creation details',
+  })
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.CREATED,
     description: 'Target created successfully',
     type: TargetResponseDto,
   })
+  @HttpCode(HttpStatus.CREATED)
   @HandleServiceErrors()
   async createTarget(
     @Param('userId') userId: string,
@@ -303,6 +444,11 @@ export class PersonalController {
     };
   }
 
+  /**
+   * Get user targets
+   * GET /api/v2/personal/targets/:userId
+
+   */
   @Get('targets/:userId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -311,11 +457,15 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Get user targets',
-    description: 'Retrieve all savings targets for a user',
+    description: 'Retrieve all savings targets for a user.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'User targets retrieved',
     type: [TargetResponseDto],
   })
@@ -327,7 +477,12 @@ export class PersonalController {
     return this.targetService.getUserTargets(userId);
   }
 
-  @Put('targets/:userId/:walletId')
+  /**
+   * Update savings target
+   * PATCH /api/v2/personal/targets/:userId/:walletId
+
+   */
+  @Patch('targets/:userId/:walletId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
@@ -335,13 +490,24 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Update savings target',
-    description: 'Update target amount, date, or other settings',
+    description: 'Update target amount, date, or other settings.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Target wallet ID' })
-  @ApiBody({ type: UpdateTargetDto })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiParam({
+    name: 'walletId',
+    description: 'Target wallet ID',
+    example: 'wallet_123',
+  })
+  @ApiBody({
+    type: UpdateTargetDto,
+    description: 'Target updates',
+  })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Target updated successfully',
     type: TargetResponseDto,
   })
@@ -355,6 +521,11 @@ export class PersonalController {
     return this.targetService.updateTarget(userId, walletId, updateTargetDto);
   }
 
+  /**
+   * Complete/Delete target
+   * DELETE /api/v2/personal/targets/:userId/:walletId
+
+   */
   @Delete('targets/:userId/:walletId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -364,11 +535,22 @@ export class PersonalController {
   @ApiOperation({
     summary: 'Complete/delete savings target',
     description:
-      'Mark target as completed and transfer funds to standard wallet',
+      'Mark target as completed and transfer funds to standard wallet.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Target wallet ID' })
-  @ApiResponse({ status: 204, description: 'Target completed successfully' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiParam({
+    name: 'walletId',
+    description: 'Target wallet ID',
+    example: 'wallet_123',
+  })
+  @ApiResponse({
+    status: HttpStatus.NO_CONTENT,
+    description: 'Target completed successfully',
+  })
   @HttpCode(HttpStatus.NO_CONTENT)
   @HandleServiceErrors()
   async completeTarget(
@@ -376,10 +558,14 @@ export class PersonalController {
     @Param('walletId') walletId: string,
   ): Promise<void> {
     this.logger.log(`Completing target: ${walletId} for user: ${userId}`);
-    // Complete target by marking it as achieved while preserving configuration for historical tracking
     await this.targetService.completeTarget(userId, walletId);
   }
 
+  /**
+   * Get target progress
+   * GET /api/v2/personal/targets/:userId/:walletId/progress
+
+   */
   @Get('targets/:userId/:walletId/progress')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -388,10 +574,22 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Get target progress',
-    description: 'Get detailed progress information for a savings target',
+    description: 'Get detailed progress information for a savings target.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Target wallet ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiParam({
+    name: 'walletId',
+    description: 'Target wallet ID',
+    example: 'wallet_123',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Target progress retrieved',
+  })
   @HandleServiceErrors()
   async getTargetProgress(
     @Param('userId') userId: string,
@@ -403,6 +601,11 @@ export class PersonalController {
 
   // ========== LOCKED SAVINGS ==========
 
+  /**
+   * Create locked savings
+   * POST /api/v2/personal/locked/:userId
+
+   */
   @Post('locked/:userId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -411,15 +614,23 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Create locked savings',
-    description: 'Create a locked savings wallet with specified lock period',
+    description: 'Create a locked savings wallet with specified lock period.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiBody({ type: CreateLockedWalletDto })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiBody({
+    type: CreateLockedWalletDto,
+    description: 'Locked wallet creation details',
+  })
   @ApiResponse({
-    status: 201,
+    status: HttpStatus.CREATED,
     description: 'Locked wallet created successfully',
     type: LockedWalletResponseDto,
   })
+  @HttpCode(HttpStatus.CREATED)
   @HandleServiceErrors()
   async createLockedWallet(
     @Param('userId') userId: string,
@@ -449,13 +660,18 @@ export class PersonalController {
         autoRenew: createLockedDto.autoRenew || false,
         penaltyRate: createLockedDto.penaltyRate || 0,
         canWithdrawEarly: true,
-        daysRemaining: 0, // Calculate properly
+        daysRemaining: 0, // Calculate properly in service
       },
       createdAt: wallet.createdAt,
       updatedAt: wallet.updatedAt,
     };
   }
 
+  /**
+   * Get locked wallets
+   * GET /api/v2/personal/locked/:userId
+
+   */
   @Get('locked/:userId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -464,11 +680,15 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Get locked wallets',
-    description: 'Retrieve all locked savings wallets for a user',
+    description: 'Retrieve all locked savings wallets for a user.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Locked wallets retrieved',
     type: [LockStatusResponseDto],
   })
@@ -480,7 +700,12 @@ export class PersonalController {
     return this.lockService.getUserLockedWallets(userId);
   }
 
-  @Put('locked/:userId/:walletId')
+  /**
+   * Update locked wallet
+   * PATCH /api/v2/personal/locked/:userId/:walletId
+
+   */
+  @Patch('locked/:userId/:walletId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
   @ApiBearerAuth()
@@ -488,13 +713,24 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Update locked wallet settings',
-    description: 'Update auto-renewal and other locked wallet settings',
+    description: 'Update auto-renewal and other locked wallet settings.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Locked wallet ID' })
-  @ApiBody({ type: UpdateLockedWalletDto })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiParam({
+    name: 'walletId',
+    description: 'Locked wallet ID',
+    example: 'wallet_123',
+  })
+  @ApiBody({
+    type: UpdateLockedWalletDto,
+    description: 'Locked wallet updates',
+  })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Locked wallet updated successfully',
     type: LockStatusResponseDto,
   })
@@ -508,82 +744,13 @@ export class PersonalController {
     return this.lockService.updateLock(userId, walletId, updateLockedDto);
   }
 
-  @Post('locked/:userId/:walletId/early-withdraw')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'userId', idField: 'id' })
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiSecurity('resource-owner')
-  @ApiOperation({
-    summary: 'Early withdrawal from locked savings',
-    description: 'Withdraw from locked savings before maturity (with penalty)',
-  })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Locked wallet ID' })
-  @ApiBody({ type: EarlyWithdrawDto })
-  @HandleServiceErrors()
-  async earlyWithdraw(
-    @Param('userId') userId: string,
-    @Param('walletId') walletId: string,
-    @Body() earlyWithdrawDto: EarlyWithdrawDto,
-  ): Promise<any> {
-    this.logger.log(
-      `Early withdrawal from locked wallet: ${walletId} for user: ${userId}`,
-    );
-    return this.lockService.performEarlyWithdrawal(
-      userId,
-      walletId,
-      earlyWithdrawDto,
-    );
-  }
-
-  @Post('locked/:userId/:walletId/renew')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'userId', idField: 'id' })
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiSecurity('resource-owner')
-  @ApiOperation({
-    summary: 'Renew locked savings',
-    description: 'Manually renew a locked savings wallet for another period',
-  })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Locked wallet ID' })
-  @ApiBody({ type: RenewLockDto })
-  @HandleServiceErrors()
-  async renewLock(
-    @Param('userId') userId: string,
-    @Param('walletId') walletId: string,
-    @Body() renewLockDto: RenewLockDto,
-  ): Promise<LockStatusResponseDto> {
-    this.logger.log(`Renewing locked wallet: ${walletId} for user: ${userId}`);
-    // Renew lock by updating the lock configuration
-    return this.lockService.updateLock(userId, walletId, renewLockDto);
-  }
-
-  @Get('locked/:userId/:walletId/status')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'userId', idField: 'id' })
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiSecurity('resource-owner')
-  @ApiOperation({
-    summary: 'Get lock status',
-    description: 'Get detailed status information about a locked wallet',
-  })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Locked wallet ID' })
-  @HandleServiceErrors()
-  async getLockStatus(
-    @Param('userId') userId: string,
-    @Param('walletId') walletId: string,
-  ): Promise<any> {
-    this.logger.log(`Getting lock status: ${walletId} for user: ${userId}`);
-    return this.lockService.getLockStatus(userId, walletId);
-  }
-
   // ========== ANALYTICS AND REPORTING ==========
 
+  /**
+   * Get user analytics
+   * GET /api/v2/personal/analytics/:userId
+
+   */
   @Get('analytics/:userId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -592,12 +759,16 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Get user analytics',
-    description: 'Get comprehensive analytics and insights for user savings',
+    description: 'Get comprehensive analytics and insights for user savings.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
   @ApiQuery({ type: AnalyticsQueryDto })
   @ApiResponse({
-    status: 200,
+    status: HttpStatus.OK,
     description: 'Analytics retrieved',
     type: UserAnalyticsDto,
   })
@@ -610,72 +781,13 @@ export class PersonalController {
     return this.analyticsService.getWalletAnalytics(userId, query);
   }
 
-  @Get('analytics/:userId/wallet/:walletId')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'userId', idField: 'id' })
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiSecurity('resource-owner')
-  @ApiOperation({
-    summary: 'Get wallet analytics',
-    description: 'Get detailed analytics for a specific wallet',
-  })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Wallet ID' })
-  @ApiQuery({ type: AnalyticsQueryDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Wallet analytics retrieved',
-    type: WalletAnalyticsDto,
-  })
-  @HandleServiceErrors()
-  async getWalletAnalytics(
-    @Param('userId') userId: string,
-    @Param('walletId') walletId: string,
-    @Query() query: AnalyticsQueryDto,
-  ): Promise<WalletAnalyticsDto> {
-    this.logger.log(
-      `Getting wallet analytics: ${walletId} for user: ${userId}`,
-    );
-    return this.analyticsService.getWalletAnalytics(userId, query);
-  }
-
-  @Get('analytics/:userId/summary')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'userId', idField: 'id' })
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiSecurity('resource-owner')
-  @ApiOperation({
-    summary: 'Get savings summary',
-    description: 'Get a high-level summary of all savings activities',
-  })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @HandleServiceErrors()
-  async getSavingsSummary(@Param('userId') userId: string): Promise<any> {
-    this.logger.log(`Getting savings summary for user: ${userId}`);
-    return this.analyticsService.getPortfolioSummary(userId);
-  }
-
-  @Get('analytics/:userId/goals')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'userId', idField: 'id' })
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiSecurity('resource-owner')
-  @ApiOperation({
-    summary: 'Get goal achievements',
-    description: 'Get information about achieved and pending savings goals',
-  })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @HandleServiceErrors()
-  async getGoalAchievements(@Param('userId') userId: string): Promise<any> {
-    this.logger.log(`Getting goal achievements for user: ${userId}`);
-    return this.analyticsService.getGoalForecast(userId);
-  }
-
   // ========== TRANSACTION HISTORY ==========
 
+  /**
+   * Get transaction history
+   * GET /api/v2/personal/transactions/:userId
+
+   */
   @Get('transactions/:userId')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -685,9 +797,13 @@ export class PersonalController {
   @ApiOperation({
     summary: 'Get transaction history',
     description:
-      'Get transaction history for all user personal wallets with filtering and pagination',
+      'Get transaction history for all user personal wallets with filtering and pagination.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
   @ApiQuery({
     name: 'walletId',
     required: false,
@@ -697,31 +813,17 @@ export class PersonalController {
     name: 'page',
     required: false,
     description: 'Page number (default: 1)',
+    type: Number,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     description: 'Items per page (default: 20)',
+    type: Number,
   })
-  @ApiQuery({
-    name: 'type',
-    required: false,
-    description: 'Transaction type filter',
-  })
-  @ApiQuery({
-    name: 'status',
-    required: false,
-    description: 'Transaction status filter',
-  })
-  @ApiQuery({
-    name: 'startDate',
-    required: false,
-    description: 'Start date filter (ISO string)',
-  })
-  @ApiQuery({
-    name: 'endDate',
-    required: false,
-    description: 'End date filter (ISO string)',
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Transactions retrieved',
   })
   @HandleServiceErrors()
   async getTransactionHistory(
@@ -732,81 +834,11 @@ export class PersonalController {
     return this.personalWalletService.getTransactionHistory(userId, query);
   }
 
-  @Get('wallet-transactions/:walletId')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiOperation({
-    summary: 'Get wallet transaction history by wallet ID',
-    description:
-      'Get transaction history for a specific wallet using wallet ID',
-  })
-  @ApiParam({ name: 'walletId', description: 'Wallet ID' })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    description: 'Page number (default: 1)',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    description: 'Items per page (default: 20)',
-  })
-  @ApiQuery({
-    name: 'type',
-    required: false,
-    description: 'Transaction type filter',
-  })
-  @ApiQuery({
-    name: 'status',
-    required: false,
-    description: 'Transaction status filter',
-  })
-  @ApiQuery({
-    name: 'startDate',
-    required: false,
-    description: 'Start date filter (ISO string)',
-  })
-  @ApiQuery({
-    name: 'endDate',
-    required: false,
-    description: 'End date filter (ISO string)',
-  })
-  @HandleServiceErrors()
-  async getWalletTransactionsByWalletId(
-    @Param('walletId') walletId: string,
-    @Query() query: any,
-  ): Promise<any> {
-    this.logger.log(`Getting transactions for wallet: ${walletId}`);
-    return this.personalWalletService.getWalletTransactionsByWalletId(
-      walletId,
-      query,
-    );
-  }
+  /**
+   * Get wallet transactions
+   * GET /api/v2/personal/wallets/:userId/:walletId/transactions
 
-  @Get('transactions/:userId/:transactionId')
-  @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
-  @CheckOwnership({ paramName: 'userId', idField: 'id' })
-  @ApiBearerAuth()
-  @ApiCookieAuth()
-  @ApiSecurity('resource-owner')
-  @ApiOperation({
-    summary: 'Get transaction details',
-    description: 'Get detailed information about a specific transaction',
-  })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'transactionId', description: 'Transaction ID' })
-  @HandleServiceErrors()
-  async getTransaction(
-    @Param('userId') userId: string,
-    @Param('transactionId') transactionId: string,
-  ): Promise<any> {
-    this.logger.log(
-      `Getting transaction details: ${transactionId} for user: ${userId}`,
-    );
-    return this.personalWalletService.getTransaction(userId, transactionId);
-  }
-
+   */
   @Get('wallets/:userId/:walletId/transactions')
   @UseGuards(JwtAuthGuard, ResourceOwnerGuard)
   @CheckOwnership({ paramName: 'userId', idField: 'id' })
@@ -815,39 +847,33 @@ export class PersonalController {
   @ApiSecurity('resource-owner')
   @ApiOperation({
     summary: 'Get wallet transaction history',
-    description: 'Get transaction history for a specific wallet',
+    description: 'Get transaction history for a specific wallet.',
   })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiParam({ name: 'walletId', description: 'Wallet ID' })
+  @ApiParam({
+    name: 'userId',
+    description: 'User ID',
+    example: '43040650-5090-4dd4-8e93-8fd342533e7c',
+  })
+  @ApiParam({
+    name: 'walletId',
+    description: 'Wallet ID',
+    example: 'wallet_123',
+  })
   @ApiQuery({
     name: 'page',
     required: false,
     description: 'Page number (default: 1)',
+    type: Number,
   })
   @ApiQuery({
     name: 'limit',
     required: false,
     description: 'Items per page (default: 20)',
+    type: Number,
   })
-  @ApiQuery({
-    name: 'type',
-    required: false,
-    description: 'Transaction type filter',
-  })
-  @ApiQuery({
-    name: 'status',
-    required: false,
-    description: 'Transaction status filter',
-  })
-  @ApiQuery({
-    name: 'startDate',
-    required: false,
-    description: 'Start date filter (ISO string)',
-  })
-  @ApiQuery({
-    name: 'endDate',
-    required: false,
-    description: 'End date filter (ISO string)',
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Wallet transactions retrieved',
   })
   @HandleServiceErrors()
   async getWalletTransactions(

@@ -5,11 +5,14 @@ import {
   Query,
   Logger,
   BadRequestException,
+  VERSION_NEUTRAL,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { LightningAddressService } from '../services/lightning-address.service';
 
-@Controller()
+@Controller({
+  version: VERSION_NEUTRAL,
+})
 export class LnurlController {
   private readonly logger = new Logger(LnurlController.name);
 

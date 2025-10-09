@@ -100,7 +100,10 @@ export interface ExportStatusResponse {
  */
 @ApiTags('Dashboard')
 @ApiBearerAuth()
-@Controller('dashboard')
+@Controller({
+  path: 'dashboard',
+  version: '2',
+})
 @UseGuards(JwtAuthGuard)
 export class DashboardController {
   private readonly logger = new Logger(DashboardController.name);
@@ -465,7 +468,7 @@ export class DashboardController {
         exportId,
         status: 'completed',
         progress: 100,
-        downloadUrl: `/api/v1/dashboard/export/${exportId}/download`,
+        downloadUrl: `/api/v2/dashboard/export/${exportId}/download`,
         createdAt: new Date().toISOString(),
         completedAt: new Date().toISOString(),
       };

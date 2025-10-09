@@ -10,6 +10,7 @@ import {
   Body,
   UseGuards,
   Req,
+  Version,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -24,7 +25,10 @@ import { LightningAddressService } from '../services/lightning-address.service';
 import { CreateLightningAddressDto, UpdateLightningAddressDto } from '../dto';
 import { AddressType } from '../../common/types/lnurl';
 
-@Controller('lnaddr')
+@Controller({
+  path: 'lnaddr',
+  version: '2',
+})
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class LightningAddressController {
