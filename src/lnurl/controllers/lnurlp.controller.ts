@@ -9,7 +9,6 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
-  Version,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { LnurlPaymentService } from '../services/lnurl-payment.service';
@@ -26,7 +25,6 @@ import type { User } from '../../common/types';
 
 @Controller({
   path: 'lnurlp',
-  version: '2',
 })
 export class LnurlPaymentController {
   private readonly logger = new Logger(LnurlPaymentController.name);

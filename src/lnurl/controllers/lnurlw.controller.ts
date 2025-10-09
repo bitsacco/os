@@ -9,7 +9,6 @@ import {
   UseGuards,
   Req,
   Logger,
-  Version,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -24,7 +23,6 @@ import type { Request } from 'express';
 
 @Controller({
   path: 'lnurlw',
-  version: '2',
 })
 export class LnurlWithdrawController {
   private readonly logger = new Logger(LnurlWithdrawController.name);

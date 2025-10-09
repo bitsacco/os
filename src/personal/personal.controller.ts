@@ -51,31 +51,13 @@ import {
   UpdateLockedWalletDto,
   LockedWalletResponseDto,
   LockStatusResponseDto,
-  EarlyWithdrawDto,
-  RenewLockDto,
   AnalyticsQueryDto,
-  WalletAnalyticsDto,
   UserAnalyticsDto,
 } from './dto';
 
-/**
- * PersonalController - REST-compliant API endpoints for personal savings
- *
- * This controller is already 100% REST-compliant in v1, so v2 mainly:
- * - Uses version: '2' for clear versioning
- * - Maintains the same excellent REST patterns from v1
- * - Provides consistent experience with other v2 controllers
- *
- * The personal controller was already well-designed with:
- * - Resource-based URLs (/wallets/:userId/:walletId)
- * - Proper HTTP methods
- * - Resource IDs in URL paths
- * - Clean resource hierarchy
- */
 @ApiTags('personal')
 @Controller({
   path: 'personal',
-  version: '2',
 })
 export class PersonalController {
   private readonly logger = new Logger(PersonalController.name);
@@ -95,7 +77,7 @@ export class PersonalController {
 
   /**
    * Create personal wallet
-   * POST /api/v2/personal/wallets/:userId
+   * POST /personal/wallets/:userId
 
    */
   @Post('wallets/:userId')
@@ -135,7 +117,7 @@ export class PersonalController {
 
   /**
    * Get user wallets
-   * GET /api/v2/personal/wallets/:userId
+   * GET /personal/wallets/:userId
 
    */
   @Get('wallets/:userId')
@@ -171,7 +153,7 @@ export class PersonalController {
 
   /**
    * Get wallet details
-   * GET /api/v2/personal/wallets/:userId/:walletId
+   * GET /personal/wallets/:userId/:walletId
 
    */
   @Get('wallets/:userId/:walletId')
@@ -210,7 +192,7 @@ export class PersonalController {
 
   /**
    * Update wallet
-   * PATCH /api/v2/personal/wallets/:userId/:walletId
+   * PATCH /personal/wallets/:userId/:walletId
 
    */
   @Patch('wallets/:userId/:walletId')
@@ -258,7 +240,7 @@ export class PersonalController {
 
   /**
    * Delete wallet
-   * DELETE /api/v2/personal/wallets/:userId/:walletId
+   * DELETE /personal/wallets/:userId/:walletId
 
    */
   @Delete('wallets/:userId/:walletId')
@@ -298,7 +280,7 @@ export class PersonalController {
 
   /**
    * Deposit to wallet
-   * POST /api/v2/personal/wallets/:userId/:walletId/deposit
+   * POST /personal/wallets/:userId/:walletId/deposit
 
    */
   @Post('wallets/:userId/:walletId/deposit')
@@ -345,7 +327,7 @@ export class PersonalController {
 
   /**
    * Withdraw from wallet
-   * POST /api/v2/personal/wallets/:userId/:walletId/withdraw
+   * POST /personal/wallets/:userId/:walletId/withdraw
 
    */
   @Post('wallets/:userId/:walletId/withdraw')
@@ -394,7 +376,7 @@ export class PersonalController {
 
   /**
    * Create savings target
-   * POST /api/v2/personal/targets/:userId
+   * POST /personal/targets/:userId
 
    */
   @Post('targets/:userId')
@@ -446,7 +428,7 @@ export class PersonalController {
 
   /**
    * Get user targets
-   * GET /api/v2/personal/targets/:userId
+   * GET /personal/targets/:userId
 
    */
   @Get('targets/:userId')
@@ -479,7 +461,7 @@ export class PersonalController {
 
   /**
    * Update savings target
-   * PATCH /api/v2/personal/targets/:userId/:walletId
+   * PATCH /personal/targets/:userId/:walletId
 
    */
   @Patch('targets/:userId/:walletId')
@@ -523,7 +505,7 @@ export class PersonalController {
 
   /**
    * Complete/Delete target
-   * DELETE /api/v2/personal/targets/:userId/:walletId
+   * DELETE /personal/targets/:userId/:walletId
 
    */
   @Delete('targets/:userId/:walletId')
@@ -563,7 +545,7 @@ export class PersonalController {
 
   /**
    * Get target progress
-   * GET /api/v2/personal/targets/:userId/:walletId/progress
+   * GET /personal/targets/:userId/:walletId/progress
 
    */
   @Get('targets/:userId/:walletId/progress')
@@ -603,7 +585,7 @@ export class PersonalController {
 
   /**
    * Create locked savings
-   * POST /api/v2/personal/locked/:userId
+   * POST /personal/locked/:userId
 
    */
   @Post('locked/:userId')
@@ -669,7 +651,7 @@ export class PersonalController {
 
   /**
    * Get locked wallets
-   * GET /api/v2/personal/locked/:userId
+   * GET /personal/locked/:userId
 
    */
   @Get('locked/:userId')
@@ -702,7 +684,7 @@ export class PersonalController {
 
   /**
    * Update locked wallet
-   * PATCH /api/v2/personal/locked/:userId/:walletId
+   * PATCH /personal/locked/:userId/:walletId
 
    */
   @Patch('locked/:userId/:walletId')
@@ -748,7 +730,7 @@ export class PersonalController {
 
   /**
    * Get user analytics
-   * GET /api/v2/personal/analytics/:userId
+   * GET /personal/analytics/:userId
 
    */
   @Get('analytics/:userId')
@@ -785,7 +767,7 @@ export class PersonalController {
 
   /**
    * Get transaction history
-   * GET /api/v2/personal/transactions/:userId
+   * GET /personal/transactions/:userId
 
    */
   @Get('transactions/:userId')
@@ -836,7 +818,7 @@ export class PersonalController {
 
   /**
    * Get wallet transactions
-   * GET /api/v2/personal/wallets/:userId/:walletId/transactions
+   * GET /personal/wallets/:userId/:walletId/transactions
 
    */
   @Get('wallets/:userId/:walletId/transactions')

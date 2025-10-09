@@ -12,13 +12,7 @@ import {
   IsOptional,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  ChamaMemberRole,
-  type ChamaInvite,
-  type ChamaMember,
-  type ChamaUpdates,
-  type PaginatedRequest,
-} from '../types';
+import { ChamaMemberRole, type ChamaInvite, type ChamaMember } from '../types';
 import { IsOptionalUUID, PaginatedRequestDto } from './lib.dto';
 
 /**

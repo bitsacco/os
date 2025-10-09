@@ -5,6 +5,7 @@ import {
   Logger,
   SetMetadata,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '../common';
@@ -87,7 +88,8 @@ export class ChamaMemberGuard implements CanActivate {
       this.logger.warn(
         `Chama ID field '${chamaIdField}' not found in request params, body, or query`,
       );
-      return false;
+      // CQ1: Throw exception for consistency across guards
+      throw new ForbiddenException('Invalid chama access request');
     }
 
     try {
@@ -103,17 +105,27 @@ export class ChamaMemberGuard implements CanActivate {
         this.logger.warn(
           `Chama membership check failed: User ${user.id} is not a member of chama ${chamaId}`,
         );
-      } else {
-        this.logger.debug(`User ${user.id} is a member of chama ${chamaId}`);
+        // CQ1: Throw exception for consistency across guards
+        throw new ForbiddenException('You must be a member of this chama');
       }
 
-      return isMember;
+      this.logger.debug(`User ${user.id} is a member of chama ${chamaId}`);
+      return true;
     } catch (error) {
+      // Re-throw if it's already a NestJS exception
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+
       this.logger.error(
         `Error during chama membership check: ${error.message}`,
         error.stack,
       );
-      return false;
+      // CQ1: Throw exception for consistency across guards
+      throw new ForbiddenException('Error validating chama membership');
     }
   }
 }

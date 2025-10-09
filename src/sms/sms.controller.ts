@@ -15,7 +15,6 @@ import { SmsService } from './sms.service';
 
 @Controller({
   path: 'sms',
-  version: '2',
 })
 @UseGuards(JwtAuthGuard)
 export class SmsController {

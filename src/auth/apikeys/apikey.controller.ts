@@ -13,7 +13,6 @@ import { ApiKeyResponseDto, CreateApiKeyDto } from './apikey.dto';
 
 @Controller({
   path: 'api-keys',
-  version: '2',
 })
 @UseGuards(JwtAuthGuard)
 export class ApiKeyController {

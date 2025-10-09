@@ -6,7 +6,6 @@ import {
   Param,
   Patch,
   UseGuards,
-  HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import {
@@ -29,24 +28,9 @@ import {
 } from '../common';
 import { UpdateUserDto } from '../common/dto/auth.dto';
 
-/**
- * UsersController - REST-compliant API endpoints for user management
- *
- * This controller demonstrates the v2 REST-compliant pattern with:
- * - Resource-based URLs (e.g., /users/:userId)
- * - Proper HTTP methods (GET for retrieval, PATCH for updates)
- * - Resource IDs in URLs, not request bodies
- * - Clean separation between different user lookup patterns
- *
- * Key improvements from v1:
- * - User ID in URL path for update operations (PATCH /users/:userId)
- * - Cleaner request body structure (no nested 'updates' object)
- * - Consistent resource patterns
- */
 @ApiTags('users')
 @Controller({
   path: 'users',
-  version: '2',
 })
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
@@ -60,7 +44,7 @@ export class UsersController {
 
   /**
    * List all users
-   * GET /api/v2/users
+   * GET /users
    */
   @Get()
   @ApiOperation({
@@ -79,7 +63,7 @@ export class UsersController {
 
   /**
    * Get user by ID
-   * GET /api/v2/users/:userId
+   * GET /users/:userId
    */
   @Get(':userId')
   @UseGuards(ResourceOwnerGuard)
@@ -105,7 +89,7 @@ export class UsersController {
 
   /**
    * Update user
-   * PATCH /api/v2/users/:userId
+   * PATCH /users/:userId
    */
   @Patch(':userId')
   @UseGuards(ResourceOwnerGuard)
@@ -135,8 +119,6 @@ export class UsersController {
   ) {
     this.logger.log(`Updating user: ${userId}`);
 
-    // Convert v2 DTO to v1 service format
-    // In v2, the updates are directly in the body, not nested
     return this.usersService.updateUser({
       userId,
       updates: updateUserDto,
@@ -146,10 +128,10 @@ export class UsersController {
 
   /**
    * Find user by phone number
-   * GET /api/v2/users/find/phone/:phone
+   * GET /users/find/phone/:phone
    *
    * Kept as a specialized search endpoint for phone-based lookup
-   * Alternative could be: GET /api/v2/users?phone=:phone
+   * Alternative could be: GET /users?phone=:phone
    */
   @Get('find/phone/:phone')
   @ApiOperation({
@@ -173,10 +155,10 @@ export class UsersController {
 
   /**
    * Find user by Nostr npub
-   * GET /api/v2/users/find/npub/:npub
+   * GET /users/find/npub/:npub
    *
    * Kept as a specialized search endpoint for Nostr-based lookup
-   * Alternative could be: GET /api/v2/users?npub=:npub
+   * Alternative could be: GET /users?npub=:npub
    */
   @Get('find/npub/:npub')
   @ApiOperation({
@@ -200,9 +182,7 @@ export class UsersController {
 
   /**
    * Update user profile only
-   * PATCH /api/v2/users/:userId/profile
-   *
-   * New in v2 - granular endpoint for updating just the profile
+   * PATCH /users/:userId/profile
    */
   @Patch(':userId/profile')
   @UseGuards(ResourceOwnerGuard)
@@ -253,9 +233,7 @@ export class UsersController {
 
   /**
    * Update user phone
-   * PATCH /api/v2/users/:userId/phone
-   *
-   * New in v2 - granular endpoint for updating just the phone number
+   * PATCH /users/:userId/phone
    */
   @Patch(':userId/phone')
   @UseGuards(ResourceOwnerGuard)
@@ -306,9 +284,7 @@ export class UsersController {
 
   /**
    * Update user Nostr identity
-   * PATCH /api/v2/users/:userId/nostr
-   *
-   * New in v2 - granular endpoint for updating just the Nostr npub
+   * PATCH /users/:userId/nostr
    */
   @Patch(':userId/nostr')
   @UseGuards(ResourceOwnerGuard)

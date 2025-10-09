@@ -34,39 +34,19 @@ import {
   HandleServiceErrors,
 } from '../common';
 import {
-  GetNotificationsQueryDto,
   MarkNotificationsAsReadDto,
-  UpdateNotificationPreferencesDto,
-  NotificationSubscribeDto,
   NotificationUnsubscribeDto,
-  BatchDeleteNotificationsDto,
-} from '../common/dto/notification.dto';
-import {
+  UpdateNotificationPreferencesDto,
   GetNotificationsResponseDto,
   MarkAsReadResponseDto,
+  NotificationSubscribeDto,
   UpdatePreferencesResponseDto,
-} from './dto/notification.dto';
+  BatchDeleteNotificationsDto,
+} from '../common/dto/notification.dto';
 import { NotificationService } from './notification.service';
 
-/**
- * NotificationController - REST-compliant API endpoints for notifications
- *
- * This controller demonstrates the v2 REST-compliant pattern with:
- * - User-scoped resource URLs (e.g., /users/:userId/notifications)
- * - Proper HTTP methods (GET for retrieval, PATCH for updates)
- * - Resource IDs in URLs for specific operations
- * - Clear separation of user-scoped vs. global notification operations
- *
- * Key improvements from v1 (50% compliance -> 100% compliance):
- * - User ID explicitly in URL paths for user-scoped operations
- * - Query parameters instead of body for GET operations
- * - Proper PATCH/PUT for update operations
- * - Clear resource hierarchy
- */
 @ApiTags('notifications')
-@Controller({
-  version: '2',
-})
+@Controller()
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 @ApiCookieAuth()
@@ -81,7 +61,7 @@ export class NotificationController {
 
   /**
    * Get user notifications
-   * GET /api/v2/users/:userId/notifications
+   * GET /users/:userId/notifications
    */
   @Get('users/:userId/notifications')
   @UseGuards(ResourceOwnerGuard)
@@ -173,7 +153,7 @@ export class NotificationController {
 
   /**
    * Mark notifications as read
-   * PATCH /api/v2/users/:userId/notifications/read
+   * PATCH /users/:userId/notifications/read
    */
   @Patch('users/:userId/notifications/read')
   @UseGuards(ResourceOwnerGuard)
@@ -223,9 +203,7 @@ export class NotificationController {
 
   /**
    * Mark single notification as read
-   * PATCH /api/v2/notifications/:notificationId/read
-   *
-   * New in v2 - granular endpoint for single notification
+   * PATCH /notifications/:notificationId/read
    */
   @Patch('notifications/:notificationId/read')
   @ApiOperation({
@@ -265,7 +243,7 @@ export class NotificationController {
 
   /**
    * Get notification preferences
-   * GET /api/v2/users/:userId/notifications/preferences
+   * GET /users/:userId/notifications/preferences
    */
   @Get('users/:userId/notifications/preferences')
   @UseGuards(ResourceOwnerGuard)
@@ -303,7 +281,7 @@ export class NotificationController {
 
   /**
    * Update notification preferences
-   * PUT /api/v2/users/:userId/notifications/preferences
+   * PUT /users/:userId/notifications/preferences
    */
   @Patch('users/:userId/notifications/preferences')
   @UseGuards(ResourceOwnerGuard)
@@ -335,7 +313,6 @@ export class NotificationController {
     this.logger.log(`Updating notification preferences for user: ${userId}`);
 
     try {
-      // Convert v2 format to v1 service format if needed
       const channels = body.channels?.map((c) => c.channel) || [];
       const topics = body.topics?.map((t) => t.topic) || [];
 
@@ -359,9 +336,7 @@ export class NotificationController {
 
   /**
    * Subscribe to notification topics
-   * POST /api/v2/users/:userId/notifications/subscriptions
-   *
-   * New in v2 - dedicated endpoint for topic subscriptions
+   * POST /users/:userId/notifications/subscriptions
    */
   @Post('users/:userId/notifications/subscriptions')
   @UseGuards(ResourceOwnerGuard)
@@ -387,7 +362,6 @@ export class NotificationController {
   @HandleServiceErrors()
   async subscribeToTopics(
     @Param('userId') userId: string,
-    @Body() body: NotificationSubscribeDto,
   ): Promise<{ success: boolean }> {
     this.logger.log(`User ${userId} subscribing to topics`);
 
@@ -398,9 +372,7 @@ export class NotificationController {
 
   /**
    * Unsubscribe from notification topics
-   * DELETE /api/v2/users/:userId/notifications/subscriptions
-   *
-   * New in v2 - dedicated endpoint for unsubscribing from topics
+   * DELETE /users/:userId/notifications/subscriptions
    */
   @Delete('users/:userId/notifications/subscriptions')
   @UseGuards(ResourceOwnerGuard)
@@ -425,7 +397,6 @@ export class NotificationController {
   @HandleServiceErrors()
   async unsubscribeFromTopics(
     @Param('userId') userId: string,
-    @Body() body: NotificationUnsubscribeDto,
   ): Promise<{ success: boolean }> {
     this.logger.log(`User ${userId} unsubscribing from topics`);
 
@@ -436,7 +407,7 @@ export class NotificationController {
 
   /**
    * Delete notification
-   * DELETE /api/v2/notifications/:notificationId
+   * DELETE /notifications/:notificationId
 
    */
   @Delete('notifications/:notificationId')
@@ -457,7 +428,6 @@ export class NotificationController {
   @HandleServiceErrors()
   async deleteNotification(
     @Param('notificationId') notificationId: string,
-    @CurrentUser() user: UsersDocument,
   ): Promise<void> {
     this.logger.log(`Deleting notification ${notificationId}`);
 
@@ -470,9 +440,7 @@ export class NotificationController {
 
   /**
    * Batch delete notifications
-   * DELETE /api/v2/users/:userId/notifications
-   *
-   * New in v2 - batch deletion of notifications
+   * DELETE /users/:userId/notifications
    */
   @Delete('users/:userId/notifications')
   @UseGuards(ResourceOwnerGuard)
@@ -498,7 +466,6 @@ export class NotificationController {
   @HandleServiceErrors()
   async batchDeleteNotifications(
     @Param('userId') userId: string,
-    @Body() body: BatchDeleteNotificationsDto,
   ): Promise<void> {
     this.logger.log(`Batch deleting notifications for user ${userId}`);
 
@@ -511,9 +478,7 @@ export class NotificationController {
 
   /**
    * Get notification count
-   * GET /api/v2/users/:userId/notifications/count
-   *
-   * New in v2 - dedicated endpoint for notification count
+   * GET /users/:userId/notifications/count
    */
   @Get('users/:userId/notifications/count')
   @UseGuards(ResourceOwnerGuard)

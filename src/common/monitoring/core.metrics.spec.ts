@@ -82,7 +82,7 @@ describe('CoreMetricsService', () => {
     it('should record API request metrics and emit event', () => {
       const metric = {
         method: 'GET',
-        path: '/api/users',
+        path: '/users',
         statusCode: 200,
         success: true,
         duration: 100,
@@ -102,14 +102,14 @@ describe('CoreMetricsService', () => {
       expect(metrics.api.requests).toBe(1);
       expect(metrics.api.successful).toBe(1);
       expect(metrics.api.byMethod.GET.total).toBe(1);
-      expect(metrics.api.byPath['/api/users'].total).toBe(1);
+      expect(metrics.api.byPath['/users'].total).toBe(1);
       expect(metrics.api.byStatusCode['200']).toBe(1);
     });
 
     it('should track failed API requests', () => {
       const metric = {
         method: 'GET',
-        path: '/api/users',
+        path: '/users',
         statusCode: 500,
         success: false,
         duration: 100,
@@ -122,7 +122,7 @@ describe('CoreMetricsService', () => {
       expect(metrics.api.requests).toBe(1);
       expect(metrics.api.failed).toBe(1);
       expect(metrics.api.byMethod.GET.failed).toBe(1);
-      expect(metrics.api.byPath['/api/users'].failed).toBe(1);
+      expect(metrics.api.byPath['/users'].failed).toBe(1);
       expect(metrics.api.byStatusCode['500']).toBe(1);
       expect(metrics.errors.server_error).toBe(1);
     });
@@ -176,7 +176,7 @@ describe('CoreMetricsService', () => {
 
       service.recordApiMetric({
         method: 'GET',
-        path: '/api/users',
+        path: '/users',
         statusCode: 200,
         success: true,
         duration: 100,

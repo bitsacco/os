@@ -478,7 +478,7 @@ export class SharesService {
   }
 
   /**
-   * Get details of a specific share (for v2 REST API)
+   * Get details of a specific share
    * @param shareId The ID of the share to retrieve
    * @returns Share details
    */
@@ -496,7 +496,7 @@ export class SharesService {
   }
 
   /**
-   * Get shares for a specific user (for v2 REST API)
+   * Get shares for a specific user
    * @param userId The ID of the user
    * @param page Page number for pagination
    * @param size Number of items per page

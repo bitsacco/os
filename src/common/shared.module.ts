@@ -4,7 +4,6 @@ import { LoggerModule } from './logger/logger.module';
 import { DatabaseModule } from './database/database.module';
 import { TimeoutConfigService } from './services';
 import { FedimintModule } from './fedimint';
-import { ApiVersioningModule } from './versioning/api-versioning.module';
 
 /**
  * SharedModule provides common modules that are used across the application.
@@ -22,7 +21,6 @@ import { ApiVersioningModule } from './versioning/api-versioning.module';
     LoggerModule,
     DatabaseModule,
     FedimintModule,
-    ApiVersioningModule,
   ],
   providers: [TimeoutConfigService],
   exports: [
@@ -31,7 +29,6 @@ import { ApiVersioningModule } from './versioning/api-versioning.module';
     DatabaseModule,
     TimeoutConfigService,
     FedimintModule,
-    ApiVersioningModule,
   ],
 })
 export class SharedModule {}

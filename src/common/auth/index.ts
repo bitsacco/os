@@ -8,3 +8,12 @@ export * from './combined.auth';
 export * from './resource-owner.guard';
 export * from './decorators';
 export * from './role-validation.service';
+
+// Permission system exports
+export * from './database';
+export * from './repositories';
+export * from './services';
+export * from './guards';
+export * from './decorators/permission.decorators';
+export * from './permission.module';
+export * from './seeds';

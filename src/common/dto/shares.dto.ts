@@ -31,7 +31,7 @@ import { PaginatedRequestDto } from './lib.dto';
 
 /**
  * DTO for offering shares
- * Used with: POST /api/shares/offers
+ * Used with: POST /shares/offers
  */
 export class OfferSharesDto {
   @IsPositive()
@@ -61,7 +61,7 @@ export class OfferSharesDto {
 
 /**
  * DTO for subscribing to shares
- * Used with: POST /api/users/:userId/offers/:offerId/subscribe
+ * Used with: POST /users/:userId/offers/:offerId/subscribe
  */
 export class SubscribeSharesDto {
   @IsPositive()
@@ -73,7 +73,7 @@ export class SubscribeSharesDto {
 
 /**
  * DTO for transferring shares
- * Used with: POST /api/shares/:shareId/transfer
+ * Used with: POST /shares/:shareId/transfer
  * Note: fromUserId can be derived from authenticated user context
  */
 export class TransferSharesDto {
@@ -143,7 +143,7 @@ class SharesTxUpdatesDto {
 
 /**
  * DTO for updating shares
- * Used with: PATCH /api/shares/:shareId
+ * Used with: PATCH /shares/:shareId
  */
 export class UpdateSharesDto {
   @IsNotEmptyObject()
@@ -197,7 +197,7 @@ class ShareOfferUpdatesDto implements ShareOfferUpdates {
 
 /**
  * DTO for updating share offers
- * Used with: PATCH /api/shares/offers/:offerId
+ * Used with: PATCH /shares/offers/:offerId
  */
 export class UpdateShareOfferDto {
   @IsNotEmptyObject()

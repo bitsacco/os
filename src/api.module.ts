@@ -26,13 +26,13 @@ import {
   GlobalExceptionFilter,
   SharedModule,
   TelemetryModule,
+  PermissionModule,
 } from './common';
 import { TimeoutModule } from './common/timeout/timeout.module';
 import { ApiKeyMiddleware } from './middleware/api-key.middleware';
 import { SecurityHeadersMiddleware } from './middleware/security-headers.middleware';
 import { CombinedAuthGuard } from './auth/combined-auth.guard';
 import { UsersController } from './users/users.controller';
-import { ChamasController } from './chamas/chamas.controller';
 import { HealthController } from './health/health.controller';
 import { SmsModule } from './sms/sms.module';
 import { SharesModule } from './shares/shares.module';
@@ -182,6 +182,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     SharedModule,
     TelemetryModule,
     TimeoutModule,
+    PermissionModule, // Permission-based authentication system
     JwtModule.registerAsync({
       useFactory: (configService: ConfigService) => ({
         secret: configService.getOrThrow<string>('JWT_SECRET'),

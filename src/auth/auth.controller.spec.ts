@@ -155,7 +155,7 @@ describe('AuthController', () => {
           httpOnly: true,
           secure: true,
           sameSite: 'none',
-          path: '/api/v2/auth/refresh',
+          path: '/auth/refresh',
         }),
       );
     });

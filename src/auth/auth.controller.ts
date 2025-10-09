@@ -38,22 +38,9 @@ import {
 } from '../common';
 import { AuthService } from './auth.service';
 
-/**
- * AuthController - REST-compliant API endpoints for authentication
- *
- * This controller maintains the same auth patterns as v1 since auth operations
- * don't typically operate on existing resources in the same way CRUD operations do.
- * The main changes are organizational - using version: '2' and proper REST status codes.
- *
- * Key improvements:
- * - Consistent use of HTTP status codes
- * - Clear separation of authentication vs user resource operations
- * - Proper cookie handling for token management
- */
 @ApiTags('auth')
 @Controller({
   path: 'auth',
-  version: '2',
 })
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
@@ -67,7 +54,7 @@ export class AuthController {
 
   /**
    * Login user
-   * POST /api/v2/auth/login
+   * POST /auth/login
    */
   @Post('login')
   @ApiOperation({
@@ -97,7 +84,7 @@ export class AuthController {
 
   /**
    * Register new user
-   * POST /api/v2/auth/register
+   * POST /auth/register
    */
   @Post('register')
   @ApiOperation({
@@ -121,7 +108,7 @@ export class AuthController {
 
   /**
    * Verify user account
-   * POST /api/v2/auth/verify
+   * POST /auth/verify
    */
   @Post('verify')
   @ApiOperation({
@@ -150,7 +137,7 @@ export class AuthController {
 
   /**
    * Authenticate current session
-   * POST /api/v2/auth/authenticate
+   * POST /auth/authenticate
    */
   @Post('authenticate')
   @ApiOperation({
@@ -183,7 +170,7 @@ export class AuthController {
 
   /**
    * Recover user account
-   * POST /api/v2/auth/recover
+   * POST /auth/recover
    */
   @Post('recover')
   @ApiOperation({
@@ -212,7 +199,7 @@ export class AuthController {
 
   /**
    * Refresh access token
-   * POST /api/v2/auth/refresh
+   * POST /auth/refresh
    */
   @Post('refresh')
   @ApiOperation({
@@ -258,7 +245,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      path: '/api/v2/auth/refresh', // Only sent to v2 refresh endpoint
+      path: '/auth/refresh',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -270,7 +257,7 @@ export class AuthController {
 
   /**
    * Logout user
-   * POST /api/v2/auth/logout
+   * POST /auth/logout
    */
   @Post('logout')
   @ApiOperation({
@@ -307,7 +294,7 @@ export class AuthController {
 
   /**
    * Get current authenticated user
-   * GET /api/v2/auth/me
+   * GET /auth/me
    */
   @Get('me')
   @UseGuards(JwtAuthGuard)
@@ -348,7 +335,6 @@ export class AuthController {
         this.logger.error('Invalid auth response - user ID mismatch');
       }
 
-      // Set authentication cookies with v2 paths
       res.cookie('Authentication', accessToken, {
         httpOnly: true,
         secure: true,
@@ -361,7 +347,7 @@ export class AuthController {
           httpOnly: true,
           secure: true,
           sameSite: 'none',
-          path: '/api/v2/auth/refresh', // v2 refresh endpoint path
+          path: '/auth/refresh',
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
       }

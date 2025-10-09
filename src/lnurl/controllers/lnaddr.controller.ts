@@ -10,7 +10,6 @@ import {
   Body,
   UseGuards,
   Req,
-  Version,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -27,7 +26,6 @@ import { AddressType } from '../../common/types/lnurl';
 
 @Controller({
   path: 'lnaddr',
-  version: '2',
 })
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()

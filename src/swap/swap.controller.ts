@@ -8,7 +8,6 @@ import {
   Post,
   Query,
   UseGuards,
-  Version,
 } from '@nestjs/common';
 import { object } from 'joi';
 import { EventEmitter2 } from '@nestjs/event-emitter';
@@ -37,7 +36,6 @@ import { SwapService } from './swap.service';
 
 @Controller({
   path: 'swap',
-  version: '2',
 })
 export class SwapController {
   private readonly logger = new Logger(SwapController.name);

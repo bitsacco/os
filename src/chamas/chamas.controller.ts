@@ -39,7 +39,6 @@ import {
 import {
   CreateChamaDto,
   UpdateChamaDto,
-  FilterChamasQueryDto,
   InviteMembersDto,
   AddMembersDto,
   UpdateMemberRolesDto,
@@ -48,28 +47,11 @@ import { ConfigService } from '@nestjs/config';
 import { ChamasService } from './chamas.service';
 import { ChamaWalletService } from '../chamawallet/wallet.service';
 import { ChamaMemberGuard, CheckChamaMembership } from './chama-member.guard';
-import { ChamaBulkAccessGuard } from './chama-bulk-access.guard';
 import { ChamaFilterGuard } from './chama-filter.guard';
 
-/**
- * ChamasController - REST-compliant API endpoints for chama management
- *
- * This controller demonstrates the v2 REST-compliant pattern with:
- * - Resource-based URLs (e.g., /chamas/:chamaId)
- * - Proper HTTP methods (POST for creation, PATCH for updates)
- * - Resource IDs in URLs, not request bodies
- * - Consistent resource hierarchy (/chamas/:chamaId/members/:memberId)
- *
- * Key improvements from v1:
- * - Chama ID always in URL path for resource operations
- * - Cleaner separation of member operations
- * - Transaction operations under proper resource hierarchy
- * - Query parameters for filtering instead of request bodies
- */
 @ApiTags('chamas')
 @Controller({
   path: 'chamas',
-  version: '2',
 })
 export class ChamasController {
   private readonly logger = new Logger(ChamasController.name);
@@ -84,7 +66,7 @@ export class ChamasController {
 
   /**
    * Create new Chama
-   * POST /api/v2/chamas
+   * POST /chamas
    */
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -132,7 +114,7 @@ export class ChamasController {
 
   /**
    * Filter/List Chamas
-   * GET /api/v2/chamas
+   * GET /chamas
    */
   @Get()
   @UseGuards(JwtAuthGuard, ChamaFilterGuard)
@@ -212,7 +194,7 @@ export class ChamasController {
 
   /**
    * Get Chama by ID
-   * GET /api/v2/chamas/:chamaId
+   * GET /chamas/:chamaId
    */
   @Get(':chamaId')
   @UseGuards(JwtAuthGuard, ChamaMemberGuard)
@@ -240,15 +222,19 @@ export class ChamasController {
 
   /**
    * Update Chama
-   * PATCH /api/v2/chamas/:chamaId
+   * PATCH /chamas/:chamaId
+   *
+   * SECURITY FIX: Added ChamaMemberGuard to prevent unauthorized updates
    */
   @Patch(':chamaId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({
     summary: 'Update existing Chama',
-    description: 'Update chama details. Chama ID is in the URL path.',
+    description:
+      'Update chama details. Chama ID is in the URL path. Requires chama membership.',
   })
   @ApiParam({
     name: 'chamaId',
@@ -282,7 +268,7 @@ export class ChamasController {
 
   /**
    * Join Chama
-   * POST /api/v2/chamas/:chamaId/join
+   * POST /chamas/:chamaId/join
    */
   @Post(':chamaId/join')
   @UseGuards(JwtAuthGuard)
@@ -340,7 +326,7 @@ export class ChamasController {
 
   /**
    * Get Chama Members
-   * GET /api/v2/chamas/:chamaId/members
+   * GET /chamas/:chamaId/members
    */
   @Get(':chamaId/members')
   @UseGuards(JwtAuthGuard, ChamaMemberGuard)
@@ -377,9 +363,7 @@ export class ChamasController {
 
   /**
    * Add Members to Chama
-   * POST /api/v2/chamas/:chamaId/members
-   *
-   * New in v2 - dedicated endpoint for adding members
+   * POST /chamas/:chamaId/members
    */
   @Post(':chamaId/members')
   @UseGuards(JwtAuthGuard, ChamaMemberGuard)
@@ -423,9 +407,7 @@ export class ChamasController {
 
   /**
    * Update Member Roles
-   * PATCH /api/v2/chamas/:chamaId/members/:memberId
-   *
-   * New in v2 - granular endpoint for updating member roles
+   * PATCH /chamas/:chamaId/members/:memberId
    */
   @Patch(':chamaId/members/:memberId')
   @UseGuards(JwtAuthGuard, ChamaMemberGuard)
@@ -480,9 +462,7 @@ export class ChamasController {
 
   /**
    * Remove Member from Chama
-   * DELETE /api/v2/chamas/:chamaId/members/:memberId
-   *
-   * New in v2 - proper DELETE endpoint for removing members
+   * DELETE /chamas/:chamaId/members/:memberId
    */
   @Delete(':chamaId/members/:memberId')
   @UseGuards(JwtAuthGuard, ChamaMemberGuard)
@@ -533,7 +513,7 @@ export class ChamasController {
 
   /**
    * Invite Members to Chama
-   * POST /api/v2/chamas/:chamaId/invites
+   * POST /chamas/:chamaId/invites
    */
   @Post(':chamaId/invites')
   @UseGuards(JwtAuthGuard, ChamaMemberGuard)
@@ -575,7 +555,7 @@ export class ChamasController {
 
   /**
    * Deposit to Chama Wallet
-   * POST /api/v2/chamas/:chamaId/wallet/deposit
+   * POST /chamas/:chamaId/wallet/deposit
    */
   @Post(':chamaId/wallet/deposit')
   @UseGuards(JwtAuthGuard)
@@ -613,7 +593,7 @@ export class ChamasController {
 
   /**
    * Continue Deposit Transaction
-   * POST /api/v2/chamas/:chamaId/wallet/deposit/continue
+   * POST /chamas/:chamaId/wallet/deposit/continue
    */
   @Post(':chamaId/wallet/deposit/continue')
   @UseGuards(JwtAuthGuard)
@@ -651,7 +631,7 @@ export class ChamasController {
 
   /**
    * Withdraw from Chama Wallet
-   * POST /api/v2/chamas/:chamaId/wallet/withdraw
+   * POST /chamas/:chamaId/wallet/withdraw
    */
   @Post(':chamaId/wallet/withdraw')
   @UseGuards(JwtAuthGuard, ChamaMemberGuard)
@@ -690,7 +670,7 @@ export class ChamasController {
 
   /**
    * Continue Withdrawal Transaction
-   * POST /api/v2/chamas/:chamaId/wallet/withdraw/continue
+   * POST /chamas/:chamaId/wallet/withdraw/continue
    */
   @Post(':chamaId/wallet/withdraw/continue')
   @UseGuards(JwtAuthGuard, ChamaMemberGuard)
@@ -729,7 +709,7 @@ export class ChamasController {
 
   /**
    * Get Chama Transactions
-   * GET /api/v2/chamas/:chamaId/transactions
+   * GET /chamas/:chamaId/transactions
    */
   @Get(':chamaId/transactions')
   @UseGuards(JwtAuthGuard, ChamaMemberGuard)
@@ -790,15 +770,19 @@ export class ChamasController {
 
   /**
    * Get Transaction by ID
-   * GET /api/v2/chamas/:chamaId/transactions/:txId
+   * GET /chamas/:chamaId/transactions/:txId
+   *
+   * SECURITY FIX: Added ChamaMemberGuard to prevent unauthorized transaction viewing
    */
   @Get(':chamaId/transactions/:txId')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({
     summary: 'Get transaction by ID',
-    description: 'Retrieve a specific chama transaction.',
+    description:
+      'Retrieve a specific chama transaction. Requires chama membership.',
   })
   @ApiParam({
     name: 'chamaId',
@@ -825,7 +809,7 @@ export class ChamasController {
 
   /**
    * Update Transaction
-   * PATCH /api/v2/chamas/:chamaId/transactions/:txId
+   * PATCH /chamas/:chamaId/transactions/:txId
    */
   @Patch(':chamaId/transactions/:txId')
   @UseGuards(JwtAuthGuard, ChamaMemberGuard)

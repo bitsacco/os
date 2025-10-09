@@ -15,7 +15,6 @@ import { NostrService } from './nostr.service';
 
 @Controller({
   path: 'nostr',
-  version: '2',
 })
 @UseGuards(JwtAuthGuard)
 export class NostrController {

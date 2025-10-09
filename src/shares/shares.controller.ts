@@ -39,19 +39,8 @@ import {
 } from '../common/dto/shares.dto';
 import { SharesService } from './shares.service';
 
-/**
- * SharesController - REST-compliant API endpoints for shares
- *
- * This controller demonstrates the v2 REST-compliant pattern with:
- * - Resource-based URLs (e.g., /users/:userId/shares)
- * - Proper HTTP methods (POST for creation, PATCH for updates)
- * - Resource IDs in URLs, not request bodies
- * - Consistent resource hierarchy
- */
 @ApiTags('shares')
-@Controller({
-  version: '2',
-})
+@Controller()
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 @ApiCookieAuth()
@@ -64,7 +53,7 @@ export class SharesController {
 
   /**
    * Create a share offer
-   * POST /api/v2/shares/offers
+   * POST /shares/offers
    */
   @Post('shares/offers')
   @ApiOperation({
@@ -90,7 +79,7 @@ export class SharesController {
 
   /**
    * Update a share offer
-   * PATCH /api/v2/shares/offers/:offerId
+   * PATCH /shares/offers/:offerId
    */
   @Patch('shares/offers/:offerId')
   @ApiOperation({
@@ -114,7 +103,6 @@ export class SharesController {
   ) {
     this.logger.log(`Updating share offer ${offerId}`);
 
-    // In v2, offerId comes from URL path
     return await this.sharesService.updateShareOffer({
       offerId: offerId,
       updates: updateShareOfferDto.updates,
@@ -123,7 +111,7 @@ export class SharesController {
 
   /**
    * Get all share offers
-   * GET /api/v2/shares/offers
+   * GET /shares/offers
    */
   @Get('shares/offers')
   @ApiOperation({
@@ -142,9 +130,7 @@ export class SharesController {
 
   /**
    * Get a specific share offer
-   * GET /api/v2/shares/offers/:offerId
-   *
-   * New in v2 - direct offer access
+   * GET /shares/offers/:offerId
    */
   @Get('shares/offers/:offerId')
   @ApiOperation({
@@ -164,8 +150,6 @@ export class SharesController {
   @HandleServiceErrors()
   async getShareOffer(@Param('offerId') offerId: string) {
     this.logger.log(`Getting share offer ${offerId}`);
-    // For v2, we'll need to get all offers and filter by ID
-    // This should ideally be a new service method for getting single offer
     const allOffers = await this.sharesService.getSharesOffers();
     const offer = allOffers.offers.find((o) => o.id === offerId);
     if (!offer) {
@@ -176,7 +160,7 @@ export class SharesController {
 
   /**
    * Create shares for a user
-   * POST /api/v2/users/:userId/shares
+   * POST /users/:userId/shares
    */
   @Post('users/:userId/shares')
   @UseGuards(ResourceOwnerGuard)
@@ -204,8 +188,6 @@ export class SharesController {
   ) {
     this.logger.log(`Creating shares for user ${userId}`);
 
-    // In v2, userId comes from URL path but the service expects the original DTO structure
-    // Create the original DTO structure from the v2 DTO
     const offerSharesRequest = {
       quantity: offerSharesDto.quantity,
       availableFrom: offerSharesDto.availableFrom,
@@ -216,7 +198,7 @@ export class SharesController {
 
   /**
    * Update share details
-   * PATCH /api/v2/shares/:shareId
+   * PATCH /shares/:shareId
    */
   @Patch('shares/:shareId')
   @ApiOperation({
@@ -242,8 +224,6 @@ export class SharesController {
   ) {
     this.logger.log(`Updating share ${shareId}`);
 
-    // In v2, shareId comes from URL path
-    // Convert v2 DTO to v1 format, adding fromUserId from current user for transfers
     const updates = updateSharesDto.updates;
     const convertedUpdates = {
       ...updates,
@@ -264,7 +244,7 @@ export class SharesController {
 
   /**
    * Transfer shares between users
-   * POST /api/v2/shares/:shareId/transfer
+   * POST /shares/:shareId/transfer
    */
   @Post('shares/:shareId/transfer')
   @ApiOperation({
@@ -290,7 +270,6 @@ export class SharesController {
   ) {
     this.logger.log(`Transferring share ${shareId} from user ${user.id}`);
 
-    // In v2, shareId comes from URL and fromUserId from auth context
     return await this.sharesService.transferShares({
       sharesId: shareId,
       fromUserId: user.id,
@@ -301,7 +280,7 @@ export class SharesController {
 
   /**
    * Subscribe to shares
-   * POST /api/v2/users/:userId/offers/:offerId/subscribe
+   * POST /users/:userId/offers/:offerId/subscribe
    */
   @Post('users/:userId/offers/:offerId/subscribe')
   @UseGuards(ResourceOwnerGuard)
@@ -335,7 +314,6 @@ export class SharesController {
   ) {
     this.logger.log(`User ${userId} subscribing to offer ${offerId}`);
 
-    // In v2, both userId and offerId come from URL path
     return await this.sharesService.subscribeShares({
       userId: userId,
       offerId: offerId,
@@ -345,9 +323,7 @@ export class SharesController {
 
   /**
    * Get shares for a user
-   * GET /api/v2/users/:userId/shares
-   *
-   * New in v2 - follows REST resource hierarchy
+   * GET /users/:userId/shares
    */
   @Get('users/:userId/shares')
   @UseGuards(ResourceOwnerGuard)
@@ -395,9 +371,7 @@ export class SharesController {
 
   /**
    * Get a specific share
-   * GET /api/v2/shares/:shareId
-   *
-   * New in v2 - direct resource access
+   * GET /shares/:shareId
    */
   @Get('shares/:shareId')
   @ApiOperation({

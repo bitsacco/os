@@ -16,22 +16,22 @@ This module provides comprehensive dashboard API endpoints for the Bitsacco SACC
 
 ### Core Dashboard Endpoints
 
-- `GET /api/v1/dashboard/overview` - Overall SACCO metrics and KPIs
-- `GET /api/v1/dashboard/users` - User engagement and analytics
-- `GET /api/v1/dashboard/financial` - Financial operations and transactions
-- `GET /api/v1/dashboard/operations` - System health and operational metrics
+- `GET /dashboard/overview` - Overall SACCO metrics and KPIs
+- `GET /dashboard/users` - User engagement and analytics
+- `GET /dashboard/financial` - Financial operations and transactions
+- `GET /dashboard/operations` - System health and operational metrics
 
 ### Real-time Endpoints
 
-- `GET /api/v1/dashboard/live-stream` - Server-Sent Events for live updates
+- `GET /dashboard/live-stream` - Server-Sent Events for live updates
 - `WebSocket /dashboard` - Bidirectional real-time communication
 
 ### Advanced Features
 
-- `GET /api/v1/dashboard/analytics/custom` - Custom date range analytics
-- `POST /api/v1/dashboard/export` - Export dashboard data
-- `GET /api/v1/dashboard/export/:id/status` - Check export status
-- `GET /api/v1/dashboard/export/:id/download` - Download exported data
+- `GET /dashboard/analytics/custom` - Custom date range analytics
+- `POST /dashboard/export` - Export dashboard data
+- `GET /dashboard/export/:id/status` - Check export status
+- `GET /dashboard/export/:id/download` - Download exported data
 
 ## Architecture
 
@@ -121,7 +121,7 @@ All dashboard endpoints require authentication and specific roles:
 
 ```javascript
 // Connect to live metrics stream
-const eventSource = new EventSource('/api/v1/dashboard/live-stream');
+const eventSource = new EventSource('/dashboard/live-stream');
 
 eventSource.onmessage = function(event) {
   const data = JSON.parse(event.data);
@@ -200,7 +200,7 @@ The dashboard implements multiple fallback strategies:
 
 ```typescript
 // Request export
-const response = await fetch('/api/v1/dashboard/export', {
+const response = await fetch('/dashboard/export', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
@@ -216,12 +216,12 @@ const response = await fetch('/api/v1/dashboard/export', {
 const { exportId } = await response.json();
 
 // Check status
-const statusResponse = await fetch(`/api/v1/dashboard/export/${exportId}/status`);
+const statusResponse = await fetch(`/dashboard/export/${exportId}/status`);
 const status = await statusResponse.json();
 
 if (status.data.status === 'completed') {
   // Download file
-  window.location.href = `/api/v1/dashboard/export/${exportId}/download`;
+  window.location.href = `/dashboard/export/${exportId}/download`;
 }
 ```
 
@@ -369,7 +369,7 @@ NODE_ENV=development DEBUG=dashboard:* npm start
 Monitor dashboard health:
 
 ```bash
-curl http://localhost:4000/v1/dashboard/operations
+curl http://localhost:4000/dashboard/operations
 ```
 
 ## API Documentation
