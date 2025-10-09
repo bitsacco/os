@@ -187,8 +187,6 @@ export class ChamasController {
   }
 
   @Get(':chamaId')
-  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
-  @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Get Chama by ID' })
