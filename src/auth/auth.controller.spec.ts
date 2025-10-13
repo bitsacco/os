@@ -170,7 +170,7 @@ describe('AuthController', () => {
         roles: [Role.Member],
       };
 
-      const result = await controller.register({} as any, registerRequest);
+      const result = await controller.register(registerRequest);
 
       expect(result).toEqual({
         user: mockUser,

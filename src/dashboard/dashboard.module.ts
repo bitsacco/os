@@ -9,7 +9,7 @@ import { SharesMetricsService } from '../shares/shares.metrics';
 import { ChamaMetricsService } from '../chamas/chama.metrics';
 import { TransactionMetricsService } from '../common/monitoring/transaction.metrics';
 import { SwapMetricsService } from '../swap/metrics/swap.metrics';
-import { SolowalletMetricsService } from '../solowallet/solowallet.metrics';
+// PersonalMetricsService is imported via PersonalModule
 import { NotificationMetrics } from '../notifications/notification.metrics';
 import { NostrMetricsService } from '../nostr/nostr.metrics';
 import { LnurlMetricsService } from '../lnurl/lnurl.metrics';
@@ -39,6 +39,7 @@ import {
   OperationalMetricsSchema,
 } from './db/operational-metrics.schema';
 import { SharesMetrics, SharesMetricsSchema } from './db/shares-metrics.schema';
+import { PersonalModule } from '../personal/personal.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { SharesMetrics, SharesMetricsSchema } from './db/shares-metrics.schema';
     }),
     EventEmitterModule,
     ScheduleModule.forRoot(),
+    PersonalModule,
 
     // Database module for MongoDB schemas
     DatabaseModule.forFeature([
@@ -79,7 +81,7 @@ import { SharesMetrics, SharesMetricsSchema } from './db/shares-metrics.schema';
     ChamaMetricsService,
     TransactionMetricsService,
     SwapMetricsService,
-    SolowalletMetricsService,
+    // PersonalMetricsService is provided by PersonalModule
     NotificationMetrics,
     NostrMetricsService,
     LnurlMetricsService,

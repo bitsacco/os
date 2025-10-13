@@ -23,7 +23,9 @@ import { JwtAuthGuard } from '../../common/auth/jwt.auth';
 import { CurrentUser } from '../../common/auth/decorators';
 import type { User } from '../../common/types';
 
-@Controller('lnurlp')
+@Controller({
+  path: 'lnurlp',
+})
 export class LnurlPaymentController {
   private readonly logger = new Logger(LnurlPaymentController.name);
 

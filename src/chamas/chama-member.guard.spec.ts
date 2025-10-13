@@ -116,7 +116,7 @@ describe('ChamaMemberGuard', () => {
       expect(mockChamaService.findChama).not.toHaveBeenCalled();
     });
 
-    it('should return false if chamaId param is not found', async () => {
+    it('should throw ForbiddenException if chamaId param is not found', async () => {
       mockExecutionContext.switchToHttp = jest.fn().mockReturnValue({
         getRequest: jest.fn().mockReturnValue({
           user: { id: 'user-id' },
@@ -126,11 +126,10 @@ describe('ChamaMemberGuard', () => {
         }),
       });
 
-      const result = await guard.canActivate(
-        mockExecutionContext as ExecutionContext,
-      );
+      await expect(
+        guard.canActivate(mockExecutionContext as ExecutionContext),
+      ).rejects.toThrow('Invalid chama access request');
 
-      expect(result).toBe(false);
       expect(mockChamaService.findChama).not.toHaveBeenCalled();
     });
 
@@ -151,33 +150,31 @@ describe('ChamaMemberGuard', () => {
       });
     });
 
-    it('should deny access if user is not a member of the chama', async () => {
+    it('should throw ForbiddenException if user is not a member of the chama', async () => {
       mockChamaService.findChama.mockResolvedValue({
         id: 'chama-id',
         name: 'Test Chama',
         members: [{ userId: 'other-user-id', roles: [1] }],
       });
 
-      const result = await guard.canActivate(
-        mockExecutionContext as ExecutionContext,
-      );
+      await expect(
+        guard.canActivate(mockExecutionContext as ExecutionContext),
+      ).rejects.toThrow('You must be a member of this chama');
 
-      expect(result).toBe(false);
       expect(mockChamaService.findChama).toHaveBeenCalledWith({
         chamaId: 'chama-id',
       });
     });
 
-    it('should return false if error occurs during membership check', async () => {
+    it('should throw ForbiddenException if error occurs during membership check', async () => {
       mockChamaService.findChama.mockImplementation(() => {
         throw new Error('Test error');
       });
 
-      const result = await guard.canActivate(
-        mockExecutionContext as ExecutionContext,
-      );
+      await expect(
+        guard.canActivate(mockExecutionContext as ExecutionContext),
+      ).rejects.toThrow('Error validating chama membership');
 
-      expect(result).toBe(false);
       expect(mockChamaService.findChama).toHaveBeenCalledWith({
         chamaId: 'chama-id',
       });

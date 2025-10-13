@@ -13,7 +13,9 @@ import {
 } from '../common';
 import { NostrService } from './nostr.service';
 
-@Controller('nostr')
+@Controller({
+  path: 'nostr',
+})
 @UseGuards(JwtAuthGuard)
 export class NostrController {
   private readonly logger = new Logger(NostrController.name);

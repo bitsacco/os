@@ -2,6 +2,7 @@ export * from './wallet.service';
 export * from './target.service';
 export * from './lock.service';
 export * from './analytics.service';
+export * from './personal.metrics';
 export * from './atomic-withdrawal.service';
 export * from './distributed-lock.service';
 export * from './withdrawal-monitor.service';

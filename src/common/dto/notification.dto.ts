@@ -1,23 +1,36 @@
 import {
   IsString,
-  IsNotEmpty,
   IsOptional,
   IsArray,
   IsBoolean,
   IsNumber,
   IsEnum,
+  IsNotEmpty,
   ValidateNested,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  GetNotificationsResponse,
-  type Notification,
-  NotificationChannel,
-  NotificationImportance,
-  NotificationTopic,
-} from '../../common';
 import { Type } from 'class-transformer';
+import {
+  NotificationChannel,
+  NotificationTopic,
+  NotificationImportance,
+  type Notification,
+  GetNotificationsResponse,
+} from '../../common';
 
+/**
+ * DTOs for Notifications Module - REST Compliant
+ *
+ * These DTOs follow REST principles for resource ownership.
+ *
+ * - User ID is in URL paths for user-specific operations
+ * - Notification IDs in URL paths for specific notification operations
+ * - Follows proper REST resource hierarchy: /users/:userId/notifications
+ */
+
+/**
+ * DTO for subscribing to notification topics * Used with: POST /api/users/:userId/notifications/subscriptions
+ */
 export class NotificationSubscribeDto {
   @IsArray()
   @IsString({ each: true })
@@ -30,6 +43,9 @@ export class NotificationSubscribeDto {
   topics: string[];
 }
 
+/**
+ * Response DTO for notification subscription
+ */
 export class NotificationSubscribeResponseDto {
   @ApiProperty({
     description: 'Success status of the subscription',
@@ -45,7 +61,10 @@ export class NotificationSubscribeResponseDto {
   topics: string[];
 }
 
-export class GetNotificationsDto {
+/**
+ * DTO for getting notifications query params * Used with: GET /api/users/:userId/notifications
+ */
+export class GetNotificationsQueryDto {
   @IsOptional()
   @IsBoolean()
   @ApiProperty({
@@ -81,14 +100,149 @@ export class GetNotificationsDto {
     enum: NotificationTopic,
     isArray: true,
     required: false,
-    example: [0, 3],
+    example: [NotificationTopic.TRANSACTION],
   })
   topics?: NotificationTopic[];
 }
 
+/**
+ * DTO for marking notifications as read * Used with: PATCH /api/users/:userId/notifications/read
+ *
+ * Alternative endpoint for specific notification:
+ * PATCH /api/notifications/:notificationId/read
+ */
+export class MarkNotificationsAsReadDto {
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @ApiProperty({
+    description:
+      'IDs of notifications to mark as read. If empty, marks all user notifications as read.',
+    example: ['notification-id-1', 'notification-id-2'],
+    required: false,
+    type: [String],
+  })
+  notificationIds?: string[];
+}
+
+/**
+ * Channel preference DTO */
+export class ChannelPreferenceDto {
+  @IsEnum(NotificationChannel)
+  @ApiProperty({
+    description: 'Notification channel type',
+    enum: NotificationChannel,
+    example: NotificationChannel.IN_APP,
+  })
+  channel: NotificationChannel;
+
+  @IsBoolean()
+  @ApiProperty({
+    description: 'Whether the channel is enabled',
+    example: true,
+  })
+  enabled: boolean;
+}
+
+/**
+ * Topic preference DTO */
+export class TopicPreferenceDto {
+  @IsEnum(NotificationTopic)
+  @ApiProperty({
+    description: 'Notification topic type',
+    enum: NotificationTopic,
+    example: NotificationTopic.TRANSACTION,
+  })
+  topic: NotificationTopic;
+
+  @IsBoolean()
+  @ApiProperty({
+    description: 'Whether notifications for this topic are enabled',
+    example: true,
+  })
+  enabled: boolean;
+
+  @IsArray()
+  @IsEnum(NotificationChannel, { each: true })
+  @ApiProperty({
+    description:
+      'Channels through which to receive notifications for this topic',
+    enum: NotificationChannel,
+    isArray: true,
+    example: [NotificationChannel.IN_APP, NotificationChannel.NOSTR],
+  })
+  channels: NotificationChannel[];
+}
+
+/**
+ * DTO for updating notification preferences * Used with: PUT /users/:userId/notifications/preferences
+ */
+export class UpdateNotificationPreferencesDto {
+  @IsOptional()
+  @IsArray()
+  @Type(() => ChannelPreferenceDto)
+  @ApiProperty({
+    description: 'Channel preferences configuration',
+    type: [ChannelPreferenceDto],
+    required: false,
+  })
+  channels?: ChannelPreferenceDto[];
+
+  @IsOptional()
+  @IsArray()
+  @Type(() => TopicPreferenceDto)
+  @ApiProperty({
+    description: 'Topic preferences configuration',
+    type: [TopicPreferenceDto],
+    required: false,
+  })
+  topics?: TopicPreferenceDto[];
+}
+
+/**
+ * DTO for deleting a specific notification * No body required, notification ID in URL
+ * Used with: DELETE /notifications/:notificationId
+ */
+
+/**
+ * Additional DTOs for enhanced notification operations
+ */
+
+/**
+ * DTO for batch deleting notifications * Used with: DELETE /users/:userId/notifications
+ */
+export class BatchDeleteNotificationsDto {
+  @IsArray()
+  @IsString({ each: true })
+  @ApiProperty({
+    description: 'IDs of notifications to delete',
+    example: ['notification-id-1', 'notification-id-2'],
+    type: [String],
+  })
+  notificationIds: string[];
+}
+
+/**
+ * DTO for unsubscribing from topics * Used with: DELETE /users/:userId/notifications/subscriptions
+ */
+export class NotificationUnsubscribeDto {
+  @IsArray()
+  @IsString({ each: true })
+  @ApiProperty({
+    description: 'List of topic identifiers to unsubscribe from',
+    example: ['transaction-123', 'swap-456'],
+    type: [String],
+  })
+  topics: string[];
+}
+
+/**
+ * Notification DTO implementing the Notification interface
+ */
 export class NotificationDto implements Notification {
   userId: string;
   metadata: { [key: string]: string };
+
   @ApiProperty({
     description: 'Unique notification identifier',
     example: '1234-5678-90ab-cdef',
@@ -134,7 +288,10 @@ export class NotificationDto implements Notification {
   createdAt: number;
 }
 
-class GetNotificationsResponseData implements GetNotificationsResponse {
+/**
+ * Response data for get notifications endpoint
+ */
+export class GetNotificationsResponseData implements GetNotificationsResponse {
   @ApiProperty({
     description: 'List of notifications',
     type: [NotificationDto],
@@ -160,6 +317,9 @@ class GetNotificationsResponseData implements GetNotificationsResponse {
   size: number;
 }
 
+/**
+ * Response DTO for get notifications endpoint
+ */
 export class GetNotificationsResponseDto {
   @ApiProperty({
     description: 'Success status of the request',
@@ -169,26 +329,15 @@ export class GetNotificationsResponseDto {
 
   @ApiProperty({
     description: 'The returned notification data',
-    type: Object,
+    type: GetNotificationsResponseData,
   })
   @ValidateNested()
   data: GetNotificationsResponseData;
 }
 
-export class MarkAsReadDto {
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  @ApiProperty({
-    description:
-      'IDs of notifications to mark as read. If empty, marks all notifications as read.',
-    example: ['notification-id-1', 'notification-id-2'],
-    required: false,
-    type: [String],
-  })
-  notificationIds?: string[];
-}
-
+/**
+ * Response DTO for mark as read endpoint
+ */
 export class MarkAsReadResponseDto {
   @ApiProperty({
     description: 'Success status of the operation',
@@ -197,73 +346,9 @@ export class MarkAsReadResponseDto {
   success: boolean;
 }
 
-export class ChannelPreferenceDto {
-  @IsEnum(NotificationChannel)
-  @ApiProperty({
-    description: 'Notification channel type',
-    enum: NotificationChannel,
-    example: NotificationChannel.IN_APP,
-  })
-  channel: NotificationChannel;
-
-  @IsBoolean()
-  @ApiProperty({
-    description: 'Whether the channel is enabled',
-    example: true,
-  })
-  enabled: boolean;
-}
-
-export class TopicPreferenceDto {
-  @IsEnum(NotificationTopic)
-  @ApiProperty({
-    description: 'Notification topic type',
-    enum: NotificationTopic,
-    example: NotificationTopic.TRANSACTION,
-  })
-  topic: NotificationTopic;
-
-  @IsBoolean()
-  @ApiProperty({
-    description: 'Whether notifications for this topic are enabled',
-    example: true,
-  })
-  enabled: boolean;
-
-  @IsArray()
-  @IsEnum(NotificationChannel, { each: true })
-  @ApiProperty({
-    description:
-      'Channels through which to receive notifications for this topic',
-    enum: NotificationChannel,
-    isArray: true,
-    example: [NotificationChannel.IN_APP, NotificationChannel.NOSTR],
-  })
-  channels: NotificationChannel[];
-}
-
-export class UpdatePreferencesDto {
-  @IsOptional()
-  @IsArray()
-  @Type(() => ChannelPreferenceDto)
-  @ApiProperty({
-    description: 'Channel preferences configuration',
-    type: [ChannelPreferenceDto],
-    required: false,
-  })
-  channels?: ChannelPreferenceDto[];
-
-  @IsOptional()
-  @IsArray()
-  @Type(() => TopicPreferenceDto)
-  @ApiProperty({
-    description: 'Topic preferences configuration',
-    type: [TopicPreferenceDto],
-    required: false,
-  })
-  topics?: TopicPreferenceDto[];
-}
-
+/**
+ * Response DTO for update preferences endpoint
+ */
 export class UpdatePreferencesResponseDto {
   @ApiProperty({
     description: 'Success status of the operation',
@@ -272,6 +357,9 @@ export class UpdatePreferencesResponseDto {
   success: boolean;
 }
 
+/**
+ * Event DTOs for notifications
+ */
 export class NotificationCreatedEventDto {
   @ApiProperty({
     description: 'Unique notification identifier',

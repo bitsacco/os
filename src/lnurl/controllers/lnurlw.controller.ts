@@ -21,7 +21,9 @@ import { LnurlWithdrawService } from '../services/lnurl-withdraw.service';
 import { JwtAuthGuard } from '../../common/auth/jwt.auth';
 import type { Request } from 'express';
 
-@Controller('lnurlw')
+@Controller({
+  path: 'lnurlw',
+})
 export class LnurlWithdrawController {
   private readonly logger = new Logger(LnurlWithdrawController.name);
 

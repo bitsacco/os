@@ -16,10 +16,10 @@ import {
   TransactionStatus,
   LnurlTransactionDocument as LnurlTransactionInterface,
 } from '../../common';
-import { LnurlCommonService } from './lnurl-common.service';
-import { LnurlTransactionService } from './lnurl-transaction.service';
-import { SolowalletService } from '../../solowallet/solowallet.service';
 import { ChamaWalletService } from '../../chamawallet/wallet.service';
+import { PersonalWalletService } from '../../personal/services/wallet.service';
+import { LnurlTransactionService } from './lnurl-transaction.service';
+import { LnurlCommonService } from './lnurl-common.service';
 
 @Injectable()
 export class LnurlWithdrawService {
@@ -28,7 +28,7 @@ export class LnurlWithdrawService {
   constructor(
     private readonly lnurlCommonService: LnurlCommonService,
     private readonly lnurlTransactionService: LnurlTransactionService,
-    private readonly solowalletService: SolowalletService,
+    private readonly personalWalletService: PersonalWalletService,
     private readonly chamaWalletService: ChamaWalletService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -435,17 +435,23 @@ export class LnurlWithdrawService {
 
       return this.extractOperationIdFromResponse(result);
     } else {
-      // This is a personal wallet withdrawal - use SolowalletService
-      this.logger.log(`Using SolowalletService for user ${transaction.userId}`);
+      // This is a personal wallet withdrawal - use PersonalWalletService
+      this.logger.log(
+        `Using PersonalWalletService for user ${transaction.userId}`,
+      );
 
-      // For solo wallet, we can directly use the withdrawal method
+      // For personal wallet, we can directly use the withdrawal method
       // Since this is an LNURL withdrawal, we need to handle it as a lightning invoice withdrawal
-      const result = await this.solowalletService.withdrawFunds({
+      const walletId = this.personalWalletService.getLegacyDefaultWalletId(
+        transaction.userId,
+      );
+      const result = await this.personalWalletService.withdrawFromWallet({
         userId: transaction.userId,
         amountFiat: transaction.amountFiat,
         reference: transaction.reference,
         lightning: { invoice },
         pagination: { page: 0, size: 1 },
+        walletId,
       });
 
       return this.extractOperationIdFromResponse(result);

@@ -34,7 +34,9 @@ import {
 } from '../common';
 import { SwapService } from './swap.service';
 
-@Controller('swap')
+@Controller({
+  path: 'swap',
+})
 export class SwapController {
   private readonly logger = new Logger(SwapController.name);
 

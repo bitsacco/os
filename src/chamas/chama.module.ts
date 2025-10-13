@@ -9,6 +9,7 @@ import {
   UsersSchema,
   UsersService,
 } from '../common';
+import { ChamasController } from './chamas.controller';
 import { ChamasService } from '../chamas/chamas.service';
 import { ChamaWalletService } from '../chamawallet/wallet.service';
 import { ChamaMetricsService } from '../chamas/chama.metrics';
@@ -34,6 +35,7 @@ import { SmsModule } from '../sms/sms.module';
     SmsModule,
     HttpModule,
   ],
+  controllers: [ChamasController],
   providers: [
     ChamasService,
     ChamaWalletService,

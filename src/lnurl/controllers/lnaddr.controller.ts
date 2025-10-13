@@ -24,7 +24,9 @@ import { LightningAddressService } from '../services/lightning-address.service';
 import { CreateLightningAddressDto, UpdateLightningAddressDto } from '../dto';
 import { AddressType } from '../../common/types/lnurl';
 
-@Controller('lnaddr')
+@Controller({
+  path: 'lnaddr',
+})
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class LightningAddressController {

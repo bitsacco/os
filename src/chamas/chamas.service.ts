@@ -35,13 +35,10 @@ export class ChamasService {
     this.logger.debug('ChamasService initialized');
   }
 
-  async createChama({
-    name,
-    description,
-    members,
-    invites,
-    createdBy,
-  }: CreateChamaDto): Promise<Chama> {
+  async createChama(
+    dto: CreateChamaDto & { createdBy: string },
+  ): Promise<Chama> {
+    const { name, description, members, invites, createdBy } = dto;
     const startTime = Date.now();
     let errorType: string | undefined;
 

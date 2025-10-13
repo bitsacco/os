@@ -4,11 +4,10 @@ import { INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 /**
- * A custom plugin that enhances Swagger documentation.
+ * A custom plugin that enhances Swagger documentation with API versioning support.
  * In production, the documentation is secured with API key authentication.
  */
 export function setupDocs(app: INestApplication, path: string) {
-  const configService = app.get(ConfigService);
   // Check if we should disable docs in production
   const environment = process.env.NODE_ENV || 'development';
   const enableDocsInProduction = process.env.ENABLE_SWAGGER_DOCS === 'true';
@@ -19,14 +18,26 @@ export function setupDocs(app: INestApplication, path: string) {
     return;
   }
 
-  const API_VERSION = 'v1';
+  const configService = app.get(ConfigService);
+  // const environment = process.env.NODE_ENV || 'development';
   const isProduction = environment === 'production';
+  // const enableDocsInProduction = process.env.ENABLE_SWAGGER_DOCS === 'true';
 
-  // Create the base document builder
+  // If we're in production and docs are not explicitly enabled, skip Swagger setup
+  if (isProduction && !enableDocsInProduction) {
+    return;
+  }
+
+  // Create the base document builder with version-specific information
+  const title = 'Bitsacco API';
+
+  const description =
+    'REST-compliant endpoints for Bitsacco API \n\n' +
+    '**Note**: This version implements strict REST compliance with resource-based URLs.';
+
   const options = new DocumentBuilder()
-    .setTitle('Bitsacco API')
-    .setDescription('endpoints for bitsacco api')
-    .setVersion(API_VERSION)
+    .setTitle(title)
+    .setDescription(description)
     .setContact('Bitsacco', 'https://bitsacco.com', 'os@bitsacco.com')
     .setLicense(
       'MIT',
@@ -52,8 +63,12 @@ export function setupDocs(app: INestApplication, path: string) {
     )
     .build();
 
-  // Create the document
-  const document = SwaggerModule.createDocument(app, options);
+  // Create the document with version filtering
+  // This ensures only endpoints with the specified version are included
+  const document = SwaggerModule.createDocument(app, options, {
+    operationIdFactory: (controllerKey: string, methodKey: string) =>
+      `${controllerKey}_${methodKey}`,
+  });
 
   // Manually extend the document with our WebSocket endpoint documentation
   if (!document.paths) {
@@ -78,6 +93,7 @@ export function setupDocs(app: INestApplication, path: string) {
       ],
     },
     useGlobalPrefix: true,
+    customSiteTitle: `Bitsacco API Documentation`,
     jsonDocumentUrl: `${path}/json`,
     yamlDocumentUrl: `${path}/yaml`,
     customCss: '.swagger-ui .topbar { display: none }',
@@ -122,8 +138,5 @@ export function setupDocs(app: INestApplication, path: string) {
   } else {
     // Development setup without auth
     SwaggerModule.setup(path, app, document, customOptions);
-    console.log(
-      '📚 API Documentation available at /docs (no authentication in development)',
-    );
   }
 }

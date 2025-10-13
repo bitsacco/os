@@ -20,18 +20,18 @@ import {
 } from '../common';
 import { NotificationService } from './notification.service';
 import {
-  GetNotificationsDto,
+  GetNotificationsQueryDto,
   GetNotificationsResponseDto,
-  MarkAsReadDto,
+  MarkNotificationsAsReadDto,
   MarkAsReadResponseDto,
   NotificationSubscribeDto,
   NotificationSubscribeResponseDto,
-  UpdatePreferencesDto,
+  UpdateNotificationPreferencesDto,
   UpdatePreferencesResponseDto,
   NotificationCreatedEventDto,
   NotificationDeliveredEventDto,
   PreferencesUpdatedEventDto,
-} from './dto/notification.dto';
+} from '../common/dto/notification.dto';
 
 @WebSocketGateway({
   cors: {
@@ -188,7 +188,7 @@ export class NotificationGateway
   @ApiOperation({
     summary: 'Get user notifications with filtering and pagination',
   })
-  @ApiBody({ type: GetNotificationsDto })
+  @ApiBody({ type: GetNotificationsQueryDto })
   @ApiResponse({
     status: 200,
     description: 'Successfully retrieved notifications',
@@ -200,7 +200,7 @@ export class NotificationGateway
   })
   async handleGetNotifications(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: GetNotificationsDto,
+    @MessageBody() data: GetNotificationsQueryDto,
   ): Promise<
     WsResponse<GetNotificationsResponseDto | { success: false; error: string }>
   > {
@@ -244,7 +244,7 @@ export class NotificationGateway
 
   @SubscribeMessage('markAsRead')
   @ApiOperation({ summary: 'Mark notifications as read' })
-  @ApiBody({ type: MarkAsReadDto })
+  @ApiBody({ type: MarkNotificationsAsReadDto })
   @ApiResponse({
     status: 200,
     description: 'Notifications marked as read successfully',
@@ -256,7 +256,7 @@ export class NotificationGateway
   })
   async handleMarkAsRead(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: MarkAsReadDto,
+    @MessageBody() data: MarkNotificationsAsReadDto,
   ): Promise<
     WsResponse<MarkAsReadResponseDto | { success: false; error: string }>
   > {
@@ -290,7 +290,7 @@ export class NotificationGateway
 
   @SubscribeMessage('updatePreferences')
   @ApiOperation({ summary: 'Update notification preferences' })
-  @ApiBody({ type: UpdatePreferencesDto })
+  @ApiBody({ type: UpdateNotificationPreferencesDto })
   @ApiResponse({
     status: 200,
     description: 'Preferences updated successfully',
@@ -302,7 +302,7 @@ export class NotificationGateway
   })
   async handleUpdatePreferences(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: UpdatePreferencesDto,
+    @MessageBody() data: UpdateNotificationPreferencesDto,
   ): Promise<
     WsResponse<UpdatePreferencesResponseDto | { success: false; error: string }>
   > {
