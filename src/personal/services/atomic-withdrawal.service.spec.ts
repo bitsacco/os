@@ -1,9 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
-import { AtomicWithdrawalService } from './atomic-withdrawal.service';
+import {
+  DistributedLockService,
+  TransactionStatus,
+  TransactionType,
+} from '../../common';
 import { SolowalletRepository } from '../db/solowallet.repository';
-import { DistributedLockService } from './distributed-lock.service';
-import { TransactionStatus, TransactionType } from '../../common';
+import { AtomicWithdrawalService } from './atomic-withdrawal.service';
 
 describe('AtomicWithdrawalService', () => {
   let service: AtomicWithdrawalService;
@@ -185,7 +188,7 @@ describe('AtomicWithdrawalService', () => {
 
     it('should throw error when withdrawal not found or already processed', async () => {
       // Arrange - mock returns null to simulate document not found
-      mockRepository.findOneAndUpdate.mockResolvedValue(null);
+      mockRepository.findOneAndUpdate.mockResolvedValue(null as any);
 
       // Act & Assert
       await expect(
@@ -277,6 +280,7 @@ describe('AtomicWithdrawalService', () => {
               amountMsats: 10000,
               reference: `Withdrawal ${i}`,
               lightning: '{"invoice":"lnbc..."}',
+              currentBalance: balanceRemaining, // Include current balance for atomic check
             })
             .catch((error) => error),
         );

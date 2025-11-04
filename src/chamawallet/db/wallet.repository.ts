@@ -10,8 +10,8 @@ export class ChamaWalletRepository extends AbstractRepository<ChamaWalletDocumen
 
   constructor(
     @InjectModel(ChamaWalletDocument.name)
-    reservationModel: Model<ChamaWalletDocument>,
+    public readonly model: Model<ChamaWalletDocument>,
   ) {
-    super(reservationModel);
+    super(model);
   }
 }

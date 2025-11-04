@@ -17,7 +17,9 @@ import { ChamaMetricsService } from '../chamas/chama.metrics';
 import { ChamaMessageService } from '../chamas/chamas.messaging';
 import { ChamaWalletService } from './wallet.service';
 import { ChamaWalletRepository } from './db';
+import { ChamaAtomicWithdrawalService, ChamaBalanceService } from './services';
 import { ConfigService } from '@nestjs/config';
+import { getConnectionToken } from '@nestjs/mongoose';
 
 describe('ChamaWalletService', () => {
   let service: ChamaWalletService;
@@ -150,6 +152,37 @@ describe('ChamaWalletService', () => {
               withdrawalTimeoutMinutes: 30,
               lnurlTimeoutMinutes: 30,
               offrampTimeoutMinutes: 15,
+            }),
+          },
+        },
+        {
+          provide: ChamaAtomicWithdrawalService,
+          useValue: {
+            createWithdrawalAtomic: jest.fn(),
+            updateWithdrawalStatus: jest.fn(),
+            rollbackWithdrawal: jest.fn(),
+          },
+        },
+        {
+          provide: ChamaBalanceService,
+          useValue: {
+            getGroupBalance: jest.fn(),
+            getMemberBalance: jest.fn(),
+            aggregateBalanceInfo: jest.fn(),
+          },
+        },
+        {
+          provide: getConnectionToken(),
+          useValue: {
+            startSession: jest.fn().mockReturnValue({
+              withTransaction: jest.fn(async (fn) => {
+                const result = await fn();
+                return result;
+              }),
+              startTransaction: jest.fn(),
+              commitTransaction: jest.fn(),
+              abortTransaction: jest.fn(),
+              endSession: jest.fn(),
             }),
           },
         },
