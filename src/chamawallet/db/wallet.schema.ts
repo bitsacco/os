@@ -68,6 +68,9 @@ export class ChamaWalletDocument extends AbstractDocument {
 
   @Prop({ type: Number, required: false, default: 3 })
   maxRetries?: number;
+
+  @Prop({ type: String, required: false })
+  notes?: string;
 }
 
 export const ChamaWalletSchema =

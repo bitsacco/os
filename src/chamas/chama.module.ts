@@ -11,6 +11,11 @@ import {
 } from '../common';
 import { ChamasService } from '../chamas/chamas.service';
 import { ChamaWalletService } from '../chamawallet/wallet.service';
+import {
+  ChamaAtomicWithdrawalService,
+  ChamaBalanceService,
+} from '../chamawallet/services';
+import { DistributedLockService } from '../common/services';
 import { ChamaMetricsService } from '../chamas/chama.metrics';
 import { SwapModule } from '../swap/swap.module';
 import { ChamasDocument, ChamasRepository, ChamasSchema } from '../chamas/db';
@@ -37,6 +42,9 @@ import { SmsModule } from '../sms/sms.module';
   providers: [
     ChamasService,
     ChamaWalletService,
+    ChamaAtomicWithdrawalService,
+    ChamaBalanceService,
+    DistributedLockService,
     ChamasRepository,
     ChamaWalletRepository,
     ChamaMetricsService,
@@ -45,6 +53,12 @@ import { SmsModule } from '../sms/sms.module';
     UsersService,
     UsersRepository,
   ],
-  exports: [ChamasService, ChamaWalletService],
+  exports: [
+    ChamasService,
+    ChamaWalletService,
+    ChamaAtomicWithdrawalService,
+    ChamaBalanceService,
+    DistributedLockService,
+  ],
 })
 export class ChamaModule {}

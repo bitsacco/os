@@ -4,7 +4,10 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
+import type { Connection } from 'mongoose';
+import { InjectConnection } from '@nestjs/mongoose';
 import {
   ChamaContinueDepositDto,
   ChamaContinueWithdrawDto,
@@ -59,6 +62,7 @@ import {
   ChamaWalletRepository,
   toChamaWalletTx,
 } from './db';
+import { ChamaAtomicWithdrawalService, ChamaBalanceService } from './services';
 
 @Injectable()
 export class ChamaWalletService {
@@ -73,6 +77,9 @@ export class ChamaWalletService {
     private readonly users: UsersService,
     private readonly messenger: ChamaMessageService,
     private readonly timeoutConfigService: TimeoutConfigService,
+    private readonly chamaAtomicWithdrawalService: ChamaAtomicWithdrawalService,
+    private readonly chamaBalanceService: ChamaBalanceService,
+    @InjectConnection() private readonly connection: Connection,
   ) {
     this.eventEmitter.on(
       fedimint_receive_success,
@@ -351,7 +358,38 @@ export class ChamaWalletService {
     pagination,
     idempotencyKey,
   }: ChamaWithdrawDto) {
-    // Check for existing transaction with same idempotency key
+    // Step 1: Validate group balance using balance service
+    const groupMetadata =
+      await this.chamaBalanceService.getGroupWalletMeta(chamaId);
+
+    // Get quote for conversion early to determine msats amount
+    const quoteResponse = await this.swapService.getQuote({
+      from: Currency.KES,
+      to: Currency.BTC,
+      amount: amountFiat.toString(),
+    });
+
+    const { amountMsats } = fiatToBtc({
+      amountFiat: Number(amountFiat),
+      btcToFiatRate: Number(quoteResponse.rate),
+    });
+
+    // Step 2: Validate withdrawal amount against available balance
+    const validation = await this.chamaBalanceService.validateWithdrawalAmount(
+      chamaId,
+      amountMsats,
+    );
+
+    if (!validation.isValid) {
+      this.logger.warn(
+        `Withdrawal rejected for chama ${chamaId}: ${validation.reason}`,
+      );
+      throw new BadRequestException(
+        validation.reason || 'Insufficient chama balance for withdrawal',
+      );
+    }
+
+    // Check for existing transaction with same idempotency key (handled atomically in service)
     if (idempotencyKey) {
       try {
         const existing = await this.wallet.findOne({
@@ -368,24 +406,19 @@ export class ChamaWalletService {
             pagination,
             priority: existing._id,
           });
-          const { groupMeta: gMeta, memberMeta: mMeta } =
-            await this.getChamaWalletMeta(chamaId, memberId);
+          const { groupMeta, memberMeta } =
+            await this.chamaBalanceService.getWalletMeta(chamaId, memberId);
           return {
             txId: existing._id,
             ledger,
-            groupMeta: gMeta,
-            memberMeta: mMeta,
+            groupMeta,
+            memberMeta,
           };
         }
       } catch {
         // Document not found, continue with new withdrawal
       }
     }
-
-    const { memberMeta, groupMeta } = await this.getChamaWalletMeta(
-      chamaId,
-      memberId,
-    );
 
     // Import review utility functions
     const { addOrUpdateReview, calculateTransactionStatus } = await import(
@@ -424,48 +457,34 @@ export class ChamaWalletService {
         )
       : ChamaTxStatus.PENDING;
 
-    // Get quote for conversion
-    const quoteResponse = await this.swapService.getQuote({
-      from: Currency.KES,
-      to: Currency.BTC,
-      amount: amountFiat.toString(),
-    });
-
-    const { amountMsats } = fiatToBtc({
-      amountFiat: Number(amountFiat),
-      btcToFiatRate: Number(quoteResponse.rate),
-    });
-
-    // Create a withdrawal record with calculated status
-    const withdrawal = toChamaWalletTx(
-      await this.wallet.create({
+    // Step 3: Create withdrawal atomically with balance protection
+    const withdrawal =
+      await this.chamaAtomicWithdrawalService.createWithdrawalAtomic({
         memberId,
         chamaId,
         amountMsats,
         amountFiat,
+        reference: reference || 'Offramp withdrawal (pending approval)',
         lightning: JSON.stringify({}),
         paymentTracker: `${Date.now()}`,
-        type: TransactionType.WITHDRAW,
-        status: initialStatus, // Status calculated from the review utility
-        reviews: initialReviews, // Include self-approval if admin
-        reference: reference || 'Offramp withdrawal (pending approval)',
         idempotencyKey,
-        stateChangedAt: new Date(),
-        timeoutAt:
-          initialStatus === ChamaTxStatus.PENDING
-            ? this.timeoutConfigService.calculateTimeoutDate(
-                TransactionStatus.PENDING,
-                TimeoutTransactionType.WITHDRAWAL,
-              )
-            : undefined,
-        retryCount: 0,
-        maxRetries: 3,
-        __v: 0,
-      }),
-      this.logger,
-    );
+        currentGroupBalance: validation.currentBalance,
+        reviews: initialReviews,
+        initialStatus,
+      });
 
-    if (withdrawal.status === ChamaTxStatus.PENDING) {
+    if (!withdrawal) {
+      this.logger.error(
+        `Failed to create atomic withdrawal for member ${memberId} in chama ${chamaId}`,
+      );
+      throw new InternalServerErrorException(
+        'Failed to create withdrawal request. Please try again.',
+      );
+    }
+
+    const withdrawalTx = toChamaWalletTx(withdrawal, this.logger);
+
+    if (withdrawalTx.status === ChamaTxStatus.PENDING) {
       // Send notifications to other admins asynchronously (don't wait for completion)
       try {
         // Find all admin members excluding the initiator
@@ -493,12 +512,12 @@ export class ChamaWalletService {
         });
 
         const beneficiary = await this.users.findUser({
-          id: withdrawal.memberId,
+          id: withdrawalTx.memberId,
         });
 
         this.messenger.sendChamaWithdrawalRequests(
           chama,
-          withdrawal.id,
+          withdrawalTx.id,
           admins,
           {
             name: beneficiary.profile?.name,
@@ -516,12 +535,25 @@ export class ChamaWalletService {
       memberId,
       chamaId,
       pagination,
-      priority: withdrawal.id,
+      priority: withdrawalTx.id,
     });
+
+    // Get updated wallet balance with security metadata
+    const { groupMeta, memberMeta } =
+      await this.chamaBalanceService.getWalletMeta(chamaId, memberId);
+
+    // Log security metadata for monitoring
+    this.logger.log(
+      `Withdrawal request created with security validation - ` +
+        `TxId: ${withdrawalTx.id}, ` +
+        `Group Balance at Request: ${validation.currentBalance} msats, ` +
+        `Processing Withdrawals: ${groupMetadata.processingWithdrawals} msats, ` +
+        `Available Balance: ${groupMetadata.groupBalance} msats`,
+    );
 
     // Return the updated wallet information
     return {
-      txId: withdrawal.id,
+      txId: withdrawalTx.id,
       ledger,
       groupMeta,
       memberMeta,
@@ -536,239 +568,340 @@ export class ChamaWalletService {
     lnurlRequest,
     pagination,
   }: ChamaContinueWithdrawDto) {
-    // Get the transaction record
-    const txd = await this.wallet.findOne({ _id: txId });
-    const { chamaId } = txd;
+    // Use a Mongoose session for database transaction
+    const session = await this.connection.startSession();
+    let withdrawal: ChamaWalletDocument | null = null;
 
-    if (txd.memberId !== memberId) {
-      throw new Error('Invalid request to continue transaction');
-    }
+    try {
+      // Start the transaction
+      await session.withTransaction(async () => {
+        // Step 1: Get the transaction record with session (for transaction consistency)
+        const txd = await this.wallet.findOne({ _id: txId });
+        const { chamaId } = txd;
 
-    const status = parseTransactionStatus<ChamaTxStatus>(
-      txd.status.toString(),
-      ChamaTxStatus.UNRECOGNIZED,
-      this.logger,
-    );
+        if (txd.memberId !== memberId) {
+          throw new BadRequestException(
+            'Invalid request to continue transaction',
+          );
+        }
 
-    // Check if this transaction is already in a final state
-    if (
-      status === ChamaTxStatus.PROCESSING ||
-      status === ChamaTxStatus.COMPLETE ||
-      status === ChamaTxStatus.FAILED
-    ) {
-      throw new Error('Transaction is processing or complete');
-    }
-
-    // Check if transaction has status APPROVED - only approved withdrawals can be continued
-    if (status !== ChamaTxStatus.APPROVED) {
-      throw new Error(
-        'Withdrawal must be approved by admins before it can be processed',
-      );
-    }
-
-    // Get the wallet balances
-    const { groupMeta } = await this.getChamaWalletMeta(chamaId, memberId);
-    let withdrawal: ChamaWalletDocument;
-
-    if (lightning) {
-      // 1. Execute lightning withdrawal that has been approved
-      this.logger.log('Processing approved lightning invoice withdrawal');
-      this.logger.log(lightning);
-
-      // Decode the invoice to get the amount and details
-      const inv = await this.fedimintService.decode(lightning.invoice);
-      const invoiceMsats = Number(inv.amountMsats);
-
-      this.logger.log(`Invoice amount: ${invoiceMsats} msats`);
-
-      // Check if chama has enough total balance
-      // Note: groupBalance already accounts for processing withdrawals
-      if (invoiceMsats > groupMeta.groupBalance) {
-        throw new Error(
-          'Invoice amount exceeds available chama balance (including processing withdrawals)',
-        );
-      }
-
-      try {
-        // Pay the lightning invoice using fedimint
-        const { operationId, fee } = await this.fedimintService.pay(
-          lightning.invoice,
+        const status = parseTransactionStatus<ChamaTxStatus>(
+          txd.status.toString(),
+          ChamaTxStatus.UNRECOGNIZED,
+          this.logger,
         );
 
-        this.logger.log(
-          `Lightning invoice paid successfully. Operation ID: ${operationId}, Fee: ${fee} msats`,
-        );
+        // Check if this transaction is already in a final state
+        if (
+          status === ChamaTxStatus.PROCESSING ||
+          status === ChamaTxStatus.COMPLETE ||
+          status === ChamaTxStatus.FAILED
+        ) {
+          throw new BadRequestException(
+            'Transaction is already processing or complete',
+          );
+        }
 
-        // Calculate total amount withdrawn (invoice amount + fee)
-        const totalWithdrawnMsats = invoiceMsats + fee;
+        // Check if transaction has status APPROVED - only approved withdrawals can be continued
+        if (status !== ChamaTxStatus.APPROVED) {
+          throw new BadRequestException(
+            'Withdrawal must be approved by admins before it can be processed',
+          );
+        }
 
-        // Update the withdrawal record to complete
-        withdrawal = await this.wallet.findOneAndUpdate(
-          {
-            _id: txId,
-            memberId,
-          },
-          {
-            amountMsats: totalWithdrawnMsats,
-            lightning: JSON.stringify({ ...lightning, operationId }),
-            paymentTracker: operationId,
-            status: ChamaTxStatus.COMPLETE,
-          },
-        );
+        // Step 2: Re-validate group balance within the transaction
+        const groupMetadata =
+          await this.chamaBalanceService.getGroupWalletMeta(chamaId);
 
-        this.logger.log(`Withdrawal completed with ID: ${withdrawal._id}`);
-      } catch (error) {
-        this.logger.error('Failed to pay lightning invoice', error);
+        // Step 3: Process the withdrawal atomically
+        const processResult =
+          await this.chamaAtomicWithdrawalService.processApprovedWithdrawal({
+            withdrawalId: txId,
+            chamaId,
+            currentGroupBalance: groupMetadata.groupBalance,
+          });
 
-        // Update transaction to failed state
-        await this.wallet.findOneAndUpdate(
-          { _id: txId },
-          { status: ChamaTxStatus.FAILED },
-        );
+        if (!processResult) {
+          throw new InternalServerErrorException(
+            'Failed to process withdrawal. Please try again.',
+          );
+        }
 
-        throw new Error(
-          `Failed to process lightning payment: ${error.message}`,
-        );
-      }
-    } else if (lnurlRequest) {
-      // 2. Execute LNURL withdrawal that has been approved
-      this.logger.log('Processing approved LNURL withdrawal');
+        // Now execute the actual payment based on the withdrawal method
 
-      const maxWithdrawableMsats = txd.amountMsats;
+        if (lightning) {
+          // 1. Execute lightning withdrawal that has been approved
+          this.logger.log('Processing approved lightning invoice withdrawal');
+          this.logger.log(lightning);
 
-      this.logger.log(`Max withdrawable amount: ${maxWithdrawableMsats} msats`);
-      this.logger.log(`Current chama balance: ${groupMeta.groupBalance} msats`);
+          // Decode the invoice to get the amount and details
+          const inv = await this.fedimintService.decode(lightning.invoice);
+          const invoiceMsats = Number(inv.amountMsats);
 
-      // Check if chama has sufficient balance
-      if (maxWithdrawableMsats > groupMeta.groupBalance) {
-        throw new Error('Insufficient chama funds for LNURL withdrawal');
-      }
+          this.logger.log(`Invoice amount: ${invoiceMsats} msats`);
 
-      if (maxWithdrawableMsats <= 0) {
-        throw new Error('Insufficient balance for withdrawal');
-      }
+          // Re-check balance (already validated in processApprovedWithdrawal)
+          if (invoiceMsats > groupMetadata.groupBalance) {
+            await this.chamaAtomicWithdrawalService.rollbackWithdrawal(
+              txId,
+              'Invoice amount exceeds available chama balance',
+            );
+            throw new BadRequestException(
+              'Invoice amount exceeds available chama balance',
+            );
+          }
 
-      try {
-        // Create a new LNURL withdraw point
-        const lnurlWithdrawPoint =
-          await this.fedimintService.createLnUrlWithdrawPoint(
-            maxWithdrawableMsats,
-            Math.min(1000, maxWithdrawableMsats),
-            txd.reference || 'Bitsacco Chama Savings withdrawal',
+          try {
+            // Pay the lightning invoice using fedimint
+            const { operationId, fee } = await this.fedimintService.pay(
+              lightning.invoice,
+            );
+
+            this.logger.log(
+              `Lightning invoice paid successfully. Operation ID: ${operationId}, Fee: ${fee} msats`,
+            );
+
+            // Calculate total amount withdrawn (invoice amount + fee)
+            const totalWithdrawnMsats = invoiceMsats + fee;
+
+            // Update the withdrawal record to complete atomically
+            withdrawal =
+              await this.chamaAtomicWithdrawalService.updateWithdrawalStatus(
+                txId,
+                ChamaTxStatus.COMPLETE,
+                {
+                  amountMsats: totalWithdrawnMsats,
+                  lightning: JSON.stringify({ ...lightning, operationId }),
+                  paymentTracker: operationId,
+                },
+              );
+
+            this.logger.log(`Withdrawal completed with ID: ${withdrawal._id}`);
+          } catch (error) {
+            this.logger.error('Failed to pay lightning invoice', error);
+
+            // Rollback the withdrawal atomically
+            await this.chamaAtomicWithdrawalService.rollbackWithdrawal(
+              txId,
+              `Failed to process lightning payment: ${error.message}`,
+            );
+
+            throw new BadRequestException(
+              `Failed to process lightning payment: ${error.message}`,
+            );
+          }
+        } else if (lnurlRequest) {
+          // 2. Execute LNURL withdrawal that has been approved
+          this.logger.log('Processing approved LNURL withdrawal');
+
+          const maxWithdrawableMsats = txd.amountMsats;
+
+          this.logger.log(
+            `Max withdrawable amount: ${maxWithdrawableMsats} msats`,
+          );
+          this.logger.log(
+            `Current chama balance: ${groupMetadata.groupBalance} msats`,
           );
 
-        this.logger.log(
-          `LNURL withdrawal access point created. LNURL: ${lnurlWithdrawPoint.lnurl}`,
-        );
+          // Re-check balance (already validated in processApprovedWithdrawal)
+          if (maxWithdrawableMsats > groupMetadata.groupBalance) {
+            await this.chamaAtomicWithdrawalService.rollbackWithdrawal(
+              txId,
+              'Insufficient chama funds for LNURL withdrawal',
+            );
+            throw new BadRequestException(
+              'Insufficient chama funds for LNURL withdrawal',
+            );
+          }
 
-        const fmLightning: FmLightning = {
-          lnurlWithdrawPoint,
-        };
+          if (maxWithdrawableMsats <= 0) {
+            await this.chamaAtomicWithdrawalService.rollbackWithdrawal(
+              txId,
+              'Insufficient balance for withdrawal',
+            );
+            throw new BadRequestException(
+              'Insufficient balance for withdrawal',
+            );
+          }
 
-        withdrawal = await this.wallet.findOneAndUpdate(
-          { _id: txId, memberId },
-          {
-            lightning: JSON.stringify(fmLightning),
-            paymentTracker: lnurlWithdrawPoint.k1,
-          },
-        );
+          try {
+            // Create a new LNURL withdraw point
+            const lnurlWithdrawPoint =
+              await this.fedimintService.createLnUrlWithdrawPoint(
+                maxWithdrawableMsats,
+                Math.min(1000, maxWithdrawableMsats),
+                txd.reference || 'Bitsacco Chama Savings withdrawal',
+              );
 
-        this.logger.log(
-          `LNURL withdrawal request recorded with ID: ${withdrawal._id}`,
-        );
-      } catch (error) {
-        this.logger.error(
-          `Failed to create LNURL withdrawal request : ${error}`,
-        );
+            this.logger.log(
+              `LNURL withdrawal access point created. LNURL: ${lnurlWithdrawPoint.lnurl}`,
+            );
 
-        throw new Error(
-          `Failed to create LNURL withdrawal request: ${error.message}`,
+            const fmLightning: FmLightning = {
+              lnurlWithdrawPoint,
+            };
+
+            // Update atomically - keep status as PROCESSING until LNURL is claimed
+            withdrawal =
+              await this.chamaAtomicWithdrawalService.updateWithdrawalStatus(
+                txId,
+                ChamaTxStatus.PROCESSING,
+                {
+                  lightning: JSON.stringify(fmLightning),
+                  paymentTracker: lnurlWithdrawPoint.k1,
+                },
+              );
+
+            this.logger.log(
+              `LNURL withdrawal request recorded with ID: ${withdrawal._id}`,
+            );
+          } catch (error) {
+            this.logger.error(
+              `Failed to create LNURL withdrawal request : ${error}`,
+            );
+
+            await this.chamaAtomicWithdrawalService.rollbackWithdrawal(
+              txId,
+              `Failed to create LNURL withdrawal request: ${error.message}`,
+            );
+
+            throw new BadRequestException(
+              `Failed to create LNURL withdrawal request: ${error.message}`,
+            );
+          }
+        } else if (offramp) {
+          // 3. Execute offramp withdrawal that has been approved
+          this.logger.log('Processing approved offramp withdrawal');
+
+          // Re-check balance (already validated in processApprovedWithdrawal)
+          if (txd.amountMsats > groupMetadata.groupBalance) {
+            await this.chamaAtomicWithdrawalService.rollbackWithdrawal(
+              txId,
+              'Insufficient chama funds for offramp withdrawal',
+            );
+            throw new BadRequestException(
+              'Insufficient chama funds for offramp withdrawal',
+            );
+          }
+
+          try {
+            // Initiate offramp swap
+            const swap = await this.swapService.createOfframpSwap({
+              amountFiat: txd.amountFiat.toString(),
+              reference: txd.reference,
+              target: offramp,
+            });
+
+            const swapStatus = swap.status as unknown as ChamaTxStatus;
+            const invoice = swap.lightning;
+            const swapTracker = swap.id;
+
+            // Decode invoice to get amount
+            const invoiceData = await this.fedimintService.decode(invoice);
+            const offrampMsats = parseInt(invoiceData.amountMsats);
+
+            // Pay the invoice for the swap
+            const { operationId, fee } =
+              await this.fedimintService.pay(invoice);
+
+            // Calculate total withdrawal amount including fee
+            const totalOfframpMsats = offrampMsats + fee;
+
+            // Update withdrawal record atomically
+            withdrawal =
+              await this.chamaAtomicWithdrawalService.updateWithdrawalStatus(
+                txId,
+                swapStatus,
+                {
+                  amountMsats: totalOfframpMsats,
+                  lightning: JSON.stringify({ invoice, operationId }),
+                  paymentTracker: swapTracker,
+                },
+              );
+
+            this.logger.log(
+              `Offramp withdrawal completed with ID: ${withdrawal._id}`,
+            );
+          } catch (error) {
+            this.logger.error('Failed to process offramp payment', error);
+
+            // Rollback the withdrawal atomically
+            await this.chamaAtomicWithdrawalService.rollbackWithdrawal(
+              txId,
+              `Failed to process offramp payment: ${error.message}`,
+            );
+
+            throw new BadRequestException(
+              `Failed to process offramp payment: ${error.message}`,
+            );
+          }
+        } else {
+          throw new BadRequestException(
+            'No withdrawal method provided (lightning invoice, LNURL, or offramp)',
+          );
+        }
+      }); // End of database transaction
+
+      // Transaction completed successfully
+      if (!withdrawal) {
+        throw new InternalServerErrorException(
+          'Withdrawal processing failed unexpectedly',
         );
       }
-    } else if (offramp) {
-      // 3. Execute offramp withdrawal that has been approved
-      this.logger.log('Processing approved offramp withdrawal');
 
-      // Double check if chama has enough total balance
-      // Note: groupBalance already accounts for processing withdrawals
-      if (txd.amountMsats > groupMeta.groupBalance) {
-        throw new Error(
-          'Insufficient chama funds for offramp withdrawal (including processing withdrawals)',
-        );
-      }
+      // Get updated transaction ledger
+      const ledger = await this.getPaginatedChamaTransactions({
+        memberId,
+        chamaId: withdrawal.chamaId,
+        pagination,
+        priority: withdrawal._id,
+      });
 
-      try {
-        // Initiate offramp swap
-        const swap = await this.swapService.createOfframpSwap({
-          amountFiat: txd.amountFiat.toString(),
-          reference: txd.reference,
-          target: offramp,
-        });
-
-        const status = swap.status as unknown as ChamaTxStatus;
-        const invoice = swap.lightning;
-        const swapTracker = swap.id;
-
-        // Decode invoice to get amount
-        const invoiceData = await this.fedimintService.decode(invoice);
-        const offrampMsats = parseInt(invoiceData.amountMsats);
-
-        // Pay the invoice for the swap
-        const { operationId, fee } = await this.fedimintService.pay(invoice);
-
-        // Calculate total withdrawal amount including fee
-        const totalOfframpMsats = offrampMsats + fee;
-
-        // Update withdrawal record to complete
-        withdrawal = await this.wallet.findOneAndUpdate(
-          {
-            _id: txId,
-          },
-          {
-            amountMsats: totalOfframpMsats,
-            lightning: JSON.stringify({ invoice, operationId }),
-            paymentTracker: swapTracker,
-            status,
-          },
+      // Get updated wallet balance with security metadata
+      const { groupMeta, memberMeta } =
+        await this.chamaBalanceService.getWalletMeta(
+          withdrawal.chamaId,
+          memberId,
         );
 
-        this.logger.log(
-          `Offramp withdrawal completed with ID: ${withdrawal._id}`,
-        );
-      } catch (error) {
-        this.logger.error('Failed to process offramp payment', error);
-
-        // Update transaction to failed state
-        await this.wallet.findOneAndUpdate(
-          { _id: txId },
-          { status: ChamaTxStatus.FAILED },
-        );
-
-        throw new Error(`Failed to process offramp payment: ${error.message}`);
-      }
-    } else {
-      throw new Error(
-        'No withdrawal method provided (lightning invoice, LNURL, or offramp)',
+      // Log security metadata for monitoring
+      this.logger.log(
+        `Withdrawal processed with atomic protection - ` +
+          `TxId: ${withdrawal._id}, ` +
+          `Status: ${withdrawal.status}, ` +
+          `Amount: ${withdrawal.amountMsats} msats`,
       );
+
+      return {
+        txId: withdrawal._id,
+        ledger,
+        groupMeta,
+        memberMeta,
+      };
+    } catch (error) {
+      // Rollback the transaction on any error
+      await session.abortTransaction();
+
+      this.logger.error(
+        `Failed to process withdrawal ${txId}: ${error.message}`,
+        error,
+      );
+
+      // Re-throw the error with appropriate message
+      if (
+        error instanceof BadRequestException ||
+        error instanceof InternalServerErrorException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException(
+        'Failed to process withdrawal. Transaction has been rolled back.',
+      );
+    } finally {
+      // Always end the session
+      await session.endSession();
     }
-
-    // Get updated transaction ledger
-    const ledger = await this.getPaginatedChamaTransactions({
-      memberId,
-      chamaId,
-      pagination,
-      priority: withdrawal._id,
-    });
-
-    // Get updated wallet balance
-    const updateMeta = await this.getChamaWalletMeta(chamaId, memberId);
-
-    return {
-      txId: withdrawal._id,
-      ledger,
-      groupMeta: updateMeta.groupMeta,
-      memberMeta: updateMeta.memberMeta,
-    };
   }
 
   async updateTransaction({
@@ -1051,86 +1184,55 @@ export class ChamaWalletService {
     groupMeta: ChamaTxGroupMeta;
     memberMeta: ChamaTxMemberMeta;
   }> {
-    const groupMeta = await this.getGroupWalletMeta(chamaId);
-    const memberMeta = await this.getMemberWalletMeta(chamaId, memberId);
+    // Use the balance service for consistent calculations
+    const { groupMeta, memberMeta } =
+      await this.chamaBalanceService.getWalletMeta(chamaId, memberId);
+
+    // Convert to expected format (memberMeta might be undefined)
     return {
       groupMeta,
-      memberMeta,
+      memberMeta: memberMeta || {
+        memberDeposits: 0,
+        memberWithdrawals: 0,
+        memberBalance: 0,
+      },
     };
   }
 
   private async getGroupWalletMeta(
     chamaId?: string,
   ): Promise<ChamaTxGroupMeta> {
-    try {
-      const groupDeposits = await this.aggregateTransactions(
-        TransactionType.DEPOSIT,
-        chamaId,
-      );
-      const groupWithdrawals = await this.aggregateTransactions(
-        TransactionType.WITHDRAW,
-        chamaId,
-      );
-      const processingWithdrawals = await this.aggregateProcessingTransactions(
-        TransactionType.WITHDRAW,
-        chamaId,
-      );
-
-      const groupBalance =
-        groupDeposits - groupWithdrawals - processingWithdrawals;
-
-      return {
-        groupDeposits,
-        groupWithdrawals,
-        groupBalance,
-      };
-    } catch (e) {
-      this.logger.error(e);
-      return {
-        groupDeposits: 0,
-        groupWithdrawals: 0,
-        groupBalance: 0,
-      };
-    }
+    // Use the balance service for consistent calculations
+    const metadata = await this.chamaBalanceService.getGroupWalletMeta(chamaId);
+    return {
+      groupDeposits: metadata.groupDeposits,
+      groupWithdrawals: metadata.groupWithdrawals,
+      groupBalance: metadata.groupBalance,
+    };
   }
 
   private async getMemberWalletMeta(
     chamaId?: string,
     memberId?: string,
   ): Promise<ChamaTxMemberMeta> {
-    try {
-      const memberDeposits = await this.aggregateTransactions(
-        TransactionType.DEPOSIT,
-        chamaId,
-        memberId,
-      );
-      const memberWithdrawals = await this.aggregateTransactions(
-        TransactionType.WITHDRAW,
-        chamaId,
-        memberId,
-      );
-      const processingWithdrawals = await this.aggregateProcessingTransactions(
-        TransactionType.WITHDRAW,
-        chamaId,
-        memberId,
-      );
-
-      const memberBalance =
-        memberDeposits - memberWithdrawals - processingWithdrawals;
-
-      return {
-        memberDeposits,
-        memberWithdrawals,
-        memberBalance,
-      };
-    } catch (e) {
-      this.logger.error(e);
+    if (!memberId) {
       return {
         memberDeposits: 0,
         memberWithdrawals: 0,
         memberBalance: 0,
       };
     }
+
+    // Use the balance service for consistent calculations
+    const metadata = await this.chamaBalanceService.getMemberWalletMeta(
+      chamaId,
+      memberId,
+    );
+    return {
+      memberDeposits: metadata.memberDeposits,
+      memberWithdrawals: metadata.memberWithdrawals,
+      memberBalance: metadata.memberBalance,
+    };
   }
 
   private async aggregateTransactionsByStatus(

@@ -1,8 +1,11 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { TransactionStatus, TransactionType } from '../../common';
+import {
+  DistributedLockService,
+  TransactionStatus,
+  TransactionType,
+} from '../../common';
 import { SolowalletRepository } from '../db/solowallet.repository';
 import { SolowalletDocument } from '../db/solowallet.schema';
-import { DistributedLockService } from './distributed-lock.service';
 
 /**
  * Service for handling atomic withdrawal operations.

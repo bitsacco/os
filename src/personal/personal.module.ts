@@ -6,10 +6,10 @@ import {
   LockService,
   AnalyticsService,
   AtomicWithdrawalService,
-  DistributedLockService,
   WithdrawalMonitorService,
   WithdrawalRateLimitService,
 } from './services';
+import { DistributedLockService } from '../common/services';
 import { HttpModule } from '@nestjs/axios';
 import {
   SolowalletDocument,

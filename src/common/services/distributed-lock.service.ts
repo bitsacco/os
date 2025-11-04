@@ -317,6 +317,40 @@ export class DistributedLockService implements OnModuleDestroy {
   }
 
   /**
+   * Creates a chama-specific lock key for withdrawal operations.
+   * Prevents concurrent withdrawals from the same chama group.
+   *
+   * @param chamaId The chama ID
+   * @returns Lock key for chama withdrawals
+   */
+  getChamaWithdrawalLockKey(chamaId: string): string {
+    return `chama-withdrawal:${chamaId}`;
+  }
+
+  /**
+   * Creates a chama-specific lock key for processing operations.
+   * Used when actually executing approved withdrawals.
+   *
+   * @param chamaId The chama ID
+   * @returns Lock key for chama processing
+   */
+  getChamaProcessingLockKey(chamaId: string): string {
+    return `chama-processing:${chamaId}`;
+  }
+
+  /**
+   * Creates a member-specific lock key within a chama.
+   * Used for member-specific operations within a chama context.
+   *
+   * @param chamaId The chama ID
+   * @param memberId The member ID
+   * @returns Lock key for member operations in chama
+   */
+  getChamaMemberLockKey(chamaId: string, memberId: string): string {
+    return `chama-member:${chamaId}:${memberId}`;
+  }
+
+  /**
    * Cleanup on module destroy.
    */
   async onModuleDestroy() {

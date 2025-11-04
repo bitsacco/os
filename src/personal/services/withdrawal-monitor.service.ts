@@ -1,9 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import {
+  DistributedLockService,
+  TransactionType,
+  TransactionStatus,
+} from '../../common';
 import { SolowalletRepository } from '../db/solowallet.repository';
-import { TransactionType, TransactionStatus } from '../../common';
-import { DistributedLockService } from './distributed-lock.service';
 import { WithdrawalRateLimitService } from './withdrawal-rate-limit.service';
 
 /**
