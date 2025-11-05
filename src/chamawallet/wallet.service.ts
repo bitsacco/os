@@ -63,6 +63,11 @@ import {
   toChamaWalletTx,
 } from './db';
 import { ChamaAtomicWithdrawalService, ChamaBalanceService } from './services';
+import {
+  CommonRateLimitService,
+  RateLimitContext,
+  CHAMA_RATE_LIMITS,
+} from '../common/rate-limiting';
 
 @Injectable()
 export class ChamaWalletService {
@@ -79,8 +84,13 @@ export class ChamaWalletService {
     private readonly timeoutConfigService: TimeoutConfigService,
     private readonly chamaAtomicWithdrawalService: ChamaAtomicWithdrawalService,
     private readonly chamaBalanceService: ChamaBalanceService,
+    private readonly commonRateLimit: CommonRateLimitService,
     @InjectConnection() private readonly connection: Connection,
   ) {
+    // Register chama rate limit configurations
+    this.commonRateLimit.registerConfigs(CHAMA_RATE_LIMITS.rules);
+    this.logger.log('Initialized chama rate limiting with common service');
+
     this.eventEmitter.on(
       fedimint_receive_success,
       this.handleSuccessfulReceive.bind(this),
@@ -358,6 +368,24 @@ export class ChamaWalletService {
     pagination,
     idempotencyKey,
   }: ChamaWithdrawDto) {
+    // Step 0: Check rate limits for the chama
+    const burstCheck = await this.commonRateLimit.check({
+      context: RateLimitContext.CHAMA,
+      action: 'withdrawal:burst',
+      entityId: chamaId,
+      entityType: 'chama',
+    });
+
+    if (!burstCheck.allowed) {
+      this.logger.warn(
+        `Rate limit exceeded for chama ${chamaId}: ${burstCheck.reason}`,
+      );
+      throw new BadRequestException(
+        burstCheck.reason ||
+          'Too many withdrawal requests. Please wait a moment and try again.',
+      );
+    }
+
     // Step 1: Validate group balance using balance service
     const groupMetadata =
       await this.chamaBalanceService.getGroupWalletMeta(chamaId);
@@ -551,6 +579,8 @@ export class ChamaWalletService {
         `Available Balance: ${groupMetadata.groupBalance} msats`,
     );
 
+    // Rate limit recording happens atomically in check() method
+
     // Return the updated wallet information
     return {
       txId: withdrawalTx.id,
@@ -582,6 +612,24 @@ export class ChamaWalletService {
         if (txd.memberId !== memberId) {
           throw new BadRequestException(
             'Invalid request to continue transaction',
+          );
+        }
+
+        // Check rate limits for the chama
+        const burstCheck = await this.commonRateLimit.check({
+          context: RateLimitContext.CHAMA,
+          action: 'withdrawal:burst',
+          entityId: chamaId,
+          entityType: 'chama',
+        });
+
+        if (!burstCheck.allowed) {
+          this.logger.warn(
+            `Rate limit exceeded for chama ${chamaId} during continueWithdraw: ${burstCheck.reason}`,
+          );
+          throw new BadRequestException(
+            burstCheck.reason ||
+              'Too many withdrawal requests. Please wait a moment and try again.',
           );
         }
 
@@ -871,6 +919,8 @@ export class ChamaWalletService {
           `Status: ${withdrawal.status}, ` +
           `Amount: ${withdrawal.amountMsats} msats`,
       );
+
+      // Rate limit recording happens atomically in check() method
 
       return {
         txId: withdrawal._id,

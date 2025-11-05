@@ -4,6 +4,7 @@ import { LoggerModule } from './logger/logger.module';
 import { DatabaseModule } from './database/database.module';
 import { TimeoutConfigService } from './services';
 import { FedimintModule } from './fedimint';
+import { RateLimitingModule } from './rate-limiting';
 
 /**
  * SharedModule provides common modules that are used across the application.
@@ -21,6 +22,7 @@ import { FedimintModule } from './fedimint';
     LoggerModule,
     DatabaseModule,
     FedimintModule,
+    RateLimitingModule,
   ],
   providers: [TimeoutConfigService],
   exports: [
@@ -29,6 +31,7 @@ import { FedimintModule } from './fedimint';
     DatabaseModule,
     TimeoutConfigService,
     FedimintModule,
+    RateLimitingModule,
   ],
 })
 export class SharedModule {}
