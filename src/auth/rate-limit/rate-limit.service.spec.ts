@@ -1,21 +1,47 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RateLimitService } from './rate-limit.service';
+import {
+  CommonRateLimitService,
+  MemoryRateLimitStorage,
+} from '../../common/rate-limiting';
 
 describe('RateLimitService', () => {
   let service: RateLimitService;
+  let commonRateLimit: CommonRateLimitService;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [RateLimitService],
+      providers: [
+        RateLimitService,
+        CommonRateLimitService,
+        MemoryRateLimitStorage,
+        {
+          provide: EventEmitter2,
+          useValue: {
+            emit: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get<RateLimitService>(RateLimitService);
+    commonRateLimit = module.get<CommonRateLimitService>(
+      CommonRateLimitService,
+    );
   });
 
-  afterEach(() => {
-    // Clear rate limits after each test
-    (service as any).rateLimits.clear();
+  afterEach(async () => {
+    // Reset rate limits after each test
+    const identifiers = [
+      'test-user@example.com',
+      'rate-limited-user@example.com',
+      'reset-user@example.com',
+    ];
+    for (const identifier of identifiers) {
+      await service.resetRateLimit(identifier);
+    }
   });
 
   it('should be defined', () => {
@@ -25,7 +51,7 @@ describe('RateLimitService', () => {
   it('should allow requests under the limit', async () => {
     const identifier = 'test-user@example.com';
 
-    // Should not throw for the first MAX_LOGIN_ATTEMPTS attempts
+    // Should not throw for the first 5 attempts (burst limit)
     for (let i = 0; i < 5; i++) {
       await expect(async () => {
         await service.checkRateLimit(identifier);
@@ -36,12 +62,12 @@ describe('RateLimitService', () => {
   it('should block requests over the limit', async () => {
     const identifier = 'rate-limited-user@example.com';
 
-    // Make MAX_LOGIN_ATTEMPTS attempts
+    // Make 5 attempts (at the limit)
     for (let i = 0; i < 5; i++) {
       await service.checkRateLimit(identifier);
     }
 
-    // The next attempt should throw
+    // The next attempt should throw (exceeds burst limit of 5)
     await expect(service.checkRateLimit(identifier)).rejects.toThrow(
       UnauthorizedException,
     );

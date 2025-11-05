@@ -100,29 +100,6 @@ export class WithdrawalMonitorService {
       });
     }
 
-    // Check 3: Daily withdrawal limit
-    const dailyTotal = await this.getDailyWithdrawalTotal(userId);
-    if (dailyTotal + amountMsats > this.DAILY_LIMIT) {
-      alerts.push(
-        `Daily limit would be exceeded: Current ${dailyTotal}, Requested ${amountMsats}`,
-      );
-
-      this.emitSecurityAlert({
-        type: 'DAILY_LIMIT_EXCEEDED',
-        userId,
-        currentTotal: dailyTotal,
-        requestedAmount: amountMsats,
-        severity: 'HIGH',
-      });
-
-      return {
-        allowed: false,
-        reason: 'Daily withdrawal limit exceeded',
-        riskLevel: 'HIGH',
-        alerts,
-      };
-    }
-
     // Check 4: Failed attempt tracking
     const failedCount = this.failedAttempts.get(userId) || 0;
     if (failedCount >= this.FAILED_ATTEMPT_THRESHOLD) {

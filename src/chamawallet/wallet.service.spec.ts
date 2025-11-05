@@ -20,6 +20,10 @@ import { ChamaWalletRepository } from './db';
 import { ChamaAtomicWithdrawalService, ChamaBalanceService } from './services';
 import { ConfigService } from '@nestjs/config';
 import { getConnectionToken } from '@nestjs/mongoose';
+import {
+  CommonRateLimitService,
+  MemoryRateLimitStorage,
+} from '../common/rate-limiting';
 
 describe('ChamaWalletService', () => {
   let service: ChamaWalletService;
@@ -171,6 +175,8 @@ describe('ChamaWalletService', () => {
             aggregateBalanceInfo: jest.fn(),
           },
         },
+        CommonRateLimitService,
+        MemoryRateLimitStorage,
         {
           provide: getConnectionToken(),
           useValue: {
