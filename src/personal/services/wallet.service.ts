@@ -166,7 +166,7 @@ export class PersonalWalletService {
       type: TransactionType.WALLET_CREATION,
       status: TransactionStatus.COMPLETE,
       lightning: '',
-      paymentTracker: '',
+      paymentTracker: undefined,
       reference: `wallet_creation_${walletId}`,
       __v: 0,
       ...(extendedWalletData as any),
@@ -1307,7 +1307,7 @@ export class PersonalWalletService {
           inv.description ||
           `withdraw ${amountFiat} KES via Lightning`,
         lightning: JSON.stringify(lightning),
-        paymentTracker: '',
+        paymentTracker: undefined, // Will be set after payment completes
         idempotencyKey,
         currentBalance, // Pass the current balance we already fetched
       });
