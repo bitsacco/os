@@ -7,6 +7,7 @@ import { ModelDefinition, MongooseModule } from '@nestjs/mongoose';
     MongooseModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         uri: configService.getOrThrow<string>('DATABASE_URL'),
+        autoIndex: true, // Automatically build indexes defined in schemas
       }),
       inject: [ConfigService],
     }),
