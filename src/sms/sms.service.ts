@@ -1,44 +1,37 @@
-import * as africastalking from 'africastalking';
-import { ConfigService } from '@nestjs/config';
 import { Injectable, Logger } from '@nestjs/common';
 import { SendBulkSmsDto, SendSmsDto } from '../common';
 import { SmsMetricsService } from './sms.metrics';
+import { SmsProviderFactory } from './providers/sms-provider.factory';
+import { ISmsProvider } from './interfaces/sms-provider.interface';
 
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
-  private at;
-  private smsconfig: { from: string; keyword: string };
+  private readonly provider: ISmsProvider;
 
   constructor(
-    private readonly configService: ConfigService,
+    private readonly providerFactory: SmsProviderFactory,
     private readonly metricsService: SmsMetricsService,
   ) {
-    this.logger.log('SmsService created');
-
-    this.at = africastalking({
-      apiKey: this.configService.getOrThrow<string>('SMS_AT_API_KEY'),
-      username: this.configService.getOrThrow<string>('SMS_AT_USERNAME'),
-    });
-    this.smsconfig = {
-      from: this.configService.getOrThrow<string>('SMS_AT_FROM'),
-      keyword: this.configService.getOrThrow<string>('SMS_AT_KEYWORD'),
-    };
+    this.provider = this.providerFactory.createProvider();
+    this.logger.log(
+      `SmsService initialized with ${this.provider.getProviderName()} provider`,
+    );
   }
 
   async sendSms({ message, receiver }: SendSmsDto): Promise<void> {
-    this.logger.log(`Sending sms to ${receiver} with message ${message}`);
+    this.logger.log(
+      `Sending SMS to ${receiver} via ${this.provider.getProviderName()}`,
+    );
     const startTime = Date.now();
     let errorType: string | undefined;
 
     try {
-      const response = await this.at.SMS.send({
-        ...this.smsconfig,
-        to: receiver,
-        message,
-      });
+      const result = await this.provider.sendSms(message, receiver);
 
-      this.logger.log(`Sms sent with response ${JSON.stringify(response)}`);
+      this.logger.log(
+        `SMS sent - ID: ${result.messageId}, status: ${result.status}`,
+      );
 
       // Record successful SMS metric
       this.metricsService.recordSmsMetric({
@@ -46,6 +39,7 @@ export class SmsService {
         messageLength: message.length,
         success: true,
         duration: Date.now() - startTime,
+        provider: this.provider.getProviderName(),
       });
     } catch (error) {
       errorType = error.message || 'Unknown error';
@@ -58,6 +52,7 @@ export class SmsService {
         success: false,
         duration: Date.now() - startTime,
         errorType,
+        provider: this.provider.getProviderName(),
       });
 
       throw error;
@@ -66,29 +61,30 @@ export class SmsService {
 
   async sendBulkSms({ message, receivers }: SendBulkSmsDto): Promise<void> {
     this.logger.log(
-      `Sending bulk sms to ${receivers} with messages ${message}`,
+      `Sending bulk SMS to ${receivers.length} recipients via ${this.provider.getProviderName()}`,
     );
     const startTime = Date.now();
     let errorType: string | undefined;
 
     try {
-      const response = await this.at.SMS.send({
-        ...this.smsconfig,
-        to: receivers,
-        message,
-      });
+      const result = await this.provider.sendBulkSms(message, receivers);
 
       this.logger.log(
-        `Bulk sms sent with response ${JSON.stringify(response)}`,
+        `Bulk SMS completed: ${result.successful} sent, ${result.failed} failed`,
       );
 
       // Record successful bulk SMS metric
       this.metricsService.recordSmsBulkMetric({
         receiverCount: receivers.length,
         messageLength: message.length,
-        success: true,
+        success: result.failed === 0,
         duration: Date.now() - startTime,
+        provider: this.provider.getProviderName(),
       });
+
+      if (result.successful === 0 && result.failed > 0) {
+        throw new Error(`All ${result.failed} bulk SMS messages failed`);
+      }
     } catch (error) {
       errorType = error.message || 'Unknown error';
       this.logger.error(`Error sending bulk SMS: ${errorType}`, error.stack);
@@ -100,6 +96,7 @@ export class SmsService {
         success: false,
         duration: Date.now() - startTime,
         errorType,
+        provider: this.provider.getProviderName(),
       });
 
       throw error;

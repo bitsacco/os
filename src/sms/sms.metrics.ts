@@ -16,6 +16,7 @@ export interface SmsMetric {
   success: boolean;
   duration: number;
   errorType?: string;
+  provider?: string;
 }
 
 /**
@@ -27,6 +28,7 @@ export interface SmsBulkMetric {
   success: boolean;
   duration: number;
   errorType?: string;
+  provider?: string;
 }
 
 /**
@@ -114,16 +116,19 @@ export class SmsMetricsService extends OperationMetricsService {
         errorType: metric.errorType,
         labels: {
           receiver: metric.receiver,
+          provider: metric.provider || 'unknown',
         },
       });
 
       // Record SMS-specific metrics
       this.smsSentCounter.add(1, {
         success: String(metric.success),
+        provider: metric.provider || 'unknown',
       });
 
       this.smsLatencyHistogram.record(metric.duration, {
         success: String(metric.success),
+        provider: metric.provider || 'unknown',
       });
 
       this.smsMessageLengthHistogram.record(metric.messageLength);
@@ -171,16 +176,19 @@ export class SmsMetricsService extends OperationMetricsService {
         errorType: metric.errorType,
         labels: {
           receiverCount: String(metric.receiverCount),
+          provider: metric.provider || 'unknown',
         },
       });
 
       // Record SMS-specific metrics
       this.smsBulkSentCounter.add(1, {
         success: String(metric.success),
+        provider: metric.provider || 'unknown',
       });
 
       this.smsBulkLatencyHistogram.record(metric.duration, {
         success: String(metric.success),
+        provider: metric.provider || 'unknown',
       });
 
       this.smsMessageLengthHistogram.record(metric.messageLength);

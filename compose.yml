@@ -35,6 +35,9 @@ services:
     image: okjodom/fmcd:latest
     container_name: fmcd
     environment:
+      - RUST_LOG=debug,fmcd=debug,fedimint_client=debug,fedimint_core=debug,fedimint_ln_client=debug,fedimint_mint_client=debug,fedimint_wallet_client=debug
+      - RUST_BACKTRACE=1
+      - FMCD_LOG_FORMAT=json
       - FMCD_DATA_DIR=/data
       - FMCD_ADDR=0.0.0.0:7070
       - FMCD_MODE=rest
