@@ -1,7 +1,11 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { ChamaTxStatus, TransactionType } from '../../common';
-import { ChamaWalletDocument, ChamaWalletRepository } from '../db';
+import {
+  ChamaTxStatus,
+  TransactionType,
+  parseTransactionStatus,
+} from '../../common';
 import { DistributedLockService } from '../../common/services';
+import { ChamaWalletDocument, ChamaWalletRepository } from '../db';
 
 /**
  * Service for handling atomic withdrawal operations for chama wallets.
@@ -253,9 +257,16 @@ export class ChamaAtomicWithdrawalService {
         throw new BadRequestException('Withdrawal not found');
       }
 
-      if (withdrawal.status !== ChamaTxStatus.APPROVED) {
+      // Parse status from database (stored as string) to enum (number)
+      const withdrawalStatus = parseTransactionStatus<ChamaTxStatus>(
+        withdrawal.status.toString(),
+        ChamaTxStatus.UNRECOGNIZED,
+        this.logger,
+      );
+
+      if (withdrawalStatus !== ChamaTxStatus.APPROVED) {
         throw new BadRequestException(
-          'Withdrawal must be approved before processing',
+          `Withdrawal must be approved before processing (current status: ${withdrawalStatus})`,
         );
       }
 
