@@ -196,46 +196,131 @@ export class FedimintService {
     };
   }
 
+  /**
+   * Poll for invoice payment status using the v2 API
+   * Replaces the deprecated /ln/await-invoice endpoint with polling /ln/operation/:id/status
+   */
   receive(context: FedimintContext, operationId: string): void {
-    this.logger.log(`Receiving payment : ${operationId}`);
+    this.logger.log(
+      `Polling for invoice payment status (context: ${context}, operationId: ${operationId})`,
+    );
 
-    this.post<{ operationId: string } & WithFederationId, any>(
-      '/ln/await-invoice',
-      {
-        operationId,
-        federationId: this.federationId,
-      },
+    // Poll the new v2 status endpoint: GET /v2/ln/operation/:operation_id/status?federationId=xxx
+    const url = `${this.baseUrl}/v2/ln/operation/${operationId}/status?federationId=${this.federationId}`;
+    const username = 'fmcd';
+    const basicAuth = Buffer.from(`${username}:${this.password}`).toString(
+      'base64',
+    );
+
+    this.logger.debug(
+      `Polling invoice status: GET ${url} (operation: ${operationId})`,
+    );
+
+    firstValueFrom(
+      this.httpService
+        .get<any>(url, {
+          headers: {
+            Authorization: `Basic ${basicAuth}`,
+          },
+        })
+        .pipe(map((resp) => resp.data))
+        .pipe(
+          catchError((error: AxiosError) => {
+            this.logger.error(
+              `Failed to poll invoice status for ${operationId}: ${error.message}`,
+            );
+            this.logger.debug(
+              `Error details: ${JSON.stringify(error.response?.data || error)}`,
+            );
+            throw error;
+          }),
+        ),
     )
       .then((resp) => {
-        this.logger.log(
-          `Update : ${JSON.stringify(resp)} for : ${operationId}`,
+        this.logger.debug(
+          `Received invoice status response for ${operationId}: ${JSON.stringify(resp)}`,
         );
 
-        switch (resp.status) {
+        // The status field can be either a string or an object (Rust enum with data)
+        // Examples:
+        //   - String: "created", "pending"
+        //   - Object: { "claimed": { "amount_received_msat": 1000, ... } }
+        //   - Object: { "canceled": { "reason": "...", ... } }
+        const rawStatus = resp?.status;
+
+        // Extract the status variant name (handle both string and object formats)
+        let status: string;
+        if (typeof rawStatus === 'string') {
+          status = rawStatus.toLowerCase();
+          this.logger.debug(
+            `Invoice ${operationId} status (string): ${status}`,
+          );
+        } else if (typeof rawStatus === 'object' && rawStatus !== null) {
+          // For objects, the variant name is the first (and only) key
+          const keys = Object.keys(rawStatus);
+          status = keys.length > 0 ? keys[0].toLowerCase() : 'unknown';
+          this.logger.debug(
+            `Invoice ${operationId} status (object): extracted '${status}' from ${JSON.stringify(rawStatus)}`,
+          );
+        } else {
+          status = 'unknown';
+          this.logger.warn(
+            `Unexpected status format for ${operationId}: ${JSON.stringify(rawStatus)}`,
+          );
+        }
+
+        switch (status) {
           case 'created':
           case 'waiting-for-payment':
-            // this is a recursive call to continue waiting.
-            this.receive(context, operationId);
+          case 'waitingforpayment':
+          case 'pending':
+            // Continue polling - wait 2 seconds before next poll
+            this.logger.debug(
+              `Invoice ${operationId} still pending (${status}), will poll again in 2s`,
+            );
+            setTimeout(() => this.receive(context, operationId), 2000);
             break;
           case 'funded':
           case 'awaiting-funds':
+          case 'awaitingfunds':
           case 'claimed':
+            this.logger.log(
+              `✓ Invoice ${operationId} successfully paid (status: ${status}, context: ${context})`,
+            );
             this.eventEmitter.emit(fedimint_receive_success, {
               context,
               operationId,
             });
             break;
-          default:
+          case 'canceled':
+          case 'cancelled':
+          case 'expired':
+            this.logger.warn(
+              `✗ Invoice ${operationId} not paid (status: ${status}, context: ${context})`,
+            );
             this.eventEmitter.emit(fedimint_receive_failure, {
               context,
               operationId,
-              error: 'Error',
+              error: `Invoice ${status}`,
+            });
+            break;
+          default:
+            this.logger.error(
+              `✗ Unknown invoice status '${status}' for ${operationId} (context: ${context}), treating as failure. Raw: ${JSON.stringify(rawStatus)}`,
+            );
+            this.eventEmitter.emit(fedimint_receive_failure, {
+              context,
+              operationId,
+              error: `Unknown status: ${status}`,
             });
             break;
         }
       })
       .catch((e) => {
-        this.logger.error(e);
+        this.logger.error(
+          `✗ Failed to receive payment for ${operationId} (context: ${context}): ${e.message || e}`,
+        );
+        this.logger.debug(`Full error: ${JSON.stringify(e)}`);
 
         this.eventEmitter.emit(fedimint_receive_failure, {
           context,
@@ -386,16 +471,24 @@ export class FedimintService {
       }
 
       // Try to list operations and find the one with matching ID
+      // Using the v2 API endpoint: /v2/admin/operations
       try {
-        const listResponse = await firstValueFrom(
-          this.httpService.post(`${this.baseUrl}/list-operations`, {
-            federationId: this.federationId,
-            limit: 100, // Adjust based on needs
-          }),
-        );
+        const listResponse = await this.post<
+          { federationId: string; limit: number },
+          {
+            operations: Array<{
+              operationId: string;
+              status?: string;
+              state?: string;
+            }>;
+          }
+        >('/admin/operations', {
+          federationId: this.federationId,
+          limit: 100, // Adjust based on needs
+        });
 
-        if (listResponse?.data?.operations) {
-          const operation = listResponse.data.operations.find(
+        if (listResponse?.operations) {
+          const operation = listResponse.operations.find(
             (op: any) => op.operationId === paymentTracker,
           );
 
@@ -405,39 +498,47 @@ export class FedimintService {
         }
       } catch (listError) {
         this.logger.debug(
-          `List operations failed, trying direct status check: ${listError}`,
+          `List operations failed, trying lightning status check: ${listError}`,
         );
       }
 
-      // Fallback: Try direct operation status check
+      // Fallback: Check if it's a lightning payment
+      // Using the v2 API endpoint: GET /v2/ln/operation/:operation_id/status?federationId=xxx
       try {
-        const statusResponse = await firstValueFrom(
-          this.httpService.post(`${this.baseUrl}/operation-status`, {
-            federationId: this.federationId,
-            operationId: paymentTracker,
-          }),
+        const url = `${this.baseUrl}/v2/ln/operation/${paymentTracker}/status?federationId=${this.federationId}`;
+        const username = 'fmcd';
+        const basicAuth = Buffer.from(`${username}:${this.password}`).toString(
+          'base64',
         );
 
-        if (statusResponse?.data?.status || statusResponse?.data?.state) {
-          return this.mapOperationStatus(
-            statusResponse.data.status || statusResponse.data.state,
-          );
-        }
-      } catch (statusError) {
-        this.logger.debug(`Direct status check failed: ${statusError}`);
-      }
-
-      // Final fallback: Check if it's a lightning payment
-      try {
         const lnStatusResponse = await firstValueFrom(
-          this.httpService.post(`${this.baseUrl}/ln-status`, {
-            federationId: this.federationId,
-            operationId: paymentTracker,
-          }),
+          this.httpService
+            .get<{ status: any }>(url, {
+              headers: {
+                Authorization: `Basic ${basicAuth}`,
+              },
+            })
+            .pipe(map((resp) => resp.data))
+            .pipe(
+              catchError((error: AxiosError) => {
+                this.logger.debug(
+                  `Lightning status check failed: ${error.message}`,
+                );
+                throw error;
+              }),
+            ),
         );
 
-        if (lnStatusResponse?.data?.status) {
-          return this.mapOperationStatus(lnStatusResponse.data.status);
+        if (lnStatusResponse?.status) {
+          // The status field can be either a string or an object with variant name
+          const statusValue =
+            typeof lnStatusResponse.status === 'string'
+              ? lnStatusResponse.status
+              : lnStatusResponse.status.variant ||
+                lnStatusResponse.status.type ||
+                JSON.stringify(lnStatusResponse.status);
+
+          return this.mapOperationStatus(statusValue);
         }
       } catch (lnError) {
         this.logger.debug(`Lightning status check failed: ${lnError}`);
