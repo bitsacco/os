@@ -133,7 +133,7 @@ export class ChamaDepositDto
 }
 
 export class ChamaContinueDepositDto
-  extends PaginationDto
+  extends ChamaTransactionBaseDto
   implements ChamaContinueDepositRequest
 {
   @UUIDDecorator()
@@ -151,7 +151,7 @@ export class ChamaWithdrawDto
   implements ChamaWithdrawRequest {}
 
 export class ChamaContinueWithdrawDto
-  extends PaginationDto
+  extends ChamaBaseDto
   implements ChamaContinueWithdrawRequest
 {
   @UUIDDecorator()
