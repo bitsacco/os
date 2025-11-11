@@ -606,8 +606,18 @@ export class ChamaWalletService {
       // Start the transaction
       await session.withTransaction(async () => {
         // Step 1: Get the transaction record with session (for transaction consistency)
+        this.logger.log(`Fetching withdrawal transaction ${txId}`);
         const txd = await this.wallet.findOne({ _id: txId });
+
+        if (!txd) {
+          this.logger.error(`Withdrawal transaction ${txId} not found`);
+          throw new BadRequestException('Withdrawal transaction not found');
+        }
+
         const { chamaId } = txd;
+        this.logger.log(
+          `Processing withdrawal for chama ${chamaId}, member ${txd.memberId}, status: ${txd.status}`,
+        );
 
         if (txd.memberId !== memberId) {
           throw new BadRequestException(
@@ -662,17 +672,26 @@ export class ChamaWalletService {
           await this.chamaBalanceService.getGroupWalletMeta(chamaId);
 
         // Step 3: Process the withdrawal atomically
-        const processResult =
-          await this.chamaAtomicWithdrawalService.processApprovedWithdrawal({
-            withdrawalId: txId,
-            chamaId,
-            currentGroupBalance: groupMetadata.groupBalance,
-          });
+        let processResult: boolean;
+        try {
+          processResult =
+            await this.chamaAtomicWithdrawalService.processApprovedWithdrawal({
+              withdrawalId: txId,
+              chamaId,
+              currentGroupBalance: groupMetadata.groupBalance,
+            });
 
-        if (!processResult) {
-          throw new InternalServerErrorException(
-            'Failed to process withdrawal. Please try again.',
+          if (!processResult) {
+            throw new InternalServerErrorException(
+              'Failed to process withdrawal. Please try again.',
+            );
+          }
+        } catch (processError) {
+          this.logger.error(
+            `Error during processApprovedWithdrawal for ${txId}: ${processError.message}`,
+            processError.stack,
           );
+          throw processError; // Re-throw to be handled by outer catch
         }
 
         // Now execute the actual payment based on the withdrawal method
@@ -929,13 +948,17 @@ export class ChamaWalletService {
         memberMeta,
       };
     } catch (error) {
-      // Rollback the transaction on any error
-      await session.abortTransaction();
+      // Note: session.withTransaction() automatically handles transaction abort on error
+      // Do NOT manually call session.abortTransaction() here as it would cause a double abort error
 
       this.logger.error(
-        `Failed to process withdrawal ${txId}: ${error.message}`,
-        error,
+        `Failed to process withdrawal ${txId} for member ${memberId}`,
       );
+      this.logger.error(`Error type: ${error.constructor.name}`);
+      this.logger.error(`Error message: ${error.message}`);
+      if (error.stack) {
+        this.logger.error(`Stack trace: ${error.stack}`);
+      }
 
       // Re-throw the error with appropriate message
       if (
