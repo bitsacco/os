@@ -1,6 +1,7 @@
 export enum Role {
   Member = 0,
   Admin = 1,
+  Suspended = 2,
   SuperAdmin = 3,
   UNRECOGNIZED = -1,
 }

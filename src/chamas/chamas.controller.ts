@@ -34,6 +34,7 @@ import {
   ChamaTxMetaRequestDto,
   BulkChamaTxMetaRequestDto,
 } from '../common';
+import { SuspendedUserGuard } from '../common/auth/suspended-user.guard';
 import { ConfigService } from '@nestjs/config';
 import { ChamasService } from './chamas.service';
 import { ChamaWalletService } from '../chamawallet/wallet.service';
@@ -216,7 +217,7 @@ export class ChamasController {
   }
 
   @Post(':chamaId/transactions/deposit')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SuspendedUserGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Chama deposit transaction' })
@@ -232,7 +233,7 @@ export class ChamasController {
   }
 
   @Post(':chamaId/transactions/deposit/continue')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, SuspendedUserGuard)
   @ApiBearerAuth()
   @ApiCookieAuth()
   @ApiOperation({ summary: 'Continue Chama deposit transaction' })
@@ -248,7 +249,7 @@ export class ChamasController {
   }
 
   @Post(':chamaId/transactions/withdraw')
-  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @UseGuards(JwtAuthGuard, SuspendedUserGuard, ChamaMemberGuard)
   @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
@@ -265,7 +266,7 @@ export class ChamasController {
   }
 
   @Post(':chamaId/transactions/withdraw/continue')
-  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @UseGuards(JwtAuthGuard, SuspendedUserGuard, ChamaMemberGuard)
   @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()
@@ -282,7 +283,7 @@ export class ChamasController {
   }
 
   @Patch(':chamaId/transactions/:txId')
-  @UseGuards(JwtAuthGuard, ChamaMemberGuard)
+  @UseGuards(JwtAuthGuard, SuspendedUserGuard, ChamaMemberGuard)
   @CheckChamaMembership({ chamaIdField: 'chamaId' })
   @ApiBearerAuth()
   @ApiCookieAuth()

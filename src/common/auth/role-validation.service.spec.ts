@@ -139,5 +139,158 @@ describe('RoleValidationService', () => {
         ),
       ).not.toThrow();
     });
+
+    // Suspended role tests
+    describe('Suspended Role', () => {
+      it('should prevent users from suspending themselves', () => {
+        // Arrange
+        const currentRoles = [Role.Member];
+        const newRoles = [Role.Member, Role.Suspended];
+
+        // Act & Assert
+        expect(() =>
+          service.validateRoleUpdate(
+            memberUser,
+            memberUser.id,
+            currentRoles,
+            newRoles,
+          ),
+        ).toThrow(ForbiddenException);
+      });
+
+      it('should prevent non-admin users from suspending other users', () => {
+        // Arrange
+        const currentRoles = [Role.Member];
+        const newRoles = [Role.Member, Role.Suspended];
+        const targetUserId = 'otherUser';
+
+        // Act & Assert
+        expect(() =>
+          service.validateRoleUpdate(
+            memberUser,
+            targetUserId,
+            currentRoles,
+            newRoles,
+          ),
+        ).toThrow(ForbiddenException);
+      });
+
+      it('should allow Admin to suspend users', () => {
+        // Arrange
+        const currentRoles = [Role.Member];
+        const newRoles = [Role.Member, Role.Suspended];
+        const targetUserId = 'otherUser';
+
+        // Act & Assert
+        expect(() =>
+          service.validateRoleUpdate(
+            adminUser,
+            targetUserId,
+            currentRoles,
+            newRoles,
+          ),
+        ).not.toThrow();
+      });
+
+      it('should allow SuperAdmin to suspend users', () => {
+        // Arrange
+        const currentRoles = [Role.Member];
+        const newRoles = [Role.Member, Role.Suspended];
+        const targetUserId = 'otherUser';
+
+        // Act & Assert
+        expect(() =>
+          service.validateRoleUpdate(
+            superAdminUser,
+            targetUserId,
+            currentRoles,
+            newRoles,
+          ),
+        ).not.toThrow();
+      });
+
+      it('should prevent non-admin users from unsuspending users', () => {
+        // Arrange
+        const currentRoles = [Role.Member, Role.Suspended];
+        const newRoles = [Role.Member];
+        const targetUserId = 'otherUser';
+
+        // Act & Assert
+        expect(() =>
+          service.validateRoleUpdate(
+            memberUser,
+            targetUserId,
+            currentRoles,
+            newRoles,
+          ),
+        ).toThrow(ForbiddenException);
+      });
+
+      it('should allow Admin to unsuspend users', () => {
+        // Arrange
+        const currentRoles = [Role.Member, Role.Suspended];
+        const newRoles = [Role.Member];
+        const targetUserId = 'otherUser';
+
+        // Act & Assert
+        expect(() =>
+          service.validateRoleUpdate(
+            adminUser,
+            targetUserId,
+            currentRoles,
+            newRoles,
+          ),
+        ).not.toThrow();
+      });
+
+      it('should allow SuperAdmin to unsuspend users', () => {
+        // Arrange
+        const currentRoles = [Role.Member, Role.Suspended];
+        const newRoles = [Role.Member];
+        const targetUserId = 'otherUser';
+
+        // Act & Assert
+        expect(() =>
+          service.validateRoleUpdate(
+            superAdminUser,
+            targetUserId,
+            currentRoles,
+            newRoles,
+          ),
+        ).not.toThrow();
+      });
+
+      it('should prevent Admin from suspending themselves', () => {
+        // Arrange
+        const currentRoles = [Role.Admin];
+        const newRoles = [Role.Admin, Role.Suspended];
+
+        // Act & Assert
+        expect(() =>
+          service.validateRoleUpdate(
+            adminUser,
+            adminUser.id,
+            currentRoles,
+            newRoles,
+          ),
+        ).toThrow(ForbiddenException);
+      });
+
+      it('should prevent SuperAdmin from suspending themselves', () => {
+        // Arrange
+        const currentRoles = [Role.SuperAdmin];
+        const newRoles = [Role.SuperAdmin, Role.Suspended];
+
+        // Act & Assert
+        expect(() =>
+          service.validateRoleUpdate(
+            superAdminUser,
+            superAdminUser.id,
+            currentRoles,
+            newRoles,
+          ),
+        ).toThrow(ForbiddenException);
+      });
+    });
   });
 });
