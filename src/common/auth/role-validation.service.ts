@@ -39,6 +39,12 @@ export class RoleValidationService {
       newRoles.includes(Role.SuperAdmin);
     const isAddingAdmin =
       !currentRoles.includes(Role.Admin) && newRoles.includes(Role.Admin);
+    const isAddingSuspended =
+      !currentRoles.includes(Role.Suspended) &&
+      newRoles.includes(Role.Suspended);
+    const isRemovingSuspended =
+      currentRoles.includes(Role.Suspended) &&
+      !newRoles.includes(Role.Suspended);
 
     // Rule 1: Prevent Member from elevating themselves to Admin
     if (isSelfUpdate && !hasAdminRole && !hasSuperAdminRole && isAddingAdmin) {
@@ -67,6 +73,34 @@ export class RoleValidationService {
       );
       throw new ForbiddenException(
         'Only SuperAdmin users can grant SuperAdmin privileges',
+      );
+    }
+
+    // Rule 4: Prevent users from suspending themselves
+    if (isSelfUpdate && isAddingSuspended) {
+      this.logger.warn(
+        `User ${requestingUser.id} attempted to suspend themselves`,
+      );
+      throw new ForbiddenException('Users cannot suspend themselves');
+    }
+
+    // Rule 5: Only Admin or SuperAdmin can suspend users
+    if (isAddingSuspended && !hasAdminRole && !hasSuperAdminRole) {
+      this.logger.warn(
+        `User ${requestingUser.id} attempted to suspend user ${targetUserId} without Admin privileges`,
+      );
+      throw new ForbiddenException(
+        'Only Admin or SuperAdmin users can suspend accounts',
+      );
+    }
+
+    // Rule 6: Only Admin or SuperAdmin can unsuspend users
+    if (isRemovingSuspended && !hasAdminRole && !hasSuperAdminRole) {
+      this.logger.warn(
+        `User ${requestingUser.id} attempted to unsuspend user ${targetUserId} without Admin privileges`,
+      );
+      throw new ForbiddenException(
+        'Only Admin or SuperAdmin users can unsuspend accounts',
       );
     }
   }
