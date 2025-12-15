@@ -76,6 +76,10 @@ export class MpesaCollectionUpdateDto implements MpesaCollectionUpdate {
   @IsNotEmpty()
   @IsString()
   challenge: string;
+
+  @IsNotEmpty()
+  @IsString()
+  updated_at: string;
 }
 
 export class MpesaPaymentUpdateDto implements MpesaPaymentUpdate {

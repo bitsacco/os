@@ -79,6 +79,54 @@ export class SwapService {
     this.logger.log('SwapService initialized');
   }
 
+  private async isWebhookAlreadyProcessed(
+    invoiceId: string,
+    state: string,
+    updatedAt: string,
+  ): Promise<boolean> {
+    const cacheKey = `webhook:${invoiceId}:${state}:${updatedAt}`;
+    const processed = await this.cacheManager.get(cacheKey);
+
+    if (processed) {
+      this.logger.log(`Webhook already processed: ${cacheKey}`);
+      return true;
+    }
+
+    // Mark as processed with 1 hour TTL
+    await this.cacheManager.set(cacheKey, true, 3600);
+    return false;
+  }
+
+  private async isPaymentWebhookAlreadyProcessed(
+    fileId: string,
+    status: string,
+    transactionsHash: string,
+  ): Promise<boolean> {
+    const cacheKey = `payment-webhook:${fileId}:${status}:${transactionsHash}`;
+    const processed = await this.cacheManager.get(cacheKey);
+
+    if (processed) {
+      this.logger.log(`Payment webhook already processed: ${cacheKey}`);
+      return true;
+    }
+
+    // Mark as processed with 1 hour TTL
+    await this.cacheManager.set(cacheKey, true, 3600);
+    return false;
+  }
+
+  private generateTransactionsHash(transactions: any[]): string {
+    // Create a simple hash of the transactions array
+    const transactionString = JSON.stringify(
+      transactions.map((t) => ({
+        id: t.transaction_id,
+        status: t.status,
+        amount: t.amount,
+      })),
+    );
+    return Buffer.from(transactionString).toString('base64').substring(0, 16);
+  }
+
   async getQuote({
     from,
     to,
@@ -367,6 +415,18 @@ export class SwapService {
 
   private async processMpesaCollectionUpdate(update: MpesaCollectionUpdateDto) {
     this.logger.log('Processing Mpesa Collection Update');
+
+    // Check if webhook already processed
+    if (
+      await this.isWebhookAlreadyProcessed(
+        update.invoice_id,
+        update.state,
+        update.updated_at,
+      )
+    ) {
+      return; // Skip duplicate webhook
+    }
+
     const mpesa =
       await this.intasendService.getMpesaTrackerFromCollectionUpdate(update);
 
@@ -533,6 +593,19 @@ export class SwapService {
 
   private async processMpesaPaymentUpdate(update: MpesaPaymentUpdateDto) {
     this.logger.log('Processing Mpesa Payment Update');
+
+    // Check if payment webhook already processed
+    const transactionsHash = this.generateTransactionsHash(update.transactions);
+    if (
+      await this.isPaymentWebhookAlreadyProcessed(
+        update.file_id,
+        update.status,
+        transactionsHash,
+      )
+    ) {
+      return; // Skip duplicate payment webhook
+    }
+
     const mpesa =
       await this.intasendService.getMpesaTrackerFromPaymentUpdate(update);
 

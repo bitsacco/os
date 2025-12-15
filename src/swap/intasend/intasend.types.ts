@@ -95,6 +95,7 @@ export interface MpesaCollectionUpdate {
   state: MpesaTransactionState;
   failed_reason: string | null;
   challenge: string;
+  updated_at: string;
 }
 
 export interface MpesaPaymentUpdate {
