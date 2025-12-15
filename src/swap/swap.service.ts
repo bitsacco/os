@@ -22,6 +22,8 @@ import {
   PaginatedRequestDto,
   QuoteRequestDto,
   SwapContext,
+  withRetry,
+  RETRY_CONFIGS,
 } from '../common';
 import { v4 as uuidv4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
@@ -317,8 +319,10 @@ export class SwapService {
       btcToFiatRate: Number(rate),
     });
 
-    const { invoice: lightning, operationId } =
-      await this.fedimintService.invoice(amountMsats, reference);
+    const { invoice: lightning, operationId } = await withRetry(
+      () => this.fedimintService.invoice(amountMsats, reference),
+      RETRY_CONFIGS.LIGHTNING,
+    );
 
     const swap = await this.offramp.create({
       rate,
@@ -573,15 +577,25 @@ export class SwapService {
       try {
         this.logger.log(`Attempting to pay : ${swap.lightning}`);
 
-        const { operationId } = await this.fedimintService.pay(swap.lightning);
-        this.logger.log('Completed onramp Swap', swap._id, operationId);
+        const result = await withRetry(async () => {
+          const { operationId } = await this.fedimintService.pay(
+            swap.lightning,
+          );
+          return { operationId };
+        }, RETRY_CONFIGS.LIGHTNING);
+
+        this.logger.log('Completed onramp Swap', swap._id, result.operationId);
 
         return {
           state: SwapTransactionState.COMPLETE,
-          operationId,
+          operationId: result.operationId,
         };
       } catch (error) {
-        this.logger.error('Failed to complete BTC payment', error);
+        this.logger.error(
+          'Failed to complete BTC payment after retries',
+          error,
+        );
+
         return {
           state: SwapTransactionState.FAILED,
         };

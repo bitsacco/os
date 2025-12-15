@@ -9,3 +9,4 @@ export * from './service-client.decorator';
 export * from './circuit-breaker.service';
 export * from './transaction-state';
 export * from './lnurl';
+export * from './retry';
