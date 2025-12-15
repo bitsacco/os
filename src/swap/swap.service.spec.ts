@@ -402,7 +402,7 @@ describe('SwapService', () => {
         mockOnrampSwapRepository.findOneAndUpdateAtomic as jest.Mock
       ).mockImplementation((where, updateData, options) => {
         // Return the swap for the atomic update check
-        if (where.state) {
+        if (where.state || where._id) {
           return {
             ...swap,
             _id: 'dadad-bdjada-dadad',

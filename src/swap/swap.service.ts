@@ -442,116 +442,183 @@ export class SwapService {
       throw new Error('Failed to create or update swap');
     }
 
-    let updates: { state: SwapTransactionState } | undefined;
-    switch (mpesa.state) {
+    // Webhook state field is the single source of truth
+    const webhookState = mpesa.state;
+    this.logger.log(
+      `Processing webhook for swap ${swap._id}: current state=${swap.state}, webhook state=${webhookState}`,
+    );
+
+    // Determine target state based on webhook state (authoritative)
+    let targetState: SwapTransactionState;
+    switch (webhookState) {
       case MpesaTransactionState.Complete:
-        // Check current state first
-        if (swap.state === SwapTransactionState.COMPLETE) {
-          this.logger.warn(`Swap ${swap._id} already completed`);
-          return;
-        }
-
-        if (swap.state === SwapTransactionState.FAILED) {
-          this.logger.warn(`Swap ${swap._id} already failed`);
-          return;
-        }
-
-        // If already in PROCESSING state, complete the lightning payment
-        if (swap.state === SwapTransactionState.PROCESSING) {
-          this.logger.log(
-            `Swap ${swap._id} already in PROCESSING state, completing lightning payment`,
-          );
-          const { state, operationId } = await this.swapToBtc(swap._id);
-
-          // Update with the final state and operation ID if successful
-          if (operationId) {
-            await this.onramp.findOneAndUpdate(
-              { _id: swap._id },
-              { state, btcOperationId: operationId },
-            );
-          } else {
-            await this.onramp.findOneAndUpdate({ _id: swap._id }, { state });
-          }
-
-          updates = { state };
-          break;
-        }
-
-        // For PENDING/RETRY states, atomically update to PROCESSING first
-        const processingSwap = await this.onramp.findOneAndUpdateAtomic(
-          {
-            _id: swap._id,
-            state: {
-              $in: [SwapTransactionState.PENDING, SwapTransactionState.RETRY],
-            },
-          },
-          { state: SwapTransactionState.PROCESSING },
-          {
-            returnDocument: 'before',
-            throwIfNotFound: false,
-          },
-        );
-
-        if (!processingSwap) {
-          this.logger.error(
-            `Failed to update swap ${swap._id} to PROCESSING. Current state: ${swap.state}`,
-          );
-          return;
-        }
-
-        // Then trigger the actual BTC swap
-        const { state, operationId } = await this.swapToBtc(swap._id);
-        updates = { state };
-
-        // Update with the final state and operation ID if successful
-        if (operationId) {
-          await this.onramp.findOneAndUpdate(
-            { _id: swap._id },
-            { state, btcOperationId: operationId },
-          );
-        } else {
-          await this.onramp.findOneAndUpdate({ _id: swap._id }, { state });
-        }
+        targetState = SwapTransactionState.COMPLETE;
         break;
       case MpesaTransactionState.Processing:
-        updates = { state: SwapTransactionState.PROCESSING };
+        targetState = SwapTransactionState.PROCESSING;
         break;
       case MpesaTransactionState.Failed:
-        updates = { state: SwapTransactionState.FAILED };
+        targetState = SwapTransactionState.FAILED;
         break;
       case MpesaTransactionState.Retry:
-        updates = { state: SwapTransactionState.RETRY };
+        targetState = SwapTransactionState.RETRY;
         break;
       case MpesaTransactionState.Pending:
-        updates = { state: SwapTransactionState.PENDING };
+        targetState = SwapTransactionState.PENDING;
         break;
+      default:
+        this.logger.warn(`Unknown webhook state: ${webhookState}`);
+        return;
     }
 
-    // Only update if we have updates to apply (not already handled in the Complete case)
-    if (mpesa.state !== MpesaTransactionState.Complete && updates) {
-      await this.onramp.findOneAndUpdate({ _id: swap._id }, updates);
+    // Validate state transition and apply changes
+    const updates = await this.handleStateTransition(
+      swap,
+      targetState,
+      webhookState,
+    );
+
+    return updates;
+  }
+
+  private async handleStateTransition(
+    swap: any,
+    targetState: SwapTransactionState,
+    webhookState: MpesaTransactionState,
+  ): Promise<{ state: SwapTransactionState } | undefined> {
+    const currentState = swap.state;
+
+    // If target state is the same as current, no transition needed
+    if (currentState === targetState) {
+      this.logger.log(
+        `Swap ${swap._id} already in target state ${targetState}`,
+      );
+      return undefined;
     }
 
-    // Only emit event if we have a state to report
-    if (updates) {
-      // Emit swap status change event for onramp swaps
-      const txStatus = mapSwapTxStateToTransactionStatus(updates.state);
-      const statusEvent: SwapStatusChangeEvent = {
-        context: SwapContext.ONRAMP,
-        payload: {
-          swapTracker: swap._id,
-          swapStatus: txStatus,
-        },
-      };
+    // Handle COMPLETE state transition (the critical path)
+    if (targetState === SwapTransactionState.COMPLETE) {
+      // Allow transition from FAILED to COMPLETE (webhook conflict resolution)
+      if (currentState === SwapTransactionState.FAILED) {
+        this.logger.warn(
+          `Webhook conflict: Transitioning swap ${swap._id} from FAILED to COMPLETE based on webhook state=${webhookState}`,
+        );
+      }
+
+      // For COMPLETE webhooks, execute the lightning payment
+      const result = await this.executeCompleteTransition(swap);
+      if (result) {
+        await this.emitSwapStatusEvent(swap._id, result.state);
+      }
+      return result;
+    }
+
+    // Handle FAILED state transition
+    if (targetState === SwapTransactionState.FAILED) {
+      // Don't transition from COMPLETE to FAILED (COMPLETE is terminal)
+      if (currentState === SwapTransactionState.COMPLETE) {
+        this.logger.warn(
+          `Ignoring FAILED webhook for already completed swap ${swap._id}`,
+        );
+        return undefined;
+      }
+
+      // Update to FAILED state
+      await this.onramp.findOneAndUpdate(
+        { _id: swap._id },
+        { state: SwapTransactionState.FAILED },
+      );
+
+      const updates = { state: SwapTransactionState.FAILED };
+      await this.emitSwapStatusEvent(swap._id, updates.state);
+      this.logger.log(`Swap ${swap._id} marked as FAILED`);
+      return updates;
+    }
+
+    // Handle other state transitions (PROCESSING, RETRY, PENDING)
+    await this.onramp.findOneAndUpdate(
+      { _id: swap._id },
+      { state: targetState },
+    );
+
+    const updates = { state: targetState };
+    await this.emitSwapStatusEvent(swap._id, updates.state);
+    this.logger.log(`Swap ${swap._id} transitioned to ${targetState}`);
+    return updates;
+  }
+
+  private async executeCompleteTransition(
+    swap: any,
+  ): Promise<{ state: SwapTransactionState } | undefined> {
+    // If already COMPLETE, no action needed
+    if (swap.state === SwapTransactionState.COMPLETE) {
+      return undefined;
+    }
+
+    // First, atomically update to PROCESSING if not already there
+    if (swap.state !== SwapTransactionState.PROCESSING) {
+      const processingSwap = await this.onramp.findOneAndUpdateAtomic(
+        { _id: swap._id },
+        { state: SwapTransactionState.PROCESSING },
+        { returnDocument: 'after', throwIfNotFound: false },
+      );
+
+      if (!processingSwap) {
+        this.logger.error(
+          `Failed to update swap ${swap._id} to PROCESSING state`,
+        );
+        return { state: SwapTransactionState.FAILED };
+      }
+    }
+
+    // Execute the lightning payment
+    try {
+      const { state, operationId } = await this.swapToBtc(swap._id);
+
+      // Update with the final state and operation ID
+      const updateData = operationId
+        ? { state, btcOperationId: operationId }
+        : { state };
+
+      await this.onramp.findOneAndUpdate({ _id: swap._id }, updateData);
 
       this.logger.log(
-        `Emitting swap_status_change event for onramp: ${JSON.stringify(statusEvent)}`,
+        `Successfully completed swap ${swap._id} with state=${state}`,
       );
-      this.eventEmitter.emit(swap_status_change, statusEvent);
-    }
+      return { state };
+    } catch (error) {
+      this.logger.error(
+        `Failed to complete lightning payment for swap ${swap._id}:`,
+        error,
+      );
 
-    this.logger.log('Swap Updated');
-    return;
+      // Mark as failed
+      await this.onramp.findOneAndUpdate(
+        { _id: swap._id },
+        { state: SwapTransactionState.FAILED },
+      );
+
+      return { state: SwapTransactionState.FAILED };
+    }
+  }
+
+  private async emitSwapStatusEvent(
+    swapId: string,
+    state: SwapTransactionState,
+  ): Promise<void> {
+    const txStatus = mapSwapTxStateToTransactionStatus(state);
+    const statusEvent: SwapStatusChangeEvent = {
+      context: SwapContext.ONRAMP,
+      payload: {
+        swapTracker: swapId,
+        swapStatus: txStatus,
+      },
+    };
+
+    this.logger.log(
+      `Emitting swap_status_change event for onramp: ${JSON.stringify(statusEvent)}`,
+    );
+    this.eventEmitter.emit(swap_status_change, statusEvent);
   }
 
   private async swapToBtc(
