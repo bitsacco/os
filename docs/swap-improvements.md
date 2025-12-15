@@ -46,60 +46,58 @@ This document outlines improvements to the swap service based on log trace analy
 
 ## Improvement Plan
 
-### 1. Webhook Idempotency & Deduplication
+### 1. Webhook Idempotency & Deduplication ✅ IMPLEMENTED
 
 **Priority:** HIGH
 **Effort:** LOW
+**Status:** COMPLETE
 
-**Implementation:**
-
-```typescript
-// Add to swap.service.ts
-private async isWebhookAlreadyProcessed(
-  invoiceId: string,
-  state: string,
-  updatedAt: string,
-): Promise<boolean> {
-  const cacheKey = `webhook:${invoiceId}:${state}:${updatedAt}`;
-  const processed = await this.cacheManager.get(cacheKey);
-
-  if (processed) {
-    this.logger.log(`Webhook already processed: ${cacheKey}`);
-    return true;
-  }
-
-  // Mark as processed with 1 hour TTL
-  await this.cacheManager.set(cacheKey, true, 3600);
-  return false;
-}
-
-private async processMpesaCollectionUpdate(update: MpesaCollectionUpdateDto) {
-  this.logger.log('Processing Mpesa Collection Update');
-
-  // Check if webhook already processed
-  if (await this.isWebhookAlreadyProcessed(
-    update.invoice_id,
-    update.state,
-    update.updated_at,
-  )) {
-    return; // Skip duplicate webhook
-  }
-
-  // Rest of the existing code...
-}
-```
+**Implementation:** Implemented cache-based webhook deduplication using `invoice_id + state + updated_at` composite keys with 1-hour TTL.
 
 **Benefits:**
-
 - Prevents duplicate webhook processing
 - Reduces race conditions
 - Improves system stability
 
-**Testing:**
+### 2. Webhook State Validation ✅ IMPLEMENTED
 
-- Send duplicate webhooks with same timestamp
-- Send webhooks with different timestamps but same state
-- Verify only first webhook is processed
+**Priority:** CRITICAL
+**Effort:** MEDIUM
+**Status:** COMPLETE
+
+**Problem:** M-Pesa webhooks can report conflicting states (FAILED then COMPLETE) for the same transaction, causing swaps to fail incorrectly.
+
+**Solution:** Treat webhook `state` field as single source of truth with intelligent state transition validation:
+
+```typescript
+private async handleStateTransition(
+  swap: any,
+  targetState: SwapTransactionState,
+  webhookState: MpesaTransactionState,
+): Promise<{ state: SwapTransactionState } | undefined> {
+  // Allow FAILED → COMPLETE transitions (webhook conflict resolution)
+  if (targetState === SwapTransactionState.COMPLETE &&
+      currentState === SwapTransactionState.FAILED) {
+    this.logger.warn(
+      `Webhook conflict: Transitioning swap ${swap._id} from FAILED to COMPLETE`
+    );
+    // Execute lightning payment
+  }
+
+  // Prevent COMPLETE → FAILED transitions (COMPLETE is terminal)
+  if (targetState === SwapTransactionState.FAILED &&
+      currentState === SwapTransactionState.COMPLETE) {
+    this.logger.warn(`Ignoring FAILED webhook for completed swap`);
+    return undefined;
+  }
+}
+```
+
+**Benefits:**
+- Resolves webhook conflicts automatically
+- Ensures successful swaps complete despite conflicting webhooks
+- Webhook `state` field is authoritative source of truth
+- Prevents terminal states from being overridden inappropriately
 
 ---
 
@@ -189,10 +187,11 @@ private async swapToBtc(
 
 ---
 
-### 3. Retry Logic with Exponential Backoff
+### 3. Retry Logic with Exponential Backoff ✅ IMPLEMENTED
 
 **Priority:** HIGH
 **Effort:** LOW
+**Status:** COMPLETE
 
 **Implementation:**
 
